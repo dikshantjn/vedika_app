@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/BrandSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/CategoryGrid.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/HealthConcernSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/OfferSlider.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/SearchBox.dart';
@@ -31,6 +33,13 @@ class _HomePageState extends State<HomePage> {
       _selectedIndex = index;
     });
   }
+
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<LocationProvider>(context, listen: false).fetchAndSaveLocation();
+  }
+
 
   @override
   Widget build(BuildContext context) {

@@ -44,10 +44,10 @@ class MedicalBoxRow extends StatelessWidget {
         if (route == "/bloodbank") {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => BloodBankMapScreen()), // Navigates to Blood Bank Page
+            MaterialPageRoute(builder: (context) => BloodBankMapScreen()),
           );
         } else {
-          print("$title clicked");
+          Navigator.pushNamed(context, route);
         }
       },
       child: Container(

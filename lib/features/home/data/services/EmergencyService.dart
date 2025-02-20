@@ -41,18 +41,27 @@ class EmergencyService {
     return true;
   }
 
-  // ✅ Fetch Mobile Number
   Future<void> _getMobileNumber() async {
     try {
-      List<SimCard>? simCards = await MobileNumber.getSimCards; // Nullable
+      bool hasPermission = await MobileNumber.hasPhonePermission;
+      print("_getMobileNumber : $hasPermission");
+      if (!hasPermission) {
+        await MobileNumber.requestPhonePermission;
+      }
+
+      List<SimCard>? simCards = await MobileNumber.getSimCards;
+
       if (simCards != null && simCards.isNotEmpty) {
+        print("📲 Available SIM Cards: ${simCards.map((sim) => sim.number).toList()}");
         senderNumber = simCards.first.number ?? "Unknown";
       }
+
       print("📞 Device Mobile Number: $senderNumber");
     } catch (e) {
       print("❌ Error fetching mobile number: $e");
     }
   }
+
 
   // ✅ Fetch Location in Advance
   Future<void> _fetchLocation() async {
@@ -87,7 +96,9 @@ class EmergencyService {
 
     String message = "Emergency! Need immediate help.\n"
         "Location: https://maps.google.com/?q=${lastKnownPosition?.latitude},${lastKnownPosition?.longitude}\n"
-        "Caller: $senderNumber";
+        "Caller:$senderNumber";
+
+    print(message);
 
     print("📨 Checking SMS permission...");
     bool canSendSms = (await telephony.requestSmsPermissions) ?? false;
@@ -113,6 +124,7 @@ class EmergencyService {
   // ✅ Trigger Emergency (FAST Execution)
   Future<void> triggerEmergency() async {
     print("🚨 Emergency button clicked!");
+    await _getMobileNumber();
     _sendEmergencySMS();  // ✅ Send SMS immediately
     _makeEmergencyCall(); // ✅ Make call immediately
   }

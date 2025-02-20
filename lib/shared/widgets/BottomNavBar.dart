@@ -1,7 +1,10 @@
+import 'dart:developer';
+import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'dart:async';
 import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
+import 'package:vedika_healthcare/shared/widgets/EmergencyDialog.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
@@ -25,11 +28,14 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   late Animation<Color?> _gradientAnimation;
   final EmergencyService _emergencyService = EmergencyService(); // ✅ Initialize EmergencyService
 
+  /// Controller to handle Notch Bottom Bar and also handle the initial page
+  final NotchBottomBarController _controller = NotchBottomBarController(index: 1);
+
   @override
   void initState() {
     super.initState();
 
-    // Pulsating effect for Emergency button
+    // Pulsating effect for Emergency button (Not required anymore)
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -69,8 +75,16 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   }
 
   void _onEmergencyTap() {
-    print("🚨 Emergency button clicked!"); // Debugging log
-    _emergencyService.triggerEmergency(); // ✅ Call EmergencyService function
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EmergencyDialog(
+          onCallPressed: () {
+            _emergencyService.triggerEmergency(); // Trigger emergency call & SMS
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -79,92 +93,77 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: Color(0xFF38A3A5), // Your Teal Navbar Color
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Colors.transparent,
-              currentIndex: widget.selectedIndex,
-              selectedItemColor: Colors.white,
-              unselectedItemColor: Colors.white,
-              onTap: widget.onItemTapped,
-              elevation: 0,
-              iconSize: 16,
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.home, color: Colors.white),
-                  label: 'Home',
+          // Using AnimatedNotchBottomBar instead of BottomNavigationBar
+          AnimatedNotchBottomBar(
+            notchBottomBarController: _controller,
+            color: ColorPalette.primaryColor,
+            showLabel: true,
+            textOverflow: TextOverflow.visible,
+            maxLine: 1,
+            shadowElevation: 5,
+            kBottomRadius: 28.0,
+            notchColor: Colors.black87,
+            removeMargins: false,
+            bottomBarWidth: 500,
+            showShadow: false,
+            durationInMilliSeconds: 300,
+            itemLabelStyle: const TextStyle(fontSize: 10),
+            elevation: 1,
+            bottomBarItems: [
+              BottomBarItem(
+                inActiveItem: Icon(
+                  Icons.home_filled,
+                  color: Colors.white,
                 ),
-                const BottomNavigationBarItem(
-                  icon: SizedBox(height: 20), // Placeholder for floating button
-                  label: 'Speak',
+                activeItem: Icon(
+                  Icons.home_filled,
+                  color: Colors.blueAccent,
                 ),
-                BottomNavigationBarItem(
-                  icon: GestureDetector(
-                    onTap: _onEmergencyTap, // ✅ Emergency button click event
-                    child: ScaleTransition(
-                      scale: _animationController,
-                      child: AnimatedOpacity(
-                        opacity: _isBlinking ? 1.0 : 0.3,
-                        duration: const Duration(milliseconds: 500),
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.red,
-                          ),
-                          child: const Icon(
-                            Icons.call,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                itemLabel: 'Home',
+              ),
+              BottomBarItem(
+                inActiveItem: Icon(Icons.mic, color: Colors.white),
+                activeItem: Icon(
+                  Icons.mic,
+                  color: Colors.blueAccent,
+                ),
+                itemLabel: 'Speak',
+              ),
+              // Emergency button (No animation here)
+              BottomBarItem(
+                inActiveItem: Icon(
+                  Icons.call,
+                  color: Colors.white,
+                ),
+                activeItem: GestureDetector(
+                  onTap: () {
+                    _onEmergencyTap(); // Trigger emergency call
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.red,
                     ),
-                  ),
-                  label: 'Emergency',
-                ),
-              ],
-            ),
-          ),
-
-          // Floating Gradient Mic Button
-          Positioned(
-            left: MediaQuery.of(context).size.width / 2 - 30,
-            bottom: 25,
-            child: AnimatedBuilder(
-              animation: _gradientController,
-              builder: (context, child) {
-                return Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_gradientAnimation.value ?? Colors.blue).withOpacity(0.6),
-                        blurRadius: 15,
-                        spreadRadius: 3,
-                      ),
-                    ],
-                    border: Border.all(
-                      width: 3,
-                      color: _gradientAnimation.value ?? Colors.blue,
-                    ),
-                  ),
-                  child: const CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.transparent,
-                    child: Icon(
-                      Icons.mic,
+                    child: const Icon(
+                      Icons.call,
                       color: Colors.white,
-                      size: 25,
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+                itemLabel: 'Emergency',
+              ),
+            ],
+            onTap: (index) {
+              log('current selected index $index');
+              widget.onItemTapped(index); // Update selected index from widget
+
+              // Keep the animation always running for "Speak" (index == 1)
+              if (index != 1) {
+                _animationController.stop(); // Stop animation for other buttons
+              }
+            },
+            kIconSize: 24.0,
           ),
         ],
       ),

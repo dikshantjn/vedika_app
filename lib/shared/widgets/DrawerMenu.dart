@@ -11,23 +11,23 @@ class DrawerMenu extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildHeader(),
-          _buildSubscriptionSection(),
+          _buildHeader(context),
+          _buildSubscriptionSection(context),
           Divider(),
-          _buildSection([
-            _buildDrawerItem(Icons.medical_services, "Medicine"),
-            _buildDrawerItem(Icons.science, "Lab Test"),
-            _buildDrawerItem(Icons.calendar_today, "Book Appointment"),
-            _buildDrawerItem(Icons.local_hospital, "Blood Bank"),
-            _buildDrawerItem(Icons.local_pharmacy, "Clinic"),
-            _buildDrawerItem(Icons.business, "Hospital"),
+          _buildSection(context, [
+            _buildDrawerItem(context, Icons.medical_services, "Medicine", "/medicine"),
+            _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
+            _buildDrawerItem(context, Icons.calendar_today, "Book Appointment", "/appointment"),
+            _buildDrawerItem(context, Icons.local_hospital, "Blood Bank", "/bloodBank"),
+            _buildDrawerItem(context, Icons.local_pharmacy, "Clinic", "/clinic"),
+            _buildDrawerItem(context, Icons.business, "Hospital", "/hospital"),
           ]),
           Divider(),
-          _buildSection([
-            _buildDrawerItem(Icons.storefront, "Are You a Vendor?"),
-            _buildDrawerItem(Icons.settings, "Settings"),
-            _buildDrawerItem(Icons.help, "Help Center"),
-            _buildDrawerItem(Icons.article, "Terms & Conditions"),
+          _buildSection(context, [
+            _buildDrawerItem(context, Icons.storefront, "Are You a Vendor?", "/vendor"),
+            _buildDrawerItem(context, Icons.settings, "Settings", "/settings"),
+            _buildDrawerItem(context, Icons.help, "Help Center", "/help"),
+            _buildDrawerItem(context, Icons.article, "Terms & Conditions", "/terms"),
           ]),
         ],
       ),
@@ -35,7 +35,7 @@ class DrawerMenu extends StatelessWidget {
   }
 
   /// **Builds the drawer header with profile info**
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       color: ColorPalette.primaryColor,
       padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -57,7 +57,9 @@ class DrawerMenu extends StatelessWidget {
                     Text("Krushna Zarekar",
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                     GestureDetector(
-                      onTap: () {}, // Add navigation action
+                      onTap: () {
+                        Navigator.pushNamed(context, '/profile'); // Navigate to Profile
+                      },
                       child: Text("View and edit profile",
                           style: TextStyle(fontSize: 14, color: Colors.white70)),
                     ),
@@ -75,7 +77,7 @@ class DrawerMenu extends StatelessWidget {
   }
 
   /// **Builds Vedika Plus subscription section**
-  Widget _buildSubscriptionSection() {
+  Widget _buildSubscriptionSection(BuildContext context) {
     return ListTile(
       tileColor: Colors.grey[200],
       leading: Icon(Icons.star, color: ColorPalette.primaryColor),
@@ -97,22 +99,26 @@ class DrawerMenu extends StatelessWidget {
       ),
       subtitle: Text("Health plan for your family"),
       trailing: Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () {}, // Add action
+      onTap: () {
+        Navigator.pushNamed(context, '/vedikaPlus');
+      }, // Navigate to Vedika Plus
     );
   }
 
-  /// **Builds individual drawer items**
-  Widget _buildDrawerItem(IconData icon, String title) {
+  /// **Builds individual drawer items with navigation**
+  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, String route) {
     return ListTile(
       leading: Icon(icon, color: ColorPalette.primaryColor),
       title: Text(title),
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey), // Added arrow icon
-      onTap: () {}, // Add navigation action
+      onTap: () {
+        Navigator.pushNamed(context, route);
+      }, // Navigate to respective screen
     );
   }
 
   /// **Groups multiple drawer items together**
-  Widget _buildSection(List<Widget> items) {
+  Widget _buildSection(BuildContext context, List<Widget> items) {
     return Column(children: items);
   }
 }

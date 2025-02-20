@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class BloodBankMapScreen extends StatefulWidget {
   @override
@@ -13,6 +16,8 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
   LatLng _currentPosition = LatLng(20.5937, 78.9629);
   final Set<Marker> _markers = {};
   Map<String, dynamic>? _selectedBloodBank;
+  bool _isLoading = true;
+  String googleApiKey = "YOUR_GOOGLE_PLACES_API_KEY"; // Replace with your API Key
 
   final List<Map<String, dynamic>> _bloodBanks = [
     {
@@ -51,41 +56,98 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
 
 
   Future<void> _getUserLocation() async {
-    LocationPermission permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      return;
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        _showLocationDeniedDialog();
+        return;
+      }
     }
 
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+    if (!mounted) return; // Prevents state updates after async calls
 
-    if (!mounted) return;
+    // Step 1: **Get last known location first**
+    Position? lastKnownPosition;
+    try {
+      lastKnownPosition = await Geolocator.getLastKnownPosition();
+    } catch (e) {
+      print("Error getting last known location: $e");
+    }
 
-    setState(() {
-      _currentPosition = LatLng(position.latitude, position.longitude);
-    });
+    if (lastKnownPosition != null) {
+      setState(() {
+        _currentPosition = LatLng(lastKnownPosition!.latitude, lastKnownPosition!.longitude);
+      });
 
-    _mapController.animateCamera(
-      CameraUpdate.newLatLngZoom(_currentPosition, 14), // Move to actual location
-    );
-
-    _addUserMarker();  // Add user marker after location is updated
-  }
-
-  void _addUserMarker() {
-    setState(() {
-      _markers.add(
-        Marker(
-          markerId: MarkerId("user_location"),
-          position: _currentPosition,
-          infoWindow: InfoWindow(title: "Your Location"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        ),
+      _mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(_currentPosition, 15),
       );
-    });
+
+      _addBloodBankMarkers();
+    } else {
+      print("No last known location found!");
+    }
+
+
+    // Step 2: **Try getting the current precise location**
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+        timeLimit: Duration(seconds: 10),
+      );
+
+      if (!mounted) return;
+
+      // Validate new location
+      double distance = lastKnownPosition != null
+          ? Geolocator.distanceBetween(
+          lastKnownPosition.latitude, lastKnownPosition.longitude,
+          position.latitude, position.longitude)
+          : 0;
+
+      if (distance > 1000 && lastKnownPosition != null) {
+        print("Ignoring incorrect far location, using last known.");
+      } else {
+        setState(() {
+          _currentPosition = LatLng(position.latitude, position.longitude);
+        });
+
+        _mapController.animateCamera(
+          CameraUpdate.newLatLngZoom(_currentPosition, 15),
+        );
+
+        _addBloodBankMarkers();
+      }
+    } catch (e) {
+      print("Error getting current location: $e");
+    }
   }
 
+
+
+
+// Show dialog if location is denied
+  void _showLocationDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Location Access Denied"),
+        content: Text("This app requires location access to show nearby blood banks. You can enable it from settings."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close"),
+          ),
+          TextButton(
+            onPressed: () => Geolocator.openAppSettings(),
+            child: Text("Open Settings"),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _addBloodBankMarkers() {
     setState(() {
@@ -201,10 +263,10 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
                   // Get Directions Button
                   ElevatedButton.icon(
                     onPressed: () => _openGoogleMaps(position),
-                    icon: Icon(Icons.directions),
+                    icon: Icon(Icons.directions, color: Colors.white,),
                     label: Text("Get Directions"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: ColorPalette.primaryColor,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -257,16 +319,78 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Blood Banks Nearby")),
-      body: GoogleMap(
-        onMapCreated: (GoogleMapController controller) {
-          _mapController = controller;
-        },
-        initialCameraPosition: CameraPosition(target: _currentPosition, zoom: 14),
-        markers: _markers,
-        myLocationEnabled: true,
-        compassEnabled: true,
-        zoomControlsEnabled: true,
+      appBar: AppBar(title: Text("Blood Banks Nearby"),
+      backgroundColor: ColorPalette.primaryColor,
+        centerTitle: true,
+        foregroundColor: Colors.white,
+      ),
+      drawer: DrawerMenu(), // Added Drawer
+      body: _currentPosition == null
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          : Column(
+        children: [
+          // Google Map - Takes 80% of the screen height
+          Expanded(
+            flex: 4,
+            child: GoogleMap(
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+              },
+              initialCameraPosition: CameraPosition(target: _currentPosition!, zoom: 14),
+              markers: _markers,
+              myLocationEnabled: true,
+              compassEnabled: true,
+              zoomControlsEnabled: true,
+            ),
+          ),
+
+          // Bottom Card Section - Takes 20% of the screen height, spans full width
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(color: Colors.black26, blurRadius: 4, spreadRadius: 2),
+              ],
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "Are you a blood donor?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "Help save lives by registering as a donor today!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
+                ),
+                SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.donorRegistration);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorPalette.bloodBankColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text("Register as a Donor", style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
