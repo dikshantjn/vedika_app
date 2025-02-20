@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Import the intl package
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class DatePickerWidget extends StatelessWidget {
@@ -43,7 +44,7 @@ class DatePickerWidget extends StatelessWidget {
           children: [
             Text(
               selectedDate != null
-                  ? "${selectedDate!.toLocal()}".split(' ')[0]
+                  ? DateFormat('dd/MM/yyyy').format(selectedDate!)  // Format the date here
                   : "Choose a Date",
               style: TextStyle(
                 fontSize: 16,

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class PatientDetailsForm extends StatefulWidget {
+  final GlobalKey<FormState> formKey;
+
+  PatientDetailsForm({required this.formKey});
+
   @override
   _PatientDetailsFormState createState() => _PatientDetailsFormState();
 }
@@ -9,59 +13,66 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController contactController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
   String? selectedGender;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0, // Removed the shadow for a clean look
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Smooth rounded corners
-      color: Colors.white, // Set the background of the card to white
-      child: Padding(
-        padding: const EdgeInsets.all(20.0), // Padding for better spacing
-        child: SingleChildScrollView( // Make the form scrollable
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Patient Details",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal[800])),
-              SizedBox(height: 20), // Increased spacing between title and fields
+    return Form(
+      key: widget.formKey,
+      child: Card(
+        elevation: 0, // Removed the shadow for a clean look
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Smooth rounded corners
+        color: Colors.white, // Set the background of the card to white
+        child: Padding(
+          padding: const EdgeInsets.all(20.0), // Padding for better spacing
+          child: SingleChildScrollView( // Make the form scrollable
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Patient Details",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal[800])),
+                SizedBox(height: 20), // Increased spacing between title and fields
 
-              // Name Field
-              _buildTextField(nameController, "Patient Name", TextInputType.text),
+                // Name Field
+                _buildTextField(nameController, "Patient Name", TextInputType.text),
+                SizedBox(height: 15), // Increased spacing between fields
 
-              SizedBox(height: 15), // Increased spacing between fields
+                // Age & Gender Row
+                Row(
+                  children: [
+                    // Age Field
+                    Expanded(
+                      child: _buildTextField(ageController, "Age", TextInputType.number),
+                    ),
+                    SizedBox(width: 15),
 
-              // Age & Gender Row
-              Row(
-                children: [
-                  // Age Field
-                  Expanded(
-                    child: _buildTextField(ageController, "Age", TextInputType.number),
-                  ),
-                  SizedBox(width: 15),
+                    // Gender Dropdown
+                    Container(
+                      width: 150, // Set a max width to prevent overflow
+                      child: _buildDropdownField(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 15),
 
-                  // Gender Dropdown
-                  Container(
-                    width: 150, // Set a max width to prevent overflow
-                    child: _buildDropdownField(),
-                  ),
-                ],
-              ),
-              SizedBox(height: 15),
+                // Contact Number Field
+                _buildTextField(contactController, "Contact Number", TextInputType.phone),
+                SizedBox(height: 15),
 
-              // Contact Number Field
-              _buildTextField(contactController, "Contact Number", TextInputType.phone),
-            ],
+                // Address Field
+                _buildTextField(addressController, "Address", TextInputType.text),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // TextField Widget with modern styling
+  // TextField Widget with validation
   Widget _buildTextField(TextEditingController controller, String label, TextInputType inputType) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       keyboardType: inputType,
       style: TextStyle(fontSize: 14),
@@ -80,10 +91,16 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
         ),
         contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 12), // Spacing inside input field
       ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "This field is required";
+        }
+        return null;
+      },
     );
   }
 
-  // Dropdown for Gender Selection with modern styling
+  // Dropdown for Gender Selection with validation
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
@@ -107,6 +124,12 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
       items: ["Male", "Female", "Other"].map((gender) {
         return DropdownMenuItem(value: gender, child: Text(gender, style: TextStyle(color: Colors.black))); // Ensure text color is black
       }).toList(),
+      validator: (value) {
+        if (value == null) {
+          return "Please select a gender";
+        }
+        return null;
+      },
     );
   }
 }

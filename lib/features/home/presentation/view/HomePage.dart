@@ -45,76 +45,62 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      extendBody: true,  // Allows content to extend behind the bottom bar
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(100.0), // Height of the AppBar
+        preferredSize: const Size.fromHeight(100.0),
         child: ClipPath(
           clipper: _CurvedAppBarClipper(),
           child: Container(
             height: 90.0,
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0).copyWith(top: 28.0), // Move items down
+              padding: const EdgeInsets.symmetric(horizontal: 16.0).copyWith(top: 28.0),
               child: Row(
                 children: [
-                  // Profile Picture replacing Menu Icon
+                  // Drawer Icon (Profile)
                   Builder(
                     builder: (context) {
                       return GestureDetector(
                         onTap: () {
-                          Scaffold.of(context).openDrawer(); // Open drawer when tapped
+                          Scaffold.of(context).openDrawer();
                         },
                         child: CircleAvatar(
-                          radius: 20, // Adjust size as needed
-                          backgroundColor: ColorPalette.primaryColor, // Grey background
-                          child: Icon(
-                            Icons.person, // Person icon
-                            size: 24, // Adjust icon size
-                            color: Colors.white, // Icon color
-                          ),
+                          radius: 20,
+                          backgroundColor: ColorPalette.primaryColor,
+                          child: Icon(Icons.person, size: 24, color: Colors.white),
                         ),
                       );
                     },
                   ),
 
-                  // Location Section (After Profile)
+                  // Location Section
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Home text with downward arrow
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Home', // Location type (Home, Office, etc.)
+                              'Home',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: ColorPalette.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Icon(
-                              Icons.arrow_drop_down,
-                              color: ColorPalette.primaryColor,
-                            ),
+                            Icon(Icons.arrow_drop_down, color: ColorPalette.primaryColor),
                           ],
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.location_on,
-                              color: ColorPalette.primaryColor,
-                              size: 18,
-                            ),
+                            Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 18),
                             SizedBox(width: 4),
                             Text(
-                              '123 Random Street, City', // Random location
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: ColorPalette.primaryColor,
-                              ),
+                              '123 Random Street, City',
+                              style: TextStyle(fontSize: 14, color: ColorPalette.primaryColor),
                             ),
                           ],
                         ),
@@ -122,23 +108,17 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  // Cart Icon with Light Circular Background
-                  // Cart Icon with Badge
+                  // Cart Icon
                   Stack(
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: ColorPalette.primaryColor.withOpacity(0.1), // Light background
-                          shape: BoxShape.circle, // Circular shape
+                          color: ColorPalette.primaryColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          onPressed: () {
-                            // Handle Cart Icon Press
-                          },
-                          icon: Icon(
-                            Icons.shopping_cart_outlined,
-                            color: ColorPalette.primaryColor,
-                          ),
+                          onPressed: () {},
+                          icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
                         ),
                       ),
                       Positioned(
@@ -146,28 +126,17 @@ class _HomePageState extends State<HomePage> {
                         top: 4,
                         child: Container(
                           padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red, // Badge background color
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
+                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                          constraints: BoxConstraints(minWidth: 18, minHeight: 18),
                           child: Text(
-                            '3', // Replace with cart item count dynamically
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            '3',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
                         ),
                       ),
                     ],
                   ),
-
                 ],
               ),
             ),
@@ -175,29 +144,36 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       drawer: DrawerMenu(),
-      body: SingleChildScrollView( // Wrap the entire body in SingleChildScrollView
-        child: Padding(
-          padding: const EdgeInsets.all(0.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search Box
-              SearchBox(controller: _searchController),
-
-              MedicalBoxRow(),
-              SizedBox(height: 10),  // Space between MedicalBoxes and Slider
-              OfferSlider(),  // Add the slider widget here
-              HealthConcernSection(), // Add the HealthConcernSection widget
-              // Add additional widgets/content here
-              CategoryGrid(),
-              BrandSection(),
-            ],
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: 70), // Prevents content from overlapping the floating bar
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SearchBox(controller: _searchController),
+                MedicalBoxRow(),
+                SizedBox(height: 10),
+                OfferSlider(),
+                HealthConcernSection(),
+                CategoryGrid(),
+                BrandSection(),
+              ],
+            ),
           ),
-        ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onNavBarItemTapped,
+
+          // Floating Bottom Navigation Bar
+          Positioned(
+            bottom: -10,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BottomNavBar(
+                selectedIndex: _selectedIndex,
+                onItemTapped: _onNavBarItemTapped,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

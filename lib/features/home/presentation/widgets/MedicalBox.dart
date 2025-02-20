@@ -8,26 +8,32 @@ class MedicalBoxRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> items = [
+      {"title": "Hospital", "icon": Icons.local_hospital, "colors": MedicalBoxColors.hospital, "route": "/hospital"},
+      {"title": "Clinic", "icon": Icons.apartment, "colors": MedicalBoxColors.clinic, "route": "/clinic"},
       {"title": "Medicine", "icon": Icons.medical_services, "colors": MedicalBoxColors.medicine, "route": "/medicine"},
       {"title": "Lab Test", "icon": Icons.science, "colors": MedicalBoxColors.labTest, "route": "/labtest"},
       {"title": "Blood Bank", "icon": Icons.bloodtype, "colors": MedicalBoxColors.bloodBank, "route": "/bloodbank"},
-      {"title": "Clinic", "icon": Icons.local_hospital, "colors": MedicalBoxColors.clinic, "route": "/clinic"},
-      {"title": "Hospital", "icon": Icons.apartment, "colors": MedicalBoxColors.hospital, "route": "/hospital"},
+      {"title": "Ambulance", "icon": Icons.local_taxi, "colors": MedicalBoxColors.ambulance, "route": "/ambulance"},
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items.map((item) {
-          return _buildMedicalBox(
-            context: context,
-            title: item["title"],
-            icon: item["icon"],
-            colors: item["colors"],
-            route: item["route"],
-          );
-        }).toList(),
+    return SizedBox(
+      height: 80, // Adjust height to fit icons & text properly
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: items.map((item) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6.0),
+              child: _buildMedicalBox(
+                context: context,
+                title: item["title"],
+                icon: item["icon"],
+                colors: item["colors"],
+                route: item["route"],
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -51,8 +57,8 @@ class MedicalBoxRow extends StatelessWidget {
         }
       },
       child: Container(
-        width: 60,
-        height: 60,
+        width: 70, // Slightly wider for better spacing
+        height: 70,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: colors,
@@ -71,12 +77,12 @@ class MedicalBoxRow extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.white),
+            Icon(icon, size: 24, color: Colors.white), // Increased size
             const SizedBox(height: 4),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ],
         ),

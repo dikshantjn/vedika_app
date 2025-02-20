@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
+import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
-import 'package:vedika_healthcare/features/bookAppointment/presentation/view/BookAppointmentPage.dart';
+import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
-
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 
 class AppRoutes {
   static const String medicine = "/medicine";
@@ -17,32 +22,38 @@ class AppRoutes {
   static const String terms = "/terms";
   static const String profile = "/profile";
   static const String vedikaPlus = "/vedikaPlus";
-  static const String donorRegistration = "/DonorRegistrationPage"; // New Route
-  static const String bookAppoinment = "/BookAppointmentPage";
+  static const String donorRegistration = "/DonorRegistrationPage";
+  static const String bookAppointment = "/BookAppointmentPage";
+  static const String ambulanceSearch = "/ambulance";
+  static const String bookClinicAppointment = "/bookClinicAppointment";
+  static const String enableLocation = "/enableLocation"; // New route
+  static const String orderHistory = "/orderHistory"; // New route
+
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
-      // medicine: (context) => MedicinePage(),
-      // labTest: (context) => LabTestPage(),
       bloodBank: (context) => BloodBankMapScreen(),
-      // clinic: (context) => ClinicPage(),
+      ambulanceSearch: (context) => AmbulanceSearchPage(),
+      clinic: (context) => ClinicSearchPage(),
       hospital: (context) => HospitalSearchPage(),
-      // vendor: (context) => VendorPage(),
-      // settings: (context) => SettingsPage(),
-      // help: (context) => HelpPage(),
-      // terms: (context) => TermsPage(),
-      // profile: (context) => ProfilePage(),
-      // vedikaPlus: (context) => VedikaPlusPage(),
       donorRegistration: (context) => DonorRegistrationPage(),
+      enableLocation: (context) => EnableLocationPage(), // Added route for EnableLocationPage
+      orderHistory: (context) => OrderHistoryPage(), // Added route for EnableLocationPage
+
     };
   }
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case bookAppoinment:
-        final hospital = settings.arguments as Map<String, dynamic>; // Get hospital data
+      case bookAppointment:
+        final hospital = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
           builder: (context) => BookAppointmentPage(hospital: hospital),
+        );
+      case bookClinicAppointment:
+        final clinic = settings.arguments as Clinic;
+        return MaterialPageRoute(
+          builder: (context) => BookClinicAppointmentPage(clinic: clinic),
         );
       default:
         return MaterialPageRoute(

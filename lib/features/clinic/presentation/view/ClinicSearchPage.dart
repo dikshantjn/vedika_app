@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/hospital/data/repository/HospitalData.dart';
-import 'package:vedika_healthcare/features/hospital/presentation/widgets/DraggableHospitalList.dart';
+import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
+import 'package:vedika_healthcare/features/clinic/data/repositories/ClinicData.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/widgets/DraggableClinicList.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 const String apiKey = "AIzaSyAPbU5HX04forjDEfpkrhofAyna0cUfboI";
 
-class HospitalSearchPage extends StatefulWidget {
+class ClinicSearchPage extends StatefulWidget {
   @override
-  _HospitalSearchPageState createState() => _HospitalSearchPageState();
+  _ClinicSearchPageState createState() => _ClinicSearchPageState();
 }
 
-class _HospitalSearchPageState extends State<HospitalSearchPage> {
+class _ClinicSearchPageState extends State<ClinicSearchPage> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  List<Map<String, dynamic>> _hospitals = [];
+  List<Clinic> _clinics = [];
   bool _isLoading = true;
   LatLng? _currentPosition;
   List<bool> _expandedItems = [];
   TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _filteredHospitals = [];
+  List<Clinic> _filteredClinics = [];
 
-  void _moveCameraToHospital(double lat, double lng) {
+  void _moveCameraToClinic(double lat, double lng) {
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(LatLng(lat, lng), 14.0),
     );
@@ -32,8 +33,8 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
   void initState() {
     super.initState();
     _loadUserLocation();
-    _filteredHospitals = List.from(_hospitals);
-    _expandedItems = List<bool>.generate(_hospitals.length, (index) => false);
+    _filteredClinics = List.from(_clinics);
+    _expandedItems = List<bool>.generate(_clinics.length, (index) => false);
   }
 
   void _loadUserLocation() async {
@@ -50,36 +51,43 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
       }
 
-      _fetchNearbyHospitals();
-      _addUserLocationMarker(); // Add the user location marker after getting the position
+      _fetchNearbyClinics();
+      _addUserLocationMarker(); // Add user location marker after getting the position
     }
   }
 
-  // Fetch Nearby Hospitals (Static Data for Now)
-  void _fetchNearbyHospitals() {
+  void _fetchNearbyClinics() {
     if (_currentPosition == null) return;
 
     setState(() {
-      _hospitals = HospitalData.getHospitals(context);
-      _filteredHospitals = List.from(_hospitals);
-      _expandedItems = List<bool>.filled(_hospitals.length, false);
+      // Create an instance of ClinicData to access the method
+      var clinicData = ClinicData();
 
-      _markers = _hospitals.map((hospital) {
+      // Fetch clinics using ClinicData and map them to Clinic objects
+      List<Clinic> clinics = clinicData.getClinics(context); // Fetch clinics as List<Clinic>
+
+      _clinics = clinics; // Set clinics to the fetched clinics
+      _filteredClinics = List.from(_clinics);  // Set the filtered list initially to all clinics
+      _expandedItems = List<bool>.filled(_clinics.length, false);  // Ensure the expanded state is correct
+
+      // Set markers on the map
+      _markers = _clinics.map((clinic) {
         return Marker(
-          markerId: MarkerId(hospital["id"]),
-          position: LatLng(hospital["lat"], hospital["lng"]),
-          infoWindow: InfoWindow(title: hospital["name"]),
+          markerId: MarkerId(clinic.id),
+          position: LatLng(clinic.lat, clinic.lng),
+          infoWindow: InfoWindow(title: clinic.name),
           onTap: () {
             setState(() {
-              _filteredHospitals = [hospital];
+              _filteredClinics = [clinic];  // Show only the clicked clinic
               _expandedItems = [true];
             });
-            _moveCameraToHospital(hospital["lat"], hospital["lng"]);
+            _moveCameraToClinic(clinic.lat, clinic.lng);
           },
         );
       }).toSet();
     });
   }
+
 
   // Add Marker for User Location
   void _addUserLocationMarker() {
@@ -91,27 +99,25 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
           markerId: MarkerId("userLocation"),
           position: _currentPosition!,
           infoWindow: InfoWindow(title: "Your Location"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), // Change the marker color to blue
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), // Blue marker
         ),
       );
     });
   }
 
-  void _filterHospitals(String query) {
+  void _filterClinics(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredHospitals = List.from(_hospitals);
+        _filteredClinics = List.from(_clinics);
       } else {
-        _filteredHospitals = _hospitals.where((hospital) {
-          bool matches = hospital["name"].toString().toLowerCase().contains(query.toLowerCase()) ||
-              hospital["address"].toString().toLowerCase().contains(query.toLowerCase()) ||
-              (hospital["doctors"] as List<dynamic>)
-                  .map((doctor) => doctor.toString().toLowerCase())
-                  .any((doctor) => doctor.contains(query.toLowerCase()));
+        _filteredClinics = _clinics.where((clinic) {
+          bool matches = clinic.name.toLowerCase().contains(query.toLowerCase()) ||
+              clinic.address.toLowerCase().contains(query.toLowerCase()) ||
+              clinic.doctors.any((doctor) => doctor.name.toLowerCase().contains(query.toLowerCase()));
           return matches;
         }).toList();
       }
-      _expandedItems = List.generate(_filteredHospitals.length, (index) => false);
+      _expandedItems = List.generate(_filteredClinics.length, (index) => false);
     });
   }
 
@@ -154,7 +160,7 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      _filterHospitals(_searchController.text);
+                      _filterClinics(_searchController.text);
                     },
                     child: Icon(Icons.search, color: Colors.black54),
                   ),
@@ -163,10 +169,10 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
                     child: TextField(
                       controller: _searchController,
                       onChanged: (value) {
-                        _filterHospitals(value);
+                        _filterClinics(value);
                       },
                       decoration: InputDecoration(
-                        hintText: "Search hospitals...",
+                        hintText: "Search clinics...",
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.black54),
                       ),
@@ -177,13 +183,13 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
               ),
             ),
           ),
-          DraggableHospitalList(
-            hospitals: _filteredHospitals.isNotEmpty ? _filteredHospitals : _hospitals,
+          DraggableClinicList(
+            clinics: _filteredClinics.isNotEmpty ? _filteredClinics : _clinics,
             expandedItems: _expandedItems,
-            onHospitalTap: (index, lat, lng) {
+            onClinicTap: (index, lat, lng) {
               setState(() {
                 _expandedItems[index] = !_expandedItems[index];
-                _moveCameraToHospital(lat, lng);
+                _moveCameraToClinic(lat, lng);
               });
             },
           ),
@@ -192,4 +198,3 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
     );
   }
 }
-

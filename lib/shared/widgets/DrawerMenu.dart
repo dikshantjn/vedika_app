@@ -15,12 +15,13 @@ class DrawerMenu extends StatelessWidget {
           _buildSubscriptionSection(context),
           Divider(),
           _buildSection(context, [
-            _buildDrawerItem(context, Icons.medical_services, "Medicine", "/medicine"),
-            _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
-            _buildDrawerItem(context, Icons.calendar_today, "Book Appointment", "/appointment"),
             _buildDrawerItem(context, Icons.local_hospital, "Blood Bank", "/bloodBank"),
-            _buildDrawerItem(context, Icons.local_pharmacy, "Clinic", "/clinic"),
+            _buildDrawerItem(context, Icons.medical_services, "Medicine", "/medicine"),
             _buildDrawerItem(context, Icons.business, "Hospital", "/hospital"),
+            _buildDrawerItem(context, Icons.local_pharmacy, "Clinic", "/clinic"),
+            _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
+            _buildDrawerItem(context, Icons.history, "Order History", "/orderHistory"),
+
           ]),
           Divider(),
           _buildSection(context, [
