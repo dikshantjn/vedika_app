@@ -1,0 +1,43 @@
+name: vedika_healthcare
+description: "Vedika - The health care app"
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  carousel_slider: ^5.0.0
+  dotted_border: ^2.1.0
+  permission_handler: ^11.3.1
+  geolocator: ^13.0.2
+  url_launcher: ^6.3.1
+  telephony: ^0.2.0
+  mobile_number: ^3.0.0
+  google_maps_flutter: ^2.10.0
+  google_places_flutter: ^2.0.5
+  location: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  assets:
+    - assets/health_concern/
+    - assets/brands/
+    - assets/offers/
+    - assets/category/
+
+
+  uses-material-design: true
+
