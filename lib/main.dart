@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/bookAppointment/presentation/viewModal/BookAppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
@@ -29,7 +30,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => locationProvider),
         ChangeNotifierProvider(create: (_) => BookAppointmentViewModel()),
-
+        ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()), // Correct ViewModel
       ],
       child: const MyApp(),
     ),

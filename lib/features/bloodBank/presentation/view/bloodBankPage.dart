@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/bloodBank/data/models/BloodBank.dart';
+import 'package:vedika_healthcare/features/bloodBank/data/repositories/blood_bank_data.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodBankDetailsBottomSheet.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodTypeSelectionDialog.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class BloodBankMapScreen extends StatefulWidget {
@@ -16,32 +21,11 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
   LatLng _currentPosition = LatLng(20.5937, 78.9629);
   final Set<Marker> _markers = {};
   Map<String, dynamic>? _selectedBloodBank;
-  bool _isLoading = true;
-  String googleApiKey = "YOUR_GOOGLE_PLACES_API_KEY"; // Replace with your API Key
+  List<String> _selectedBloodTypes = []; // Define this in your widget's state
+  List<BloodBank> _bloodBanks = []; // Store fetched blood banks
 
-  final List<Map<String, dynamic>> _bloodBanks = [
-    {
-      "name": "Red Cross Blood Bank",
-      "latOffset": 0.005,
-      "lngOffset": 0.005,
-      "address": "123 Red Street, Nearby",
-      "contact": "+91 9876543210"
-    },
-    {
-      "name": "LifeSaver Blood Bank",
-      "latOffset": -0.004,
-      "lngOffset": 0.006,
-      "address": "45 Green Road, Nearby",
-      "contact": "+91 9765432109"
-    },
-    {
-      "name": "Hope Blood Bank",
-      "latOffset": 0.003,
-      "lngOffset": -0.005,
-      "address": "78 White Avenue, Nearby",
-      "contact": "+91 9876123456"
-    }
-  ];
+
+
 
   @override
   void initState() {
@@ -50,260 +34,108 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
   }
 
   Future<void> _initializeMap() async {
-    await _getUserLocation();  // Ensure we get the user's location first
     if (mounted) _addBloodBankMarkers();  // Add blood banks only after location is set
+    _fetchBloodBanks();
+
   }
 
 
   Future<void> _getUserLocation() async {
-    LocationPermission permission = await Geolocator.checkPermission();
+    var locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        _showLocationDeniedDialog();
-        return;
-      }
-    }
+    // Ensure location is loaded from provider
+    await locationProvider.loadSavedLocation();
 
-    if (!mounted) return; // Prevents state updates after async calls
-
-    // Step 1: **Get last known location first**
-    Position? lastKnownPosition;
-    try {
-      lastKnownPosition = await Geolocator.getLastKnownPosition();
-    } catch (e) {
-      print("Error getting last known location: $e");
-    }
-
-    if (lastKnownPosition != null) {
+    if (locationProvider.latitude != null && locationProvider.longitude != null) {
       setState(() {
-        _currentPosition = LatLng(lastKnownPosition!.latitude, lastKnownPosition!.longitude);
+        _currentPosition = LatLng(locationProvider.latitude!, locationProvider.longitude!);
       });
 
-      _mapController.animateCamera(
-        CameraUpdate.newLatLngZoom(_currentPosition, 15),
-      );
-
-      _addBloodBankMarkers();
-    } else {
-      print("No last known location found!");
-    }
-
-
-    // Step 2: **Try getting the current precise location**
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.bestForNavigation,
-        timeLimit: Duration(seconds: 10),
-      );
-
-      if (!mounted) return;
-
-      // Validate new location
-      double distance = lastKnownPosition != null
-          ? Geolocator.distanceBetween(
-          lastKnownPosition.latitude, lastKnownPosition.longitude,
-          position.latitude, position.longitude)
-          : 0;
-
-      if (distance > 1000 && lastKnownPosition != null) {
-        print("Ignoring incorrect far location, using last known.");
-      } else {
-        setState(() {
-          _currentPosition = LatLng(position.latitude, position.longitude);
-        });
-
+      // Ensure mapController is initialized before using it
+      if (_mapController != null) {
         _mapController.animateCamera(
           CameraUpdate.newLatLngZoom(_currentPosition, 15),
         );
-
-        _addBloodBankMarkers();
+        _showBloodTypeSelectionDialog();
+      } else {
+        print("Map controller is not initialized yet.");
       }
-    } catch (e) {
-      print("Error getting current location: $e");
+
+      _addBloodBankMarkers();
+    } else {
+      print("User location not available in provider.");
     }
   }
 
+  void _fetchBloodBanks() {
+    setState(() {
+      _bloodBanks = getBloodBanks(context); // Fetch dynamic blood banks
+    });
 
-
-
-// Show dialog if location is denied
-  void _showLocationDeniedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Location Access Denied"),
-        content: Text("This app requires location access to show nearby blood banks. You can enable it from settings."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Close"),
-          ),
-          TextButton(
-            onPressed: () => Geolocator.openAppSettings(),
-            child: Text("Open Settings"),
-          ),
-        ],
-      ),
-    );
+    _addBloodBankMarkers();
   }
+
 
   void _addBloodBankMarkers() {
     setState(() {
-      _markers.clear();  // Clear old markers before adding new ones
+      _markers.clear();
 
-      // Re-add user location marker
+      // Add user's location marker
       _markers.add(
         Marker(
-          markerId: MarkerId("user_location"),
+          markerId: const MarkerId("user_location"),
           position: _currentPosition,
-          infoWindow: InfoWindow(title: "Your Location"),
+          infoWindow: const InfoWindow(title: "Your Location"),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
 
       for (var bank in _bloodBanks) {
-        LatLng bloodBankPosition = LatLng(
-          _currentPosition.latitude + bank["latOffset"],
-          _currentPosition.longitude + bank["lngOffset"],
-        );
-
-        _markers.add(
-          Marker(
-            markerId: MarkerId(bank["name"]),
-            position: bloodBankPosition,
-            infoWindow: InfoWindow(title: bank["name"]),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-            onTap: () {
-              _showBloodBankDetails(bank, bloodBankPosition);
-            },
+        // Check if at least one selected blood type is available in the bank
+        bool hasSelectedBlood = _selectedBloodTypes.isEmpty || _selectedBloodTypes.any(
+              (selectedType) => bank.availableBlood.any(
+                (blood) => blood.group == selectedType && blood.units > 0,
           ),
         );
+
+        if (hasSelectedBlood) {
+          // Get blood bank position directly from data instead of offset calculations
+          LatLng bloodBankPosition = bank.location;
+
+          _markers.add(
+            Marker(
+              markerId: MarkerId(bank.id),
+              position: bloodBankPosition,
+              infoWindow: InfoWindow(title: bank.name),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+              onTap: () {
+                _showBloodBankDetails(bank,);
+              },
+            ),
+          );
+        }
       }
     });
   }
 
 
-  void _showBloodBankDetails(Map<String, dynamic> bloodBank, LatLng position) {
-    setState(() {
-      _selectedBloodBank = bloodBank;
-    });
 
-    // Dummy blood availability data for the selected blood bank
-    List<Map<String, String>> availableBlood = [
-      {"group": "A+", "units": "5"},
-      {"group": "A-", "units": "3"},
-      {"group": "B+", "units": "7"},
-      {"group": "B-", "units": "2"},
-      {"group": "O+", "units": "10"},
-      {"group": "O-", "units": "1"},
-      {"group": "AB+", "units": "4"},
-      {"group": "AB-", "units": "2"},
-    ];
-
+  void _showBloodBankDetails(BloodBank bloodBank) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       backgroundColor: Colors.grey.shade100,
       builder: (context) {
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(16),
-              constraints: BoxConstraints(minHeight: 350),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Blood Bank Name
-                  Text(
-                    bloodBank["name"],
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-
-                  // Address
-                  Text("📍 Address: ${bloodBank["address"]}"),
-
-                  // Contact
-                  Text("📞 Contact: ${bloodBank["contact"]}"),
-
-                  SizedBox(height: 12),
-
-                  // Available Blood Types Section
-                  Text(
-                    "🩸 Available Blood Types:",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 6),
-
-                  // Blood Group List
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: availableBlood.map((blood) {
-                      return Chip(
-                        label: Text(
-                          "${blood["group"]}: ${blood["units"]} units",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Colors.red.shade100,
-                      );
-                    }).toList(),
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // Get Directions Button
-                  ElevatedButton.icon(
-                    onPressed: () => _openGoogleMaps(position),
-                    icon: Icon(Icons.directions, color: Colors.white,),
-                    label: Text("Get Directions"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorPalette.primaryColor,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Close Button
-            Positioned(
-              top: -50,
-              right: 16,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Icon(Icons.close, size: 24, color: Colors.black54),
-                ),
-              ),
-            ),
-          ],
+        return BloodBankDetailsBottomSheet(
+          bloodBank: bloodBank,
+          onGetDirections: _openGoogleMaps, // Pass the function directly
         );
       },
     );
   }
-
 
 
   void _openGoogleMaps(LatLng position) async {
@@ -334,7 +166,8 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
             flex: 4,
             child: GoogleMap(
               onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
+                _mapController = controller; // Initialize map controller
+                _getUserLocation(); // Call after map is ready
               },
               initialCameraPosition: CameraPosition(target: _currentPosition!, zoom: 14),
               markers: _markers,
@@ -392,6 +225,23 @@ class _BloodBankMapState extends State<BloodBankMapScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showBloodTypeSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BloodTypeSelectionDialog(
+          selectedBloodTypes: _selectedBloodTypes, // Pass previously selected types
+          onBloodTypesSelected: (List<String> selectedTypes) {
+            setState(() {
+              _selectedBloodTypes = selectedTypes; // Update selected types
+            });
+            _addBloodBankMarkers();
+          },
+        );
+      },
     );
   }
 }

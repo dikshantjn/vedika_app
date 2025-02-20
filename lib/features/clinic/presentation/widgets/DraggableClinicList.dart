@@ -1,30 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 
-class DraggableHospitalList extends StatelessWidget {
-  final List<Map<String, dynamic>> hospitals;
+class DraggableClinicList extends StatelessWidget {
+  final List<Clinic> clinics;
   final List<bool> expandedItems;
-  final Function(int, double, double) onHospitalTap;
+  final Function(int, double, double) onClinicTap;
 
-  DraggableHospitalList({
-    required this.hospitals,
+  DraggableClinicList({
+    required this.clinics,
     required this.expandedItems,
-    required this.onHospitalTap,
+    required this.onClinicTap,
   });
 
-  Widget buildDetailRow(String key, String value) {
+  Widget buildDetailRow(IconData icon, String key, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            key,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.blueGrey[400],
-              fontSize: 14,
-            ),
+          Row(
+            children: [
+              Icon(icon, color: Colors.blueGrey[600], size: 16),
+              SizedBox(width: 8),
+              Text(
+                key,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blueGrey[400],
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
           SizedBox(width: 8),
           Expanded(
@@ -43,7 +49,7 @@ class DraggableHospitalList extends StatelessWidget {
     );
   }
 
-  Widget buildDoctorChip(Map<String, dynamic> doctor) {
+  Widget buildDoctorChip(Doctor doctor) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -54,7 +60,7 @@ class DraggableHospitalList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "${doctor["name"]} - ${doctor["specialization"]}",
+            "${doctor.name} - ${doctor.specialization}",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -62,7 +68,7 @@ class DraggableHospitalList extends StatelessWidget {
             ),
           ),
           Text(
-            "Fee: ₹${doctor["fee"]} | Slots: ${doctor["timeSlots"].join(", ")}",
+            "Fee: ₹${doctor.fee} | Slots: ${doctor.timeSlots.join(", ")}",
             style: TextStyle(
               fontSize: 12,
               color: Colors.blueGrey[600],
@@ -100,18 +106,18 @@ class DraggableHospitalList extends StatelessWidget {
                 ),
               ),
               Text(
-                "Nearby Hospitals",
+                "Nearby Clinics",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: Colors.blueGrey[800],
                 ),
               ),
-              if (hospitals.isEmpty || hospitals.length != expandedItems.length)
+              if (clinics.isEmpty || clinics.length != expandedItems.length)
                 Flexible(
                   child: Center(
                     child: Text(
-                      "No hospitals found nearby or matching your search.",
+                      "No clinics found nearby or matching your search.",
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.blueGrey[700]),
                     ),
@@ -121,13 +127,13 @@ class DraggableHospitalList extends StatelessWidget {
                 Expanded(
                   child: ListView.builder(
                     controller: controller,
-                    itemCount: hospitals.length,
+                    itemCount: clinics.length,
                     itemBuilder: (_, index) {
-                      var hospital = hospitals[index];
+                      var clinic = clinics[index];
                       bool isExpanded = expandedItems[index];
 
                       return GestureDetector(
-                        onTap: () => onHospitalTap(index, hospital["lat"], hospital["lng"]),
+                        onTap: () => onClinicTap(index, clinic.lat, clinic.lng),
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 300),
                           padding: EdgeInsets.all(16),
@@ -144,7 +150,7 @@ class DraggableHospitalList extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      hospital["name"],
+                                      clinic.name,
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -158,32 +164,22 @@ class DraggableHospitalList extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 8),
                               Row(
                                 children: [
                                   Icon(Icons.location_on, color: Colors.blueGrey[600], size: 16),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      hospital["address"],
+                                      clinic.address,
                                       style: TextStyle(color: Colors.blueGrey[600], fontSize: 14),
-                                      overflow: TextOverflow.ellipsis, // optional, to avoid overflow with long text
                                     ),
                                   ),
                                 ],
                               ),
                               if (isExpanded) ...[
                                 Divider(color: Colors.blueGrey[300]),
-                                buildDetailRow("Phone:", hospital["contact"]),
-                                buildDetailRow("Email:", hospital["email"]),
-                                buildDetailRow("Website:", hospital["website"]),
-                                buildDetailRow("Specialties:", hospital["specialties"].join(", ")),
-                                buildDetailRow("Available Beds:", "${hospital["beds"]}"),
-                                buildDetailRow("Ratings:", "${hospital["ratings"]} ⭐"),
-                                buildDetailRow("Services:", hospital["services"].join(", ")),
-                                buildDetailRow("Visiting Hours:", hospital["visitingHours"]),
-                                buildDetailRow("Insurance:", hospital["insuranceProviders"].join(", ")),
-                                buildDetailRow("Labs:", hospital["labs"].join(", ")),
+                                buildDetailRow(Icons.phone, "Phone:", clinic.contact),
+                                buildDetailRow(Icons.health_and_safety, "Specialties:", clinic.specialties.join(", ")),
                                 Divider(color: Colors.blueGrey[300]),
                                 SizedBox(height: 10),
                                 Text(
@@ -197,17 +193,18 @@ class DraggableHospitalList extends StatelessWidget {
                                 Wrap(
                                   spacing: 8.0,
                                   runSpacing: 8.0,
-                                  children: hospital["doctors"]
+                                  children: clinic.doctors
                                       .map<Widget>((doctor) => buildDoctorChip(doctor))
                                       .toList(),
                                 ),
                                 SizedBox(height: 12),
                                 ElevatedButton.icon(
                                   onPressed: () {
+                                    // Push to the Book Appointment screen with clinic data
                                     Navigator.pushNamed(
                                       context,
-                                      AppRoutes.bookAppointment,
-                                      arguments: hospital,
+                                      '/bookClinicAppointment',
+                                      arguments: clinic,
                                     );
                                   },
                                   icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
