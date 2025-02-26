@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBloodBankLocationServiceScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
@@ -28,6 +29,8 @@ class AppRoutes {
   static const String bookClinicAppointment = "/bookClinicAppointment";
   static const String enableLocation = "/enableLocation"; // New route
   static const String orderHistory = "/orderHistory"; // New route
+  static const String enableBloodBankLocation = "/enableBloodBankLocation"; // New route
+
 
 
   static Map<String, WidgetBuilder> getRoutes() {
@@ -39,6 +42,8 @@ class AppRoutes {
       donorRegistration: (context) => DonorRegistrationPage(),
       enableLocation: (context) => EnableLocationPage(), // Added route for EnableLocationPage
       orderHistory: (context) => OrderHistoryPage(), // Added route for EnableLocationPage
+      enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(), // Added route for EnableLocationPage
+
 
     };
   }

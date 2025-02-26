@@ -1,24 +1,29 @@
-import 'package:geolocator/geolocator.dart';
 import 'package:telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_number/mobile_number.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class EmergencyService {
   final Telephony telephony = Telephony.instance;
   final String emergencyNumber = "+919370320066"; // Emergency contact
   String senderNumber = "Unknown"; // Mobile number of the device
-  Position? lastKnownPosition; // Store location in advance
+  late LocationProvider locationProvider; // Use existing LocationProvider
+
+  EmergencyService(this.locationProvider);
 
   // ✅ Initialize on App Startup
   Future<void> initialize() async {
     print("🔄 Initializing EmergencyService...");
+
     bool hasPermissions = await _requestPermissions();
     if (!hasPermissions) {
       print("❌ Permissions not granted. Some features may not work.");
       return;
     }
+
     await _getMobileNumber();  // Fetch device number
-    await _fetchLocation();  // Get location in advance
+    await locationProvider.initializeLocation(); // Ensure location is available
+
     print("✅ EmergencyService is ready!");
   }
 
@@ -28,7 +33,7 @@ class EmergencyService {
       Permission.phone,
       Permission.sms,
       Permission.location,
-      Permission.contacts,  // Ensure permission for getting the mobile number
+      Permission.contacts,
     ].request();
 
     if (statuses[Permission.phone] != PermissionStatus.granted ||
@@ -41,38 +46,22 @@ class EmergencyService {
     return true;
   }
 
+  // ✅ Get Device Mobile Number
   Future<void> _getMobileNumber() async {
     try {
       bool hasPermission = await MobileNumber.hasPhonePermission;
-      print("_getMobileNumber : $hasPermission");
       if (!hasPermission) {
         await MobileNumber.requestPhonePermission;
       }
 
       List<SimCard>? simCards = await MobileNumber.getSimCards;
-
       if (simCards != null && simCards.isNotEmpty) {
-        print("📲 Available SIM Cards: ${simCards.map((sim) => sim.number).toList()}");
         senderNumber = simCards.first.number ?? "Unknown";
       }
 
       print("📞 Device Mobile Number: $senderNumber");
     } catch (e) {
       print("❌ Error fetching mobile number: $e");
-    }
-  }
-
-
-  // ✅ Fetch Location in Advance
-  Future<void> _fetchLocation() async {
-    try {
-      print("📍 Fetching initial location...");
-      lastKnownPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      print("✅ Location fetched: ${lastKnownPosition?.latitude}, ${lastKnownPosition?.longitude}");
-    } catch (e) {
-      print("❌ Error fetching location: $e");
     }
   }
 
@@ -89,16 +78,14 @@ class EmergencyService {
 
   // ✅ Send Emergency SMS
   Future<void> _sendEmergencySMS() async {
-    if (lastKnownPosition == null) {
+    if (!locationProvider.isLocationLoaded) {
       print("❌ Location not available. Trying to fetch again...");
-      await _fetchLocation(); // Try fetching again if needed
+      await locationProvider.fetchAndSaveLocation();
     }
 
     String message = "Emergency! Need immediate help.\n"
-        "Location: https://maps.google.com/?q=${lastKnownPosition?.latitude},${lastKnownPosition?.longitude}\n"
-        "Caller:$senderNumber";
-
-    print(message);
+        "Location: https://maps.google.com/?q=${locationProvider.latitude},${locationProvider.longitude}\n"
+        "Caller: $senderNumber";
 
     print("📨 Checking SMS permission...");
     bool canSendSms = (await telephony.requestSmsPermissions) ?? false;

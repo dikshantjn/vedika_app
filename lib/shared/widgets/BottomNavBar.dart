@@ -1,8 +1,10 @@
 import 'dart:developer';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/EmergencyDialog.dart';
 
 class BottomNavBar extends StatefulWidget {
@@ -22,7 +24,7 @@ class BottomNavBar extends StatefulWidget {
 class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMixin {
   late AnimationController _gradientController;
   late Animation<double> _gradientAnimation;
-  final EmergencyService _emergencyService = EmergencyService();
+  EmergencyService? _emergencyService;
   late NotchBottomBarController _controller;
   late Animation<Color?> _blinkAnimation;
   late AnimationController _blinkController;
@@ -53,6 +55,12 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _emergencyService ??= EmergencyService(context.read<LocationProvider>());
+  }
+
+  @override
   void didUpdateWidget(BottomNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Force the Speak button to always appear active
@@ -73,7 +81,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
       builder: (BuildContext context) {
         return EmergencyDialog(
           onCallPressed: () {
-            _emergencyService.triggerEmergency();
+            _emergencyService!.triggerEmergency();
           },
         );
       },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulancePaymentService.dart';
 
 class AmbulancePaymentDialog extends StatelessWidget {
@@ -37,7 +38,7 @@ class AmbulancePaymentDialog extends StatelessWidget {
 
     paymentService.openPaymentGateway(
       amount: totalAmount, // Example amount in INR
-      key: 'rzp_test_uMMypIJ2X2bn1N', // Replace with your Razorpay API key
+      key: ApiConstants.razorpayApiKey, // Replace with your Razorpay API key
       userPhone: 'USER_PHONE_NUMBER', // Replace with actual user phone number
       userEmail: 'USER_EMAIL', // Replace with actual user email
     );

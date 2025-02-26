@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tab
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/LabTestTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/MedicineTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/AppointmentTab.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BloodBankTab.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class OrderHistoryPage extends StatefulWidget {
@@ -11,122 +12,100 @@ class OrderHistoryPage extends StatefulWidget {
   _OrderHistoryPageState createState() => _OrderHistoryPageState();
 }
 
-class _OrderHistoryPageState extends State<OrderHistoryPage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _OrderHistoryPageState extends State<OrderHistoryPage> {
+  int _selectedIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    //krushna
-  }
+  final List<Widget> _verticals = [
+    MedicineTab(),
+    AmbulanceTab(),
+    AppointmentTab(),
+    LabTestTab(),
+    BloodBankTab(),
+  ];
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  final List<String> _verticalTitles = [
+    'Medicine',
+    'Ambulance',
+    'Appointment',
+    'Lab Test',
+    'Blood Bank',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: ColorPalette.primaryColor,
         foregroundColor: Colors.white,
         centerTitle: true,
-        elevation: 5,
+        elevation: 6,
         title: Text(
           "Order History",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 22,
+            letterSpacing: 1.2, // Added letter spacing for a modern look
           ),
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [ColorPalette.primaryColor, ColorPalette.primaryColor],
+              colors: [ColorPalette.primaryColor, ColorPalette.primaryColor.withOpacity(0.7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.7),
-            indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(width: 4.0, color: Colors.black), // White underline
-              insets: EdgeInsets.symmetric(horizontal: 16.0), // Adjust the width of the underline
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(60), // Slightly taller for better spacing
+          child: Container(
+            height: 60,
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _verticalTitles.length,
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: ChoiceChip(
+                    label: Text(
+                      _verticalTitles[index],
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16, // Slightly smaller font size for better readability
+                      ),
+                    ),
+                    selected: _selectedIndex == index,
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                    selectedColor: ColorPalette.primaryColor, // Consistent with AppBar
+                    backgroundColor: Colors.grey.shade200,
+                    labelStyle: TextStyle(
+                      color: _selectedIndex == index ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25), // Larger radius for a more modern look
+                      side: BorderSide(
+                        color: _selectedIndex == index ? Colors.white : Colors.transparent, // White border on selected
+                        width: 2, // Border width
+                      ),
+                    ),
+                    elevation: 3, // Slight elevation for better focus effect
+                  ),
+                );
+              },
             ),
-          indicatorWeight: 3.0,
-          tabs: [
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: Text(
-                  'Medicine',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: Text(
-                  'Ambulance',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: Text(
-                  'Appointment',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            Tab(
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: Text(
-                  'Lab Test',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
       drawer: DrawerMenu(),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          MedicineTab(),
-          AmbulanceTab(),
-          AppointmentTab(),
-          LabTestTab(),
-        ],
-      ),
+      body: _verticals[_selectedIndex], // Display selected tab content
     );
   }
 }

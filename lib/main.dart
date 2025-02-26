@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
@@ -33,7 +34,7 @@ void main() async {
   ));
 
   // Initialize Emergency Service
-  final EmergencyService emergencyService = EmergencyService();
+  final EmergencyService emergencyService = EmergencyService(locationProvider);
   emergencyService.initialize();
 
   // ✅ Initialize Notification Service (so notifications work properly)
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BookAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()), // Correct ViewModel
       ],
+
       child: const MyApp(),
     ),
   );
@@ -56,20 +58,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Vedika Healthcare',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => BloodBankViewModel(context), // Initialize BloodBankViewModel here
+      child: MaterialApp(
+        title: 'Vedika Healthcare',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        navigatorKey: navigatorKey, // ✅ Set navigator key
+        initialRoute: "/",
+        onGenerateRoute: AppRoutes.generateRoute, // Handles dynamic routes like BookAppointmentPage
+        routes: {
+          "/": (context) => const HomePage(),
+          ...AppRoutes.getRoutes(), // Include All App Routes
+        },
       ),
-      navigatorKey: navigatorKey, // ✅ Set navigator key
-      initialRoute: "/",
-      onGenerateRoute: AppRoutes.generateRoute, // Handles dynamic routes like BookAppointmentPage
-      routes: {
-        "/": (context) => const HomePage(),
-        ...AppRoutes.getRoutes(), // Include All App Routes
-      },
     );
   }
 }

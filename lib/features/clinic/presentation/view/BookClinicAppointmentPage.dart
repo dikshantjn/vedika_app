@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
@@ -166,7 +167,7 @@ class BookClinicAppointmentPage extends StatelessWidget {
                   } else {
                     razorpayService.openPaymentGateway(
                       viewModel.selectedDoctor!.fee,
-                      'rzp_test_uMMypIJ2X2bn1N',
+                      ApiConstants.razorpayApiKey,
                       'Appointment Fee\nConsultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
                       'Consultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
                     );

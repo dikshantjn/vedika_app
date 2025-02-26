@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/hospital/data/service/RazorpayService.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
@@ -228,7 +229,7 @@ class BookAppointmentPage extends StatelessWidget {
                     // Trigger Razorpay payment gateway
                     razorpayService.openPaymentGateway(
                       viewModel.selectedDoctor!['fee'],
-                      'rzp_test_uMMypIJ2X2bn1N', // Use your Razorpay Key
+                      ApiConstants.razorpayApiKey, // Use your Razorpay Key
                       'Appointment Fee\nConsultation appointment with ${viewModel.selectedDoctor!['name']}',
                       'Consultation appointment with ${viewModel.selectedDoctor!['name']}',
                     );

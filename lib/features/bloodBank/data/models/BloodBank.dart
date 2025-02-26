@@ -7,6 +7,7 @@ class BloodBank {
   final String address;
   final String contact;
   final List<BloodUnit> availableBlood;
+  bool isRequestAccepted; // <-- Added field to track request acceptance
 
   BloodBank({
     required this.id,
@@ -15,6 +16,7 @@ class BloodBank {
     required this.address,
     required this.contact,
     required this.availableBlood,
+    this.isRequestAccepted = false, // Default to false
   });
 
   /// Convert JSON to `BloodBank` (for API integration)
@@ -31,6 +33,7 @@ class BloodBank {
       availableBlood: (json["availableBlood"] as List)
           .map((blood) => BloodUnit.fromJson(blood))
           .toList(),
+      isRequestAccepted: json["isRequestAccepted"] ?? false, // Added to handle API response
     );
   }
 
@@ -46,7 +49,13 @@ class BloodBank {
       "address": address,
       "contact": contact,
       "availableBlood": availableBlood.map((blood) => blood.toJson()).toList(),
+      "isRequestAccepted": isRequestAccepted, // Added to store acceptance status
     };
+  }
+
+  /// Function to update the blood request status
+  void acceptRequest() {
+    isRequestAccepted = true;
   }
 }
 
