@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/BrandSection.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/CategoryGrid.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/HealthConcernSection.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/OfferSlider.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BannerSlider.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BrandSection.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/CategoryGrid.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/HealthConcernSection.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/SearchBox.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/SearchBox.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/MedicalBox.dart'; // Import MedicalBox widget
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart'; // Import MedicalBox widget
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -154,7 +154,7 @@ class _HomePageState extends State<HomePage> {
                 SearchBox(controller: _searchController),
                 MedicalBoxRow(),
                 SizedBox(height: 10),
-                OfferSlider(),
+                BannerSlider(),
                 HealthConcernSection(),
                 CategoryGrid(),
                 BrandSection(),

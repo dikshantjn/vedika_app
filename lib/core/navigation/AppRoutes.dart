@@ -9,10 +9,11 @@ import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAp
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 
 class AppRoutes {
-  static const String medicine = "/medicine";
+  static const String medicineOrder = "/medicineOrder";
   static const String labTest = "/labTest";
   static const String bloodBank = "/bloodBank";
   static const String clinic = "/clinic";
@@ -43,6 +44,8 @@ class AppRoutes {
       enableLocation: (context) => EnableLocationPage(), // Added route for EnableLocationPage
       orderHistory: (context) => OrderHistoryPage(), // Added route for EnableLocationPage
       enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(), // Added route for EnableLocationPage
+
+      medicineOrder: (context) => MedicineOrderScreen(), // Added route for EnableLocationPage
 
 
     };

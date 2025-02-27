@@ -175,4 +175,5 @@ class LocationProvider with ChangeNotifier {
       print("❌ Error loading location: $e");
     }
   }
+
 }

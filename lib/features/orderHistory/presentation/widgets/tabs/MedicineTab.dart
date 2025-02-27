@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/repositories/MedicineOrder.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/models/MedicineOrder.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/MedicineOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/CustomOrderInfoDialog.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomOrderInfoDialog.dart';
 
 class MedicineTab extends StatelessWidget {
   final MedicineOrderViewModel viewModel = MedicineOrderViewModel();
