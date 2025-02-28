@@ -41,7 +41,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
         if (!context.mounted) return; // Check if widget is still in the tree
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => EnableLocationPage()),
+          MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "ambulance",)),
         );
         isLocationEnabled = false;
         if (mounted) notifyListeners(); // Prevent calling after dispose

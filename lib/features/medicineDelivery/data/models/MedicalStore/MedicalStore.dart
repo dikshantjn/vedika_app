@@ -1,3 +1,5 @@
+import 'package:vedika_healthcare/features/medicineDelivery/data/models/MedicalStore/MedicineProduct.dart';
+
 class MedicalStore {
   final String id;
   final String name;
@@ -5,6 +7,7 @@ class MedicalStore {
   final double latitude;
   final double longitude;
   final String contact;
+  final List<MedicineProduct> medicines;
 
   MedicalStore({
     required this.id,
@@ -13,6 +16,7 @@ class MedicalStore {
     required this.latitude,
     required this.longitude,
     required this.contact,
+    required this.medicines,
   });
 
   // Convert JSON to Model
@@ -24,6 +28,9 @@ class MedicalStore {
       latitude: json['latitude'].toDouble(),
       longitude: json['longitude'].toDouble(),
       contact: json['contact'],
+      medicines: (json['medicines'] as List)
+          .map((medicine) => MedicineProduct.fromJson(medicine))
+          .toList(),
     );
   }
 
@@ -36,6 +43,7 @@ class MedicalStore {
       'latitude': latitude,
       'longitude': longitude,
       'contact': contact,
+      'medicines': medicines.map((medicine) => medicine.toJson()).toList(),
     };
   }
 }

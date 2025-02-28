@@ -3,9 +3,9 @@ import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_not
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
+import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/shared/widgets/EmergencyDialog.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
@@ -79,11 +79,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return EmergencyDialog(
-          onCallPressed: () {
-            _emergencyService!.triggerEmergency();
-          },
-        );
+        return EmergencyDialog(ambulanceNumber: "9370320066",bloodBankNumber: "9370320066",doctorNumber: "9370320066",);
       },
     );
   }

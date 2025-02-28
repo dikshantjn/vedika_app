@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseFileWidget.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/PlaceOrderWidget.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/EnableLocationWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/EnableLocationWidget.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
@@ -40,7 +39,7 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => MedicineOrderViewModel(),
+      create: (_) => MedicineOrderViewModel(context),
       child: Consumer<LocationProvider>(
         builder: (context, locationProvider, child) {
           return Scaffold(
@@ -98,12 +97,6 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> {
                               onLocationEnabled: _onLocationEnabled, // Pass the callback
                             ),
                           ),
-                        ),
-                        // Place Order Button (Enabled when conditions met)
-                        PlaceOrderWidget(
-                          placeOrderAction: viewModel.uploadPrescription,
-                          isPlaceOrderEnabled: viewModel.isPlaceOrderEnabled,
-                          isPrescriptionUploaded: viewModel.prescription != null,
                         ),
                       ],
                     ),

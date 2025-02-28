@@ -109,35 +109,37 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // Cart Icon
-                  Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: ColorPalette.primaryColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          onPressed: () {},
-                          icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
-                        ),
-                      ),
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                          constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-                          child: Text(
-                            '3',
-                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ],
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: ColorPalette.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                ],
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, "/goToCart");
+                    },
+                    icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
+                  ),
+                ),
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      '3', // Replace with actual cart item count
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            )
+            ],
               ),
             ),
           ),

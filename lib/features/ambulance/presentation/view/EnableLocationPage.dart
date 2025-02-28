@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
 
 class EnableLocationPage extends StatelessWidget {
+  final String fromSource; // Added parameter to determine source
+
+  // Constructor accepts fromSource to determine navigation behavior
+  const EnableLocationPage({Key? key, required this.fromSource}) : super(key: key);
+
   Future<void> _enableLocation(BuildContext context) async {
     Location location = Location();
 
@@ -31,11 +38,26 @@ class EnableLocationPage extends StatelessWidget {
       }
     }
 
-    // Navigate to AmbulanceSearchPage after enabling location
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => AmbulanceSearchPage()),
-    );
+    // Based on the source, navigate to the correct page
+    if (fromSource == 'emergency') {
+      Navigator.pop(context); // Go back to the emergency dialog
+    } else if (fromSource == 'ambulance') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AmbulanceSearchPage()),
+      );
+    } else if (fromSource == 'blood_bank') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => BloodBankMapScreen()),
+      );
+    }
+    else if (fromSource == 'hospital') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HospitalSearchPage()),
+      );
+    }
   }
 
   @override
@@ -57,7 +79,7 @@ class EnableLocationPage extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Text(
-              "We need your location to find the nearest ambulances",
+              "We need your location to find the nearest service.",
               style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               textAlign: TextAlign.center,
             ),

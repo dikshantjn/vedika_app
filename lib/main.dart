@@ -3,13 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodal/HealthDaysViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodal/homePageViewModal/BannerViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
-import 'package:vedika_healthcare/features/home/data/services/EmergencyService.dart';
+import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/data/services/CartService.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
@@ -50,14 +55,22 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => locationProvider),
         ChangeNotifierProvider(create: (_) => BookAppointmentViewModel()),
-        ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()), // Correct ViewModel
+        ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => LabTestViewModel()),
         ChangeNotifierProvider(create: (_) => BloodBankOrderViewModel()),
         ChangeNotifierProvider(create: (_) => BannerViewModel()),
         ChangeNotifierProvider(create: (_) => HealthDaysViewModel()),
-        ChangeNotifierProvider(create: (_) => MedicineOrderViewModel()),
-      ],
 
+        // ✅ Add CartViewModel
+        ChangeNotifierProvider(create: (_) => CartViewModel(CartService())),
+        ChangeNotifierProvider(create: (_) => DeliveryPartnerViewModel()),
+
+        ChangeNotifierProvider(create: (context) => EmergencyViewModel()),
+        Provider(create: (context) => EmergencyService(context.read<LocationProvider>())),
+
+        ChangeNotifierProvider(create: (context) => HospitalSearchViewModel()),
+
+      ],
       child: const MyApp(),
     ),
   );

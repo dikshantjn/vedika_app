@@ -1,62 +1,130 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:url_launcher/url_launcher.dart'; // For making a call
 
 class ChooseFileWidget extends StatelessWidget {
   final Function pickPrescription;
 
   ChooseFileWidget({required this.pickPrescription});
 
+  // Method to initiate the call
+  Future<void> _makeCall() async {
+    final Uri phoneUrl = Uri(scheme: 'tel', path: '+911234567890'); // Replace with the desired phone number
+    if (await canLaunch(phoneUrl.toString())) {
+      await launch(phoneUrl.toString());
+    } else {
+      throw 'Could not launch $phoneUrl';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.all(25),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
+          gradient: LinearGradient(
+            colors: [ColorPalette.whiteColor.withOpacity(0.2), Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.1),
               spreadRadius: 3,
-              blurRadius: 10,
-              offset: Offset(0, 5), // Shadow position
+              blurRadius: 8,
+              offset: Offset(0, 4),
             ),
           ],
         ),
-        width: MediaQuery.of(context).size.width * 0.85,  // Adjust width
+        width: MediaQuery.of(context).size.width * 0.9, // Slightly wider for better aesthetics
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Lottie.asset(
               'assets/animations/uploadPrescription.json',
-              width: 200,
-              height: 200,
+              width: 260,
+              height: 260,
               fit: BoxFit.cover,
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 5), // Reduced space between animation and text
             Text(
-              "Upload Prescription",
+              "Upload Your Prescription",
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: ColorPalette.primaryColor,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "You can upload up to 3 files, each less than 5MB.",
+              style: TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 25),
+            ElevatedButton(
+              onPressed: () async {
+                await pickPrescription(context); // Ensure the method is awaited
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 5,
+                backgroundColor: ColorPalette.primaryColor,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.upload_file, color: Colors.white, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    "Choose File",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await pickPrescription(context);  // Ensure the method is awaited
-              },
-              icon: Icon(Icons.upload_file, color: Colors.white),
-              label: Text("Choose File"),
+            Divider(color: Colors.grey), // Horizontal divider
+            SizedBox(height: 12),
+            Text(
+              "Don't have a prescription? No worries!",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+            SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _makeCall, // Make the call
               style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.primaryColor,
-                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                elevation: 5,
+                backgroundColor: ColorPalette.medicineColor, // Change color for the call button
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.call, color: Colors.white, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    "Call for Help",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
               ),
             ),
           ],
