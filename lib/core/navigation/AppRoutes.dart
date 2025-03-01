@@ -9,6 +9,9 @@ import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAp
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
+import 'package:vedika_healthcare/features/labTest/data/models/LabModel.dart';
+import 'package:vedika_healthcare/features/labTest/presentation/view/BookLabTestAppointmentPage.dart';
+import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/CartScreen.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
@@ -33,6 +36,7 @@ class AppRoutes {
   static const String orderHistory = "/orderHistory"; // New route
   static const String enableBloodBankLocation = "/enableBloodBankLocation"; // New route
   static const String goToCart = "/goToCart"; // New route
+  static const String bookLabTestAppointment = "/bookLabTestAppointment";
 
 
 
@@ -50,6 +54,8 @@ class AppRoutes {
       medicineOrder: (context) => MedicineOrderScreen(), // Added route for EnableLocationPage
       goToCart: (context) => CartScreen(), // Added route for EnableLocationPage
 
+      labTest: (context) => LabSearchPage(), // Added route for EnableLocationPage
+
     };
   }
 
@@ -60,15 +66,24 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => BookAppointmentPage(hospital: hospital),
         );
+
       case bookClinicAppointment:
         final clinic = settings.arguments as Clinic;
         return MaterialPageRoute(
           builder: (context) => BookClinicAppointmentPage(clinic: clinic),
         );
+
+      case bookLabTestAppointment:
+        final lab = settings.arguments as LabModel;  // Extracting LabModel argument
+        return MaterialPageRoute(
+          builder: (context) => BookLabTestAppointmentPage(lab: lab),
+        );
+
       default:
         return MaterialPageRoute(
           builder: (context) => Scaffold(body: Center(child: Text('Page Not Found'))),
         );
     }
   }
+
 }

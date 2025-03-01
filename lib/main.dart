@@ -12,6 +12,8 @@ import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookA
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
+import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
+import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTestAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/CartService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
@@ -69,6 +71,10 @@ void main() async {
         Provider(create: (context) => EmergencyService(context.read<LocationProvider>())),
 
         ChangeNotifierProvider(create: (context) => HospitalSearchViewModel()),
+        ChangeNotifierProvider(create: (context) => LabSearchViewModel()),
+        ChangeNotifierProvider(create: (context) => LabTestAppointmentViewModel()),
+
+
 
       ],
       child: const MyApp(),

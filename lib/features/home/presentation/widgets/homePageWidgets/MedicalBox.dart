@@ -11,7 +11,7 @@ class MedicalBoxRow extends StatelessWidget {
       {"title": "Hospital", "icon": Icons.local_hospital, "colors": MedicalBoxColors.hospital, "route": "/hospital"},
       {"title": "Clinic", "icon": Icons.apartment, "colors": MedicalBoxColors.clinic, "route": "/clinic"},
       {"title": "Medicine", "icon": Icons.medical_services, "colors": MedicalBoxColors.medicine, "route": "/medicineOrder"},
-      {"title": "Lab Test", "icon": Icons.science, "colors": MedicalBoxColors.labTest, "route": "/labtest"},
+      {"title": "Lab Test", "icon": Icons.science, "colors": MedicalBoxColors.labTest, "route": "/labTest"},
       {"title": "Blood Bank", "icon": Icons.bloodtype, "colors": MedicalBoxColors.bloodBank, "route": "/bloodbank"},
       {"title": "Ambulance", "icon": Icons.local_taxi, "colors": MedicalBoxColors.ambulance, "route": "/ambulance"},
     ];
