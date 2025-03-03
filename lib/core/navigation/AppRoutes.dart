@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/features/Profile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
-import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBloodBankLocationServiceScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
@@ -14,6 +14,7 @@ import 'package:vedika_healthcare/features/labTest/presentation/view/BookLabTest
 import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/CartScreen.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
+import 'package:vedika_healthcare/features/notifications/presentation/view/NotificationPage.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 
 class AppRoutes {
@@ -32,11 +33,14 @@ class AppRoutes {
   static const String bookAppointment = "/BookAppointmentPage";
   static const String ambulanceSearch = "/ambulance";
   static const String bookClinicAppointment = "/bookClinicAppointment";
-  static const String enableLocation = "/enableLocation"; // New route
   static const String orderHistory = "/orderHistory"; // New route
   static const String enableBloodBankLocation = "/enableBloodBankLocation"; // New route
   static const String goToCart = "/goToCart"; // New route
   static const String bookLabTestAppointment = "/bookLabTestAppointment";
+  static const String notification = "/notification";
+  static const String userProfile = "/userProfile";
+
+
 
 
 
@@ -55,6 +59,10 @@ class AppRoutes {
       goToCart: (context) => CartScreen(), // Added route for EnableLocationPage
 
       labTest: (context) => LabSearchPage(), // Added route for EnableLocationPage
+      notification: (context) => NotificationPage(), // Added route for EnableLocationPage
+      userProfile: (context) => UserProfilePage(), // Added route for EnableLocationPage
+
+
 
     };
   }

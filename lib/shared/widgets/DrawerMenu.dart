@@ -21,6 +21,8 @@ class DrawerMenu extends StatelessWidget {
             _buildDrawerItem(context, Icons.local_pharmacy, "Clinic", "/clinic"),
             _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
             _buildDrawerItem(context, Icons.history, "Order History", "/orderHistory"),
+            _buildDrawerItem(context, Icons.notification_important, "Notification/Remainder", "/notification"),
+
 
           ]),
           Divider(),
@@ -35,8 +37,9 @@ class DrawerMenu extends StatelessWidget {
     );
   }
 
-  /// **Builds the drawer header with profile info**
   Widget _buildHeader(BuildContext context) {
+    double profileCompletion = 0.50; // Example value, this should come from your ViewModel
+
     return Container(
       color: ColorPalette.primaryColor,
       padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -45,10 +48,48 @@ class DrawerMenu extends StatelessWidget {
           SizedBox(height: 20), // Moves everything down slightly
           Row(
             children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
+              // Stack to create circular progress around the avatar
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Circular progress indicator (this is the circular line around the avatar)
+                  SizedBox(
+                    width: 64, // Slightly larger than the avatar to accommodate the progress indicator
+                    height: 64,
+                    child: CircularProgressIndicator(
+                      value: profileCompletion, // Use the profile completion value
+                      strokeWidth: 4, // Width of the circular progress
+                      backgroundColor: Colors.white.withOpacity(0.3), // Background color of the progress indicator
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black), // Progress color
+                    ),
+                  ),
+                  // Profile Avatar
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
+                  ),
+                  // Percentage text outside the avatar, over the circular progress line
+                  Positioned(
+                    left: 10, // Adjust this value to position the text outside the avatar
+                    top: -5, // Adjust this value to position the text vertically
+                    child: Container(
+                      padding: EdgeInsets.all(2), // Add padding for better visibility
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7), // Background for the percentage text
+                        borderRadius: BorderRadius.circular(20), // Rounded corners
+                      ),
+                      child: Text(
+                        '${(profileCompletion * 100).toStringAsFixed(0)}%', // Show percentage
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               SizedBox(width: 12),
               Expanded(
@@ -59,7 +100,7 @@ class DrawerMenu extends StatelessWidget {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/profile'); // Navigate to Profile
+                        Navigator.pushNamed(context, '/userProfile'); // Navigate to Profile
                       },
                       child: Text("View and edit profile",
                           style: TextStyle(fontSize: 14, color: Colors.white70)),

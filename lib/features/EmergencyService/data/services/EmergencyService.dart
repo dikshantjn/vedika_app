@@ -81,7 +81,7 @@ class EmergencyService {
   Future<void> _sendDoctorEmergencySMS(String mobileNumber) async {
     if (!locationProvider.isLocationLoaded) {
       print("❌ Location not available. Trying to fetch again...");
-      await locationProvider.fetchAndSaveLocation();
+      await locationProvider.loadSavedLocation();
     }
 
     String message = "Doctor Emergency! Immediate assistance required.\n"
@@ -131,7 +131,7 @@ class EmergencyService {
   Future<void> _sendAmbulanceEmergencySMS(String mobileNumber) async {
     if (!locationProvider.isLocationLoaded) {
       print("❌ Location not available. Trying to fetch again...");
-      await locationProvider.fetchAndSaveLocation();
+      await locationProvider.loadSavedLocation();
     }
 
     String message = "Ambulance Emergency! Immediate help required.\n"
@@ -181,7 +181,7 @@ class EmergencyService {
   Future<void> _sendBloodBankEmergencySMS(String mobileNumber) async {
     if (!locationProvider.isLocationLoaded) {
       print("❌ Location not available. Trying to fetch again...");
-      await locationProvider.fetchAndSaveLocation();
+      await locationProvider.loadSavedLocation();
     }
 
     String message = "Blood Bank Emergency! Urgent blood required.\n"

@@ -3,6 +3,7 @@ import 'package:location/location.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 
@@ -63,6 +64,11 @@ class EnableLocationPage extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => LabSearchPage()),
+      );
+    } else if (fromSource == 'clinic') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ClinicSearchPage()),
       );
     }
   }

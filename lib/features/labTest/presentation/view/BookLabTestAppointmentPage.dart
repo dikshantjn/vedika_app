@@ -24,33 +24,33 @@ class BookLabTestAppointmentPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-          centerTitle: true,
-          foregroundColor: Colors.white,
-          backgroundColor: ColorPalette.primaryColor,
-          title: Text("Book Lab Appointment")
+        centerTitle: true,
+        foregroundColor: Colors.white,
+        backgroundColor: ColorPalette.primaryColor,
+        title: Text("Book Lab Appointment"),
       ),
       drawer: DrawerMenu(),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
-          key: viewModel.formKey,
+          key: viewModel.formKey,  // Assigning formKey from ViewModel
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 LabInfoWidget(lab: lab),
                 SizedBox(height: 20),
-                TestSelectionWidget(lab: lab),
+                TestSelectionWidget(lab: lab), // Ensure this contains validation
                 SizedBox(height: 20),
-                DatePickerWidget(),
+                DatePickerWidget(), // Ensure this contains validation
                 SizedBox(height: 20),
-                TimePickerWidget(),
+                TimePickerWidget(), // Ensure this contains validation
                 SizedBox(height: 20),
-                CollectionMethodWidget(),
+                CollectionMethodWidget(), // Ensure this contains validation
                 SizedBox(height: 20),
-                PrescriptionUploadWidget(),
+                PrescriptionUploadWidget(), // Ensure this contains validation
                 SizedBox(height: 30),
-                SubmitButtonWidget(viewModel: viewModel, lab: lab),
+                SubmitButtonWidget(viewModel: viewModel, lab: lab), // Updated Submit Button
               ],
             ),
           ),
@@ -59,3 +59,4 @@ class BookLabTestAppointmentPage extends StatelessWidget {
     );
   }
 }
+

@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    Provider.of<LocationProvider>(context, listen: false).fetchAndSaveLocation();
+    Provider.of<LocationProvider>(context, listen: false).loadSavedLocation();
   }
 
 

@@ -4,8 +4,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
+import 'package:vedika_healthcare/features/Profile/presentation/viewmodel/UserProfileViewModel.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/ClinicSearchViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodal/HealthDaysViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodal/homePageViewModal/BannerViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
@@ -18,6 +20,8 @@ import 'package:vedika_healthcare/features/medicineDelivery/data/services/CartSe
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
+import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
@@ -74,7 +78,16 @@ void main() async {
         ChangeNotifierProvider(create: (context) => LabSearchViewModel()),
         ChangeNotifierProvider(create: (context) => LabTestAppointmentViewModel()),
 
+        ChangeNotifierProvider(create: (_) => ClinicSearchViewModel()),
 
+        Provider(create: (context) => NotificationRepository()),
+        ChangeNotifierProvider<NotificationViewModel>(
+          create: (context) => NotificationViewModel(
+            context.read<NotificationRepository>(),
+          ),
+        ),
+
+        ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
 
       ],
       child: const MyApp(),

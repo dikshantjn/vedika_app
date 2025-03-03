@@ -65,7 +65,7 @@ class BloodBankViewModel extends ChangeNotifier {
 
     // Fetch and save the location
     debugPrint("Fetching and saving location...");
-    locationProvider.fetchAndSaveLocation().then((_) {
+    locationProvider.loadSavedLocation().then((_) {
       if (locationProvider.latitude != null && locationProvider.longitude != null) {
         debugPrint("Location fetched: (${locationProvider.latitude}, ${locationProvider.longitude})");
 

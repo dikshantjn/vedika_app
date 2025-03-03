@@ -15,42 +15,63 @@ class TimePickerWidget extends StatelessWidget {
       DateTime(2000, 1, 1, viewModel.selectedTime!.hour, viewModel.selectedTime!.minute),
     );
 
-    return GestureDetector(
-      onTap: () => _selectTime(context, viewModel),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 6,
-              spreadRadius: 2,
-              offset: Offset(0, 3),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => _selectTime(context, viewModel),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 6,
+                  spreadRadius: 2,
+                  offset: Offset(0, 3),
+                ),
+              ],
+              border: Border.all(color: Colors.blue.shade300, width: 1),
             ),
-          ],
-          border: Border.all(color: Colors.blue.shade300, width: 1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  formattedTime,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: viewModel.selectedTime == null
+                        ? Colors.grey.shade600
+                        : Colors.black,
+                  ),
+                ),
+                Icon(Icons.access_time, color: Colors.blue.shade600),
+              ],
+            ),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              formattedTime,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: viewModel.selectedTime == null
-                    ? Colors.grey.shade600
-                    : Colors.black,
+
+        // Show the error message below the time selection field
+        ValueListenableBuilder<String?>(
+          valueListenable: viewModel.timeError,
+          builder: (context, error, child) {
+            if (error == null) return SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                error,
+                style: TextStyle(color: Colors.red, fontSize: 14),
               ),
-            ),
-            Icon(Icons.access_time, color: Colors.blue.shade600),
-          ],
+            );
+          },
         ),
-      ),
+      ],
     );
   }
+
 
   void _selectTime(BuildContext context, LabTestAppointmentViewModel viewModel) {
     showModalBottomSheet(
@@ -80,13 +101,31 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
   late int selectedMinute;
   late String selectedAmPm;
 
+  late FixedExtentScrollController hourController;
+  late FixedExtentScrollController minuteController;
+  late FixedExtentScrollController amPmController;
+
   @override
   void initState() {
     super.initState();
-    final time = widget.viewModel.selectedTime;
-    selectedHour = time?.hour ?? 12;
-    selectedMinute = time?.minute ?? 0;
-    selectedAmPm = selectedHour >= 12 ? 'PM' : 'AM';
+    final now = TimeOfDay.now();
+    final time = widget.viewModel.selectedTime ?? now;
+
+    selectedHour = (time.hourOfPeriod == 0) ? 12 : time.hourOfPeriod;
+    selectedMinute = time.minute;
+    selectedAmPm = time.period == DayPeriod.am ? 'AM' : 'PM';
+
+    hourController = FixedExtentScrollController(initialItem: selectedHour - 1);
+    minuteController = FixedExtentScrollController(initialItem: selectedMinute);
+    amPmController = FixedExtentScrollController(initialItem: selectedAmPm == 'AM' ? 0 : 1);
+  }
+
+  @override
+  void dispose() {
+    hourController.dispose();
+    minuteController.dispose();
+    amPmController.dispose();
+    super.dispose();
   }
 
   @override
@@ -118,9 +157,9 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                 onChanged: (value) {
                   setState(() {
                     selectedHour = value;
-                    selectedAmPm = selectedHour >= 12 ? 'PM' : 'AM';
                   });
                 },
+                controller: hourController,
               ),
               _timePickerCard(
                 title: "Minute",
@@ -131,6 +170,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                     selectedMinute = value;
                   });
                 },
+                controller: minuteController,
               ),
               _timePickerCard(
                 title: "AM/PM",
@@ -139,21 +179,25 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                 onChanged: (value) {
                   setState(() {
                     selectedAmPm = value;
-                    if (selectedAmPm == 'PM' && selectedHour < 12) {
-                      selectedHour += 12;
-                    } else if (selectedAmPm == 'AM' && selectedHour >= 12) {
-                      selectedHour -= 12;
-                    }
                   });
                 },
+                controller: amPmController,
               ),
             ],
           ),
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              widget.viewModel.selectedTime = TimeOfDay(hour: selectedHour, minute: selectedMinute);
-              widget.viewModel.notifyListeners();  // Ensure listeners are notified.
+              int hour = selectedHour;
+              if (selectedAmPm == 'PM' && hour != 12) {
+                hour += 12;
+              } else if (selectedAmPm == 'AM' && hour == 12) {
+                hour = 0;
+              }
+
+              widget.viewModel.selectedTime = TimeOfDay(hour: hour, minute: selectedMinute);
+              widget.viewModel.timeError.value = null;
+              widget.viewModel.notifyListeners();
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
@@ -176,6 +220,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
     required List values,
     required selectedValue,
     required Function onChanged,
+    required FixedExtentScrollController controller,
   }) {
     return Card(
       color: Colors.white,
@@ -194,6 +239,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
               height: 120,
               width: 80,
               child: ListWheelScrollView.useDelegate(
+                controller: controller,
                 itemExtent: 50,
                 onSelectedItemChanged: (index) {
                   onChanged(values[index]);
