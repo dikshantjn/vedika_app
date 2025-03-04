@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/View/SignupPage.dart';
+import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
 import 'package:vedika_healthcare/features/Profile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
@@ -39,8 +41,8 @@ class AppRoutes {
   static const String bookLabTestAppointment = "/bookLabTestAppointment";
   static const String notification = "/notification";
   static const String userProfile = "/userProfile";
-
-
+  static const String healthRecords = "/healthRecords";
+  static const String signUp = "/signUp";
 
 
 
@@ -61,7 +63,8 @@ class AppRoutes {
       labTest: (context) => LabSearchPage(), // Added route for EnableLocationPage
       notification: (context) => NotificationPage(), // Added route for EnableLocationPage
       userProfile: (context) => UserProfilePage(), // Added route for EnableLocationPage
-
+      healthRecords: (context) => HealthRecordsPage(), // Added route for EnableLocationPage
+      signUp: (context) => SignupPage(), // Added route for EnableLocationPage
 
 
     };

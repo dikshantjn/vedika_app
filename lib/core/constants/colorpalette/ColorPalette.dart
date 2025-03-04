@@ -29,6 +29,4 @@ class ColorPalette {
   static const Color testBoxBorder = Color(0xFF74CACA); // Slightly darker for contrast
   static const Color testBoxText = Color(0xFF146C6D); // Darker shade for readability
 
-
-
 }

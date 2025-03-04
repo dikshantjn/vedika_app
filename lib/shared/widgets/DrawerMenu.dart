@@ -22,6 +22,10 @@ class DrawerMenu extends StatelessWidget {
             _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
             _buildDrawerItem(context, Icons.history, "Order History", "/orderHistory"),
             _buildDrawerItem(context, Icons.notification_important, "Notification/Remainder", "/notification"),
+            _buildDrawerItem(context, Icons.receipt, "Health Records", "/healthRecords"),
+            _buildDrawerItem(context, Icons.login, "Login", "/login"),
+            _buildDrawerItem(context, Icons.app_registration, "Sign Up", "/signUp"),
+
 
 
           ]),
@@ -31,6 +35,7 @@ class DrawerMenu extends StatelessWidget {
             _buildDrawerItem(context, Icons.settings, "Settings", "/settings"),
             _buildDrawerItem(context, Icons.help, "Help Center", "/help"),
             _buildDrawerItem(context, Icons.article, "Terms & Conditions", "/terms"),
+
           ]),
         ],
       ),
@@ -38,7 +43,7 @@ class DrawerMenu extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    double profileCompletion = 0.50; // Example value, this should come from your ViewModel
+    double profileCompletion = 0.50; // Example value
 
     return Container(
       color: ColorPalette.primaryColor,
@@ -52,14 +57,14 @@ class DrawerMenu extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Circular progress indicator (this is the circular line around the avatar)
+                  // Circular progress indicator (placed behind the avatar)
                   SizedBox(
-                    width: 64, // Slightly larger than the avatar to accommodate the progress indicator
+                    width: 64, // Adjusted size to fit around the avatar
                     height: 64,
                     child: CircularProgressIndicator(
-                      value: profileCompletion, // Use the profile completion value
-                      strokeWidth: 4, // Width of the circular progress
-                      backgroundColor: Colors.white.withOpacity(0.3), // Background color of the progress indicator
+                      value: profileCompletion, // Profile completion value
+                      strokeWidth: 5, // Adjusted thickness for better visibility
+                      backgroundColor: Colors.white.withOpacity(0.3), // Background color
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black), // Progress color
                     ),
                   ),
@@ -69,20 +74,20 @@ class DrawerMenu extends StatelessWidget {
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
                   ),
-                  // Percentage text outside the avatar, over the circular progress line
+                  // Percentage text positioned at the upper left corner
                   Positioned(
-                    left: 10, // Adjust this value to position the text outside the avatar
-                    top: -5, // Adjust this value to position the text vertically
+                    top: 0, // Moves it to the upper part
+                    left: 0, // Moves it towards the left side
                     child: Container(
-                      padding: EdgeInsets.all(2), // Add padding for better visibility
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7), // Background for the percentage text
-                        borderRadius: BorderRadius.circular(20), // Rounded corners
+                        borderRadius: BorderRadius.circular(10), // Rounded corners
                       ),
                       child: Text(
                         '${(profileCompletion * 100).toStringAsFixed(0)}%', // Show percentage
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -117,6 +122,7 @@ class DrawerMenu extends StatelessWidget {
       ),
     );
   }
+
 
   /// **Builds Vedika Plus subscription section**
   Widget _buildSubscriptionSection(BuildContext context) {
