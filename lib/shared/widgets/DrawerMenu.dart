@@ -1,17 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:provider/provider.dart';
 
-class DrawerMenu extends StatelessWidget {
-  final colorPalette = ColorPalette();
+class DrawerMenu extends StatefulWidget {
+
+  @override
+  _DrawerMenuState createState() => _DrawerMenuState();
+}
+
+class _DrawerMenuState extends State<DrawerMenu> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Fetch the user details when the DrawerMenu is initialized
+    final userViewModel = context.read<UserViewModel>();
+
+    // Retrieve the user ID asynchronously
+    StorageService.getUserId().then((userId) {
+      if (userId != null) {
+        userViewModel.fetchUserDetails(userId);
+      } else {
+        // Handle case where userId is null (e.g., user not logged in)
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
+    final userViewModel = context.watch<UserViewModel>();
+
     return Drawer(
       backgroundColor: Colors.white,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildHeader(context),
+          _buildHeader(context, userViewModel),
           _buildSubscriptionSection(context),
           Divider(),
           _buildSection(context, [
@@ -23,11 +50,7 @@ class DrawerMenu extends StatelessWidget {
             _buildDrawerItem(context, Icons.history, "Order History", "/orderHistory"),
             _buildDrawerItem(context, Icons.notification_important, "Notification/Remainder", "/notification"),
             _buildDrawerItem(context, Icons.receipt, "Health Records", "/healthRecords"),
-            _buildDrawerItem(context, Icons.login, "Login", "/login"),
-            _buildDrawerItem(context, Icons.app_registration, "Sign Up", "/signUp"),
-
-
-
+            _buildDrawerItem(context, Icons.logout, "Logout", "/logout"),
           ]),
           Divider(),
           _buildSection(context, [
@@ -35,57 +58,75 @@ class DrawerMenu extends StatelessWidget {
             _buildDrawerItem(context, Icons.settings, "Settings", "/settings"),
             _buildDrawerItem(context, Icons.help, "Help Center", "/help"),
             _buildDrawerItem(context, Icons.article, "Terms & Conditions", "/terms"),
-
           ]),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    double profileCompletion = 0.50; // Example value
+  Widget _buildHeader(BuildContext context, UserViewModel userViewModel) {
+    // List of fields to check for profile completion
+    List<bool> requiredFields = [
+      userViewModel.user?.name?.isNotEmpty ?? false,
+      userViewModel.user?.phoneNumber?.isNotEmpty ?? false,
+      userViewModel.user?.abhaId?.isNotEmpty ?? false,
+      userViewModel.user?.emailId?.isNotEmpty ?? false,
+      userViewModel.user?.dateOfBirth != null,
+      userViewModel.user?.gender?.isNotEmpty ?? false,
+      userViewModel.user?.bloodGroup?.isNotEmpty ?? false,
+      userViewModel.user?.height != null,
+      userViewModel.user?.weight != null,
+      userViewModel.user?.emergencyContactNumber?.isNotEmpty ?? false,
+      userViewModel.user?.location?.isNotEmpty ?? false,
+      userViewModel.user?.city?.isNotEmpty ?? false,
+    ];
+
+    // Count how many fields are filled
+    int filledFields = requiredFields.where((isFilled) => isFilled).length;
+
+    // Calculate profile completion percentage
+    double profileCompletion = filledFields / requiredFields.length;
 
     return Container(
       color: ColorPalette.primaryColor,
       padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Column(
         children: [
-          SizedBox(height: 20), // Moves everything down slightly
+          SizedBox(height: 20),
           Row(
             children: [
-              // Stack to create circular progress around the avatar
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Circular progress indicator (placed behind the avatar)
+                  // Circular progress indicator showing profile completion percentage
                   SizedBox(
-                    width: 64, // Adjusted size to fit around the avatar
+                    width: 64,
                     height: 64,
                     child: CircularProgressIndicator(
-                      value: profileCompletion, // Profile completion value
-                      strokeWidth: 5, // Adjusted thickness for better visibility
-                      backgroundColor: Colors.white.withOpacity(0.3), // Background color
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black), // Progress color
+                      value: profileCompletion,
+                      strokeWidth: 5,
+                      backgroundColor: Colors.white.withOpacity(0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
                   ),
-                  // Profile Avatar
+                  // Profile avatar icon
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
                   ),
-                  // Percentage text positioned at the upper left corner
+                  // Profile completion percentage label
                   Positioned(
-                    top: 0, // Moves it to the upper part
-                    left: 0, // Moves it towards the left side
+                    top: 0,
+                    left: 0,
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7), // Background for the percentage text
-                        borderRadius: BorderRadius.circular(10), // Rounded corners
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '${(profileCompletion * 100).toStringAsFixed(0)}%', // Show percentage
+                        '${(profileCompletion * 100).toStringAsFixed(0)}%',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -101,30 +142,59 @@ class DrawerMenu extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Krushna Zarekar",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    // Display user name or phone number based on availability
+                    userViewModel.user?.name?.isNotEmpty ?? false
+                        ? Text(
+                      userViewModel.user!.name!,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    )
+                        : Container(), // Do not occupy space if name is not available
+
+                    // Add space only if name is available
+                    if (userViewModel.user?.name?.isNotEmpty ?? false)
+                      SizedBox(height: 4),
+
+                    // Display phone number only if name is not available
+                    userViewModel.user?.name?.isNotEmpty ?? false
+                        ? Container() // Do not show phone number if name is available
+                        : Text(
+                      userViewModel.user?.phoneNumber ?? '',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+
+                    // Add space if name or phone is displayed
+                    if (!(userViewModel.user?.name?.isNotEmpty ?? false))
+                      SizedBox(height: 4),
+
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/userProfile'); // Navigate to Profile
+                        Navigator.pushNamed(context, '/userProfile');
                       },
-                      child: Text("View and edit profile",
-                          style: TextStyle(fontSize: 14, color: Colors.white70)),
+                      child: Text(
+                        "View and edit profile",
+                        style: TextStyle(fontSize: 14, color: Colors.white70),
+                      ),
                     ),
-                    Text("9% completed",
-                        style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    SizedBox(height: 4), // Add space here
+                    // Show dynamic profile completion text
+                    Text(
+                      "${(profileCompletion * 100).toStringAsFixed(0)}% completed", // Show dynamic profile completion
+                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: 10), // Adds more space below profile section
+          SizedBox(height: 10),
         ],
       ),
     );
   }
 
 
-  /// **Builds Vedika Plus subscription section**
+
+
   Widget _buildSubscriptionSection(BuildContext context) {
     return ListTile(
       tileColor: Colors.grey[200],
@@ -135,7 +205,7 @@ class DrawerMenu extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Color(0xFF874292), // Rounded box color
+              color: Color(0xFF874292),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -149,23 +219,21 @@ class DrawerMenu extends StatelessWidget {
       trailing: Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         Navigator.pushNamed(context, '/vedikaPlus');
-      }, // Navigate to Vedika Plus
+      },
     );
   }
 
-  /// **Builds individual drawer items with navigation**
   Widget _buildDrawerItem(BuildContext context, IconData icon, String title, String route) {
     return ListTile(
       leading: Icon(icon, color: ColorPalette.primaryColor),
       title: Text(title),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey), // Added arrow icon
+      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: () {
         Navigator.pushNamed(context, route);
-      }, // Navigate to respective screen
+      },
     );
   }
 
-  /// **Groups multiple drawer items together**
   Widget _buildSection(BuildContext context, List<Widget> items) {
     return Column(children: items);
   }

@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/HealthRecords/data/models/HealthRecord.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
-import 'package:open_filex/open_filex.dart';
 
 class HealthRecordItem extends StatelessWidget {
   final HealthRecord record;
@@ -25,7 +25,7 @@ class HealthRecordItem extends StatelessWidget {
     }
 
     try {
-      final result = await OpenFilex.open(filePath);
+      final result = await OpenFile.open(filePath);
       debugPrint("OpenFilex Result: ${result.type}, Message: ${result.message}");
 
       if (result.type == ResultType.error) {

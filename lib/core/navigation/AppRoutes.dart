@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/View/SignupPage.dart';
+import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
+import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
 import 'package:vedika_healthcare/features/Profile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
@@ -9,6 +10,7 @@ import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBank
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
 import 'package:vedika_healthcare/features/labTest/data/models/LabModel.dart';
@@ -21,6 +23,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderH
 
 class AppRoutes {
   static const String medicineOrder = "/medicineOrder";
+  static const String home = "/home";
   static const String labTest = "/labTest";
   static const String bloodBank = "/bloodBank";
   static const String clinic = "/clinic";
@@ -42,13 +45,16 @@ class AppRoutes {
   static const String notification = "/notification";
   static const String userProfile = "/userProfile";
   static const String healthRecords = "/healthRecords";
-  static const String signUp = "/signUp";
+  static const String login = "/login";
+  static const String logout = "/logout";
+
 
 
 
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
+      home: (context) => HomePage(),
       bloodBank: (context) => BloodBankMapScreen(),
       ambulanceSearch: (context) => AmbulanceSearchPage(),
       clinic: (context) => ClinicSearchPage(),
@@ -64,7 +70,9 @@ class AppRoutes {
       notification: (context) => NotificationPage(), // Added route for EnableLocationPage
       userProfile: (context) => UserProfilePage(), // Added route for EnableLocationPage
       healthRecords: (context) => HealthRecordsPage(), // Added route for EnableLocationPage
-      signUp: (context) => SignupPage(), // Added route for EnableLocationPage
+      login: (context) => UserLoginScreen(), // Added route for EnableLocationPage
+      logout: (context) => LogoutPage(), // Added route for EnableLocationPage
+
 
 
     };

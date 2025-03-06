@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/core/ViewModel/SignupViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
@@ -32,6 +34,9 @@ import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+// ✅ Add network_info_plus import
+import 'package:network_info_plus/network_info_plus.dart';
+
 // ✅ Define a global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -39,6 +44,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
   AmbulanceRequestNotificationService.handleNotificationClick(response.payload);
+}
+
+// Method to get Wi-Fi IP Address
+Future<void> getWifiIpAddress() async {
+  final info = NetworkInfo();
+  String? ip = await info.getWifiIP();
+  print("Connected Wi-Fi IP Address: $ip");
 }
 
 void main() async {
@@ -52,6 +64,9 @@ void main() async {
   // Load saved location
   final locationProvider = LocationProvider();
   await locationProvider.loadSavedLocation();
+
+  // Get Wi-Fi IP Address when the app starts
+  await getWifiIpAddress();
 
   // Set Transparent Status Bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -100,8 +115,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
         ChangeNotifierProvider(create: (_) => HealthRecordViewModel()),
 
-        ChangeNotifierProvider(create: (_) => SignupViewModel()),
-
+        ChangeNotifierProvider(create: (_) => UserLoginViewModel(navigatorKey: navigatorKey)),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()), // ✅ Only create once
+        ChangeNotifierProvider(create: (_) => UserViewModel()),
 
       ],
       child: const MyApp(),

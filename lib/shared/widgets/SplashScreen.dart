@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 
@@ -13,9 +16,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => HomePage()));
+    _navigateAfterDelay();
+  }
+
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(Duration(seconds: 3));
+
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    await authViewModel.checkLoginStatus(); // ✅ Ensure login status is updated
+
+    print("Final Login Status: ${authViewModel.isLoggedIn}");
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (authViewModel.isLoggedIn) {
+        print("✅ Navigating to HomePage...");
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => HomePage()));
+      } else {
+        print("❌ Navigating to Login...");
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => UserLoginScreen()));
+      }
     });
   }
 

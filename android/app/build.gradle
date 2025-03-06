@@ -32,6 +32,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            storeFile file("/home/krish/AndroidStudioProjects/vedika_healthcare/my-release-key.jks")
+            storePassword "Krushna@01" // Enter your keystore password here
+            keyAlias "my-key-alias" // Enter your key alias here
+            keyPassword "Krushna@01" // Enter your key password here
+        }
+    }
+
     buildTypes {
         release {
             // Enable code shrinking and obfuscation (optional)
@@ -40,7 +49,7 @@ android {
 
             // Use Proguard rules (if needed)
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug // Apply the release signing config
+            signingConfig signingConfigs.release // Apply the release signing config
         }
     }
 }

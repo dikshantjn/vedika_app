@@ -41,9 +41,11 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Add this line
       backgroundColor: Colors.white,
       extendBody: true,  // Allows content to extend behind the bottom bar
       appBar: PreferredSize(
