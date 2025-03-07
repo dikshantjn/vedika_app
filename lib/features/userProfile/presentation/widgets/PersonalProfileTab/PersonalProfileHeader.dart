@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Profile/presentation/viewmodel/UserProfileViewModel.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 
 class PersonalProfileHeader extends StatelessWidget {
-  final UserProfileViewModel viewModel;
+  final UserPersonalProfileViewModel viewModel;
 
   PersonalProfileHeader({required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
+    // If personalProfile is null, show a placeholder or loading indicator
+    if (viewModel.personalProfile == null) {
+      return Center(
+        child: CircularProgressIndicator(), // Loading indicator
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white, // Set background color to white
@@ -23,23 +30,30 @@ class PersonalProfileHeader extends StatelessWidget {
       padding: EdgeInsets.all(16),
       child: Row(
         children: [
-          // Container with background color for profile picture
+          // Profile picture container
           Container(
             width: 60,
             height: 60,
             decoration: BoxDecoration(
               color: Colors.grey[200], // Background color for the profile picture
-              shape: BoxShape.circle, // Make the container circular
+              shape: BoxShape.circle,
             ),
-            child: ClipOval(  // Use ClipOval for perfectly rounded image
-              child: viewModel.personalProfile.photoUrl.isNotEmpty
+            child: ClipOval(
+              child: viewModel.personalProfile?.photoUrl.isNotEmpty == true
                   ? Image.network(
-                viewModel.personalProfile.photoUrl,
+                viewModel.personalProfile!.photoUrl,
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
-                  // If the image fails to load, return the default icon
                   return Icon(
                     Icons.person,
                     size: 60,
@@ -55,15 +69,15 @@ class PersonalProfileHeader extends StatelessWidget {
             ),
           ),
           SizedBox(width: 16),
-          // Use Flexible widget to avoid overflow
+          // User information
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  viewModel.personalProfile.name.isNotEmpty
-                      ? viewModel.personalProfile.name
-                      : 'Name not available', // Show 'Name not available' if name is empty or null
+                  viewModel.personalProfile!.name.isNotEmpty
+                      ? viewModel.personalProfile!.name
+                      : 'Name not available',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -72,9 +86,9 @@ class PersonalProfileHeader extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  viewModel.personalProfile.email.isNotEmpty
-                      ? viewModel.personalProfile.email
-                      : 'Email not available', // Show 'Email not available' if email is empty or null
+                  viewModel.personalProfile!.phoneNumber.isNotEmpty
+                      ? viewModel.personalProfile!.phoneNumber
+                      : 'Phone Number not available',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.black54,

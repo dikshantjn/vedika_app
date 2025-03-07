@@ -8,7 +8,8 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginView
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
-import 'package:vedika_healthcare/features/Profile/presentation/viewmodel/UserProfileViewModel.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/ClinicSearchViewModel.dart';
@@ -112,7 +113,9 @@ void main() async {
           ),
         ),
 
-        ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => UserPersonalProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => UserMedicalProfileViewModel()),
+
         ChangeNotifierProvider(create: (_) => HealthRecordViewModel()),
 
         ChangeNotifierProvider(create: (_) => UserLoginViewModel(navigatorKey: navigatorKey)),

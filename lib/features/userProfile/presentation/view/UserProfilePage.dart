@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/Profile/presentation/viewmodel/UserProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Profile/presentation/widgets/MedicalProfileTab/MedicalProfileTab.dart';
-import 'package:vedika_healthcare/features/Profile/presentation/widgets/PersonalProfileTab/PersonalProfileTab.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/widgets/MedicalProfileTab/MedicalProfileTab.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileTab.dart';
+
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -27,7 +29,8 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<UserProfileViewModel>();
+    final personalViewModel = context.watch<UserPersonalProfileViewModel>();
+    final medialViewModel = context.watch<UserMedicalProfileViewModel>();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -71,8 +74,8 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
         child: TabBarView(
           controller: _tabController,
           children: [
-            PersonalProfileTab(viewModel: viewModel), // Personal Profile Tab
-            MedicalProfileTab(viewModel: viewModel), // Medical Profile Tab
+            PersonalProfileTab(viewModel: personalViewModel), // Personal Profile Tab
+            MedicalProfileTab(viewModel: medialViewModel), // Medical Profile Tab
           ],
         ),
       ),

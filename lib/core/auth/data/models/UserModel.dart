@@ -14,6 +14,8 @@ class UserModel {
   final String? location;
   final String? city;
   final DateTime createdAt;
+  final String? password;  // Added password field
+  final bool status;        // Added status field
 
   UserModel({
     required this.userId,
@@ -31,6 +33,8 @@ class UserModel {
     this.location,
     this.city,
     required this.createdAt,
+    this.password,          // Initialize password
+    required this.status,    // Initialize status
   });
 
   // Convert JSON to UserModel
@@ -51,6 +55,8 @@ class UserModel {
       location: json['location'],
       city: json['city'],
       createdAt: DateTime.parse(json['createdAt']),
+      password: json['password'], // Assign password if present in JSON
+      status: json['status'] ?? true,  // Default to true if status is not provided
     );
   }
 
@@ -72,6 +78,8 @@ class UserModel {
       "location": location,
       "city": city,
       "createdAt": createdAt.toIso8601String(),
+      "password": password,     // Include password in JSON
+      "status": status,         // Include status in JSON
     };
   }
 }

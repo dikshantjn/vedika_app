@@ -3,6 +3,7 @@ import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class DrawerMenu extends StatefulWidget {
 
@@ -65,7 +66,6 @@ class _DrawerMenuState extends State<DrawerMenu> {
   }
 
   Widget _buildHeader(BuildContext context, UserViewModel userViewModel) {
-    // List of fields to check for profile completion
     List<bool> requiredFields = [
       userViewModel.user?.name?.isNotEmpty ?? false,
       userViewModel.user?.phoneNumber?.isNotEmpty ?? false,
@@ -81,116 +81,98 @@ class _DrawerMenuState extends State<DrawerMenu> {
       userViewModel.user?.city?.isNotEmpty ?? false,
     ];
 
-    // Count how many fields are filled
     int filledFields = requiredFields.where((isFilled) => isFilled).length;
-
-    // Calculate profile completion percentage
     double profileCompletion = filledFields / requiredFields.length;
 
-    return Container(
-      color: ColorPalette.primaryColor,
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: Column(
-        children: [
-          SizedBox(height: 20),
-          Row(
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Circular progress indicator showing profile completion percentage
-                  SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: CircularProgressIndicator(
-                      value: profileCompletion,
-                      strokeWidth: 5,
-                      backgroundColor: Colors.white.withOpacity(0.3),
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                    ),
-                  ),
-                  // Profile avatar icon
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
-                  ),
-                  // Profile completion percentage label
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.userProfile);
+      },
+      child: Container(
+        color: ColorPalette.primaryColor,
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 64,
+                      height: 64,
+                      child: CircularProgressIndicator(
+                        value: profileCompletion,
+                        strokeWidth: 5,
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                       ),
-                      child: Text(
-                        '${(profileCompletion * 100).toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    ),
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person, size: 40, color: ColorPalette.primaryColor),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${(profileCompletion * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Display user name or phone number based on availability
-                    userViewModel.user?.name?.isNotEmpty ?? false
-                        ? Text(
-                      userViewModel.user!.name!,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    )
-                        : Container(), // Do not occupy space if name is not available
-
-                    // Add space only if name is available
-                    if (userViewModel.user?.name?.isNotEmpty ?? false)
-                      SizedBox(height: 4),
-
-                    // Display phone number only if name is not available
-                    userViewModel.user?.name?.isNotEmpty ?? false
-                        ? Container() // Do not show phone number if name is available
-                        : Text(
-                      userViewModel.user?.phoneNumber ?? '',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-
-                    // Add space if name or phone is displayed
-                    if (!(userViewModel.user?.name?.isNotEmpty ?? false))
-                      SizedBox(height: 4),
-
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/userProfile');
-                      },
-                      child: Text(
+                  ],
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (userViewModel.user?.name?.isNotEmpty ?? false)
+                        Text(
+                          userViewModel.user!.name!,
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      if (userViewModel.user?.name?.isNotEmpty ?? false) SizedBox(height: 4),
+                      if (!(userViewModel.user?.name?.isNotEmpty ?? false))
+                        Text(
+                          userViewModel.user?.phoneNumber ?? '',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      if (!(userViewModel.user?.name?.isNotEmpty ?? false)) SizedBox(height: 4),
+                      Text(
                         "View and edit profile",
                         style: TextStyle(fontSize: 14, color: Colors.white70),
                       ),
-                    ),
-                    SizedBox(height: 4), // Add space here
-                    // Show dynamic profile completion text
-                    Text(
-                      "${(profileCompletion * 100).toStringAsFixed(0)}% completed", // Show dynamic profile completion
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
-                    ),
-                  ],
+                      SizedBox(height: 4),
+                      Text(
+                        "${(profileCompletion * 100).toStringAsFixed(0)}% completed",
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-        ],
+              ],
+            ),
+            SizedBox(height: 10),
+          ],
+        ),
       ),
     );
   }
+
 
 
 
