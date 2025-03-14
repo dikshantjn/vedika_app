@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/VerifyOtpWidget.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class UserLoginScreen extends StatefulWidget {
   @override
@@ -31,7 +32,6 @@ class _userLoginScreenState extends State<UserLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(height: 40),
-              // _buildHeader(),
               SizedBox(height: 20),
               _buildAvatar(),
               SizedBox(height: 20),
@@ -68,6 +68,10 @@ class _userLoginScreenState extends State<UserLoginScreen> {
 
               SizedBox(height: 20),
               _buildLoginRedirect(),
+
+              // Go to Home button
+              SizedBox(height: 20),
+              _buildGoToHomeButton(),
             ],
           ),
         ),
@@ -75,25 +79,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
-  // Widget _buildHeader() {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //     children: [
-  //       Spacer(),
-  //       Text(
-  //         "Create an Account",
-  //         style: TextStyle(
-  //           fontSize: 22,
-  //           fontWeight: FontWeight.bold,
-  //           color: ColorPalette.primaryColor,
-  //         ),
-  //         textAlign: TextAlign.center,
-  //       ),
-  //       Spacer(),
-  //     ],
-  //   );
-  // }
-
+  // Avatar widget
   Widget _buildAvatar() {
     return Center(
       child: CircleAvatar(
@@ -104,6 +90,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
+  // Welcome text widget
   Widget _buildWelcomeText() {
     return Column(
       children: [
@@ -129,6 +116,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
+  // Phone number field
   Widget _buildPhoneNumberField() {
     return Row(
       children: [
@@ -176,6 +164,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
+  // Send OTP button
   Widget _buildSendOtpButton(UserLoginViewModel signupViewModel) {
     return SizedBox(
       width: double.infinity, // Make button take full width
@@ -208,7 +197,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
-
+  // Login redirect widget
   Widget _buildLoginRedirect() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -230,6 +219,30 @@ class _userLoginScreenState extends State<UserLoginScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Go to Home button
+  Widget _buildGoToHomeButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: ColorPalette.primaryColor,
+        ),
+        onPressed: () {
+          // Navigate to home screen (replace with actual HomeScreen widget)
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        },
+        child: Text(
+          "Go to Home",
+          style: TextStyle(fontSize: 18, color: Colors.white),
+        ),
+      ),
     );
   }
 }

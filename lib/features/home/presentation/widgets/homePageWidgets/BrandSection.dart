@@ -3,19 +3,20 @@ import 'package:vedika_healthcare/core/constants/colorpalette/HealthConcernColor
 
 class BrandSection extends StatelessWidget {
   final List<Map<String, String>> brands = [
-    {"name": "Cipla", "logo": "assets/brands/placeholder.png"},
-    {"name": "Sun Pharma", "logo": "assets/brands/placeholder.png"},
-    {"name": "Dr. Reddy's", "logo": "assets/brands/placeholder.png"},
-    {"name": "Lupin", "logo": "assets/brands/placeholder.png"},
-    {"name": "Zydus Cadila", "logo": "assets/brands/placeholder.png"},
-    {"name": "Aurobindo Pharma", "logo": "assets/brands/placeholder.png"},
-    {"name": "Biocon", "logo": "assets/brands/placeholder.png"},
-    {"name": "Torrent Pharma", "logo": "assets/brands/placeholder.png"},
-    {"name": "Alkem Labs", "logo": "assets/brands/placeholder.png"},
-    {"name": "Glenmark", "logo": "assets/brands/placeholder.png"},
-    {"name": "Wockhardt", "logo": "assets/brands/placeholder.png"},
-    {"name": "Natco Pharma", "logo": "assets/brands/placeholder.png"},
+    {"name": "Cipla", "logo": "assets/brands/Cipla Icon.png"},
+    {"name": "Sun Pharma", "logo": "assets/brands/SunPharma Icon.png"},
+    {"name": "Dr. Reddy's", "logo": "assets/brands/Dr. Reddys Icon.png"},
+    {"name": "Lupin", "logo": "assets/brands/Lupin Icon.jpg"},
+    {"name": "Zydus Cadila", "logo": "assets/brands/Zydus Cadila Icon.png"},
+    {"name": "Aurobindo Pharma", "logo": "assets/brands/Aurobindo Icon.png"},
+    {"name": "Biocon", "logo": "assets/brands/Biocon Icon.png"},
+    {"name": "Torrent Pharma", "logo": "assets/brands/Torrent Pharma Icon.png"},
+    {"name": "Alkem Labs", "logo": "assets/brands/Alkem Labs Icon.png"},
+    {"name": "Glenmark", "logo": "assets/brands/Glenmark Icon.png"},
+    {"name": "Wockhardt", "logo": "assets/brands/Wockhardt Icon.png"},
+    {"name": "Natco Pharma", "logo": "assets/brands/Natco Icon.png"},
   ];
+
 
   @override
   Widget build(BuildContext context) {

@@ -51,11 +51,13 @@ class UserMedicalProfileViewModel extends ChangeNotifier {
 
   // ✅ Create Medical Profile
   Future<void> createMedicalProfile(MedicalProfile profile) async {
+    String? userId = await StorageService.getUserId();
+
     _setLoading(true);
     _setError(null);
 
     try {
-      _medicalProfile = await _medicalProfileService.createMedicalProfile(profile);
+      _medicalProfile = await _medicalProfileService.createMedicalProfile(profile, userId!);
     } catch (e) {
       _setError("Failed to create medical profile: $e");
     } finally {

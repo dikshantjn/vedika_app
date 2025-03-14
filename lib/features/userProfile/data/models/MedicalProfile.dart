@@ -1,6 +1,6 @@
 class MedicalProfile {
   final String medicalProfileId; // Unique ID for the medical profile
-  final String userProfileId; // Reference to the associated user profile ID
+  final String userId; // Reference to the associated user profile ID
   final bool isDiabetic;
   final List<String> allergies;
   final double eyePower;
@@ -12,7 +12,7 @@ class MedicalProfile {
 
   MedicalProfile({
     required this.medicalProfileId,
-    required this.userProfileId,
+    required this.userId,
     required this.isDiabetic,
     required this.allergies,
     required this.eyePower,
@@ -27,7 +27,7 @@ class MedicalProfile {
   factory MedicalProfile.fromJson(Map<String, dynamic> json) {
     return MedicalProfile(
       medicalProfileId: json['medicalProfileId'] ?? '',
-      userProfileId: json['userProfileId'] ?? '',
+      userId: json['userId'] ?? '',
       isDiabetic: json['isDiabetic'] ?? false,
       allergies: List<String>.from(json['allergies'] ?? []),
       eyePower: (json['eyePower'] ?? 0.0).toDouble(),
@@ -43,7 +43,7 @@ class MedicalProfile {
   Map<String, dynamic> toJson() {
     return {
       'medicalProfileId': medicalProfileId,
-      'userProfileId': userProfileId,
+      'userId': userId,
       'isDiabetic': isDiabetic,
       'allergies': allergies,
       'eyePower': eyePower,
@@ -58,7 +58,7 @@ class MedicalProfile {
   // CopyWith method to create a new instance with updated values
   MedicalProfile copyWith({
     String? medicalProfileId,
-    String? userProfileId,
+    String? userId,
     bool? isDiabetic,
     List<String>? allergies,
     double? eyePower,
@@ -70,7 +70,7 @@ class MedicalProfile {
   }) {
     return MedicalProfile(
       medicalProfileId: medicalProfileId ?? this.medicalProfileId,
-      userProfileId: userProfileId ?? this.userProfileId,
+      userId: userId ?? this.userId,
       isDiabetic: isDiabetic ?? this.isDiabetic,
       allergies: allergies ?? this.allergies,
       eyePower: eyePower ?? this.eyePower,

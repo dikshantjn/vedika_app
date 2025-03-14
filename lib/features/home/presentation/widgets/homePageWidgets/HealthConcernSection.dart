@@ -4,11 +4,11 @@ import 'package:vedika_healthcare/core/constants/colorpalette/HealthConcernColor
 
 class HealthConcernSection extends StatelessWidget {
   final List<Map<String, String>> categories = [
-  {"title": "Pregnancy", "image": "assets/health_concern/offer.png"},
-  {"title": "Acne", "image": "assets/health_concern/offer.png"},
-  {"title": "Cold", "image": "assets/health_concern/offer.png"},
-  {"title": "Diabetes", "image": "assets/health_concern/offer.png"},
-  {"title": "Live Care", "image": "assets/health_concern/offer.png"},
+  {"title": "Pregnancy", "image": "assets/health_concern/Pregnancy Icon.png"},
+  {"title": "Acne", "image": "assets/health_concern/AcneIcon.png"},
+  {"title": "Cold", "image": "assets/health_concern/cold.png"},
+  {"title": "Diabetes", "image": "assets/health_concern/Diabetes Icon.png"},
+  {"title": "Liver Care", "image": "assets/health_concern/Liver care Icon.png"},
 ];
 
 

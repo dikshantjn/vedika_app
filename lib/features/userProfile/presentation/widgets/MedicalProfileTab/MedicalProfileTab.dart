@@ -16,7 +16,13 @@ class _MedicalProfileTabState extends State<MedicalProfileTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.viewModel.fetchMedicalProfile();
+      widget.viewModel.fetchMedicalProfile().catchError((error) {
+        // Handle the error gracefully here and ensure the fallback to "NA"
+        print('Error fetching medical profile: $error');
+        setState(() {
+          // Optionally, set a flag or message to handle UI accordingly
+        });
+      });
     });
   }
 
@@ -29,57 +35,59 @@ class _MedicalProfileTabState extends State<MedicalProfileTab> {
           return Center(child: CircularProgressIndicator()); // Show loader
         }
 
+        // If error message exists, it will be shown as 'Error'
         if (widget.viewModel.errorMessage?.isNotEmpty == true) {
           return Center(child: Text("Error: ${widget.viewModel.errorMessage}"));
         }
 
         final medicalProfile = widget.viewModel.medicalProfile;
 
+        // Check if medical profile is null and return "NA" for fields
         return Column(
           children: [
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
-                  _buildKeyValueRow('Diabetic', medicalProfile?.isDiabetic == true ? 'Yes' : 'No'),
+                  _buildKeyValueRow(
+                    'Diabetic',
+                    medicalProfile?.isDiabetic == null ? 'NA' : (medicalProfile!.isDiabetic ? 'Yes' : 'No'),
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Allergies',
-                      (medicalProfile?.allergies?.isNotEmpty == true)
-                          ? medicalProfile!.allergies.join(', ')
-                          : 'NA'),
-                  Divider(),
-                  _buildKeyValueRow('Eye Power', medicalProfile?.eyePower?.toString() ?? 'NA'),
+                    'Allergies',
+                    (medicalProfile?.allergies?.isNotEmpty == true) ? medicalProfile!.allergies.join(', ') : 'NA',
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Current Medication',
-                      (medicalProfile?.currentMedication?.isNotEmpty == true)
-                          ? medicalProfile!.currentMedication.join(', ')
-                          : 'NA'),
+                    'Eye Power',
+                    medicalProfile?.eyePower?.toString() ?? 'NA',
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Past Medication',
-                      (medicalProfile?.pastMedication?.isNotEmpty == true)
-                          ? medicalProfile!.pastMedication.join(', ')
-                          : 'NA'),
+                    'Current Medication',
+                    (medicalProfile?.currentMedication?.isNotEmpty == true) ? medicalProfile!.currentMedication.join(', ') : 'NA',
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Chronic Conditions',
-                      (medicalProfile?.chronicConditions?.isNotEmpty == true)
-                          ? medicalProfile!.chronicConditions.join(', ')
-                          : 'NA'),
+                    'Past Medication',
+                    (medicalProfile?.pastMedication?.isNotEmpty == true) ? medicalProfile!.pastMedication.join(', ') : 'NA',
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Injuries',
-                      (medicalProfile?.injuries?.isNotEmpty == true)
-                          ? medicalProfile!.injuries.join(', ')
-                          : 'NA'),
+                    'Chronic Conditions',
+                    (medicalProfile?.chronicConditions?.isNotEmpty == true) ? medicalProfile!.chronicConditions.join(', ') : 'NA',
+                  ),
                   Divider(),
                   _buildKeyValueRow(
-                      'Surgeries',
-                      (medicalProfile?.surgeries?.isNotEmpty == true)
-                          ? medicalProfile!.surgeries.join(', ')
-                          : 'NA'),
+                    'Injuries',
+                    (medicalProfile?.injuries?.isNotEmpty == true) ? medicalProfile!.injuries.join(', ') : 'NA',
+                  ),
+                  Divider(),
+                  _buildKeyValueRow(
+                    'Surgeries',
+                    (medicalProfile?.surgeries?.isNotEmpty == true) ? medicalProfile!.surgeries.join(', ') : 'NA',
+                  ),
                   Divider(),
                 ],
               ),

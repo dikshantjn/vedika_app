@@ -55,7 +55,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
           ]),
           Divider(),
           _buildSection(context, [
-            _buildDrawerItem(context, Icons.storefront, "Are You a Vendor?", "/vendor"),
+            _buildDrawerItem(context, Icons.storefront, "Are You a Vendor?", AppRoutes.vendor),
             _buildDrawerItem(context, Icons.settings, "Settings", "/settings"),
             _buildDrawerItem(context, Icons.help, "Help Center", "/help"),
             _buildDrawerItem(context, Icons.article, "Terms & Conditions", "/terms"),

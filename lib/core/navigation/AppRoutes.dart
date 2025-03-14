@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Views/vendor_registration_page.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
@@ -73,6 +74,8 @@ class AppRoutes {
       login: (context) => UserLoginScreen(), // Added route for EnableLocationPage
       logout: (context) => LogoutPage(), // Added route for EnableLocationPage
 
+
+      vendor: (context) => VendorRegistrationPage(), // Added route for EnableLocationPage
 
 
     };

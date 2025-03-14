@@ -38,27 +38,29 @@ class UserModel {
   });
 
   // Convert JSON to UserModel
+// Convert JSON to UserModel
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      userId: json['userId'],
+      userId: json['userId'] ?? '',
       name: json['name'],
       photo: json['photo'],
-      phoneNumber: json['phone_number'],
+      phoneNumber: json['phone_number'] ?? '',
       abhaId: json['ABHA_ID'],
       emailId: json['emailId'],
       dateOfBirth: json['dateOfBirth'] != null ? DateTime.parse(json['dateOfBirth']) : null,
       gender: json['gender'],
       bloodGroup: json['bloodGroup'],
-      height: json['height']?.toDouble(),
-      weight: json['weight']?.toDouble(),
+      height: json['height'] != null ? (json['height'] as num).toDouble() : null,
+      weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
       emergencyContactNumber: json['emergencyContactNumber'],
       location: json['location'],
       city: json['city'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       password: json['password'], // Assign password if present in JSON
-      status: json['status'] ?? true,  // Default to true if status is not provided
+      status: json['status'] == 1, // If status is 1, set true, otherwise false
     );
   }
+
 
   // Convert UserModel to JSON (for API requests if needed)
   Map<String, dynamic> toJson() {

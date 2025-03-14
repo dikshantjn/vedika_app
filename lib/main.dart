@@ -6,8 +6,11 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/AI/presentation/viewmodel/MicViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/hospital_registration_viewmodel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/vendor_registration_view_model.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
@@ -121,6 +124,12 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserLoginViewModel(navigatorKey: navigatorKey)),
         ChangeNotifierProvider(create: (_) => AuthViewModel()), // ✅ Only create once
         ChangeNotifierProvider(create: (_) => UserViewModel()),
+        ChangeNotifierProvider(create: (_) => MicViewModel()),
+
+        //Vendor
+        ChangeNotifierProvider(create: (_) => HospitalRegistrationViewModel()),
+        ChangeNotifierProvider(create: (_) => VendorRegistrationViewModel()),
+
 
       ],
       child: const MyApp(),

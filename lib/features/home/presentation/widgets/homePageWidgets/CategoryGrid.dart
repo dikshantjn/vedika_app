@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class CategoryGrid extends StatelessWidget {
+  // List of categories
   final List<String> categories = [
     "Medicine",
     "Tests",
@@ -20,6 +21,26 @@ class CategoryGrid extends StatelessWidget {
     "Allergy Care",
     "Mental Wellness",
   ];
+
+  // Map to associate category names with their image paths
+  final Map<String, String> categoryIcons = {
+    "Medicine": "assets/category/Medicine Icon.png",
+    "Tests": "assets/category/Tests Icon.png",
+    "Health Products": "assets/category/Health Products Icon.png",
+    "Fitness": "assets/category/Fitness Icon.png",
+    "Skin Care": "assets/category/Skin Care Icon.png",
+    "Baby Care": "assets/category/Baby Care Icon.png",
+    "Ayurveda": "assets/category/Ayurveda Icon.png",
+    "Diabetes": "assets/category/Diabetes Icon.png",
+    "Pain Relief": "assets/category/PainRelief Icon.png",
+    "Dental Care": "assets/category/Dental Care Icon.png",
+    "Hair Care": "assets/category/Hair Care Icon.png",
+    "Women's Care": "assets/category/Women Care Icon.png",
+    "Supplements": "assets/category/Supplements Icon.png",
+    "Vitamins": "assets/category/Vitamins Icon.png",
+    "Allergy Care": "assets/category/Allergy Icon.png",
+    "Mental Wellness": "assets/category/Mental Wellness Icon.png",
+  };
 
   final String categoryImage = "assets/category/category.png";
 
@@ -58,7 +79,7 @@ class CategoryGrid extends StatelessWidget {
                 if (index < 8) {
                   return Column(
                     children: [
-                      _buildCategoryBox(),
+                      _buildCategoryBox(categories[index]), // Pass the category name
                       SizedBox(height: 4),
                       Flexible(
                         child: Text(
@@ -153,7 +174,6 @@ class CategoryGrid extends StatelessWidget {
     );
   }
 
-
   // GridView for more categories inside the bottom sheet
   Widget _buildMoreCategoriesGrid() {
     return GridView.builder(
@@ -168,7 +188,7 @@ class CategoryGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         return Column(
           children: [
-            _buildCategoryBox(),
+            _buildCategoryBox(categories[index + 8]), // Pass the category name
             SizedBox(height: 4),
             Flexible(
               child: Text(
@@ -185,7 +205,10 @@ class CategoryGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryBox() {
+  Widget _buildCategoryBox(String categoryName) {
+    // Get the image path for the category
+    String imagePath = categoryIcons[categoryName] ?? categoryImage;
+
     return Container(
       height: 60, // Box size
       width: 60,
@@ -196,7 +219,7 @@ class CategoryGrid extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(6.0),
         child: Image.asset(
-          categoryImage,
+          imagePath,
           fit: BoxFit.contain,
         ),
       ),

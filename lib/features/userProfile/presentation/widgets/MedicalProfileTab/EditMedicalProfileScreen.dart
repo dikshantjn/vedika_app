@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/userProfile/data/models/MedicalProfile.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
@@ -44,10 +45,11 @@ class _EditMedicalProfileScreenState extends State<EditMedicalProfileScreen> {
 
   void _saveProfile() async {
     final profile = widget.viewModel.medicalProfile;
+    String? userId = await StorageService.getUserId();
 
     final updatedProfile = MedicalProfile(
       medicalProfileId: profile?.medicalProfileId ?? '',
-      userProfileId: profile?.userProfileId ?? '',
+      userId: profile?.userId ?? userId!,
       isDiabetic: _isDiabetic, // Use the local state
       allergies: allergiesController.text.isNotEmpty
           ? allergiesController.text.split(', ')
@@ -72,7 +74,7 @@ class _EditMedicalProfileScreenState extends State<EditMedicalProfileScreen> {
 
     bool isUpdated = false;
     try {
-      if (profile?.medicalProfileId != null && profile!.medicalProfileId.isNotEmpty) {
+      if (profile?.userId != null && profile!.userId.isNotEmpty) {
         await widget.viewModel.updateMedicalProfile(updatedProfile);
         isUpdated = true;
       } else {

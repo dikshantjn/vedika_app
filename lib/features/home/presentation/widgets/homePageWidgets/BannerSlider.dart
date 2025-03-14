@@ -88,7 +88,7 @@ class BannerSlider extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Expanded(
+                            Flexible( // Changed Expanded to Flexible
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -102,13 +102,14 @@ class BannerSlider extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Flexible(
+                                  Flexible( // Keeps the description flexible
                                     child: Text(
                                       offer.description,
                                       style: TextStyle(
                                         color: _getTextColor(offerColor),
                                         fontSize: 12,
                                       ),
+                                      overflow: TextOverflow.ellipsis, // Prevent overflow
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -132,6 +133,7 @@ class BannerSlider extends StatelessWidget {
                                 offer.image,
                                 height: 120,
                                 width: 120,
+                                fit: BoxFit.cover, // Make sure image fits properly
                               ),
                             ),
                           ],
