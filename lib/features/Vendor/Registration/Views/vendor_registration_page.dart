@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/vendor_registration_view_model.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/vendor_registration_view_model.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/Widgets/login_widget.dart';
-
 
 class VendorRegistrationPage extends StatelessWidget {
   @override
@@ -49,7 +49,12 @@ class VendorRegistrationPage extends StatelessWidget {
 
                         // Display Login or Registration
                         if (viewModel.selectedVendorType == null) ...[
-                          LoginWidget(viewModel: viewModel),
+                          // Wrap the LoginWidget with the VendorLoginViewModel
+                          ChangeNotifierProvider(
+                            create: (_) => VendorLoginViewModel(),
+                            child: LoginWidget(
+                            ),
+                          ),
                           SizedBox(height: 25),
                           Divider(color: Colors.grey[400], thickness: 1.5),
                           SizedBox(height: 25),

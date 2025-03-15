@@ -15,5 +15,7 @@ class ApiEndpoints {
 
 // Medical Profile APIs
   static const String medicalProfile = '$_baseUrl/medical-profile';
+  static const String registerVendor = '$_baseUrl/vendors/register'; // Vendor registration
+  static const String loginVendor = '$_baseUrl/vendors/login'; // Vendor registration
 
 }

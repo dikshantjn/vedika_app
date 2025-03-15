@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/View/hospital_registration_form.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/medical_store_registration.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/ambulance_agency_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/blood_bank_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Views/medical_store_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/pathology_registration_form.dart';
 
 class VendorRegistrationViewModel extends ChangeNotifier {
