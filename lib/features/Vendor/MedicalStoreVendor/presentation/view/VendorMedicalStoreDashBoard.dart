@@ -1,122 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorProfileContent.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
+import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorBottomNav.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorDashboardContent.dart';
+import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorDrawerMenu.dart';
 
 class VendorMedicalStoreDashBoardScreen extends StatefulWidget {
   @override
-  _VendorMedicalStoreDashBoardState createState() => _VendorMedicalStoreDashBoardState();
+  _VendorMedicalStoreDashBoardScreenState createState() =>
+      _VendorMedicalStoreDashBoardScreenState();
 }
 
-class _VendorMedicalStoreDashBoardState extends State<VendorMedicalStoreDashBoardScreen> {
-  bool isServiceOnline = true; // To track the service status (On/Off)
+class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDashBoardScreen> {
+  int _currentIndex = 0;
 
-  // Dummy data for orders (replace with actual dynamic data)
-  List<Map<String, String>> orders = [
-    {'orderId': '001', 'customerName': 'John Doe', 'status': 'Pending'},
-    {'orderId': '002', 'customerName': 'Jane Smith', 'status': 'Accepted'},
+  final List<Widget> _pages = [
+    const DashboardContent(), // Dashboard Page (Only this page will have an app bar)
+    const Center(child: Text("Orders Page", style: TextStyle(fontSize: 24))),
+    const Center(child: Text("Inventory Page", style: TextStyle(fontSize: 24))),
+    const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
+    MedicalStoreVendorProfileContent(), // Profile Page
   ];
 
-  // Dummy data for return requests
-  List<Map<String, String>> returnRequests = [
-    {'orderId': '003', 'customerName': 'Mark Lee', 'status': 'Pending'},
+  final List<Widget> _specialPages = [
+    const Center(child: Text("Reports & Analytics", style: TextStyle(fontSize: 24))),
+    const Center(child: Text("Settings Page", style: TextStyle(fontSize: 24))),
   ];
 
-  // Dummy data for analytics
-  Map<String, int> analytics = {
-    'totalOrders': 150,
-    'averageOrderValue': 100,
-    'ordersToday': 20,
-    'returnsThisWeek': 5,
-  };
-
-  // Function to toggle service on/off
-  void toggleService() {
+  void _onTabSelected(int index) {
     setState(() {
-      isServiceOnline = !isServiceOnline;
+      _currentIndex = index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Vendor Medical Store Dashboard"),
+      backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+      drawer: MedicalStoreVendorDrawerMenu(onItemSelected: _onTabSelected),
+      body: _currentIndex == 0
+          ? NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              title: const Text(
+                "Vighnaharta",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
+              iconTheme: const IconThemeData(color: Colors.white),
+              pinned: true,
+              floating: true,
+              actions: [_buildAppBarActions()],
+            ),
+          ];
+        },
+        body: _pages[_currentIndex],
+      )
+          : _pages[_currentIndex], // No AppBar for other pages
+      bottomNavigationBar: MedicalStoreVendorBottomNav(
+        currentIndex: _currentIndex,
+        onTabSelected: _onTabSelected,
+        isSpecialPage: _currentIndex >= 5,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+    );
+  }
+
+  Widget _buildAppBarActions() {
+    return Consumer<MedicalStoreVendorDashboardViewModel>(
+      builder: (context, viewModel, child) {
+        return Row(
           children: [
-            // Service Status Toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Service Status: ${isServiceOnline ? "Online" : "Offline"}',
-                  style: TextStyle(fontSize: 16),
-                ),
-                Switch(
-                  value: isServiceOnline,
-                  onChanged: (value) {
-                    toggleService();
-                    // Implement logic to handle service status update
-                  },
-                ),
-              ],
+            Text(
+              viewModel.isServiceOnline ? "Online" : "Offline",
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
-            Divider(),
-            SizedBox(height: 20),
-
-            // Order Requests Notification
-            Text("Incoming Orders", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ...orders.map((order) => Card(
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: ListTile(
-                title: Text("Order ID: ${order['orderId']}"),
-                subtitle: Text("Customer: ${order['customerName']}"),
-                trailing: Text("Status: ${order['status']}"),
-                onTap: () {
-                  // Handle order acceptance or viewing details
-                },
-              ),
-            )),
-
-            Divider(),
-            SizedBox(height: 20),
-
-            // Return Requests
-            Text("Return Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ...returnRequests.map((request) => Card(
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: ListTile(
-                title: Text("Return Request for Order ID: ${request['orderId']}"),
-                subtitle: Text("Customer: ${request['customerName']}"),
-                trailing: Text("Status: ${request['status']}"),
-                onTap: () {
-                  // Handle return request
-                },
-              ),
-            )),
-
-            Divider(),
-            SizedBox(height: 20),
-
-            // Analytics Section
-            Text("Analytics", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Card(
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: ListTile(
-                title: Text("Total Orders: ${analytics['totalOrders']}"),
-                subtitle: Text("Average Order Value: ₹${analytics['averageOrderValue']}"),
-              ),
+            Switch(
+              value: viewModel.isServiceOnline,
+              activeColor: MedicalStoreVendorColorPalette.secondaryColor,
+              inactiveThumbColor: Colors.grey,
+              onChanged: (value) => viewModel.toggleServiceStatus(),
             ),
-            Card(
-              margin: EdgeInsets.symmetric(vertical: 10),
-              child: ListTile(
-                title: Text("Orders Today: ${analytics['ordersToday']}"),
-                subtitle: Text("Returns This Week: ${analytics['returnsThisWeek']}"),
-              ),
+            IconButton(
+              icon: const Icon(Icons.notifications, color: Colors.white),
+              onPressed: () {},
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

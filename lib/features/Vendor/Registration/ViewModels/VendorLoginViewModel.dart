@@ -8,7 +8,12 @@ class VendorLoginViewModel extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final VendorLoginService _vendorLoginService = VendorLoginService(); // Create an instance of the service
+  final VendorLoginService _vendorLoginService = VendorLoginService(); // Vendor login service instance
+
+  bool _isVendorLoggedIn = false; // To track vendor login state
+
+  // Getter for login status
+  bool get isVendorLoggedIn => _isVendorLoggedIn;
 
   // Vendor types with corresponding role numbers
   final Map<String, int> vendorRoleNumbers = {
@@ -21,77 +26,98 @@ class VendorLoginViewModel extends ChangeNotifier {
     "Delivery Partner": 7,
   };
 
-  Future<void> login(BuildContext context) async {
-    // Check if fields are not empty and a role is selected
-    if (emailController.text.isNotEmpty &&
-        passwordController.text.isNotEmpty &&
-        selectedRole != null && roleNumber != null) {
+  /// **🔹 Check Vendor Login Status**
+  Future<void> checkLoginStatus() async {
+    _isVendorLoggedIn = await _vendorLoginService.isVendorLoggedIn();
 
-      // Debugging: Print selected role and role number
-      print("Role: $selectedRole, Role Number: $roleNumber");
+    // Await the getVendorToken() method and then print the token value
+    String? vendorToken = await _vendorLoginService.getVendorToken();
+    print("Vendor Token: $vendorToken");
 
-      // Show loading indicator while logging in
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Logging in...")));
-
-      try {
-        // Call the VendorLoginService to attempt login
-        var response = await _vendorLoginService.loginVendor(
-          emailController.text,
-          passwordController.text,
-          roleNumber!,    // Pass the role number
-        );
-
-        // Debugging: Print the response to check the structure
-        print("Login response: $response");
-
-        // Check if login was successful
-        if (response != null && response['message'] == 'Login successful') {
-          // Successfully logged in
-          String token = response['token'];  // Store token securely
-          var vendor = response['vendor'];  // You can store vendor info if needed
-
-          // Notify user of successful login
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
-
-          // Add delay to allow snackbar to show, then navigate
-          await Future.delayed(Duration(seconds: 1));
-
-          // Use the correct Navigator context and push the route
-          await Navigator.of(context).pushReplacementNamed(AppRoutes.VendorMedicalStoreDashBoard);
-        } else {
-          // Show error message if login failed
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'] ?? "Error occurred")));
-        }
-      } catch (e) {
-        // Handle any exceptions or errors
-        print("Error during login: $e");
-
-        // Show error message if something went wrong
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An error occurred during login")));
-      }
-    } else {
-      // Show error message if fields are empty or role is not selected
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please fill in all fields and select a role")));
-    }
-  }
-
-
-
-
-// Update the role selection and assign role number
-  void updateRole(String newRole) {
-    selectedRole = newRole;
-    roleNumber = vendorRoleNumbers[newRole];  // Assign role number based on the selected role
-    print("Selected Role: $selectedRole, Role Number: $roleNumber"); // Add this for debugging
     notifyListeners();
   }
 
-  // Function to validate the email
+  /// **🔹 Vendor Login**
+  Future<void> login(BuildContext context) async {
+    if (emailController.text.trim().isNotEmpty &&
+        passwordController.text.trim().isNotEmpty &&
+        selectedRole != null &&
+        roleNumber != null) {
+
+      String email = emailController.text.trim();
+      String password = passwordController.text.trim();
+      int role = roleNumber!;
+
+      print("📢 Attempting login...");
+      print("🔹 Email: $email");
+      print("🔹 Password: $password");
+      print("🔹 Role: $selectedRole, Role Number: $role");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Logging in...")),
+      );
+
+      try {
+        var response = await _vendorLoginService.loginVendor(email, password, role);
+
+        print("✅ Login response received: $response");
+
+        if (response.containsKey('success') && response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login Successful")),
+          );
+
+          _isVendorLoggedIn = true;  // Update login state
+          notifyListeners();
+
+          await Future.delayed(const Duration(seconds: 1));
+
+          // Navigate to Vendor Dashboard (Adjust route as needed)
+          await Navigator.of(context).pushReplacementNamed(AppRoutes.VendorMedicalStoreDashBoard);
+        } else {
+          String errorMessage = response['message'] ?? "Invalid credentials or role.";
+          print("❌ Login failed: $errorMessage");
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
+      } catch (e) {
+        print("🚨 Error during login: $e");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("An error occurred: $e")),
+        );
+      }
+    } else {
+      print("⚠️ Missing fields - Please enter all required fields.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields and select a role")),
+      );
+    }
+  }
+
+  /// **🔹 Logout Vendor**
+  Future<void> logout() async {
+    await _vendorLoginService.logoutVendor();
+    _isVendorLoggedIn = false; // Update login state
+    notifyListeners();
+  }
+
+  /// **🔹 Update Selected Role**
+  void updateRole(String newRole) {
+    selectedRole = newRole;
+    roleNumber = vendorRoleNumbers[newRole];
+    print("Selected Role: $selectedRole, Role Number: $roleNumber");
+    notifyListeners();
+  }
+
+  /// **🔹 Validate Email**
   bool isValidEmail() {
     return emailController.text.isNotEmpty && emailController.text.contains('@');
   }
 
-  // Function to validate the password
+  /// **🔹 Validate Password**
   bool isValidPassword() {
     return passwordController.text.isNotEmpty && passwordController.text.length >= 6;
   }

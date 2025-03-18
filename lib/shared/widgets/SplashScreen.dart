@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,22 +22,36 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateAfterDelay() async {
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 3));
 
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    await authViewModel.checkLoginStatus(); // ✅ Ensure login status is updated
+    final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
 
-    print("Final Login Status: ${authViewModel.isLoggedIn}");
+    // ✅ Check both user and vendor login status in parallel
+    await Future.wait([
+      authViewModel.checkLoginStatus(),
+      vendorAuthViewModel.checkLoginStatus(),
+    ]);
+
+    print("Final User Login Status: ${authViewModel.isLoggedIn}");
+    print("Final Vendor Login Status: ${vendorAuthViewModel.isVendorLoggedIn}");
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (authViewModel.isLoggedIn) {
-        print("✅ Navigating to HomePage...");
+        print("✅ Navigating to User HomePage...");
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomePage()));
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else if (vendorAuthViewModel.isVendorLoggedIn) {
+        print("✅ Navigating to Vendor Dashboard...");
+        Navigator.pushReplacementNamed(context, AppRoutes.VendorMedicalStoreDashBoard);
       } else {
         print("❌ Navigating to Login...");
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => UserLoginScreen()));
+          context,
+          MaterialPageRoute(builder: (context) => UserLoginScreen()), // Default to User Login
+        );
       }
     });
   }
@@ -48,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [ColorPalette.primaryColor, Color(0xFF99D98C)],
+            colors: [ColorPalette.primaryColor, const Color(0xFF99D98C)],
           ),
         ),
         child: Center(
@@ -59,17 +75,17 @@ class _SplashScreenState extends State<SplashScreen> {
                 'assets/animations/uploadPrescription.json', // Replace with your Lottie animation
                 height: 150,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TweenAnimationBuilder(
                 tween: Tween<double>(begin: 0, end: 1),
-                duration: Duration(seconds: 2),
+                duration: const Duration(seconds: 2),
                 builder: (context, double opacity, child) {
                   return Opacity(
                     opacity: opacity,
                     child: child,
                   );
                 },
-                child: Column(
+                child: const Column(
                   children: [
                     Text(
                       'Vedika - Healthcare App',

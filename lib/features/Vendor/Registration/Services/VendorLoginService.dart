@@ -1,59 +1,72 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 
 class VendorLoginService {
-  final Dio _dio = Dio();  // Create an instance of Dio
+  final Dio _dio = Dio();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(); // Secure Storage
 
-  // Function to perform the vendor login
+  static const String _tokenKey = "vendor_jwt_token"; // Key for storing token
+
+  /// **🔹 Vendor Login & Session Management**
   Future<Map<String, dynamic>> loginVendor(String email, String password, int roleNumber) async {
     try {
-      // Prepare request body with role and role number
       Map<String, dynamic> body = {
         'email': email,
         'password': password,
-        'role': roleNumber,         // Add the role to the request body
+        'role': roleNumber,
       };
 
-      // Send POST request to the login API
       Response response = await _dio.post(ApiEndpoints.loginVendor, data: body);
 
-      // Debugging: Print the response to understand the structure
-      print("Response: ${response.data}");
-
-      // Check if the response status is 200
       if (response.statusCode == 200) {
-        // Successful login
+        final data = response.data;
+        final String token = data['token'];
+
+        // **🔹 Store Token Securely**
+        await _storage.write(key: _tokenKey, value: token);
+
         return {
-          'message': response.data['message'],
-          'token': response.data['token'],
-          'vendor': response.data['vendor'],
+          'success': true,
+          'message': data['message'],
+          'token': token,
+          'vendor': data['vendor'],
         };
       } else {
-        // If API response is not 200, return the message
         return {
-          'message': response.data['message'] ?? 'Error logging in vendor',
+          'success': false,
+          'message': response.data['message'] ?? 'Login failed',
         };
       }
-    } on DioError catch (e) {
-      // If an error occurs during the request, handle it here
-      if (e.response != null) {
-        // Handle server-side errors
-        print('DioError: ${e.response?.data}');
-        return {
-          'message': e.response?.data['message'] ?? 'Error logging in: ${e.message}',
-        };
-      } else {
-        // Handle network issues or other request-related errors
-        return {
-          'message': 'Network or connection error: ${e.message}',
-        };
-      }
+    } on DioException catch (e) {
+      return _handleDioError(e);
     } catch (e) {
-      // Catch any other unknown errors
-      print('Unknown Error: ${e.toString()}');
-      return {
-        'message': 'An unexpected error occurred: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Unexpected error: ${e.toString()}'};
+    }
+  }
+
+  /// **🔹 Logout Vendor & Clear Token**
+  Future<void> logoutVendor() async {
+    await _storage.delete(key: _tokenKey); // Remove JWT token
+  }
+
+  /// **🔹 Check if Vendor is Logged In**
+  Future<bool> isVendorLoggedIn() async {
+    String? token = await _storage.read(key: _tokenKey);
+    return token != null;
+  }
+
+  /// **🔹 Get JWT Token**
+  Future<String?> getVendorToken() async {
+    return await _storage.read(key: _tokenKey);
+  }
+
+  /// **🔹 Handle Dio Errors**
+  Map<String, dynamic> _handleDioError(DioException e) {
+    if (e.response != null) {
+      return {'success': false, 'message': e.response?.data['message'] ?? 'Server error'};
+    } else {
+      return {'success': false, 'message': 'Network error: ${e.message}'};
     }
   }
 }

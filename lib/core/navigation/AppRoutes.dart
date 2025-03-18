@@ -53,8 +53,11 @@ class AppRoutes {
 
   //Vendor
   static const String VendorMedicalStoreDashBoard = "/VendorMedicalStoreDashBoard";
-
-
+  static const String MedicalStoreVendordashboard = "/MedicalStoreVendordashboard";
+  static const String MedicalStoreVendorOrders = "/orders";
+  static const String MedicalStoreVendorInventory = "/inventory";
+  static const String MedicalStoreVendorReturns = "/returns";
+  static const String MedicalStoreVendorSettings = "/settings";
 
 
 

@@ -1,22 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/MedicalStoreFileUploadService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/Vendor.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Models/hospital_model.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 
 class MedicalStoreRegistrationViewModel extends ChangeNotifier {
-
-  // MedicalStoreVendorService instance
   final MedicalStoreVendorService _vendorService = MedicalStoreVendorService();
+
   // Controllers for text fields
   final List<TextEditingController> _controllers = List.generate(
-    18, // Increased count to include new fields
-        (_) => TextEditingController(),
+    20, (_) => TextEditingController(),
   );
-
-  VoidCallback get registrationUpload => licenseUpload;
 
   TextEditingController get storeNameController => _controllers[0];
   TextEditingController get ownerNameController => _controllers[1];
@@ -27,212 +25,362 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
   TextEditingController get emailController => _controllers[6];
   TextEditingController get websiteController => _controllers[7];
   TextEditingController get gstNumberController => _controllers[8];
-  TextEditingController get drugLicenseNumberController => _controllers[9];
+  TextEditingController get licenseNumberController => _controllers[9];
   TextEditingController get addressController => _controllers[10];
   TextEditingController get panNumberController => _controllers[11];
   TextEditingController get specialMedicationsController => _controllers[12];
   TextEditingController get storeTimingController => _controllers[13];
   TextEditingController get storeDaysController => _controllers[14];
-
-  // **Newly Added Controllers**
   TextEditingController get landmarkController => _controllers[15];
-  TextEditingController get contactController => _controllers[16];
-
-  TextEditingController floorController = TextEditingController(); // Separate controller
+  TextEditingController get floorController => _controllers[16];
+  TextEditingController get locationController => _controllers[17];
 
   // Dropdown selections
   ValueNotifier<String?> medicineType = ValueNotifier<String?>(null);
   ValueNotifier<String?> paymentOptions = ValueNotifier<String?>(null);
 
   // Checkboxes
-  ValueNotifier<bool> liftAccess = ValueNotifier<bool>(false);
-  ValueNotifier<bool> wheelchairAccess = ValueNotifier<bool>(false);
-  ValueNotifier<bool> parking = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isRareMedicationsAvailable = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isOnlinePayment = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isLiftAccess = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isWheelchairAccess = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isParkingAvailable = ValueNotifier<bool>(false);
 
   // Medical Store Data
   String generatedStoreId = "";
 
-  // Registration Certificates (e.g., Drug License, GST Registration)
-  List<RegistrationCertificate> registrationCertificates = [];
-  TextEditingController medicalOwnerController = TextEditingController();
-
-  // Store Images
-  List<MedicalStoreImage> imageUrls = [];
-
-  Map<String, String> certificateDescriptions = {}; // Maps certificate URLs to descriptions
-  Map<String, String> imageDescriptions = {}; // Maps image URLs to descriptions
+  // File Uploads (Maintain Name & File Object)
+  List<Map<String, Object>> registrationCertificates = [];
+  List<Map<String, Object>> complianceCertificates = [];
+  List<Map<String, Object>> storePhotos = [];
 
   /// **Set Registration Certificates**
-  void setRegistrationCertificates(List<RegistrationCertificate> certificates) {
+  set setRegistrationCertificates(List<Map<String, Object>> certificates) {
     registrationCertificates = certificates;
     notifyListeners();
   }
 
-  /// **Add a Single Registration Certificate**
-  void addRegistrationCertificate(RegistrationCertificate certificate) {
-    if (!registrationCertificates.contains(certificate)) {
-      registrationCertificates.add(certificate);
+  /// **Set Compliance Certificates**
+  set setComplianceCertificates(List<Map<String, Object>> certificates) {
+    complianceCertificates = certificates;
+    notifyListeners();
+  }
+
+  /// **Set Store Photos**
+  set setStorePhotos(List<Map<String, Object>> photos) {
+    storePhotos = photos;
+    notifyListeners();
+  }
+
+  /// **Upload Registration Certificates**
+  Future<void> uploadRegistrationCertificates(List<Map<String, Object>> selectedFiles) async {
+    print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
+
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      print("Uploading Registration Certificates...");
+      print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
+
+      registrationCertificates.addAll(selectedFiles);
+      print("Updated Registration Certificates List: $registrationCertificates"); // Debugging the updated list
+
       notifyListeners();
+    } else {
+      print("No registration certificates selected or selectedFiles is empty.");
     }
   }
 
-  /// **Remove a Registration Certificate**
-  void removeRegistrationCertificate(RegistrationCertificate certificate) {
-    registrationCertificates.remove(certificate);
-    notifyListeners();
-  }
+  /// **Upload Compliance Certificates**
+  Future<void> uploadComplianceCertificates(List<Map<String, Object>> selectedFiles) async {
+    print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
 
-  /// **Set Store Images**
-  void setMedicalStoreImages(List<MedicalStoreImage> images) {
-    imageUrls = images;
-    notifyListeners();
-  }
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      print("Uploading Compliance Certificates...");
+      print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
 
-  /// **Add a Single Store Image**
-  void addImage(MedicalStoreImage image) {
-    if (!imageUrls.contains(image)) {
-      imageUrls.add(image);
+      complianceCertificates.addAll(selectedFiles);
+      print("Updated Compliance Certificates List: $complianceCertificates"); // Debugging the updated list
+
       notifyListeners();
+    } else {
+      print("No compliance certificates selected or selectedFiles is empty.");
     }
   }
 
-  /// **Remove a Store Image**
-  void removeImage(MedicalStoreImage image) {
-    imageUrls.remove(image);
-    notifyListeners();
+  /// **Upload Store Photos**
+  Future<void> uploadStorePhotos(List<Map<String, Object>> selectedFiles) async {
+    print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
+
+    if (selectedFiles != null && selectedFiles.isNotEmpty) {
+      print("Uploading Store Photos...");
+      print("Selected Files: $selectedFiles"); // Debugging line to see the content of the files
+
+      storePhotos.addAll(selectedFiles);
+      print("Updated Store Photos List: $storePhotos"); // Debugging the updated list
+
+      notifyListeners();
+    } else {
+      print("No store photos selected or selectedFiles is empty.");
+    }
   }
 
-  /// **Update Description for a Certificate**
-  void updateCertificateDescription(String certificateUrl, String description) {
-    certificateDescriptions[certificateUrl] = description;
-    notifyListeners();
+  /// **File Picker Helper**
+  Future<List<Map<String, Object>>?> _pickFiles() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: true,
+    );
+
+    if (result != null) {
+      return result.files
+          .where((file) => file.path != null)
+          .map((file) => {
+        "dt": file.name,
+        "file": File(file.path!)
+      })
+          .toList();
+    }
+    return null;
   }
 
-  /// **Update Description for a Store Image**
-  void updateImageDescription(String imageUrl, String description) {
-    imageDescriptions[imageUrl] = description;
-    notifyListeners();
-  }
-
-  /// **Get List of States**
-  List<String> getStates() {
-    return StateCityDataProvider.states.map((state) => state.name).toList();
-  }
-
-  /// **Get List of Cities for Selected State**
-  List<String> getCities(String stateName) {
-    return StateCityDataProvider.getCities(stateName);
-  }
-
-  void updateState(String state) {
-    stateController.text = state;
-    notifyListeners();
-  }
-
-  void updateCity(String city) {
-    cityController.text = city;
-    notifyListeners();
-  }
-
-  /// **Generate a Unique Medical Store ID**
+  /// **Generate Unique Store ID**
   int _storeCounter = 1;
-
   void generateStoreId() {
     final storeName = storeNameController.text.trim();
     final stateName = stateController.text.trim();
     final cityName = cityController.text.trim();
 
-    print("Store Name: $storeName");
-    print("State Name: $stateName");
-    print("City Name: $cityName");
-
-    // Fetch State Code
     final stateCode = StateCityDataProvider.getStateCode(stateName);
-    print("State Code: $stateCode");
-
-    // Fetch City Code
     final cityCode = StateCityDataProvider.getCityCode(stateName, cityName);
-    print("City Code: $cityCode");
 
     if (storeName.isEmpty || stateCode.isEmpty || cityCode.isEmpty) {
       generatedStoreId = "Invalid - Complete Address Required";
     } else {
-      final nameInitial = "C"; // Store Initial
       final sequentialNumber = NumberFormat("00000").format(_storeCounter);
-      generatedStoreId = "$nameInitial-$stateCode-$cityCode-$sequentialNumber";
-
-      _storeCounter++; // Increment counter (Fetch from DB for persistence)
+      generatedStoreId = "C-$stateCode-$cityCode-$sequentialNumber";
+      _storeCounter++;
     }
 
-    print("Generated Store ID: $generatedStoreId");
     notifyListeners();
   }
 
-  /// **Handle File Uploads**
-  VoidCallback licenseUpload = () {
-    print("Upload Registration & Licensing Document clicked");
-  };
-
-  VoidCallback complianceUpload = () {
-    print("Upload Compliance Document clicked");
-  };
-
-  VoidCallback photoUpload = () {
-    print("Upload Store Photos clicked");
-  };
-
-  // **Other variables and methods**
-
-  /// **Handle Vendor Registration**
-  Future<void> registerVendor() async {
-    // Collect data from controllers and prepare Vendor and VendorMedicalStoreProfile objects
-    final vendor = Vendor(
-      generatedId: generatedStoreId,
-      vendorRole: 3, // Assuming role is Medical Store
-      phoneNumber: contactNumberController.text,
-      email: emailController.text,
-    );
-
-    final medicalStore = VendorMedicalStoreProfile(
-      vendorId: vendor.vendorId, // Assign vendor ID after saving the Vendor
-      name: storeNameController.text,
-      address: addressController.text,
-      landmark: landmarkController.text,
-      state: stateController.text,
-      city: cityController.text,
-      pincode: pincodeController.text,
-      contactNumber: contactNumberController.text,
-      ownerName: ownerNameController.text,
-      licenseNumber: drugLicenseNumberController.text,
-      gstNumber: gstNumberController.text,
-      storeTiming: storeTimingController.text,
-      storeDays: storeDaysController.text,
-      floor: floorController.text,
-      availableMedicines: [specialMedicationsController.text], // Adjust as per your needs
-      images: imageUrls.map((image) => image.imageUrl).toList(), // Assuming image URLs are stored
-    );
-    print('Sending vendor: $vendor');
-    print('Sending medical store: $medicalStore');
-
+  Future<void> registerVendor(BuildContext context) async {
     try {
-      // Call the registerVendor method in the service class
-      final response = await _vendorService.registerVendor(
-        vendor: vendor, // Pass vendor as named argument
-        medicalStore: medicalStore, // Pass medicalStore as named argument
+      print("Register Vendor method called");
+
+      final vendor = Vendor(
+        generatedId: generatedStoreId,
+        vendorRole: 3,
+        phoneNumber: contactNumberController.text,
+        email: emailController.text,
       );
-      if (response.statusCode == 200) {
-        // Registration successful, handle success (e.g., show a message, navigate, etc.)
-        print("Vendor registered successfully");
-        // Optionally, notify listeners to update UI if needed
+
+      // Create the medical store object without the URLs for registration, compliance, and photos
+      final medicalStore = VendorMedicalStoreProfile(
+        vendorId: null, // Initially null, will be updated after registration
+        name: storeNameController.text,
+        address: addressController.text,
+        landmark: landmarkController.text,
+        state: stateController.text,
+        city: cityController.text,
+        pincode: pincodeController.text,
+        contactNumber: contactNumberController.text,
+        emailId: emailController.text,
+        ownerName: ownerNameController.text,
+        licenseNumber: licenseNumberController.text,
+        gstNumber: gstNumberController.text,
+        panNumber: panNumberController.text,
+        storeTiming: storeTimingController.text,
+        storeDays: storeDaysController.text,
+        floor: floorController.text,
+        medicineType: medicineType.value ?? "",
+        isRareMedicationsAvailable: isRareMedicationsAvailable.value,
+        isOnlinePayment: isOnlinePayment.value,
+        isLiftAccess: isLiftAccess.value,
+        isWheelchairAccess: isWheelchairAccess.value,
+        isParkingAvailable: isParkingAvailable.value,
+        location: locationController.text,
+        availableMedicines: [specialMedicationsController.text],
+        registrationCertificates: [], // Initially empty
+        complianceCertificates: [],  // Initially empty
+        photos: [],  // Initially empty
+      );
+
+      // Send the data to the backend
+      print("Sending data to server...");
+      final response = await _vendorService.registerVendor(
+        vendor: vendor,
+        medicalStore: medicalStore,
+      );
+
+      // Log the server response
+      print("Response from server: ${response.statusCode}, ${response.data}");
+
+      // Handle the response
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Extract vendorId from the server response
+        final vendorId = response.data['vendor']['vendorId'];
+        print("Extracted vendorId: $vendorId");
+
+        // Update the medical store object with the vendorId
+        final updatedMedicalStore = VendorMedicalStoreProfile(
+          vendorId: vendorId, // Set the vendorId
+          name: storeNameController.text,
+          address: addressController.text,
+          landmark: landmarkController.text,
+          state: stateController.text,
+          city: cityController.text,
+          pincode: pincodeController.text,
+          contactNumber: contactNumberController.text,
+          emailId: emailController.text,
+          ownerName: ownerNameController.text,
+          licenseNumber: licenseNumberController.text,
+          gstNumber: gstNumberController.text,
+          panNumber: panNumberController.text,
+          storeTiming: storeTimingController.text,
+          storeDays: storeDaysController.text,
+          floor: floorController.text,
+          medicineType: medicineType.value ?? "",
+          isRareMedicationsAvailable: isRareMedicationsAvailable.value,
+          isOnlinePayment: isOnlinePayment.value,
+          isLiftAccess: isLiftAccess.value,
+          isWheelchairAccess: isWheelchairAccess.value,
+          isParkingAvailable: isParkingAvailable.value,
+          location: locationController.text,
+          availableMedicines: [specialMedicationsController.text],
+          registrationCertificates: [], // Initially empty
+          complianceCertificates: [],  // Initially empty
+          photos: [],  // Initially empty
+        );
+
+        // Only upload files if the server response is successful
+        List<String> registrationCertificateUrls = [];
+        for (var cert in registrationCertificates) {
+          var file = cert['file'] as File;
+          var name = cert['name'] as String;
+          print("Uploading registration certificate...");
+
+          try {
+            String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
+            if (url != null) {
+              registrationCertificateUrls.add(url);
+              print("Registration certificate uploaded successfully: $url");
+            } else {
+              print("Failed to upload registration certificate: $cert");
+            }
+          } catch (uploadError) {
+            print("Error uploading registration certificate: $uploadError");
+          }
+        }
+
+        List<String> complianceCertificateUrls = [];
+        for (var cert in complianceCertificates) {
+          var file = cert['file'] as File;
+          var name = cert['name'] as String;
+          print("Uploading compliance certificate...");
+
+          try {
+            String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
+            if (url != null) {
+              complianceCertificateUrls.add(url);
+              print("Compliance certificate uploaded successfully: $url");
+            } else {
+              print("Failed to upload compliance certificate: $cert");
+            }
+          } catch (uploadError) {
+            print("Error uploading compliance certificate: $uploadError");
+          }
+        }
+
+        List<String> photoUrls = [];
+        for (var photo in storePhotos) {
+          var file = photo['file'] as File;
+          var name = photo['name'] as String;
+          print("Uploading store photo...");
+
+          try {
+            String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
+            if (url != null) {
+              photoUrls.add(url);
+              print("Store photo uploaded successfully: $url");
+            } else {
+              print("Failed to upload store photo: $photo");
+            }
+          } catch (uploadError) {
+            print("Error uploading store photo: $uploadError");
+          }
+        }
+
+        // Update the medical store object with the URLs for registration, compliance, and photos
+        final updatedMedicalStoreWithUrls = VendorMedicalStoreProfile(
+          vendorId: vendorId, // Use the same vendorId
+          name: storeNameController.text,
+          address: addressController.text,
+          landmark: landmarkController.text,
+          state: stateController.text,
+          city: cityController.text,
+          pincode: pincodeController.text,
+          contactNumber: contactNumberController.text,
+          emailId: emailController.text,
+          ownerName: ownerNameController.text,
+          licenseNumber: licenseNumberController.text,
+          gstNumber: gstNumberController.text,
+          panNumber: panNumberController.text,
+          storeTiming: storeTimingController.text,
+          storeDays: storeDaysController.text,
+          floor: floorController.text,
+          medicineType: medicineType.value ?? "",
+          isRareMedicationsAvailable: isRareMedicationsAvailable.value,
+          isOnlinePayment: isOnlinePayment.value,
+          isLiftAccess: isLiftAccess.value,
+          isWheelchairAccess: isWheelchairAccess.value,
+          isParkingAvailable: isParkingAvailable.value,
+          location: locationController.text,
+          availableMedicines: [specialMedicationsController.text],
+          registrationCertificates: registrationCertificateUrls,
+          complianceCertificates: complianceCertificateUrls,
+          photos: photoUrls,
+        );
+
+        // Send the updated medical store object to the backend
+        final updateResponse = await _vendorService.updateMedicalStore(
+          medicalStore: updatedMedicalStoreWithUrls,
+        );
+
+        if (updateResponse.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Vendor registered and files uploaded successfully"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Failed to update medical store with file URLs: ${updateResponse.data}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } else {
-        // Handle server-side error
-        print("Failed to register vendor: ${response.data}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to register vendor: ${response.data}"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
-      // Handle network or other errors
       print("Error during registration: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error during registration: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
+
 
 
   /// **Dispose Controllers Properly**
@@ -241,7 +389,7 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
     for (var controller in _controllers) {
       controller.dispose();
     }
-    floorController.dispose();
     super.dispose();
   }
 }
+

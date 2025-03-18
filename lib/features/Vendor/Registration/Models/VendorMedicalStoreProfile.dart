@@ -1,6 +1,6 @@
 class VendorMedicalStoreProfile {
-  final String? vendorId;  // Vendor ID is now optional
-  final String? generatedId;  // Generated ID is now optional
+  final String? vendorId;
+  final String? generatedId;
   final String name;
   final String address;
   final String landmark;
@@ -8,18 +8,29 @@ class VendorMedicalStoreProfile {
   final String city;
   final String pincode;
   final String contactNumber;
+  final String emailId;
   final String ownerName;
   final String licenseNumber;
   final String gstNumber;
+  final String panNumber;
   final String storeTiming;
   final String storeDays;
   final String floor;
+  final String medicineType;
+  final bool isRareMedicationsAvailable;
+  final bool isOnlinePayment;
+  final bool isLiftAccess;
+  final bool isWheelchairAccess;
+  final bool isParkingAvailable;
+  final String location;
   final List<String> availableMedicines;
-  final List<String> images;
+  final List<String> registrationCertificates;  // Changed to List<String>
+  final List<String> complianceCertificates;   // Changed to List<String>
+  final List<String> photos;  // Changed to List<String>
 
   VendorMedicalStoreProfile({
-    this.vendorId,  // Made optional
-    this.generatedId,  // Made optional
+    this.vendorId,
+    this.generatedId,
     required this.name,
     required this.address,
     required this.landmark,
@@ -27,21 +38,31 @@ class VendorMedicalStoreProfile {
     required this.city,
     required this.pincode,
     required this.contactNumber,
+    required this.emailId,
     required this.ownerName,
     required this.licenseNumber,
     required this.gstNumber,
+    required this.panNumber,
     required this.storeTiming,
     required this.storeDays,
     required this.floor,
+    required this.medicineType,
+    required this.isRareMedicationsAvailable,
+    required this.isOnlinePayment,
+    required this.isLiftAccess,
+    required this.isWheelchairAccess,
+    required this.isParkingAvailable,
+    required this.location,
     required this.availableMedicines,
-    required this.images,
+    required this.registrationCertificates,
+    required this.complianceCertificates,
+    required this.photos,
   });
 
-  /// **Factory Method to Create Object from JSON**
   factory VendorMedicalStoreProfile.fromJson(Map<String, dynamic> json) {
     return VendorMedicalStoreProfile(
-      vendorId: json['vendorId'],  // Can be null
-      generatedId: json['generatedId'],  // Can be null
+      vendorId: json['vendorId'],
+      generatedId: json['generatedId'],
       name: json['name'],
       address: json['address'],
       landmark: json['landmark'],
@@ -49,22 +70,32 @@ class VendorMedicalStoreProfile {
       city: json['city'],
       pincode: json['pincode'],
       contactNumber: json['contactNumber'],
+      emailId: json['emailId'],
       ownerName: json['ownerName'],
       licenseNumber: json['licenseNumber'],
       gstNumber: json['gstNumber'],
+      panNumber: json['panNumber'],
       storeTiming: json['storeTiming'],
       storeDays: json['storeDays'],
       floor: json['floor'],
-      availableMedicines: List<String>.from(json['availableMedicines']),
-      images: List<String>.from(json['images']),
+      medicineType: json['medicineType'],
+      isRareMedicationsAvailable: json['isRareMedicationsAvailable'],
+      isOnlinePayment: json['isOnlinePayment'],
+      isLiftAccess: json['isLiftAccess'],
+      isWheelchairAccess: json['isWheelchairAccess'],
+      isParkingAvailable: json['isParkingAvailable'],
+      location: json['location'],
+      availableMedicines: List<String>.from(json['availableMedicines'] ?? []),
+      registrationCertificates: List<String>.from(json['registrationCertificates'] ?? []),  // Changed to List<String>
+      complianceCertificates: List<String>.from(json['complianceCertificates'] ?? []),   // Changed to List<String>
+      photos: List<String>.from(json['photos'] ?? []),  // Changed to List<String>
     );
   }
 
-  /// **Convert Object to JSON**
   Map<String, dynamic> toJson() {
     return {
-      "vendorId": vendorId,  // Can be null
-      "generatedId": generatedId,  // Can be null
+      "vendorId": vendorId,
+      "generatedId": generatedId,
       "name": name,
       "address": address,
       "landmark": landmark,
@@ -72,52 +103,25 @@ class VendorMedicalStoreProfile {
       "city": city,
       "pincode": pincode,
       "contactNumber": contactNumber,
+      "emailId": emailId,
       "ownerName": ownerName,
       "licenseNumber": licenseNumber,
       "gstNumber": gstNumber,
+      "panNumber": panNumber,
       "storeTiming": storeTiming,
       "storeDays": storeDays,
       "floor": floor,
+      "medicineType": medicineType,
+      "isRareMedicationsAvailable": isRareMedicationsAvailable,
+      "isOnlinePayment": isOnlinePayment,
+      "isLiftAccess": isLiftAccess,
+      "isWheelchairAccess": isWheelchairAccess,
+      "isParkingAvailable": isParkingAvailable,
+      "location": location,
       "availableMedicines": availableMedicines,
-      "images": images,
+      "registrationCertificates": registrationCertificates,  // Changed to List<String>
+      "complianceCertificates": complianceCertificates,   // Changed to List<String>
+      "photos": photos,  // Changed to List<String>
     };
-  }
-}
-
-
-
-
-/// **Medical Store Image Model**
-class MedicalStoreImage {
-  String imageUrl;
-  String description;
-  String state;
-  String city;
-  String pincode;
-
-  MedicalStoreImage({
-    required this.imageUrl,
-    required this.description,
-    required this.state,
-    required this.city,
-    required this.pincode,
-  });
-
-  Map<String, dynamic> toJson() => {
-    "imageUrl": imageUrl,
-    "description": description,
-    "state": state,
-    "city": city,
-    "pincode": pincode,
-  };
-
-  factory MedicalStoreImage.fromJson(Map<String, dynamic> json) {
-    return MedicalStoreImage(
-      imageUrl: json["imageUrl"],
-      description: json["description"],
-      state: json["state"],
-      city: json["city"],
-      pincode: json["pincode"],
-    );
   }
 }

@@ -29,6 +29,7 @@ class _MedicalStoreDetailsSectionState extends State<MedicalStoreDetailsSection>
             _buildTextField(widget.viewModel.emailController, "Email Address", Icons.email, isEmail: true),
             _buildTextField(widget.viewModel.contactNumberController, "Phone Number", Icons.phone, isNumber: true),
             _buildTextField(widget.viewModel.ownerNameController, "Owner Name", Icons.person, isNumber: false),
+            _buildTextField(widget.viewModel.licenseNumberController, "License Number", Icons.card_membership), // Added License Number field
 
             SizedBox(height: 20),
             Align(

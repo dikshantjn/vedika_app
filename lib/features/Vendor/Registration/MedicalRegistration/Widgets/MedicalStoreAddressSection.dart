@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 
@@ -25,6 +26,9 @@ class _MedicalStoreAddressSectionState extends State<MedicalStoreAddressSection>
   String? selectedState;
   String? selectedCity;
 
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
+
   @override
   Widget build(BuildContext context) {
     final stateCityData = StateCityDataProvider.states;
@@ -40,9 +44,50 @@ class _MedicalStoreAddressSectionState extends State<MedicalStoreAddressSection>
               /// **Text Fields**
               _buildTextField(widget.viewModel.addressController, "Address", Icons.location_on),
               _buildTextField(widget.viewModel.landmarkController, "Nearby Landmark", Icons.map),
-              _buildTextField(widget.viewModel.storeTimingController, "Store Timing", Icons.access_time),
               _buildTextField(widget.viewModel.storeDaysController, "Store Open Days", Icons.calendar_today),
               _buildTextField(widget.viewModel.floorController, "Floor", Icons.stairs),
+
+              /// **Store Timing (Start & End Time)**
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _pickTime(isStartTime: true),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "Start Time: ${formatTime(_startTime)}",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _pickTime(isStartTime: false),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "End Time: ${formatTime(_endTime)}",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               /// **State Dropdown**
               _buildStateDropdown(stateCityData),
@@ -72,6 +117,40 @@ class _MedicalStoreAddressSectionState extends State<MedicalStoreAddressSection>
         ),
       ),
     );
+  }
+
+  /// **Format time to 12-hour format (AM/PM)**
+  String formatTime(TimeOfDay? time) {
+    if (time == null) return "Select Time";
+    final now = DateTime.now();
+    final formattedTime = DateFormat.jm().format(DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    ));
+    return formattedTime;
+  }
+
+  /// **Show Time Picker**
+  Future<void> _pickTime({required bool isStartTime}) async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: isStartTime ? (_startTime ?? TimeOfDay.now()) : (_endTime ?? TimeOfDay.now()),
+    );
+
+    if (pickedTime != null) {
+      setState(() {
+        if (isStartTime) {
+          _startTime = pickedTime;
+        } else {
+          _endTime = pickedTime;
+        }
+        widget.viewModel.storeTimingController.text = "${formatTime(_startTime)} - ${formatTime(_endTime)}";
+        widget.viewModel.notifyListeners();
+      });
+    }
   }
 
   /// **State Dropdown**

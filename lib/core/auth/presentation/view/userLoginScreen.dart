@@ -72,6 +72,9 @@ class _userLoginScreenState extends State<UserLoginScreen> {
               // Go to Home button
               SizedBox(height: 20),
               _buildGoToHomeButton(),
+
+              SizedBox(height: 20),
+              _buildLoginAsVendorButton()
             ],
           ),
         ),
@@ -243,6 +246,22 @@ class _userLoginScreenState extends State<UserLoginScreen> {
           style: TextStyle(fontSize: 18, color: Colors.white),
         ),
       ),
+    );
+  }
+
+  /// 🔹 **Login as Vendor Button**
+  Widget _buildLoginAsVendorButton() {
+    return TextButton(
+      onPressed: () {
+        // Navigate to Vendor Login Screen (replace with actual route)
+        Navigator.pushReplacementNamed(context, AppRoutes.vendor);
+      },
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        foregroundColor: ColorPalette.primaryColor,
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+      child: const Text("Are You a Vendor?"),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();

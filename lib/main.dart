@@ -9,6 +9,9 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/AI/presentation/viewmodel/MicViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/hospital_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/medical_store_registration.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
@@ -134,6 +137,12 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VendorRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => MedicalStoreRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => VendorLoginViewModel()),
+        ChangeNotifierProvider(create: (_) => MedicalStoreVendorDashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => MedicalStoreVendorProfileViewModel()),
+
+        ChangeNotifierProvider(
+          create: (_) => MedicalStoreVendorUpdateProfileViewModel(),
+        ),
 
 
       ],

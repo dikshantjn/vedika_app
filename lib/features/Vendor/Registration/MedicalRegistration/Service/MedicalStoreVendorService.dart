@@ -56,4 +56,54 @@ class MedicalStoreVendorService {
       }
     }
   }
+
+  Future<Response> updateMedicalStore({
+    required VendorMedicalStoreProfile medicalStore,
+  }) async {
+    // Check if the required fields are set and valid before sending
+    if (medicalStore.vendorId == null || medicalStore.name == null || medicalStore.address == null) {
+      if (medicalStore.vendorId == null) {
+        throw Exception('Vendor ID is missing');
+      }
+      throw Exception('Medical store details are incomplete');
+    }
+
+    try {
+      final medicalStoreData = medicalStore.toJson(); // Convert medical store to JSON
+
+      // Debug: Print the data being sent
+      print("Request data before sending: ${jsonEncode(medicalStoreData)}");
+
+      // Debugging the request headers and URL
+      final requestOptions = Options(
+        headers: {'Content-Type': 'application/json'},
+      );
+      print("Request headers: ${requestOptions.headers}");
+      print("Request URL: ${ApiEndpoints.updateMedicalStore}");
+
+      final response = await _dio.put(
+        ApiEndpoints.updateMedicalStore, // Using the endpoint from ApiEndpoints class
+        options: requestOptions, // Set the Content-Type header to application/json
+        data: jsonEncode(medicalStoreData), // Convert medical store data to JSON
+      );
+
+      // Debug: Print the response status and data
+      print("Response status: ${response.statusCode}");
+      print("Response data: ${response.data}");
+
+      return response; // return the response
+    } on DioError catch (e) {
+      // Handle errors
+      if (e.response != null) {
+        // Debug: Print the error response data and status
+        print("Error Response: ${e.response?.data}");
+        print("Error Status Code: ${e.response?.statusCode}");
+        return e.response!;
+      } else {
+        // Network error
+        print("Network error: ${e.message}");
+        throw Exception('Network error: ${e.message}');
+      }
+    }
+  }
 }

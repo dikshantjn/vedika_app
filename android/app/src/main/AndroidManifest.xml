@@ -16,6 +16,7 @@
 
 
     <application
+        android:usesCleartextTraffic="true"
         android:label="vedika_healthcare"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
