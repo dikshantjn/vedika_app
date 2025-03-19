@@ -116,4 +116,19 @@ class MedicalStoreFileUploadService {
       print("Error uploading vendor profile: $e");
     }
   }
+
+  /// Delete a file by its URL
+  Future<void> deleteFileByUrl(String fileUrl) async {
+    try {
+      // Get a reference to the file from the URL
+      Reference fileRef = _storage.refFromURL(fileUrl);
+
+      // Delete the file
+      await fileRef.delete();
+
+      print("File deleted successfully: $fileUrl");
+    } catch (e) {
+      print("Error deleting file: $e");
+    }
+  }
 }

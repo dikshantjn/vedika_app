@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/SectionTitle.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/TextFieldWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/SectionTitle.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/TextFieldWidget.dart';
 
 class MedicalStoreBasicInfo extends StatelessWidget {
   final MedicalStoreVendorUpdateProfileViewModel viewModel;
@@ -40,6 +40,16 @@ class MedicalStoreBasicInfo extends StatelessWidget {
           },
         ),
 
+        // Added Owner Name Field
+        TextFieldWidget(
+          label: "Owner Name",
+          initialValue: viewModel.ownerName,
+          onChanged: (value) {
+            viewModel.ownerName = value;
+            viewModel.notifyListeners();
+          },
+        ),
+
         // Added Email ID Field
         TextFieldWidget(
           label: "Email ID",
@@ -58,6 +68,16 @@ class MedicalStoreBasicInfo extends StatelessWidget {
           keyboardType: TextInputType.phone,
           onChanged: (value) {
             viewModel.contactNumber = value;
+            viewModel.notifyListeners();
+          },
+        ),
+
+        // Added License Number Field
+        TextFieldWidget(
+          label: "License Number",
+          initialValue: viewModel.licenseNumber,
+          onChanged: (value) {
+            viewModel.licenseNumber = value;
             viewModel.notifyListeners();
           },
         ),

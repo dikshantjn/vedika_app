@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/CustomCheckbox.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/SectionTitle.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/CustomCheckbox.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/SectionTitle.dart';
 
 class MedicalStorePaymentOptions extends StatelessWidget {
   final MedicalStoreVendorUpdateProfileViewModel viewModel;

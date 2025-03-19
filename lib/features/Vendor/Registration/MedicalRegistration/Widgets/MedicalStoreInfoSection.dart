@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStoreRegistration.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/UploadSectionWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStoreRegistration.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/UploadSectionWidget.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/medical_store_registration.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 

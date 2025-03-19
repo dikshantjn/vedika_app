@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/CustomSwitch.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/DropdownWidget.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/SectionTitle.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/CustomSwitch.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/DropdownWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/SectionTitle.dart';
 
 class MedicalStoreMedicineDetails extends StatelessWidget {
   final MedicalStoreVendorUpdateProfileViewModel viewModel;

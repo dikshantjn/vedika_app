@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/FilePreviewGrid.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/FilePreviewGrid.dart';
 
 class FileUploadSectionWidget extends StatelessWidget {
   final String label;

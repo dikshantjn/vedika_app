@@ -24,9 +24,9 @@ class VendorMedicalStoreProfile {
   final bool isParkingAvailable;
   final String location;
   final List<String> availableMedicines;
-  final List<String> registrationCertificates;  // Changed to List<String>
-  final List<String> complianceCertificates;   // Changed to List<String>
-  final List<String> photos;  // Changed to List<String>
+   List<String> registrationCertificates;  // Changed to List<String>
+   List<String> complianceCertificates;   // Changed to List<String>
+   List<String> photos;  // Changed to List<String>
 
   VendorMedicalStoreProfile({
     this.vendorId,
@@ -68,29 +68,39 @@ class VendorMedicalStoreProfile {
       landmark: json['landmark'],
       state: json['state'],
       city: json['city'],
-      pincode: json['pincode'],
-      contactNumber: json['contactNumber'],
+      pincode: json['pincode'].toString(),
+      contactNumber: json['contactNumber'].toString(),
       emailId: json['emailId'],
       ownerName: json['ownerName'],
-      licenseNumber: json['licenseNumber'],
-      gstNumber: json['gstNumber'],
-      panNumber: json['panNumber'],
+      licenseNumber: json['licenseNumber'].toString(),
+      gstNumber: json['gstNumber'].toString(),
+      panNumber: json['panNumber'].toString(),
       storeTiming: json['storeTiming'],
-      storeDays: json['storeDays'],
+      storeDays: json['storeDays'].toString(),
       floor: json['floor'],
       medicineType: json['medicineType'],
-      isRareMedicationsAvailable: json['isRareMedicationsAvailable'],
-      isOnlinePayment: json['isOnlinePayment'],
-      isLiftAccess: json['isLiftAccess'],
-      isWheelchairAccess: json['isWheelchairAccess'],
-      isParkingAvailable: json['isParkingAvailable'],
-      location: json['location'],
-      availableMedicines: List<String>.from(json['availableMedicines'] ?? []),
-      registrationCertificates: List<String>.from(json['registrationCertificates'] ?? []),  // Changed to List<String>
-      complianceCertificates: List<String>.from(json['complianceCertificates'] ?? []),   // Changed to List<String>
-      photos: List<String>.from(json['photos'] ?? []),  // Changed to List<String>
+      isRareMedicationsAvailable: json['isRareMedicationsAvailable'] ?? false,
+      isOnlinePayment: json['isOnlinePayment'] ?? false,
+      isLiftAccess: json['isLiftAccess'] ?? false,
+      isWheelchairAccess: json['isWheelchairAccess'] ?? false,
+      isParkingAvailable: json['isParkingAvailable'] ?? false,
+      location: json['location'] ?? '',
+      availableMedicines: _convertToList(json['availableMedicines']),
+      registrationCertificates: _convertToList(json['registrationCertificates']),
+      complianceCertificates: _convertToList(json['complianceCertificates']),
+      photos: _convertToList(json['photos']),
     );
   }
+
+// ✅ **Helper function to handle single string or list**
+  static List<String> _convertToList(dynamic data) {
+    if (data == null) return [];
+    if (data is List) return List<String>.from(data);
+    if (data is String) return [data];  // Convert single string to list
+    return [];
+  }
+
+
 
   Map<String, dynamic> toJson() {
     return {

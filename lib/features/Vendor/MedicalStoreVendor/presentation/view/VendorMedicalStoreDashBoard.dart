@@ -17,7 +17,7 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const DashboardContent(), // Dashboard Page (Only this page will have an app bar)
+    const DashboardContent(), // Dashboard Page
     const Center(child: Text("Orders Page", style: TextStyle(fontSize: 24))),
     const Center(child: Text("Inventory Page", style: TextStyle(fontSize: 24))),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
@@ -40,32 +40,55 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
     return Scaffold(
       backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
       drawer: MedicalStoreVendorDrawerMenu(onItemSelected: _onTabSelected),
-      body: _currentIndex == 0
-          ? NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              title: const Text(
-                "Vighnaharta",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
-              iconTheme: const IconThemeData(color: Colors.white),
-              pinned: true,
-              floating: true,
-              actions: [_buildAppBarActions()],
-            ),
-          ];
-        },
-        body: _pages[_currentIndex],
-      )
-          : _pages[_currentIndex], // No AppBar for other pages
+      appBar: AppBar(
+        title: _buildAppBarTitle(),
+        backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [_buildAppBarActions()],
+      ),
+      body: _pages[_currentIndex], // Body content will switch based on the selected page index
       bottomNavigationBar: MedicalStoreVendorBottomNav(
         currentIndex: _currentIndex,
         onTabSelected: _onTabSelected,
         isSpecialPage: _currentIndex >= 5,
       ),
     );
+  }
+
+  Widget _buildAppBarTitle() {
+    // Change the AppBar title based on the selected page index
+    switch (_currentIndex) {
+      case 0:
+        return const Text(
+          "Dashboard",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+      case 1:
+        return const Text(
+          "Orders",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+      case 2:
+        return const Text(
+          "Inventory",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+      case 3:
+        return const Text(
+          "Returns",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+      case 4:
+        return const Text(
+          "Profile",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+      default:
+        return const Text(
+          "Medical Store",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        );
+    }
   }
 
   Widget _buildAppBarActions() {

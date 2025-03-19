@@ -18,6 +18,8 @@ class ApiEndpoints {
   static const String registerVendor = '$_baseUrl/vendors/register'; // Vendor registration
   static const String loginVendor = '$_baseUrl/vendors/login'; // Vendor registration
   static const String updateMedicalStore = '$_baseUrl/vendors/update'; // Vendor registration
+  static const String getVendorProfile = '$_baseUrl/vendors/profile'; // Vendor registration
+
 
 
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/CustomSwitch.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/SectionTitle.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/TextFieldWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/CustomDropdown.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/CustomSwitch.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/SectionTitle.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/TextFieldWidget.dart';
+import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 
 class MedicalStoreDetails extends StatefulWidget {
   final MedicalStoreVendorUpdateProfileViewModel viewModel;
@@ -17,19 +19,14 @@ class MedicalStoreDetails extends StatefulWidget {
 class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
+  String? selectedState;
+  String? selectedCity;
 
   /// Format time to 12-hour format (AM/PM)
   String formatTime(TimeOfDay? time) {
     if (time == null) return "Select Time";
     final now = DateTime.now();
-    final formattedTime = DateFormat.jm().format(DateTime(
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    ));
-    return formattedTime;
+    return DateFormat.jm().format(DateTime(now.year, now.month, now.day, time.hour, time.minute));
   }
 
   /// Show Time Picker
@@ -53,28 +50,48 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // If store timing is already fetched, split the time string and set start and end times
+    if (widget.viewModel.storeTiming.isNotEmpty) {
+      List<String> timeParts = widget.viewModel.storeTiming.split(' - ');
+      if (timeParts.length == 2) {
+        _startTime = _parseTime(timeParts[0]);
+        _endTime = _parseTime(timeParts[1]);
+      }
+    }
+
+    // If state and city are already fetched, set the selected state and city
+    selectedState = widget.viewModel.state;
+    selectedCity = widget.viewModel.city;
+  }
+
+  // Helper method to parse time string and convert to TimeOfDay
+  TimeOfDay _parseTime(String timeString) {
+    final timeFormat = DateFormat.jm();
+    final time = timeFormat.parse(timeString);
+    return TimeOfDay(hour: time.hour, minute: time.minute);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle(title: "Store Details"), // Section Title
-
+        SectionTitle(title: "Store Details"),
         TextFieldWidget(
           label: "Address",
           initialValue: widget.viewModel.address,
-          onChanged: (value) {
-            widget.viewModel.address = value;
-          },
+          onChanged: (value) => widget.viewModel.address = value,
         ),
         TextFieldWidget(
           label: "Nearby Landmark",
           initialValue: widget.viewModel.nearbyLandmark,
-          onChanged: (value) {
-            widget.viewModel.nearbyLandmark = value;
-          },
+          onChanged: (value) => widget.viewModel.nearbyLandmark = value,
         ),
 
-        // Store Timing (Start & End Time)
+        // Store Timing
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Row(
@@ -88,10 +105,7 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      "Start Time: ${formatTime(_startTime)}",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text("Start Time: ${formatTime(_startTime)}", style: TextStyle(fontSize: 16)),
                   ),
                 ),
               ),
@@ -105,10 +119,7 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      "End Time: ${formatTime(_endTime)}",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text("End Time: ${formatTime(_endTime)}", style: TextStyle(fontSize: 16)),
                   ),
                 ),
               ),
@@ -116,20 +127,38 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
           ),
         ),
 
-        TextFieldWidget(
-          label: "Store Open Days", // New Field
-          initialValue: widget.viewModel.storeOpenDays,
-          onChanged: (value) {
-            widget.viewModel.storeOpenDays = value;
+        CustomDropdown(
+          label: "State",
+          items: StateCityDataProvider.states.map((state) => state.name).toList(),
+          selectedValue: selectedState,
+          onChanged: (newState) {
+            setState(() {
+              selectedState = newState;
+              selectedCity = null; // Reset city selection
+              widget.viewModel.state = newState ?? "";
+            });
           },
         ),
-        TextFieldWidget(
-          label: "Floor", // New Field
-          initialValue: widget.viewModel.floor,
-          onChanged: (value) {
-            widget.viewModel.floor = value;
+
+        CustomDropdown(
+          label: "City",
+          items: selectedState != null ? StateCityDataProvider.getCities(selectedState!) : [],
+          selectedValue: selectedCity,
+          onChanged: (newCity) {
+            setState(() {
+              selectedCity = newCity;
+              widget.viewModel.city = newCity ?? "";
+            });
           },
         ),
+
+        TextFieldWidget(
+          label: "Pincode",
+          initialValue: widget.viewModel.pincode,
+          keyboardType: TextInputType.number,
+          onChanged: (value) => widget.viewModel.pincode = value,
+        ),
+
         CustomSwitch(
           label: "Lift Access",
           value: widget.viewModel.isLiftAccess,

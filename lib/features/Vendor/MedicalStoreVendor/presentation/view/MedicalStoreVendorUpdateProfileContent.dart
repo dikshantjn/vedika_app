@@ -2,18 +2,79 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStoreBasicInfo.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStoreDetails.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStoreMedicineDetails.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStorePaymentOptions.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStorePhotosLocation.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Profile/MedicalStoreRegistration.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStoreBasicInfo.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStoreDetails.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStoreMedicineDetails.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStorePaymentOptions.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStorePhotosLocation.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/MedicalStoreRegistration.dart';
 
-class MedicalStoreVendorUpdateProfileContent extends StatelessWidget {
+class MedicalStoreVendorUpdateProfileContent extends StatefulWidget {
+  @override
+  _MedicalStoreVendorUpdateProfileContentState createState() =>
+      _MedicalStoreVendorUpdateProfileContentState();
+}
+
+class _MedicalStoreVendorUpdateProfileContentState
+    extends State<MedicalStoreVendorUpdateProfileContent> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Fetch profile data when the widget is first loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Fetch data from ViewModel
+      context.read<MedicalStoreVendorUpdateProfileViewModel>().fetchProfileData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<MedicalStoreVendorUpdateProfileViewModel>(
       builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return Scaffold(
+            backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+            appBar: AppBar(
+              title: const Text(
+                "Medical Store Profile",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
+              iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (viewModel.errorMessage != null) {
+          return Scaffold(
+            backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+            appBar: AppBar(
+              title: const Text(
+                "Medical Store Profile",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
+              iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            body: Center(
+              child: Text(
+                viewModel.errorMessage!,
+                style: TextStyle(color: Colors.red, fontSize: 18),
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
           appBar: AppBar(
@@ -44,7 +105,8 @@ class MedicalStoreVendorUpdateProfileContent extends StatelessWidget {
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      viewModel.saveProfile();
+                      viewModel.updateStoreProfile(context);
+                      print("updateStoreProfile clicked");
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
@@ -54,7 +116,7 @@ class MedicalStoreVendorUpdateProfileContent extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      "Save Profile",
+                      "Update Profile",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

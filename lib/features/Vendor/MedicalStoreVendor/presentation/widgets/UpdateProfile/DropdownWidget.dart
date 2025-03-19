@@ -17,10 +17,13 @@ class DropdownWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If selectedValue is not in items, set it to null to avoid issues.
+    String? valueToDisplay = items.contains(selectedValue) ? selectedValue : null;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: DropdownButtonFormField<String>(
-        value: selectedValue,
+        value: valueToDisplay,  // Use the safe value for display
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: MedicalStoreVendorColorPalette.textColor),
@@ -39,7 +42,12 @@ class DropdownWidget extends StatelessWidget {
             child: Text(value),
           );
         }).toList(),
-        onChanged: onChanged,
+        onChanged: (value) {
+          // Safely update the value if valid, otherwise leave unchanged
+          if (value != null && items.contains(value)) {
+            onChanged(value);
+          }
+        },
       ),
     );
   }

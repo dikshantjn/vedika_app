@@ -1,108 +1,211 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorUpdateProfileContent.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
-import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorDrawerMenu.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/CertificateListBuilder.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/StoreLocationWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/StorePhotosBuilder.dart';
 
-class MedicalStoreVendorProfileContent extends StatelessWidget {
+class MedicalStoreVendorProfileContent extends StatefulWidget {
+  const MedicalStoreVendorProfileContent({super.key});
+
+  @override
+  _MedicalStoreVendorProfileContentState createState() => _MedicalStoreVendorProfileContentState();
+}
+
+class _MedicalStoreVendorProfileContentState extends State<MedicalStoreVendorProfileContent> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<MedicalStoreVendorProfileViewModel>(context, listen: false).fetchProfileData();
+    });
+  }
+
+  final CertificateListBuilder _certificateListBuilder = CertificateListBuilder();
+  final StorePhotosBuilder storePhotosBuilder = StorePhotosBuilder();
+
+
   @override
   Widget build(BuildContext context) {
     return Consumer<MedicalStoreVendorProfileViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
           backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
-          appBar: AppBar(
-            title: const Text(
-              "Medical Store Profile",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
-            iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
-                onPressed: () {
-                  // Navigate to the update profile screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MedicalStoreVendorUpdateProfileContent()),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(viewModel.storeName, viewModel.address),
-                const SizedBox(height: 20),
-                _buildProfileSection("Basic Information", [
-                  _buildInfoBox(Icons.store, "Medical Store Name", viewModel.storeName),
-                  _buildInfoBox(Icons.assignment, "GST Number", viewModel.gstNumber),
-                  _buildInfoBox(Icons.credit_card, "PAN Number", viewModel.panNumber),
-                ]),
-                _buildProfileSection("Registration & Licensing", [
-                  _buildCertificateBox(Icons.verified, "Registration Certificate", viewModel.registrationCertificate),
-                  _buildCertificateBox(Icons.assignment_turned_in, "Compliance Certificate", viewModel.complianceCertificate),
-                ]),
-                _buildProfileSection("Medicine Details", [
-                  _buildInfoBox(Icons.local_pharmacy, "Type of Medicine", viewModel.medicineType),
-                  _buildInfoBox(Icons.medical_services, "Rare/Specialized Medications", viewModel.isRareMedicationsAvailable ? "Yes" : "No"),
-                ]),
-                _buildProfileSection("Payment Options", [
-                  _buildInfoBox(Icons.payment, "Online Payment Available", viewModel.isOnlinePayment ? "Yes" : "No"),
-                ]),
-                _buildProfileSection("Store Details", [
-                  _buildInfoBox(Icons.place, "Address", viewModel.address),
-                  _buildInfoBox(Icons.location_on, "Nearby Landmark", viewModel.nearbyLandmark),
-                  _buildInfoBox(Icons.access_time, "Store Timing", viewModel.storeTiming),
-                  _buildInfoBox(Icons.calendar_today, "Open Days", viewModel.storeOpenDays),
-                  _buildInfoBox(Icons.phone, "Contact Number", viewModel.contactNumber),
-                  _buildInfoBox(Icons.email, "Email ID", viewModel.emailId),
-                  _buildInfoBox(Icons.business, "Floor", viewModel.floor),
-                  _buildInfoBox(Icons.elevator, "Lift Access", viewModel.isLiftAccess ? "Yes" : "No"),
-                  _buildInfoBox(Icons.accessible, "Wheelchair Access", viewModel.isWheelchairAccess ? "Yes" : "No"),
-                  _buildInfoBox(Icons.local_parking, "Parking Available", viewModel.isParkingAvailable ? "Yes" : "No"),
-                ]),
-                _buildProfileSection("Store Location", [_buildGoogleMapsSection()]),
-                _buildProfileSection("Store Photos", [_buildStorePhotos(viewModel.storeImages)]),
-              ],
-            ),
-          ),
+          body: _buildBody(viewModel),
         );
       },
     );
   }
 
-  Widget _buildHeader(String storeName, String address) {
+  Widget _buildBody(MedicalStoreVendorProfileViewModel viewModel) {
+    if (viewModel.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (viewModel.errorMessage != null) {
+      return Center(
+        child: Text("Error: ${viewModel.errorMessage}", style: const TextStyle(color: Colors.red)),
+      );
+    }
+
+    final profile = viewModel.profile;
+    if (profile == null) {
+      return const Center(child: Text("No profile data available"));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileHeader(profile.name, profile.address, profile.photos),
+          const SizedBox(height: 20),
+          _buildSection("Basic Information", [
+            _buildInfoBox("Medical Store Name", profile.name),
+            _buildInfoBox("GST Number", profile.gstNumber),
+            _buildInfoBox("PAN Number", profile.panNumber),
+          ]),
+
+          // Check if the list is not empty before accessing first element
+          _buildCertificatesSection("Registration Certificates", profile.registrationCertificates),
+          _buildCertificatesSection("Compliance And License Certificates", profile.complianceCertificates),
+
+          _buildSection("Medicine Details", [
+            _buildInfoBox("Type of Medicine", profile.medicineType),
+            _buildInfoBox("Rare Medications Available", profile.isRareMedicationsAvailable ? "Yes" : "No"),
+          ]),
+          _buildSection("Store Details", [
+            _buildInfoBox("Address", profile.address),
+            _buildInfoBox("Landmark", profile.landmark),
+            _buildInfoBox("Store Timing", profile.storeTiming),
+            _buildInfoBox("Open Days", profile.storeDays.toString()),
+            _buildInfoBox("Contact Number", profile.contactNumber),
+            _buildInfoBox("Email", profile.emailId),
+            _buildInfoBox("Floor", profile.floor),
+          ]),
+          _buildSection("Store Location", [StoreLocationWidget(locationString: profile.location)]),
+          _buildSection("Store Photos", storePhotosBuilder.buildStorePhotos(profile.photos.isNotEmpty ? profile.photos.first : "")),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCertificatesSection(String title, List<String> certificates) {
+    if (certificates.isEmpty) {
+      return _buildSection(title, [
+        const Text("No certificates available", style: TextStyle(color: Colors.red)),
+      ]);
+    }
+
+    // Use the first certificate if available
+    return _buildSection(
+      title,
+      _certificateListBuilder.buildCertificateList(certificates.first),
+    );
+  }
+
+  Widget _buildProfileHeader(String storeName, String address, List<String> photos) {
+    final StorePhotosBuilder storePhotosBuilder = StorePhotosBuilder();
+    String? storeImageUrl = photos.isNotEmpty ? photos.first : null;
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MedicalStoreVendorColorPalette.primaryColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
       ),
-      child: Row(
+      child: Stack(
         children: [
-          const Icon(Icons.storefront, color: Colors.white, size: 40),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  storeName,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              storeImageUrl != null
+                  ? FutureBuilder<Widget>(
+                future: storePhotosBuilder.buildProfilePhoto(storeImageUrl),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError || !snapshot.hasData) {
+                    return _buildPlaceholderIcon();
+                  }
+                  return snapshot.data!;
+                },
+              )
+                  : _buildPlaceholderIcon(),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      storeName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      address,
+                      style: const TextStyle(fontSize: 14, color: Colors.white70),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  address,
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+            ],
+          ),
+          Positioned(
+            top: 2, // Slightly reduced from the top
+            right: 2, // Slightly adjusted for better spacing
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(50), // Fully rounded shape
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to the MedicalStoreVendorUpdateProfileContent screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MedicalStoreVendorUpdateProfileContent(),
+                    ),
+                  );
+                },
+                child: const Icon(
+                  Icons.edit,
+                  color: MedicalStoreVendorColorPalette.primaryColor,
+                  size: 22, // Reduced size for a more compact button
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -110,16 +213,29 @@ class MedicalStoreVendorProfileContent extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileSection(String title, List<Widget> children) {
+
+// Placeholder icon when no image is available
+  Widget _buildPlaceholderIcon() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(Icons.storefront, size: 40, color: Colors.white),
+    );
+  }
+
+
+
+  Widget _buildSection(String title, List<Widget> children) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-          ),
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Column(children: children),
         ],
@@ -127,97 +243,22 @@ class MedicalStoreVendorProfileContent extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoBox(IconData icon, String label, String value) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.blueAccent, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCertificateBox(IconData icon, String label, String filePath) {
+  Widget _buildInfoBox(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 2))],
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.green, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
-          ),
-          TextButton(
-            onPressed: () {
-              // Implement logic to open file
-            },
-            child: const Text("View Certificate", style: TextStyle(color: Colors.blue, fontSize: 14)),
-          ),
+          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+          Text(value, style: const TextStyle(color: Colors.black54)),
         ],
       ),
     );
   }
 
-  Widget _buildGoogleMapsSection() {
-    return Container(
-      height: 150,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 2))],
-        image: DecorationImage(
-          image: AssetImage("assets/images/map_placeholder.png"), // Replace with actual map API
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: const Center(
-        child: Icon(Icons.map, size: 50, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildStorePhotos(List<String> imagePaths) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: imagePaths.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.asset(imagePaths[index], fit: BoxFit.cover),
-        );
-      },
-    );
-  }
 }
