@@ -45,40 +45,6 @@ class MedicalStoreFileUploadService {
     }
   }
 
-  /// Upload multiple files with metadata (e.g., registration certificates, compliance certificates, photos)
-  Future<Map<String, String>> uploadFilesWithMetadata(
-      List<File> files, List<String> descriptions) async {
-    Map<String, String> fileUrls = {};
-
-    // Ensure the lists of files and descriptions are of the same length
-    if (files.length != descriptions.length) {
-      print("Error: Files and descriptions count mismatch");
-      return fileUrls;
-    }
-
-    try {
-      for (int i = 0; i < files.length; i++) {
-        File file = files[i];
-        String description = descriptions[i];
-
-        print("Uploading file $i: ${path.basename(file.path)} with description: $description");
-
-        // Upload the file with metadata
-        String? fileUrl = await uploadFileWithMetadata(file, description);
-
-        if (fileUrl != null) {
-          fileUrls[description] = fileUrl;  // Store the description and its corresponding URL
-          print("File uploaded for description: $description, URL: $fileUrl");
-        } else {
-          print("Failed to upload file for description: $description");
-        }
-      }
-    } catch (e) {
-      print("Error uploading files: $e");
-    }
-
-    return fileUrls;  // Return a map of descriptions and their corresponding URLs
-  }
 
   /// Function to upload vendor's profile data (including the files and metadata)
   Future<void> uploadVendorProfile(
@@ -117,8 +83,8 @@ class MedicalStoreFileUploadService {
     }
   }
 
-  /// Delete a file by its URL
-  Future<void> deleteFileByUrl(String fileUrl) async {
+  /// Delete a file from Firebase Storage using its URL
+  Future<bool> deleteFile(String fileUrl) async {
     try {
       // Get a reference to the file from the URL
       Reference fileRef = _storage.refFromURL(fileUrl);
@@ -127,8 +93,10 @@ class MedicalStoreFileUploadService {
       await fileRef.delete();
 
       print("File deleted successfully: $fileUrl");
+      return true; // Return true if deletion was successful
     } catch (e) {
       print("Error deleting file: $e");
+      return false; // Return false if an error occurs
     }
   }
 }

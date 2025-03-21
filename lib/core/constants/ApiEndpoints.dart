@@ -1,25 +1,30 @@
 class ApiEndpoints {
-  // Base URL for your backend
-  static const String _baseUrl = "http://192.168.1.41:5000/api";
+  // ✅ Base URL
+  static const String baseUrl = "http://192.168.1.41:5000/api";
 
-  // static const String _baseUrl = "http://localhost:5000/api";
+  // 📌 Auth APIs
+  static const String verifyOtp = '$baseUrl/otp/verify-otp';
+  static const String signUp = '$baseUrl/auth/signup';
 
-  // Auth APIs
-  static const String verifyOtp = '$_baseUrl/otp/verify-otp'; // OTP verification
-  static const String signUp = '$_baseUrl/auth/signup'; // User registration
+  // 📌 User Profile APIs
+  static const String getUserProfile = '$baseUrl/user';
+  static const String saveUserProfile = '$baseUrl/user/save';
+  static const String editUserProfile = '$baseUrl/user/edit';
 
-  // User Profile APIs
-  static const String getUserProfile = '$_baseUrl/user'; // Get User Profile by userId
-  static const String saveUserProfile = '$_baseUrl/user/save'; // Save User Profile
-  static const String editUserProfile = '$_baseUrl/user/edit'; // Edit User Profile
+  // 📌 Medical Profile APIs
+  static const String medicalProfile = '$baseUrl/medical-profile';
+  static const String registerVendor = '$baseUrl/vendors/register';
+  static const String loginVendor = '$baseUrl/vendors/login';
+  static const String updateMedicalStore = '$baseUrl/vendors/update';
+  static const String getVendorProfile = '$baseUrl/vendors/profile';
 
-// Medical Profile APIs
-  static const String medicalProfile = '$_baseUrl/medical-profile';
-  static const String registerVendor = '$_baseUrl/vendors/register'; // Vendor registration
-  static const String loginVendor = '$_baseUrl/vendors/login'; // Vendor registration
-  static const String updateMedicalStore = '$_baseUrl/vendors/update'; // Vendor registration
-  static const String getVendorProfile = '$_baseUrl/vendors/profile'; // Vendor registration
+  // 📌 Medicine Product APIs
+  static const String addProduct = '$baseUrl/medicineProduct/add-product';
+  static const String getAllProducts = '$baseUrl/medicineProduct/products';
+  static const String getProductById = '$baseUrl/medicineProduct/products/';
+  static const String updateProduct = '$baseUrl/medicineProduct/products/';
+  static const String deleteProduct = '$baseUrl/medicineProduct/products/';
 
-
-
+  // 📌 Inventory APIs
+  static const String getInventory = '$baseUrl/inventory/vendor';
 }

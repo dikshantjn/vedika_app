@@ -51,7 +51,7 @@ class MedicalStoreVendorBottomNav extends StatelessWidget {
           items: [
             _buildNavItem(Icons.dashboard, "Dashboard"),
             _buildNavItem(Icons.shopping_cart, "Orders"),
-            _buildNavItem(Icons.inventory, "Inventory"),
+            _buildNavItem(Icons.inventory, "Products"),
             _buildNavItem(Icons.assignment_return, "Returns"),
             _buildNavItem(Icons.person, "Profile"),
           ],

@@ -9,10 +9,17 @@ class StoreLocationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Parse latitude and longitude from location string
-    List<String> latLng = locationString.split(",");
-    double latitude = double.tryParse(latLng[0]) ?? 0.0;
-    double longitude = double.tryParse(latLng[1]) ?? 0.0;
+    double latitude = 18.5204;  // Default to Pune latitude
+    double longitude = 73.8567;  // Default to Pune longitude
+
+    // Check if locationString has the correct format
+    if (locationString.isNotEmpty && locationString.contains(",")) {
+      List<String> latLng = locationString.split(",");
+      if (latLng.length == 2) {
+        latitude = double.tryParse(latLng[0]) ?? latitude;
+        longitude = double.tryParse(latLng[1]) ?? longitude;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

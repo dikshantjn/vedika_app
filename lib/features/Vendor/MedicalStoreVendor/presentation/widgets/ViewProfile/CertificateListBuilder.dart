@@ -37,6 +37,7 @@ class CertificateListBuilder {
   }
 
   Widget _buildCertificateBox(String label, String fileUrl) {
+    print("fileUrl $fileUrl");
     return GestureDetector(
       onTap: () => _openUrl(fileUrl),
       child: Container(

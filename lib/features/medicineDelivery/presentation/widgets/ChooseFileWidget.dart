@@ -8,16 +8,6 @@ class ChooseFileWidget extends StatelessWidget {
 
   ChooseFileWidget({required this.pickPrescription});
 
-  // Method to initiate the call
-  Future<void> _makeCall() async {
-    final Uri phoneUrl = Uri(scheme: 'tel', path: '+911234567890'); // Replace with the desired phone number
-    if (await canLaunch(phoneUrl.toString())) {
-      await launch(phoneUrl.toString());
-    } else {
-      throw 'Could not launch $phoneUrl';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -94,39 +84,39 @@ class ChooseFileWidget extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            Divider(color: Colors.grey), // Horizontal divider
-            SizedBox(height: 12),
-            Text(
-              "Don't have a prescription? No worries!",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
-            ),
-            SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _makeCall, // Make the call
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 5,
-                backgroundColor: ColorPalette.medicineColor, // Change color for the call button
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.call, color: Colors.white, size: 22),
-                  SizedBox(width: 8),
-                  Text(
-                    "Call for Help",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
+            // Divider(color: Colors.grey), // Horizontal divider
+            // SizedBox(height: 12),
+            // Text(
+            //   "Don't have a prescription? No worries!",
+            //   style: TextStyle(
+            //     fontSize: 16,
+            //     fontWeight: FontWeight.w600,
+            //     color: Colors.black54,
+            //   ),
+            // ),
+            // SizedBox(height: 12),
+            // ElevatedButton(
+            //   onPressed: _makeCall, // Make the call
+            //   style: ElevatedButton.styleFrom(
+            //     padding: EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     elevation: 5,
+            //     backgroundColor: ColorPalette.medicineColor, // Change color for the call button
+            //   ),
+            //   child: Row(
+            //     mainAxisSize: MainAxisSize.min,
+            //     children: [
+            //       Icon(Icons.call, color: Colors.white, size: 22),
+            //       SizedBox(width: 8),
+            //       Text(
+            //         "Call for Help",
+            //         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),

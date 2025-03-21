@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -98,41 +99,28 @@ class MedicalStoreVendorUpdateProfileViewModel extends ChangeNotifier {
   // **Upload Methods**
   void uploadComplianceCertificates(List<Map<String, Object>> files) {
     if (files.isNotEmpty) {
-      complianceCertificates.addAll(files);
-      complianceCertificatesList.addAll(files.map((e) => e['name'] as String)); // Add only file names/URLs
+      for (var file in files) {
+        if (!complianceCertificates.any((e) => e['name'] == file['name'])) {
+          complianceCertificates.add(file);
+          complianceCertificatesList.add(file['name'] as String);
+        }
+      }
       notifyListeners();
     }
   }
 
   void uploadRegistrationCertificates(List<Map<String, Object>> files) {
     if (files.isNotEmpty) {
-      registrationCertificates.addAll(files);
-      registrationCertificatesList.addAll(files.map((e) => e['name'] as String)); // Add only file names/URLs
+      for (var file in files) {
+        if (!registrationCertificates.any((e) => e['name'] == file['name'])) {
+          registrationCertificates.add(file);
+          registrationCertificatesList.add(file['name'] as String);
+        }
+      }
       notifyListeners();
     }
   }
 
-  Future<void> uploadPhotos() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      allowMultiple: true,
-    );
-
-    if (result != null) {
-      photos.addAll(result.files.map((file) => {"name": file.name, "file": File(file.path!)}));
-      photosList.addAll(result.files.map((file) => file.name)); // Add only file names/URLs
-      notifyListeners();
-    }
-  }
-
-  Future<Map<String, Object>?> pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-    );
-    return result != null ? {"name": result.files.single.name, "file": File(result.files.single.path!)} : null;
-  }
 
   Future<void> updateStoreProfile(BuildContext context) async {
     if (_isLoading) return; // Prevent multiple calls
@@ -141,70 +129,78 @@ class MedicalStoreVendorUpdateProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Convert ViewModel data into a VendorMedicalStoreProfile
+      // Convert ViewModel data into VendorMedicalStoreProfile
       VendorMedicalStoreProfile profile = toVendorMedicalStoreProfile();
 
-      // Flatten the existing URLs if they are in nested lists and add them to a new list
-      List<String> registrationCertificateUrls = _flattenUrls(profile.registrationCertificates);
-      List<String> complianceCertificateUrls = _flattenUrls(profile.complianceCertificates);
-      List<String> photoUrls = _flattenUrls(profile.photos);
+      List<String> registrationCertificateUrls = _flattenUrls(profile.registrationCertificates) ?? [];
+      List<String> complianceCertificateUrls = _flattenUrls(profile.complianceCertificates) ?? [];
+      List<String> photoUrls = _flattenUrls(profile.photos) ?? [];
 
-      // Upload the new registration certificates and append their URLs
+      // **TEMP VARIABLES TO STORE NEWLY UPLOADED FILES ONLY**
+      List<String> newRegistrationCertificateUrls = [];
+      List<String> newComplianceCertificateUrls = [];
+      List<String> newPhotoUrls = [];
+
+      // Upload new registration certificates
       for (var cert in registrationCertificates) {
         var file = cert['file'] as File;
         var name = cert['name'] as String;
         try {
           String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
           if (url != null && !registrationCertificateUrls.contains(url)) {
-            registrationCertificateUrls.add(url); // Append URL to the list if not already present
+            newRegistrationCertificateUrls.add(url); // Store new URLs separately
           }
         } catch (uploadError) {
           print("Error uploading registration certificate: $uploadError");
         }
       }
 
-      // Upload the new compliance certificates and append their URLs
+      // Upload new compliance certificates
       for (var cert in complianceCertificates) {
         var file = cert['file'] as File;
         var name = cert['name'] as String;
         try {
           String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
           if (url != null && !complianceCertificateUrls.contains(url)) {
-            complianceCertificateUrls.add(url); // Append URL to the list if not already present
+            newComplianceCertificateUrls.add(url);
           }
         } catch (uploadError) {
           print("Error uploading compliance certificate: $uploadError");
         }
       }
 
-      // Upload the new photos and append their URLs
+      // Upload new photos
       for (var photo in photos) {
         var file = photo['file'] as File;
         var name = photo['name'] as String;
         try {
           String? url = await MedicalStoreFileUploadService().uploadFileWithMetadata(file, name);
           if (url != null && !photoUrls.contains(url)) {
-            photoUrls.add(url); // Append URL to the list if not already present
+            newPhotoUrls.add(url);
           }
         } catch (uploadError) {
           print("Error uploading photo: $uploadError");
         }
       }
 
-      // Print the updated URLs lists for debug
-      print("Updated Registration Certificates: $registrationCertificateUrls");
-      print("Updated Compliance Certificates: $complianceCertificateUrls");
-      print("Updated Photos: $photoUrls");
+      // **ONLY ADD NEW FILES TO THE FINAL LIST**
+      registrationCertificateUrls.addAll(newRegistrationCertificateUrls);
+      complianceCertificateUrls.addAll(newComplianceCertificateUrls);
+      photoUrls.addAll(newPhotoUrls);
 
-      // Update the profile with the new list of URLs
+      // Debugging logs
+      print("✅ Final Registration Certificates: $registrationCertificateUrls");
+      print("✅ Final Compliance Certificates: $complianceCertificateUrls");
+      print("✅ Final Photos: $photoUrls");
+
+      // Update profile
       profile.registrationCertificates = registrationCertificateUrls;
       profile.complianceCertificates = complianceCertificateUrls;
       profile.photos = photoUrls;
 
-      // Call the updateMedicalStore service method
+      // Send updated profile to server
       final response = await _service.updateMedicalStore(medicalStore: profile);
 
-      // Check if the update was successful (response status code can be checked)
       if (response.statusCode == 200) {
         print("✅ Store Profile updated successfully");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -222,7 +218,7 @@ class MedicalStoreVendorUpdateProfileViewModel extends ChangeNotifier {
     } catch (e, stackTrace) {
       _errorMessage = "Error: ${e.toString()}";
       print("❌ Exception: $_errorMessage");
-      print(stackTrace); // Print stack trace for debugging
+      print(stackTrace);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Error during profile update: $_errorMessage"),
         backgroundColor: Colors.red,
@@ -233,20 +229,50 @@ class MedicalStoreVendorUpdateProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-// Helper function to flatten the list of URLs
-  List<String> _flattenUrls(List<dynamic> urlList) {
-    List<String> flattenedUrls = [];
 
-    for (var item in urlList) {
+  List<String>? _flattenUrls(dynamic urlList) {
+    print("🔍 URL List Before Flattening: $urlList");
+
+    // If the list is empty or null, return null directly
+    if (urlList == null || urlList.isEmpty) {
+      print("⚠️ [DEBUG] URL list is empty, returning null");
+      return null;
+    }
+
+    Set<String> flattenedUrls = {}; // Use Set to ensure uniqueness
+
+    void extractUrls(dynamic item) {
       if (item is String) {
-        flattenedUrls.add(item); // If it's a direct URL, add it
+        if (item.startsWith("http")) {
+          flattenedUrls.add(item.trim()); // Add valid URL
+        } else {
+          try {
+            dynamic decoded = jsonDecode(item);
+            extractUrls(decoded);
+          } catch (e) {
+            // Ignore non-URL values
+          }
+        }
       } else if (item is List) {
-        flattenedUrls.addAll(item.cast<String>()); // If it's a nested list, add the URLs inside
+        for (var subItem in item) {
+          extractUrls(subItem);
+        }
       }
     }
 
-    return flattenedUrls;
+    extractUrls(urlList);
+
+    // If no valid URLs are found, return null instead of an empty list
+    if (flattenedUrls.isEmpty) {
+      print("⚠️ [DEBUG] No valid URLs found, returning null");
+      return null;
+    }
+
+    List<String> finalList = flattenedUrls.where((url) => url.isNotEmpty).toList();
+    print("✅ Flattened URL List (Only URLs): $finalList");
+    return finalList;
   }
+
 
 
 
@@ -321,5 +347,172 @@ class MedicalStoreVendorUpdateProfileViewModel extends ChangeNotifier {
     photosList = profile.photos;
 
     notifyListeners();
+  }
+
+  Future<void> deleteRegistrationCertificate(String fileUrl) async {
+    try {
+      bool success = await MedicalStoreFileUploadService().deleteFile(fileUrl);
+      if (success) {
+        // Fetch the latest list from the database
+        List<String> updatedUrls = await _fetchUpdatedUrlsFromDB("registrationCertificates");
+
+        // Remove the deleted file from the list
+        updatedUrls.removeWhere((url) => url == fileUrl);
+
+        // Update the database with the new list
+        await _updateUrlsInDB("registrationCertificates", updatedUrls);
+
+        // Update the ViewModel
+        registrationCertificatesList = updatedUrls;
+        notifyListeners();
+
+        print("✅ Successfully deleted file from Firebase and updated DB.");
+      } else {
+        print("❌ Failed to delete file from Firebase.");
+      }
+    } catch (e) {
+      print("❌ Error deleting registration certificate: $e");
+    }
+  }
+
+  Future<void> deleteComplianceCertificate(String fileUrl) async {
+    try {
+      bool success = await MedicalStoreFileUploadService().deleteFile(fileUrl);
+      if (success) {
+        // Fetch the latest list from the database
+        List<String> updatedUrls = await _fetchUpdatedUrlsFromDB("complianceCertificates");
+
+        // Ensure the deleted file is removed from the list
+        updatedUrls.removeWhere((url) => url == fileUrl);
+
+        print("✅ Updated list after deletion: $updatedUrls");
+
+        // Update the database with the new filtered list
+        await _updateUrlsInDB("complianceCertificates", updatedUrls);
+
+        // Update the ViewModel
+        complianceCertificatesList = updatedUrls;
+        notifyListeners();
+
+        print("✅ Successfully deleted file from Firebase and updated DB.");
+      } else {
+        print("❌ Failed to delete file from Firebase.");
+      }
+    } catch (e) {
+      print("❌ Error deleting compliance certificate: $e");
+    }
+  }
+
+  Future<void> _updateUrlsInDB(String column, List<String> updatedUrls) async {
+    try {
+      print("🔍 [DEBUG] Updating $column in DB...");
+      print("📝 [DEBUG] Raw updated URLs before processing: $updatedUrls");
+
+      // Fetch the existing profile
+      VendorMedicalStoreProfile profile = toVendorMedicalStoreProfile();
+
+      // Ensure the list is properly formatted and remove empty items
+      List<String> finalUrls = _flattenUrlsForDeletion(updatedUrls) ?? [];
+
+      print("✅ [DEBUG] Flattened URLs (before filtering deleted file): $finalUrls");
+
+      // Ensure we are not adding any deleted files back
+      finalUrls = finalUrls.toSet().toList(); // Remove duplicates, if any
+
+      print("✅ [DEBUG] Final filtered URLs: $finalUrls");
+
+      // If there are no URLs left, store `null` or an empty list to avoid JSON issues
+      if (finalUrls.isEmpty) {
+        finalUrls = []; // You can also set it to null if necessary
+      }
+
+      // Update the relevant field in the profile
+      switch (column) {
+        case "registrationCertificates":
+          profile.registrationCertificates = finalUrls;
+          break;
+        case "complianceCertificates":
+          profile.complianceCertificates = finalUrls;
+          break;
+        default:
+          print("⚠️ [DEBUG] Invalid column name: $column");
+          return;
+      }
+
+      // Debug before updating
+      print("📌 [DEBUG] Updated profile before sending to DB: ${profile.toJson()}");
+
+      // Send updated profile to the server
+      await _service.updateMedicalStore(medicalStore: profile);
+
+      print("✅ Successfully updated $column in DB: $finalUrls");
+    } catch (e, stackTrace) {
+      print("❌ Error updating URLs in DB: $e");
+      print("🛑 StackTrace: $stackTrace");
+    }
+  }
+
+  List<String> _flattenUrlsForDeletion(List<dynamic>? urlList) {
+    if (urlList == null) return [];
+
+    print("🔍 Before flattening: $urlList");
+
+    // Ensure we only keep valid strings
+    List<String> flattenedList = urlList
+        .expand((e) => e is List<dynamic> ? e.whereType<String>() : (e is String ? [e] : <String>[]))
+        .toList();
+
+    print("✅ After flattening: $flattenedList");
+
+    return flattenedList;
+  }
+
+
+
+
+
+  Future<List<String>> _fetchUpdatedUrlsFromDB(String column) async {
+    try {
+      String? token = await _loginService.getVendorToken();
+
+      VendorMedicalStoreProfile? profile = await _service.fetchVendorProfile(token!);
+      if (profile == null) return [];
+
+      switch (column) {
+        case "registrationCertificates":
+          return List<String>.from(profile.registrationCertificates);
+        case "complianceCertificates":
+          return List<String>.from(profile.complianceCertificates);
+        default:
+          return [];
+      }
+    } catch (e) {
+      print("❌ Error fetching URLs from DB: $e");
+      return [];
+    }
+  }
+
+
+
+  /// Function to extract file name from a Firebase URL (Handles JSON arrays too)
+  String extractFileName(String url) {
+    try {
+      // Check if `url` is a JSON-encoded list
+      if (url.trim().startsWith("[")) {
+        List<dynamic> decodedList = jsonDecode(url); // Decode JSON string
+        if (decodedList.isNotEmpty && decodedList.first is String) {
+          url = decodedList.first; // Use the first valid URL from the list
+        } else {
+          throw FormatException("Empty or invalid URL list");
+        }
+      }
+
+      Uri uri = Uri.parse(url);
+      String path = uri.pathSegments.last;
+      return Uri.decodeComponent(path.split('%2F').last.split('?').first);
+    } catch (e) {
+      print("❌ Error extracting file name: $e (Input: $url)");
+      return "Unknown File";
+    }
   }
 }

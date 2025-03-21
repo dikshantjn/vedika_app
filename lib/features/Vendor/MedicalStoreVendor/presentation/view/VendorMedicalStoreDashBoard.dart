@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalProductsProductScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorProfileContent.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorBottomNav.dart';
@@ -19,7 +20,7 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
   final List<Widget> _pages = [
     const DashboardContent(), // Dashboard Page
     const Center(child: Text("Orders Page", style: TextStyle(fontSize: 24))),
-    const Center(child: Text("Inventory Page", style: TextStyle(fontSize: 24))),
+     MedicalProductsProductScreen(),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
     MedicalStoreVendorProfileContent(), // Profile Page
   ];
@@ -70,7 +71,7 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
         );
       case 2:
         return const Text(
-          "Inventory",
+          "Products",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         );
       case 3:
