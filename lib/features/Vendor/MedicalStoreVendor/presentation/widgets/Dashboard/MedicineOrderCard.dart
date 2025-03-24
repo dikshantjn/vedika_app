@@ -96,7 +96,7 @@ class OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "Customer: ${order.customerName}",
+                    "Customer: ${order.userId}",
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.black54,
@@ -110,11 +110,11 @@ class OrderCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _getStatusColor(order.status),
+                color: _getStatusColor(order.orderStatus),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                order.status,
+                order.orderStatus,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

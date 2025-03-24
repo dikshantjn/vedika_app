@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalProductsProductScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorProfileContent.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/MedicineOrderPage.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Products/MedicalProductsProductScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Profile/MedicalStoreVendorProfileContent.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorBottomNav.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorDashboardContent.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/MedicalStoreVendorDashboardContent.dart';
 import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorDrawerMenu.dart';
 
 class VendorMedicalStoreDashBoardScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
 
   final List<Widget> _pages = [
     const DashboardContent(), // Dashboard Page
-    const Center(child: Text("Orders Page", style: TextStyle(fontSize: 24))),
+     MedicineOrderPage(),
      MedicalProductsProductScreen(),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
     MedicalStoreVendorProfileContent(), // Profile Page

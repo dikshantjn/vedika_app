@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/MedicalStoreVendorUpdateProfileContent.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Profile/MedicalStoreVendorUpdateProfileContent.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/CertificateListBuilder.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/StoreLocationWidget.dart';

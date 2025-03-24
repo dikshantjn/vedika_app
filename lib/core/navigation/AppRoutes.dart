@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/VendorMedicalStoreDashBoard.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/vendor_registration_page.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';

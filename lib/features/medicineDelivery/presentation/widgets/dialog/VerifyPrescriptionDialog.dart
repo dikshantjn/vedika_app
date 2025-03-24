@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/MedicalStore/MedicalStore.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/AfterVerificationWidget.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/BeforeVerificationWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/ProductSelectionWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/RequestAcceptedWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/RequestSentWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/StepperWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/VerificationStatusWidget.dart';
 
 class VerifyPrescriptionDialog extends StatefulWidget {
   final VoidCallback onSuccess;
@@ -16,18 +19,14 @@ class VerifyPrescriptionDialog extends StatefulWidget {
 }
 
 class _VerifyPrescriptionDialogState extends State<VerifyPrescriptionDialog> {
-  int _remainingTime = 300;
+  int _currentStep = 0; // Stepper Progress (0 to 3)
   late Timer _timer;
   bool _isVerified = false;
-  bool _showSuccessMessage = false;
-  bool _isVerificationInProgress = false;
-  List<String> _medicines = ['Medicine A', 'Medicine B', 'Medicine C'];
-  List<String> _medicineImages = [
-    'assets/category/category.png',
-    'assets/category/category.png',
-    'assets/category/category.png'
-  ];
+  bool _storeAccepted = false;
+  bool _showProductList = false;
   late MedicalStore _selectedStore;
+
+  List<String> _availableProducts = ['Paracetamol', 'Aspirin', 'Cough Syrup'];
 
   @override
   void initState() {
@@ -43,9 +42,8 @@ class _VerifyPrescriptionDialogState extends State<VerifyPrescriptionDialog> {
       contact: "N/A",
       medicines: [],
     );
-    _startCountdown();
+    _startProcess();
   }
-
 
   @override
   void dispose() {
@@ -53,27 +51,24 @@ class _VerifyPrescriptionDialogState extends State<VerifyPrescriptionDialog> {
     super.dispose();
   }
 
-  void _startCountdown() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (_remainingTime > 0) {
+  void _startProcess() {
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+      if (_currentStep < 3) {
         setState(() {
-          _remainingTime--;
+          _currentStep++;
         });
 
-        if (_remainingTime == 290 && !_isVerificationInProgress) {
-          setState(() {
-            _isVerificationInProgress = true;
-          });
-          Timer(Duration(seconds: 5), () {
-            setState(() {
-              _showSuccessMessage = true;
-              _isVerified = true;
-            });
-            widget.onSuccess();
-          });
+        if (_currentStep == 1) {
+          _storeAccepted = true; // Store accepts request
         }
-      } else {
-        _timer.cancel();
+        if (_currentStep == 2) {
+          _isVerified = true; // Prescription verified
+          widget.onSuccess(); // Callback to enable place order
+        }
+        if (_currentStep == 3) {
+          _showProductList = true; // Show medicines
+          _timer.cancel();
+        }
       }
     });
   }
@@ -86,29 +81,19 @@ class _VerifyPrescriptionDialogState extends State<VerifyPrescriptionDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Lottie.asset(
-              _isVerified ? 'assets/animations/verified.json' : 'assets/animations/scanPrescription.json',
-              width: 150,
-              height: 150,
-              fit: BoxFit.cover,
-            ),
-            _showSuccessMessage
-                ? AfterVerificationWidget(
-              selectedStore: _selectedStore,
-              onGoToCart: () => _goToCart(context), // Pass function reference properly
-            )
-                : BeforeVerificationWidget(
-              remainingTime: _remainingTime,
-            ),
+            StepperWidget(currentStep: _currentStep),
+            SizedBox(height: 20),
+            if (_currentStep == 0) RequestSentWidget(nearbyStores: widget.nearbyStores),
+            if (_currentStep == 1) RequestAcceptedWidget(store: _selectedStore),
+            if (_currentStep == 2) VerificationStatusWidget(),
+            if (_currentStep == 3) ProductSelectionWidget(availableProducts: _availableProducts, onProceed: () => _goToCart(context)),
           ],
         ),
       ),

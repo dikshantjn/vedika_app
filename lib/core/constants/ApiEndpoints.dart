@@ -1,6 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.41:5000/api";
+  static const String baseUrl = "http://192.168.1.42:5000/api";
+  // static const String baseUrl = "http://172.20.10.4:5000/api";
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -27,4 +28,15 @@ class ApiEndpoints {
 
   // 📌 Inventory APIs
   static const String getInventory = '$baseUrl/inventory/vendor';
+
+  // 📌 Prescription Upload API
+  static const String uploadPrescription = '$baseUrl/prescription/upload-prescription';
+  static const String checkPrescriptionAcceptanceStatus = '$baseUrl/prescription/check-prescription-acceptance';
+  static const String getPrescritionRequests = '$baseUrl/prescription/requests';
+
+  static const String acceptPrescriptionRequest = '$baseUrl/prescription/accept-status';
+  static const String getOrders = '$baseUrl/orders/getOrders';
+
+
+
 }

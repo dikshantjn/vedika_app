@@ -1,40 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart'; // Assuming you have a service for fetching orders
 
 class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool isServiceOnline = true;
 
-  // Sample Medicine Orders (5 records)
-  List<MedicineOrderModel> orders = [
-    MedicineOrderModel(orderId: '001', customerName: 'John Doe', status: 'Pending'),
-    MedicineOrderModel(orderId: '002', customerName: 'Jane Smith', status: 'Accepted'),
-    MedicineOrderModel(orderId: '003', customerName: 'Emily Johnson', status: 'Shipped'),
-    MedicineOrderModel(orderId: '004', customerName: 'Michael Brown', status: 'Delivered'),
-    MedicineOrderModel(orderId: '005', customerName: 'David Wilson', status: 'Canceled'),
-  ];
-
-  // Sample Return Requests (5 records)
-  List<MedicineReturnRequestModel> returnRequests = [
-    MedicineReturnRequestModel(orderId: '006', customerName: 'Mark Lee', status: 'Pending'),
-    MedicineReturnRequestModel(orderId: '007', customerName: 'Sophia Martinez', status: 'Approved'),
-    MedicineReturnRequestModel(orderId: '008', customerName: 'Olivia Taylor', status: 'Rejected'),
-    MedicineReturnRequestModel(orderId: '009', customerName: 'Daniel Harris', status: 'Processing'),
-    MedicineReturnRequestModel(orderId: '010', customerName: 'James Anderson', status: 'Completed'),
-  ];
+  // List to hold fetched orders and return requests
+  List<MedicineOrderModel> orders = [];
+  List<MedicineReturnRequestModel> returnRequests = [];
 
   // Store Analytics Data
   MedicalStoreAnalyticsModel analytics = MedicalStoreAnalyticsModel(
-    totalOrders: 150,
-    averageOrderValue: 100,
-    ordersToday: 20,
-    returnsThisWeek: 5,
+    totalOrders: 0,
+    averageOrderValue: 0,
+    ordersToday: 0,
+    returnsThisWeek: 0,
   );
+
+  final OrderService _orderService = OrderService(); // Assuming you have an OrderService class to fetch data
 
   // Function to Toggle Online/Offline Status
   void toggleServiceStatus() {
     isServiceOnline = !isServiceOnline;
     notifyListeners();
+  }
+
+  // Fetch Orders and Return Requests from API
+  Future<void> fetchOrdersAndRequests() async {
+    try {
+      // Fetch orders
+      orders = await _orderService.getOrders();
+
+      // Fetch return requests
+      returnRequests = await _fetchReturnRequests();
+
+      // Update analytics (e.g., count orders, returns, etc.)
+      _updateAnalytics();
+
+      // Notify listeners that data has been fetched
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching orders or return requests: $e");
+    }
+  }
+
+  // Fetching Return Requests (Placeholder, implement this service method)
+  Future<List<MedicineReturnRequestModel>> _fetchReturnRequests() async {
+    // Simulating an API call to fetch return requests (replace with actual implementation)
+    await Future.delayed(Duration(seconds: 2));
+    return [
+      MedicineReturnRequestModel(orderId: '006', customerName: 'Mark Lee', status: 'Pending', createdAt: DateTime.now().subtract(Duration(days: 1))),
+      MedicineReturnRequestModel(orderId: '007', customerName: 'Sophia Martinez', status: 'Approved', createdAt: DateTime.now().subtract(Duration(days: 2))),
+      MedicineReturnRequestModel(orderId: '008', customerName: 'Olivia Taylor', status: 'Rejected', createdAt: DateTime.now().subtract(Duration(days: 3))),
+      MedicineReturnRequestModel(orderId: '009', customerName: 'Daniel Harris', status: 'Processing', createdAt: DateTime.now().subtract(Duration(days: 4))),
+      MedicineReturnRequestModel(orderId: '010', customerName: 'James Anderson', status: 'Completed', createdAt: DateTime.now().subtract(Duration(days: 5))),
+    ];
+  }
+
+  // Update Analytics based on fetched data
+  void _updateAnalytics() {
+    int totalOrders = orders.length;
+    double averageOrderValue = _calculateAverageOrderValue();
+    int ordersToday = _countOrdersToday();
+    int returnsThisWeek = returnRequests.where((request) => _isRequestThisWeek(request)).length;
+
+    analytics = MedicalStoreAnalyticsModel(
+      totalOrders: totalOrders,
+      averageOrderValue: averageOrderValue.toInt(),  // Convert to int
+      ordersToday: ordersToday,
+      returnsThisWeek: returnsThisWeek,
+    );
+  }
+
+  // Calculate Average Order Value
+  double _calculateAverageOrderValue() {
+    double totalValue = orders.fold(0.0, (sum, order) => sum + order.totalAmount); // Assuming MedicineOrderModel has `totalAmount`
+    return totalValue / orders.length;
+  }
+
+  // Count orders for today
+  int _countOrdersToday() {
+    DateTime todayStart = DateTime.now().subtract(Duration(days: DateTime.now().day - 1));
+    return orders.where((order) => order.createdAt.isAfter(todayStart)).length;
+  }
+
+  // Check if the return request is within this week
+  bool _isRequestThisWeek(MedicineReturnRequestModel request) {
+    DateTime requestDate = request.createdAt;  // Use the createdAt field
+    DateTime now = DateTime.now();
+    int weekOfYear = _getWeekOfYear(now);
+    int requestWeekOfYear = _getWeekOfYear(requestDate);
+    return weekOfYear == requestWeekOfYear;
+  }
+
+  // Get Week of the year
+  int _getWeekOfYear(DateTime date) {
+    int dayOfYear = int.parse(DateFormat("D").format(date));
+    return ((dayOfYear - 1) / 7).floor() + 1;
   }
 }
