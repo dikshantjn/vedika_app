@@ -5,7 +5,7 @@ class MedicineProduct {
   final double price;
   final int stock;
   final String manufacturer;
-  final String imageUrl;
+  final List<String> imageUrl; // imageUrls as a list of strings
   final int quantity; // Added quantity for cart functionality
 
   MedicineProduct({
@@ -28,7 +28,7 @@ class MedicineProduct {
       price: (json['price'] ?? 0).toDouble(),
       stock: json['stock'] ?? 0,
       manufacturer: json['manufacturer'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
+      imageUrl: List<String>.from(json['imageUrl'] ?? []), // Handling it as a List<String>
       quantity: json['quantity'] ?? 1,
     );
   }
@@ -55,7 +55,7 @@ class MedicineProduct {
     double? price,
     int? stock,
     String? manufacturer,
-    String? imageUrl,
+    List<String>? imageUrl,
     int? quantity,
   }) {
     return MedicineProduct(

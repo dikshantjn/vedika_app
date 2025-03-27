@@ -19,10 +19,18 @@ class PrescriptionRequestService {
 
       Response response = await _dio.get(url);
 
+      // 🔹 Print Full Response Data
+      print("📥 Raw Response Data: ${response.data}");
+
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['prescriptions'] ?? [];
 
         print("✅ Prescription Requests Fetched: ${data.length}");
+
+        // 🔹 Print each prescription JSON before conversion
+        for (var i = 0; i < data.length; i++) {
+          print("📝 Prescription $i: ${data[i]}");
+        }
 
         return data.map((json) => PrescriptionRequestModel.fromJson(json)).toList();
       } else {
@@ -36,6 +44,7 @@ class PrescriptionRequestService {
       throw Exception("Unexpected Error: Failed to fetch prescription requests");
     }
   }
+
 
   Future<bool> acceptPrescription(String prescriptionId, String vendorId) async {
     try {
@@ -70,6 +79,39 @@ class PrescriptionRequestService {
     }
   }
 
+  /// **🔹 Fetch Prescription URL using Prescription ID**
+  Future<String?> fetchPrescriptionUrl(int prescriptionId) async {
+    try {
+      if (prescriptionId <= 0) { // ✅ Check if prescriptionId is valid
+        throw Exception("❌ Prescription ID is missing or invalid");
+      }
+
+      String url = "${ApiEndpoints.getPrescriptionUrl}/$prescriptionId"; // ✅ Construct API URL
+
+      print("📡 Fetching Prescription URL from: $url");
+
+      Response response = await _dio.get(url);
+
+      if (response.statusCode == 200) {
+        String? prescriptionUrl = response.data['prescription']?['prescriptionUrl']; // ✅ Corrected path
+
+        if (prescriptionUrl == null || prescriptionUrl.isEmpty) {
+          throw Exception("❌ Prescription URL not found");
+        }
+
+        print("✅ Prescription URL Fetched: $prescriptionUrl");
+        return prescriptionUrl;
+      } else {
+        throw Exception("❌ Failed to fetch prescription URL (Status: ${response.statusCode})");
+      }
+    } on DioException catch (e) {
+      print("🚨 Dio Error: ${e.response?.data ?? e.message}");
+      throw Exception("Network Error: Unable to fetch prescription URL");
+    } catch (e) {
+      print("🚨 Error fetching prescription URL: $e");
+      throw Exception("Unexpected Error: Failed to fetch prescription URL");
+    }
+  }
 
 
 }

@@ -1,59 +1,112 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/main.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver {
+  late LocationProvider locationProvider;
+  late EmergencyService emergencyService;
+  bool _initializing = false;
+  bool _permissionGranted = false;
+
   @override
   void initState() {
     super.initState();
-    _navigateAfterDelay();
+    WidgetsBinding.instance.addObserver(this);
+    _checkAndRequestPermission();
   }
 
-  Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(seconds: 3));
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _permissionGranted && !_initializing) {
+      _initializeApp();
+    }
+  }
 
-    // ✅ Check both user and vendor login status in parallel
-    await Future.wait([
-      authViewModel.checkLoginStatus(),
-      vendorAuthViewModel.checkLoginStatus(),
-    ]);
+  Future<void> _checkAndRequestPermission() async {
+    var status = await Permission.location.status;
+    if (!status.isGranted) {
+      var result = await Permission.location.request();
+      if (!result.isGranted) {
+        return; // User denied, you can show dialog here
+      }
+    }
+    _permissionGranted = true;
+    _initializeApp();
+  }
 
-    print("Final User Login Status: ${authViewModel.isLoggedIn}");
-    print("Final Vendor Login Status: ${vendorAuthViewModel.isVendorLoggedIn}");
+  Future<void> _initializeApp() async {
+    if (_initializing) return; // Avoid multiple calls
+    _initializing = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    try {
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ));
+
+      locationProvider = LocationProvider();
+      await locationProvider.loadSavedLocation();
+      await getWifiIpAddress();
+
+      emergencyService = EmergencyService(locationProvider);
+      emergencyService.initialize();
+
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+      final cartViewModel = Provider.of<CartViewModel>(context, listen: false); // Access CartViewModel
+
+      // Fetch Orders and Cart Items for the current user
+      await cartViewModel.fetchOrdersAndCartItems();
+
+      await Future.wait([
+        authViewModel.checkLoginStatus(),
+        vendorAuthViewModel.checkLoginStatus(),
+      ]);
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
       if (authViewModel.isLoggedIn) {
-        print("✅ Navigating to User HomePage...");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
         );
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
-        print("✅ Navigating to Vendor Dashboard...");
         Navigator.pushReplacementNamed(context, AppRoutes.VendorMedicalStoreDashBoard);
       } else {
-        print("❌ Navigating to Login...");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => UserLoginScreen()), // Default to User Login
+          MaterialPageRoute(builder: (context) => UserLoginScreen()),
         );
       }
-    });
+    } catch (e) {
+      print("❌ Error: $e");
+    }
   }
 
   @override
@@ -72,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset(
-                'assets/animations/uploadPrescription.json', // Replace with your Lottie animation
+                'assets/animations/uploadPrescription.json',
                 height: 150,
               ),
               const SizedBox(height: 20),
@@ -95,9 +148,19 @@ class _SplashScreenState extends State<SplashScreen> {
                         color: Colors.white,
                       ),
                     ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Your trusted health partner',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(color: Colors.white),
             ],
           ),
         ),

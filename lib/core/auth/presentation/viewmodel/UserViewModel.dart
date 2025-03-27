@@ -10,27 +10,24 @@ class UserViewModel extends ChangeNotifier {
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
 
-  // This will fetch the user details using the userId
   Future<void> fetchUserDetails(String userId) async {
     try {
       _isLoading = true;
-      notifyListeners(); // Notify listeners when the loading state changes
+      notifyListeners(); // Start loading
 
-      // Fetch the user details from UserService (assuming the service returns a UserModel?)
-      _user = await UserService().getUserDetails(userId);
-
-      // Handle the case where the user is not found
-      if (_user == null) {
-        // Handle error or show default state
+      UserModel? fetchedUser = await UserService().getUserDetails(userId);
+      if (fetchedUser != null) {
+        _user = fetchedUser;
       }
+
     } catch (error) {
-      // Handle error (e.g., show an error message)
       print("Error fetching user details: $error");
     } finally {
       _isLoading = false;
-      notifyListeners(); // Notify listeners when loading is complete
+      notifyListeners(); // Ensure UI updates
     }
   }
+
 
   // Method to calculate the profile completion percentage
   double calculateProfileCompletion() {

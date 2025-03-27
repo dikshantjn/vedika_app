@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/features/OrderActivity/presentation/view/TrackOrderScreen.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseFileWidget.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/EnableLocationWidget.dart';
@@ -90,6 +91,28 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> {
                                   pickPrescription: viewModel.pickPrescription,
                                 ),
                                 SizedBox(height: 20),
+                                // Track Order Button
+                                OutlinedButton(
+                                  onPressed: () {
+                                    // Navigate to the TrackOrderScreen
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TrackOrderScreen(orderId: 123), // Pass the actual orderId here
+                                      ),
+                                    );
+                                  },
+                                  child: Text("Track Order"),
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: ColorPalette.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    side: BorderSide(color: ColorPalette.primaryColor),
+                                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                ),
                               ],
                             )
                                 : EnableLocationWidget(

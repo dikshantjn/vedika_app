@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 
 class PrescriptionRequestModel {
   final String prescriptionId;
-  final String userId;
+  final UserModel user;
   final List<String>? requestedVendors;
   final String? acceptedVendor;
   final bool requestAcceptedStatus;
@@ -12,7 +12,7 @@ class PrescriptionRequestModel {
 
   PrescriptionRequestModel({
     required this.prescriptionId,
-    required this.userId,
+    required this.user,
     this.requestedVendors,
     this.acceptedVendor,
     required this.requestAcceptedStatus,
@@ -21,11 +21,10 @@ class PrescriptionRequestModel {
     required this.createdAt,
   });
 
-  /// **🔹 Factory Constructor to Handle JSON Parsing**
   factory PrescriptionRequestModel.fromJson(Map<String, dynamic> json) {
     return PrescriptionRequestModel(
-      prescriptionId: json["prescriptionId"].toString(), // Ensure String type
-      userId: json["userId"].toString(),
+      prescriptionId: json["prescriptionId"].toString(),
+      user: json["User"] != null ? UserModel.fromJson(json["User"]) : UserModel.empty(), // ✅ Corrected User Mapping
       requestedVendors: (json["requestedVendors"] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
@@ -37,11 +36,11 @@ class PrescriptionRequestModel {
     );
   }
 
-  /// **🔹 Convert Model to JSON**
+
   Map<String, dynamic> toJson() {
     return {
       "prescriptionId": prescriptionId,
-      "userId": userId,
+      "user": user.toJson(),
       "requestedVendors": requestedVendors,
       "acceptedVendor": acceptedVendor,
       "requestAcceptedStatus": requestAcceptedStatus,
@@ -51,20 +50,10 @@ class PrescriptionRequestModel {
     };
   }
 
-  /// **🔹 Helper Function to Handle Different Date Formats**
-  static DateTime _parseDate(dynamic date) {
-    if (date is int) {
-      return DateTime.fromMillisecondsSinceEpoch(date); // Handle timestamp format
-    } else if (date is String) {
-      return DateTime.parse(date); // Handle ISO 8601 format
-    } else {
-      throw FormatException("Invalid date format: $date");
-    }
-  }
-
+  /// **✅ Add copyWith Method**
   PrescriptionRequestModel copyWith({
     String? prescriptionId,
-    String? userId,
+    UserModel? user,
     List<String>? requestedVendors,
     String? acceptedVendor,
     bool? requestAcceptedStatus,
@@ -74,7 +63,7 @@ class PrescriptionRequestModel {
   }) {
     return PrescriptionRequestModel(
       prescriptionId: prescriptionId ?? this.prescriptionId,
-      userId: userId ?? this.userId,
+      user: user ?? this.user,
       requestedVendors: requestedVendors ?? this.requestedVendors,
       acceptedVendor: acceptedVendor ?? this.acceptedVendor,
       requestAcceptedStatus: requestAcceptedStatus ?? this.requestAcceptedStatus,
@@ -84,4 +73,13 @@ class PrescriptionRequestModel {
     );
   }
 
+  static DateTime _parseDate(dynamic date) {
+    if (date is int) {
+      return DateTime.fromMillisecondsSinceEpoch(date);
+    } else if (date is String) {
+      return DateTime.parse(date);
+    } else {
+      throw FormatException("Invalid date format: $date");
+    }
+  }
 }

@@ -36,6 +36,26 @@ class ApiEndpoints {
 
   static const String acceptPrescriptionRequest = '$baseUrl/prescription/accept-status';
   static const String getOrders = '$baseUrl/orders/getOrders';
+  static const String getPrescriptionUrl = '$baseUrl/prescription';
+  static const String getMedicineSuggestions = '$baseUrl/orders/search';
+  static const String placeOrder = '$baseUrl/orders/getOrders';
+
+
+  // 📌 Cart APIs
+  static const String addToCart = '$baseUrl/cart/add';        // Add item to cart
+  static const String fetchCart = '$baseUrl/cart';            // Fetch cart items
+  static const String clearCart = '$baseUrl/cart/clear';      // Clear the cart
+  static const String getCartItemByOrderId = '$baseUrl/cart';      // Clear the cart
+  static const String deleteCartItem = '$baseUrl/cart/delete';      // Clear the cart
+
+  static const String getCartItemsByUserId = '$baseUrl/user/orders';      // Clear the cart
+  static const String fetchOrdersByUserId = '$baseUrl/user/orders'; // Fetch pending orders by userId
+  static const String fetchProductByCartId = '$baseUrl/user/cart';  // Endpoint for fetching product details by cartId
+
+  static const String updateCartQuantity = '$baseUrl/cart/update-quantity';
+  static const String acceptOrder = '$baseUrl/orders';
+  static const String getOrderStatus = '$baseUrl/orders';
+
 
 
 

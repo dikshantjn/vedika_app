@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BannerSlider.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BrandSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/CategoryGrid.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/HealthConcernSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/SearchBox.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
@@ -45,9 +47,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Add this line
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
-      extendBody: true,  // Allows content to extend behind the bottom bar
+      extendBody: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(100.0),
         child: ClipPath(
@@ -111,37 +113,41 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // Cart Icon
-            Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: ColorPalette.primaryColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, "/goToCart");
+                  Consumer<CartViewModel>(
+                    builder: (context, cartViewModel, child) {
+                      return Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ColorPalette.primaryColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, AppRoutes.goToCart);
+                              },
+                              icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
+                            ),
+                          ),
+                          Positioned(
+                            right: 4,
+                            top: 4,
+                            child: Container(
+                              padding: EdgeInsets.all(4),
+                              decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                              constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+                              child: Text(
+                                cartViewModel.totalItemCount.toString(), // Display the cart item count
+                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
                     },
-                    icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
                   ),
-                ),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                    constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-                    child: Text(
-                      '3', // Replace with actual cart item count
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-            )
-            ],
+                ],
               ),
             ),
           ),
@@ -151,7 +157,7 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: 70), // Prevents content from overlapping the floating bar
+            padding: EdgeInsets.only(bottom: 70),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -165,8 +171,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
-          // Floating Bottom Navigation Bar
           Positioned(
             bottom: -10,
             child: ClipRRect(

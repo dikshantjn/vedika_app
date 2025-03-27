@@ -3,10 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart'; // Assuming you have a service for fetching orders
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart'; // Assuming you have a service for fetching orders
 
 class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool isServiceOnline = true;
+  final VendorLoginService _loginService = VendorLoginService();
 
   // List to hold fetched orders and return requests
   List<MedicineOrderModel> orders = [];
@@ -31,8 +33,10 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   // Fetch Orders and Return Requests from API
   Future<void> fetchOrdersAndRequests() async {
     try {
+      String? vendorId = await _loginService.getVendorId();
+
       // Fetch orders
-      orders = await _orderService.getOrders();
+      orders = await _orderService.getOrders(vendorId!);
 
       // Fetch return requests
       returnRequests = await _fetchReturnRequests();

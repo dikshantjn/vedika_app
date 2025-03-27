@@ -254,7 +254,7 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: DropdownButtonFormField<String>(
-        value: selectedValue,
+        value: selectedValue?.isNotEmpty == true ? selectedValue : null, // Null check
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: labelText,
@@ -262,11 +262,16 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
           filled: true,
           fillColor: Colors.white,
         ),
-        items: options.map((value) =>
-            DropdownMenuItem(value: value, child: Text(value))).toList(),
+        items: options.map((value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
       ),
     );
   }
+
 
   Widget _buildDateOfBirthField() {
     return Padding(

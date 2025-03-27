@@ -53,9 +53,6 @@ class VendorLoginViewModel extends ChangeNotifier {
       print("🔹 Password: $password");
       print("🔹 Role: $selectedRole, Role Number: $role");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Logging in...")),
-      );
 
       try {
         var response = await _vendorLoginService.loginVendor(email, password, role);
@@ -63,9 +60,6 @@ class VendorLoginViewModel extends ChangeNotifier {
         print("✅ Login response received: $response");
 
         if (response.containsKey('success') && response['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Login Successful")),
-          );
 
           _isVendorLoggedIn = true;  // Update login state
           notifyListeners();

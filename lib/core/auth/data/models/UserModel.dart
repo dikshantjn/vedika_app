@@ -14,8 +14,8 @@ class UserModel {
   final String? location;
   final String? city;
   final DateTime createdAt;
-  final String? password;  // Added password field
-  final bool status;        // Added status field
+  final String? password;
+  final bool status; // Boolean field for active/inactive
 
   UserModel({
     required this.userId,
@@ -33,21 +33,43 @@ class UserModel {
     this.location,
     this.city,
     required this.createdAt,
-    this.password,          // Initialize password
-    required this.status,    // Initialize status
+    this.password,
+    required this.status,
   });
 
-  // Convert JSON to UserModel
-// Convert JSON to UserModel
+  // ✅ Static method to return an empty user
+  factory UserModel.empty() {
+    return UserModel(
+      userId: '',
+      name: 'Unknown',
+      photo: null,
+      phoneNumber: '',
+      abhaId: null,
+      emailId: null,
+      dateOfBirth: null,
+      gender: null,
+      bloodGroup: null,
+      height: null,
+      weight: null,
+      emergencyContactNumber: null,
+      location: null,
+      city: null,
+      createdAt: DateTime.now(),
+      password: null,
+      status: false,
+    );
+  }
+
+  // ✅ Convert JSON to UserModel
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       userId: json['userId'] ?? '',
       name: json['name'],
       photo: json['photo'],
-      phoneNumber: json['phone_number'] ?? '',
+      phoneNumber: json['phone_number'] ?? '', // Ensures phoneNumber is not null
       abhaId: json['ABHA_ID'],
       emailId: json['emailId'],
-      dateOfBirth: json['dateOfBirth'] != null ? DateTime.parse(json['dateOfBirth']) : null,
+      dateOfBirth: json['dateOfBirth'] != null ? DateTime.tryParse(json['dateOfBirth']) : null,
       gender: json['gender'],
       bloodGroup: json['bloodGroup'],
       height: json['height'] != null ? (json['height'] as num).toDouble() : null,
@@ -55,14 +77,13 @@ class UserModel {
       emergencyContactNumber: json['emergencyContactNumber'],
       location: json['location'],
       city: json['city'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-      password: json['password'], // Assign password if present in JSON
-      status: json['status'] == 1, // If status is 1, set true, otherwise false
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) ?? DateTime.now() : DateTime.now(),
+      password: json['password'],
+      status: json['status'] == 1 || json['status'] == true, // Supports both `1/0` and `true/false`
     );
   }
 
-
-  // Convert UserModel to JSON (for API requests if needed)
+  // ✅ Convert UserModel to JSON
   Map<String, dynamic> toJson() {
     return {
       "userId": userId,
@@ -80,8 +101,8 @@ class UserModel {
       "location": location,
       "city": city,
       "createdAt": createdAt.toIso8601String(),
-      "password": password,     // Include password in JSON
-      "status": status,         // Include status in JSON
+      "password": password,
+      "status": status ? 1 : 0, // Converts boolean to `1/0` for API consistency
     };
   }
 }

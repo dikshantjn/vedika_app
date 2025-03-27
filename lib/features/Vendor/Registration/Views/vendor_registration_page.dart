@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/vendor_registration_view_model.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/Widgets/login_widget.dart';
@@ -42,8 +43,10 @@ class VendorRegistrationPage extends StatelessWidget {
                           child: IconButton(
                             icon: Icon(Icons.arrow_back, color: Colors.black),
                             onPressed: () {
-                              Navigator.pop(context);
-                            },
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => UserLoginScreen()),
+                              );                            },
                           ),
                         ),
 
