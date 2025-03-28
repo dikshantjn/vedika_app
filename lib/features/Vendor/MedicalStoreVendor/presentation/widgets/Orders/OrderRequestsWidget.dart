@@ -47,8 +47,8 @@ class OrderRequestsWidget extends StatelessWidget {
           ),
         ),
         ListView.builder(
-          shrinkWrap: true, // important
-          physics: const NeverScrollableScrollPhysics(), // prevent nested scroll conflict
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: viewModel.prescriptionRequests.length,
           padding: const EdgeInsets.only(bottom: 12),
           itemBuilder: (context, index) {
@@ -79,113 +79,128 @@ class OrderRequestsWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Prescription ID & Menu ---
+          // --- Customer Name & Status ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Prescription ID: ${request.prescriptionId}",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Remark: Prescription uploaded",
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                ],
+              // Customer Name
+              Text(
+                "Customer: ${request.user?.name ?? "Unknown"}",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
               ),
-              if (!request.requestAcceptedStatus)
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == "accept_prescription") {
-                      viewModel.acceptPrescription(request.prescriptionId);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: "accept_prescription",
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle_outline, color: Colors.green),
-                          SizedBox(width: 8),
-                          Text("Accept Prescription"),
-                        ],
+
+              // Prescription Status Box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(request.prescriptionAcceptedStatus).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getStatusIcon(request.prescriptionAcceptedStatus),
+                      color: _getStatusColor(request.prescriptionAcceptedStatus),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      request.prescriptionAcceptedStatus,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: _getStatusColor(request.prescriptionAcceptedStatus),
                       ),
                     ),
                   ],
-                  icon: Icon(Icons.more_vert, color: Colors.grey.shade700),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  color: Colors.white,
-                  elevation: 5,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
 
-          // --- Customer Name ---
-          Text(
-            "Customer: ${request.user?.name ?? "Unknown"}",
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 6),
-
-          // --- View Prescription Button ---
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton(
-              onPressed: () {
-                if (request.prescriptionUrl != null && request.prescriptionUrl.isNotEmpty) {
-                  FileOpenHelper.openFile(context, request.prescriptionUrl);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("No prescription file available")),
-                  );
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                side: const BorderSide(color: Colors.blueAccent),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+          // --- Date ---
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16, color: Colors.blueAccent),
+              const SizedBox(width: 6),
+              Text(
+                "Date: ${DateFormat("d MMMM yyyy, h:mm a").format(request.createdAt)}",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey.shade700),
               ),
-              child: const Text("View Prescription", style: TextStyle(fontSize: 13, color: Colors.blueAccent)),
-            ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          // --- Created Date & Status ---
+          // --- Buttons Row (View Prescription & Accept Prescription) ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Created: ${DateFormat.yMMMd().format(request.createdAt)}",
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: request.requestAcceptedStatus ? Colors.green.shade100 : Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  request.requestAcceptedStatus ? "Accepted" : "Pending",
-                  style: TextStyle(
-                    color: request.requestAcceptedStatus ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+              // View Prescription Button
+              OutlinedButton(
+                onPressed: () {
+                  if (request.prescriptionUrl != null && request.prescriptionUrl.isNotEmpty) {
+                    FileOpenHelper.openFile(context, request.prescriptionUrl);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("No prescription file available")),
+                    );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  side: const BorderSide(color: Colors.blueAccent),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: const Text("View Prescription", style: TextStyle(fontSize: 14, color: Colors.blueAccent)),
               ),
+
+              // Accept Prescription Button (only if status is "Pending")
+              if (request.prescriptionAcceptedStatus == "Pending")
+                OutlinedButton.icon(
+                  onPressed: () => viewModel.acceptPrescription(request.prescriptionId),
+                  icon: const Icon(Icons.check_circle_outline, size: 18, color: Colors.green),
+                  label: const Text("Accept Prescription", style: TextStyle(fontSize: 14, color: Colors.green)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    side: const BorderSide(color: Colors.green),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "Accepted":
+        return Colors.green;
+      case "Verified":
+        return Colors.blue;
+      case "Completed":
+        return Colors.purple;
+      default:
+        return Colors.red;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case "Accepted":
+        return Icons.check_circle_outline;
+      case "Verified":
+        return Icons.verified;
+      case "Completed":
+        return Icons.done_all;
+      default:
+        return Icons.pending_actions;
+    }
   }
 }

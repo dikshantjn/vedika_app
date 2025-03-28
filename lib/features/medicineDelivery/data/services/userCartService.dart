@@ -107,7 +107,7 @@ class UserCartService {
   Future<List<MedicineOrderModel>> fetchOrdersByUserId(String userId) async {
     try {
       final response = await dio.get(
-        '${ApiEndpoints.fetchOrdersByUserId}/$userId/Pending', // Fetch orders by userId and status 'Pending'
+        '${ApiEndpoints.fetchOrdersByUserId}/$userId/Accepted', // Fetch orders by userId and status 'Pending'
       );
 
       // Print the full response data
@@ -137,7 +137,7 @@ class UserCartService {
 
 
   // **🔹 Fetch Cart Items by Order ID**
-  Future<List<CartModel>> fetchCartItemsByOrderId(int orderId) async {
+  Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
       final response = await dio.get(
         '${ApiEndpoints.getCartItemByOrderId}/$orderId', // Endpoint to fetch cart items by orderId

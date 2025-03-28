@@ -80,9 +80,9 @@ class PrescriptionRequestService {
   }
 
   /// **🔹 Fetch Prescription URL using Prescription ID**
-  Future<String?> fetchPrescriptionUrl(int prescriptionId) async {
+  Future<String?> fetchPrescriptionUrl(String prescriptionId) async {
     try {
-      if (prescriptionId <= 0) { // ✅ Check if prescriptionId is valid
+      if (prescriptionId.isEmpty) { // ✅ Check if prescriptionId is valid
         throw Exception("❌ Prescription ID is missing or invalid");
       }
 

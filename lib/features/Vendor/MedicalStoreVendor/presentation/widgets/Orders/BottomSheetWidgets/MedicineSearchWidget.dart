@@ -4,7 +4,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 
 class MedicineSearchWidget extends StatefulWidget {
-  final int orderId;
+  final String orderId;
   final TextEditingController searchController;
   final Function(MedicineProduct) onMedicineSelected;
 

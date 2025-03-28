@@ -89,6 +89,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Accept Prescription**
+  /// **🔹 Accept Prescription**
   Future<void> acceptPrescription(String prescriptionId) async {
     _setProcessingOrder(true);
     try {
@@ -97,11 +98,8 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
       bool success = await _prescriptionService.acceptPrescription(prescriptionId, vendorId!);
       if (success) {
-        int index = _prescriptionRequests.indexWhere((p) => p.prescriptionId == prescriptionId);
-        if (index != -1) {
-          _prescriptionRequests[index] = _prescriptionRequests[index].copyWith(requestAcceptedStatus: true);
-          notifyListeners();
-        }
+        // Refresh the entire order list
+        await fetchOrders();
       }
     } catch (e) {
       debugPrint("Error accepting prescription: $e");
@@ -110,8 +108,9 @@ class MedicineOrderViewModel extends ChangeNotifier {
     }
   }
 
+
   /// **🔹 Fetch Prescription URL**
-  Future<String?> fetchPrescriptionUrl(int prescriptionId) async {
+  Future<String?> fetchPrescriptionUrl(String prescriptionId) async {
     try {
       return await _prescriptionService.fetchPrescriptionUrl(prescriptionId);
     } catch (e) {
@@ -152,7 +151,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Add Medicine to Temporary Cart**
-  void addMedicineToLocalCart(MedicineProduct medicine, int quantity, int orderId, BuildContext context) {
+  void addMedicineToLocalCart(MedicineProduct medicine, int quantity, String orderId, BuildContext context) {
     if (quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("❌ Quantity should be greater than zero")));
       return;
@@ -208,8 +207,8 @@ class MedicineOrderViewModel extends ChangeNotifier {
       if (vendorId?.isEmpty ?? true) throw Exception("Vendor ID not found.");
 
       MedicineOrderModel order = MedicineOrderModel(
-        orderId: DateTime.now().millisecondsSinceEpoch,
-        prescriptionId: 0,
+        orderId: " ",
+        prescriptionId: "",
         userId: "",
         vendorId: vendorId!,
         orderStatus: "Pending",
@@ -242,7 +241,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchCartItems(int orderId) async {
+  Future<void> fetchCartItems(String orderId) async {
     try {
       _fetchedCartItems = await _cartService.fetchCartByOrderId(orderId); // Store fetched items separately
       notifyListeners(); // Notify UI about the update
@@ -300,7 +299,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> acceptOrder(int orderId) async {
+  Future<void> acceptOrder(String orderId) async {
     String? vendorId = await _loginService.getVendorId();
 
     try {
@@ -332,7 +331,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   // ✅ Method to fetch order status
-  Future<void> fetchOrderStatus(int orderId) async {
+  Future<void> fetchOrderStatus(String orderId) async {
     String? vendorId = await _loginService.getVendorId();
 
     try {

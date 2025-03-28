@@ -89,7 +89,7 @@ class OrderCartService {
   }
 
   // **🔹 Fetch Cart Items by Order ID**
-  Future<List<CartModel>> fetchCartByOrderId(int orderId) async {
+  Future<List<CartModel>> fetchCartByOrderId(String orderId) async {
     try {
       final response = await _dio.get(
         '${ApiEndpoints.getCartItemByOrderId}/$orderId', // Use orderId in URL

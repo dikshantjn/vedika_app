@@ -164,8 +164,8 @@ class OrdersWidget extends StatelessWidget {
   void _showProcessOrderScreen(
       BuildContext context,
       MedicineOrderViewModel viewModel,
-      int prescriptionId,
-      int orderId,
+      String prescriptionId,
+      String orderId,
       String customerName,
       String orderDate,
       ) async {

@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/AI/presentation/viewmodel/MicViewModel.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
@@ -124,6 +125,9 @@ class MyApp extends StatelessWidget {
         ProxyProvider<LocationProvider, EmergencyService>(
           update: (context, locationProvider, _) => EmergencyService(locationProvider),
         ),
+
+        ChangeNotifierProvider(create: (_) => AddNewAddressViewModel()),
+
       ],
       child: Builder(
         builder: (context) {

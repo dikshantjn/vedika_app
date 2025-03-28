@@ -46,7 +46,7 @@ class OrderService {
   }
 
   // ✅ Method to Accept an Order
-  Future<bool> acceptOrder(int orderId, String vendorId) async {
+  Future<bool> acceptOrder(String orderId, String vendorId) async {
     try {
       final response = await _dio.put(
         '${ApiEndpoints.acceptOrder}/$orderId/accept',
@@ -79,7 +79,7 @@ class OrderService {
   }
 
   // ✅ Method to Get Order Status
-  Future<String> getOrderStatus(int orderId, String vendorId) async {
+  Future<String> getOrderStatus(String orderId, String vendorId) async {
     try {
       final response = await _dio.get(
         '${ApiEndpoints.getOrderStatus}/$orderId/$vendorId/status',  // Fetching status using orderId and vendorId

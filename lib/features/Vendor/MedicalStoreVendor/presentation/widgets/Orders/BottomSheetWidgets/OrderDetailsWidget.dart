@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 
 class OrderDetailsWidget extends StatefulWidget {
-  final int orderId;
+  final String orderId;
   final String customerName;
   final String orderDate;
   final String prescriptionUrl;

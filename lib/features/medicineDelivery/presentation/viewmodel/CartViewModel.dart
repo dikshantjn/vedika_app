@@ -48,7 +48,7 @@ class CartViewModel extends ChangeNotifier {
   }
 
   // **🔹 Fetch Cart Items by Order ID**
-  Future<List<CartModel>> fetchCartItemsByOrderId(int orderId) async {
+  Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
       _cartItems = await _cartService.fetchCartItemsByOrderId(orderId);
       debugPrint("Fetched cart items by order ID: $_cartItems");
@@ -119,10 +119,10 @@ class CartViewModel extends ChangeNotifier {
   }
 
   // **🔹 Process Order**
-  Future<String> processOrder(List<CartModel> cartItems, String vendorId, UserModel user, int prescriptionId, double totalAmount) async {
+  Future<String> processOrder(List<CartModel> cartItems, String vendorId, UserModel user, String prescriptionId, double totalAmount) async {
     try {
       final order = MedicineOrderModel(
-        orderId: DateTime.now().millisecondsSinceEpoch,
+        orderId:" ",
         prescriptionId: prescriptionId,
         userId: user.userId,
         vendorId: vendorId,

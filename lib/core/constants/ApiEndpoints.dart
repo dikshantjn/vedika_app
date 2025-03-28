@@ -56,6 +56,9 @@ class ApiEndpoints {
   static const String acceptOrder = '$baseUrl/orders';
   static const String getOrderStatus = '$baseUrl/orders';
 
+  static const String deliveryAddress = '$baseUrl/deliveryAddress/delivery-address';
+  static const String getDeliveryAddresses = '$baseUrl/deliveryAddress/getDeliveryAddress';
+  static const String deleteDeliveryAddress = '$baseUrl/deliveryAddress/deleteDeliveryAddress';
 
 
 

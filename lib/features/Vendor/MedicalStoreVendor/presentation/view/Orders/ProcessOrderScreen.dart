@@ -10,7 +10,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 
 class ProcessOrderScreen extends StatefulWidget {
   final String prescriptionUrl;
-  final int orderId;
+  final String orderId;
   final String customerName;
   final String orderDate;
 
