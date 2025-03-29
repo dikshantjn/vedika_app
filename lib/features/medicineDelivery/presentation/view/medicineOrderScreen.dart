@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/OrderActivity/presentation/view/TrackOrderScreen.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseFileWidget.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/EnableLocationWidget.dart';
@@ -98,7 +98,7 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => TrackOrderScreen(orderId: 123), // Pass the actual orderId here
+                                        builder: (context) => TrackOrderScreen(), // Pass the actual orderId here
                                       ),
                                     );
                                   },

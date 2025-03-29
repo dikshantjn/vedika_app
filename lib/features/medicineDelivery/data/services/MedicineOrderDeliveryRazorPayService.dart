@@ -22,6 +22,7 @@ class MedicineOrderDeliveryRazorPayService {
     }
   }
 
+
   // Handle payment error
   void _handlePaymentError(PaymentFailureResponse response) {
     if (onPaymentError != null) {
@@ -36,11 +37,12 @@ class MedicineOrderDeliveryRazorPayService {
     }
   }
 
-  // Open Razorpay payment gateway
   void openPaymentGateway(double amount, String key, String name, String description) {
+    int amountInPaise = (amount * 100).round(); // ✅ Use `.round()` to avoid precision issues
+
     var options = {
       'key': key,
-      'amount': amount * 100, // Amount in paise (1 INR = 100 paise)
+      'amount': amountInPaise, // ✅ Ensure it's an integer
       'name': name,
       'description': description,
       'prefill': {

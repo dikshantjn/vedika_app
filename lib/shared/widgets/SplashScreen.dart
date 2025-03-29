@@ -11,7 +11,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/main.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
 
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-      final cartViewModel = Provider.of<CartViewModel>(context, listen: false); // Access CartViewModel
+      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false); // Access CartAndPlaceOrderViewModel
 
       // Fetch Orders and Cart Items for the current user
       await cartViewModel.fetchOrdersAndCartItems();

@@ -48,7 +48,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
             _buildDrawerItem(context, Icons.business, "Hospital", "/hospital"),
             _buildDrawerItem(context, Icons.local_pharmacy, "Clinic", "/clinic"),
             _buildDrawerItem(context, Icons.science, "Lab Test", "/labTest"),
-            _buildDrawerItem(context, Icons.history, "Order History", "/orderHistory"),
+            _buildDrawerItem(context, Icons.shopping_bag, "My Order", "/orderHistory"),
             _buildDrawerItem(context, Icons.notification_important, "Notification/Remainder", "/notification"),
             _buildDrawerItem(context, Icons.receipt, "Health Records", "/healthRecords"),
             _buildDrawerItem(context, Icons.logout, "Logout", "/logout"),

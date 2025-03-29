@@ -56,50 +56,117 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 🔹 Order Details
-          Text(
-            "Order ID: #${widget.orderId}",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Colors.blueGrey[900],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Customer: ${widget.customerName}",
-            style: TextStyle(fontSize: 14, color: Colors.grey[800]),
-          ),
-          Text(
-            "Date: ${widget.orderDate}",
-            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Order ID: #${widget.orderId}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.blueGrey[900],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Customer: ${widget.customerName}",
+                      style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                    ),
+                    Text(
+                      "Date: ${widget.orderDate}",
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ),
+              // Dropdown Menu Button (Top Right)
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey[700]),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  // Handle menu item selection
+                  if (value == "Ready to Pickup") {
+                    viewModel.updateOrderStatus(widget.orderId, "ReadyForPickup");
+                  } else if (value == "Out for Delivery") {
+                    viewModel.updateOrderStatus(widget.orderId, "OutForDelivery");
+                  } else if (value == "Delivered") {
+                    viewModel.updateOrderStatus(widget.orderId, "Delivered");
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: "Ready to Pickup",
+                    child: Row(
+                      children: [
+                        Icon(Icons.local_shipping, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Ready to Pickup",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: "Out for Delivery",
+                    child: Row(
+                      children: [
+                        Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Out for Delivery",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: "Delivered",
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.orange, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Delivered",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                offset: Offset(0, 8),  // Slightly adjust the dropdown position
+                color: Colors.white,   // White background for the dropdown
+                elevation: 5,          // Add elevation for a subtle shadow effect
+              )
+            ],
           ),
           const SizedBox(height: 6),
-          // _buildOrderStatus(viewModel),
+
+          // Order Status Section
           const SizedBox(height: 10),
 
-          // 🔹 Buttons Row
+          // Buttons Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Show Status or Accept Order button based on order status
-              if (viewModel.orderStatus == "Accepted" || viewModel.orderStatus == "Completed")
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    viewModel.orderStatus, // Show "Accepted" or "Completed" status
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                )
-              else
+              if (viewModel.orderStatus == "Pending")
                 OutlinedButton(
                   onPressed: () async {
                     await viewModel.acceptOrder(widget.orderId);
@@ -113,7 +180,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     side: const BorderSide(color: Colors.green, width: 1.5),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   child: viewModel.isAccepting
                       ? const SizedBox(
@@ -127,9 +195,27 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                       : const Text(
                     "Accept Order",
                     style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500),
+                      fontSize: 13,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    viewModel.orderStatus, // Show the current order status (e.g., "Accepted" or "Completed")
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
 
@@ -163,79 +249,9 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                 ),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
   }
-
-  // Widget _buildOrderStatus(MedicineOrderViewModel viewModel) {
-  //   // Show loading indicator while fetching status
-  //   if (viewModel.orderStatus == "Loading...") {
-  //     return Row(
-  //       children: [
-  //         const SizedBox(
-  //           width: 16,
-  //           height: 16,
-  //           child: CircularProgressIndicator(strokeWidth: 2),
-  //         ),
-  //         const SizedBox(width: 8),
-  //         Text(
-  //           "Checking status...",
-  //           style: TextStyle(
-  //             fontSize: 14,
-  //             color: Colors.grey[600],
-  //           ),
-  //         ),
-  //       ],
-  //     );
-  //   }
-  //
-  //   // Determine status color based on order state
-  //   Color statusColor;
-  //   switch (viewModel.orderStatus) {
-  //     case "Pending":
-  //       statusColor = Colors.orange;
-  //       break;
-  //     case "Accepted":
-  //       statusColor = Colors.green;
-  //       break;
-  //     case "Completed":
-  //       statusColor = Colors.blue;
-  //       break;
-  //     case "Cancelled":
-  //       statusColor = Colors.red;
-  //       break;
-  //     default:
-  //       statusColor = Colors.grey;
-  //   }
-  //
-  //   return Row(
-  //     children: [
-  //       Text(
-  //         "Status: ",
-  //         style: TextStyle(
-  //           fontSize: 14,
-  //           color: Colors.grey[700],
-  //         ),
-  //       ),
-  //       Container(
-  //         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-  //         decoration: BoxDecoration(
-  //           color: statusColor.withOpacity(0.1),
-  //           borderRadius: BorderRadius.circular(12),
-  //           border: Border.all(color: statusColor.withOpacity(0.3)),
-  //         ),
-  //         child: Text(
-  //           viewModel.orderStatus,
-  //           style: TextStyle(
-  //             fontSize: 14,
-  //             color: statusColor,
-  //             fontWeight: FontWeight.w600,
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 }

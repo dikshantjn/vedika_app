@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for keyboard handling
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/data/services/MedicineOrderDeliveryRazorPayService.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/DeliveryPartner/DeliveryPartner.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 
 class OrderSummarySheet extends StatefulWidget {
-  final CartViewModel cartViewModel;
+  final CartAndPlaceOrderViewModel cartViewModel;
+  final addressId;
 
-  const OrderSummarySheet({Key? key, required this.cartViewModel}) : super(key: key);
+  const OrderSummarySheet({Key? key, required this.cartViewModel, required this.addressId}) : super(key: key);
 
   @override
   _OrderSummarySheetState createState() => _OrderSummarySheetState();
@@ -28,10 +28,11 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   bool _isCouponApplied = false;
   final TextEditingController _couponController = TextEditingController();
   final FocusNode _couponFocusNode = FocusNode(); // Added focus node for coupon field
-
+  String _couponError = "";
   @override
   void initState() {
     super.initState();
+    widget.cartViewModel.setAddressId(widget.addressId);
     _fetchNearbyDeliveryPartners();
     _setupKeyboardListeners();
   }
@@ -41,6 +42,8 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     _couponFocusNode.dispose(); // Clean up focus node
     super.dispose();
   }
+
+
 
   void _setupKeyboardListeners() {
     // Listen to keyboard visibility changes
@@ -80,11 +83,28 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   }
 
   void _applyCoupon() {
-    if (_couponController.text.isEmpty) return;
+    if (_couponController.text.isEmpty) {
+      setState(() {
+        _couponError = "Please enter a coupon code.";
+      });
+      return;
+    }
+
+    // Call ViewModel method
+    widget.cartViewModel.applyCoupon(_couponController.text);
+
+    // Check if coupon is applied before proceeding
+    if (!widget.cartViewModel.isCouponApplied) {
+      setState(() {
+        _couponError = "Invalid coupon code. Please try again.";
+      });
+      return;
+    }
 
     setState(() {
-      _isCouponApplied = true;
-      _discount = widget.cartViewModel.subtotal * 0.1; // 10% discount
+      _isCouponApplied = widget.cartViewModel.isCouponApplied;
+      _discount = widget.cartViewModel.discount;
+      _couponError = ""; // Clear any previous error
     });
 
     // Dismiss keyboard before showing animation
@@ -110,6 +130,8 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
       Navigator.of(context).pop();
     });
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +178,22 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
       ),
     );
   }
-
   Widget _buildOrderSummary() {
-    double total = widget.cartViewModel.subtotal + _deliveryCharge + _platformFee - _discount;
+    final cartViewModel = widget.cartViewModel;
+    final List<CartModel> cartItems = cartViewModel.cartItems; // Get stored cart items
+    final Map<String, List<CartModel>> ordersGrouped = {};
+
+    // If cart is empty, show message
+    if (cartItems.isEmpty) {
+      return const Center(
+        child: Text("No orders found."),
+      );
+    }
+
+    // Grouping cart items by order ID
+    for (var item in cartItems) {
+      ordersGrouped.putIfAbsent(item.orderId!, () => []).add(item);
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -169,17 +204,47 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
         ),
         const SizedBox(height: 12),
         const Divider(),
-        _priceRow('Subtotal', widget.cartViewModel.subtotal),
+
+        // 🛒 **Display Grouped Orders**
+        ...ordersGrouped.entries.map((entry) {
+          String orderId = entry.key;
+          List<CartModel> items = entry.value;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Order ID: $orderId',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              ...items.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _priceRow('${item.name} (x${item.quantity})', item.price * item.quantity),
+                );
+              }).toList(),
+              const Divider(),
+            ],
+          );
+        }).toList(),
+
         _buildCouponSection(),
-        if (_isCouponApplied) _discountBox(),
-        _priceRow('Delivery Charge', _deliveryCharge),
-        _priceRow('Platform Fee', _platformFee),
-        _priceRow('Total', total, isBold: true),
+        if (cartViewModel.isCouponApplied) _discountBox(),
+
+        // 💰 **Price Breakdown**
+        _priceRow('Subtotal', cartViewModel.subtotal),
+        _priceRow('Delivery Charge', cartViewModel.deliveryCharge),
+        _priceRow('Platform Fee', cartViewModel.total - cartViewModel.subtotal - cartViewModel.deliveryCharge + cartViewModel.discount), // Ensure accurate fee display
+        _priceRow('Total', cartViewModel.total, isBold: true),
+
         const SizedBox(height: 12),
         _buildPayNowButton(),
       ],
     );
   }
+
+
 
   Widget _priceRow(String label, double amount, {bool isBold = false}) {
     return Padding(
@@ -205,29 +270,50 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
           Expanded(
             child: TextField(
               controller: _couponController,
-              focusNode: _couponFocusNode, // Assign focus node
+              focusNode: _couponFocusNode,
               decoration: InputDecoration(
                 hintText: 'Enter Coupon Code',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8), // Smaller border radius
+                  borderSide: const BorderSide(color: Colors.grey), // Outlined border
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.blue), // Highlight when focused
+                ),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                errorText: _couponError.isNotEmpty ? _couponError : null, // Shows error in TextField
               ),
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
+          OutlinedButton(
             onPressed: _isCouponApplied ? null : _applyCoupon,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorPalette.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: ColorPalette.primaryColor), // Outlined border
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Smaller border radius
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust padding
             ),
-            child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Apply',
+              style: TextStyle(
+                color: ColorPalette.primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
+
 
   Widget _discountBox() {
     return Padding(
@@ -273,15 +359,34 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   }
 
   void _payNow() {
-    // Dismiss keyboard before payment
-    FocusScope.of(context).unfocus();
+    FocusScope.of(context).unfocus(); // Dismiss keyboard
 
-    final razorPayService = MedicineOrderDeliveryRazorPayService();
-    razorPayService.openPaymentGateway(
-      widget.cartViewModel.total.toDouble(),
-      ApiConstants.razorpayApiKey,
-      'Medicine Order Delivery',
-      'Payment for your medicine delivery order',
-    );
+    // Ensure latest calculations before payment
+    widget.cartViewModel.setDeliveryCharge(_deliveryCharge);
+    widget.cartViewModel.setDiscount(_discount);
+    widget.cartViewModel.setPlatformFee(_platformFee);
+
+    // Recalculate total
+    widget.cartViewModel.calculateTotal();
+
+    // Ensuring total is positive
+    if (widget.cartViewModel.total <= 0) {
+      debugPrint("❌ Payment Aborted: Total amount is zero or negative.");
+      return;
+    }
+
+    // Advanced Logging Before Payment Call
+    debugPrint("✅ All checks passed. Proceeding to Razorpay...");
+
+    // Ensuring `handlePayment` is called
+    try {
+      double amount = widget.cartViewModel.total.roundToDouble(); // ✅ Ensuring integer conversion
+      widget.cartViewModel.handlePayment(amount);
+      debugPrint("🎉 Razorpay Payment Triggered Successfully.");
+    } catch (e, stackTrace) {
+      debugPrint("❌ ERROR: Payment Failed.");
+      debugPrint(e.toString());
+      debugPrint(stackTrace.toString());
+    }
   }
 }

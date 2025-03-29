@@ -1,32 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/MedicineOrder.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/MedicineOrderHistoryViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomOrderInfoDialog.dart';
 
-class MedicineTab extends StatelessWidget {
-  final MedicineOrderViewModel viewModel = MedicineOrderViewModel();
+class MedicineTab extends StatefulWidget {
+  const MedicineTab({Key? key}) : super(key: key);
+
+  @override
+  _MedicineTabState createState() => _MedicineTabState();
+}
+
+class _MedicineTabState extends State<MedicineTab> {
+  final MedicineOrderHistoryViewModel viewModel = MedicineOrderHistoryViewModel();
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch orders when the widget is initialized
+    _fetchOrders();
+  }
+
+  // Use Future directly for the builder
+  Future<void> _fetchOrders() async {
+    await viewModel.fetchOrdersByUser();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Use the ViewModel to get the orders
-    final orders = viewModel.orders;
+    return FutureBuilder(
+      future: _fetchOrders(), // Future to fetch the orders
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator()); // Show loading spinner while fetching data
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}')); // Show error message if there's an issue
+        } else {
+          // When data is fetched, show the order list
+          final orders = viewModel.orders;
 
-    return ListView.builder(
-      padding: EdgeInsets.all(16.0),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return _buildOrderItem(
-          context,
-          order: order, // Pass the whole order object
-        );
+          if (orders.isEmpty) {
+            return Center(child: Text('No orders found.'));
+          }
+
+          return ListView.builder(
+            padding: EdgeInsets.all(16.0),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final order = orders[index];
+              return _buildOrderItem(
+                context,
+                order: order, // Pass the full order object
+              );
+            },
+          );
+        }
       },
     );
   }
 
   Widget _buildOrderItem(
       BuildContext context, {
-        required MedicineOrder order, // Pass the full order object
+        required MedicineOrderModel order, // Pass the full order object
       }) {
     return Container(
       decoration: BoxDecoration(
@@ -52,7 +86,7 @@ class MedicineTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  order.orderNumber,
+                  order.orderId,
                   style: TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
@@ -78,14 +112,14 @@ class MedicineTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Date: ${order.date}',
+                  'Date: ${order.createdAt}',
                   style: TextStyle(
                     fontSize: 14.0,
                     color: Colors.grey[600],
                   ),
                 ),
                 Text(
-                  'Total: ${order.total}',
+                  'Total: \₹${order.totalAmount}',
                   style: TextStyle(
                     fontSize: 16.0,
                     fontWeight: FontWeight.bold,
@@ -100,13 +134,13 @@ class MedicineTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Items: ${order.items}',
+                  'Items: ${order.orderItems.length}',
                   style: TextStyle(
                     fontSize: 14.0,
                     color: Colors.grey[600],
                   ),
                 ),
-                _buildStatusChip(order.status), // Status Chip added to the same row
+                _buildStatusChip(order.orderStatus), // Status Chip added to the same row
               ],
             ),
           ],
@@ -117,6 +151,10 @@ class MedicineTab extends StatelessWidget {
 
   // Function to display status with a color chip
   Widget _buildStatusChip(String status) {
+    // Format status (e.g., OutForDelivery -> Out For Delivery)
+    String formattedStatus = status.replaceAllMapped(
+        RegExp(r'([a-z])([A-Z])'), (Match match) => '${match.group(1)} ${match.group(2)}');
+
     Color chipColor;
     switch (status.toLowerCase()) {
       case 'delivered':
@@ -128,13 +166,19 @@ class MedicineTab extends StatelessWidget {
       case 'processing':
         chipColor = Colors.blue;
         break;
+      case 'outfordelivery':
+        chipColor = Colors.yellow;
+        break;
+      case 'pending':
+        chipColor = Colors.grey;
+        break;
       default:
         chipColor = Colors.grey;
     }
 
     return Chip(
       label: Text(
-        status,
+        formattedStatus,
         style: TextStyle(
           color: Colors.white,
           fontSize: 12.0,
@@ -146,17 +190,17 @@ class MedicineTab extends StatelessWidget {
   }
 
   // Function to handle the info icon press
-  void _showOrderDetails(BuildContext context, MedicineOrder order) {
+  void _showOrderDetails(BuildContext context, MedicineOrderModel order) {
     showDialog(
       context: context,
       builder: (context) {
         return CustomOrderInfoDialog(
-          orderNumber: order.orderNumber,
-          imageUrls: order.imageUrls,
-          date: order.date,
-          status: order.status,
-          total: order.total,
-          items: order.items,
+          orderNumber: order.orderId,
+          imageUrls: order.orderItems.map((item) => item.productId).toList(), // Assuming you have an imageUrl property
+          date: order.createdAt.toString(),
+          status: order.orderStatus,
+          total: order.totalAmount.toString(),
+          items: order.orderItems.map((item) => item.name).toList().join(', '), // Assuming 'name' is the property of items
         );
       },
     );

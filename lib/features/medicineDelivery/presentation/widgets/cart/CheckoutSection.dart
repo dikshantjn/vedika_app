@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseAddressSheet.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/OrderSummarySheet.dart';
 
 class CheckoutSection extends StatelessWidget {
-  final CartViewModel cartViewModel;
+  final CartAndPlaceOrderViewModel cartViewModel;
 
   const CheckoutSection({Key? key, required this.cartViewModel}) : super(key: key);
 
@@ -37,6 +37,7 @@ class CheckoutSection extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
+
         onPressed: () => _showChooseAddressBottomSheet(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorPalette.primaryColor,
@@ -44,13 +45,16 @@ class CheckoutSection extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 4,
         ),
-        child: const Text('Proceed to Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+        child: const Text(
+          'Proceed to Checkout',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+        ),
       ),
     );
   }
 
-  void _showChooseAddressBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _showChooseAddressBottomSheet(BuildContext context) async {
+    final String? selectedAddressId = await showModalBottomSheet<String>(
       backgroundColor: Colors.white,
       context: context,
       isScrollControlled: true,
@@ -59,16 +63,17 @@ class CheckoutSection extends StatelessWidget {
       ),
       builder: (context) {
         return ChooseAddressSheet(
-          onAddressConfirmed: () {
-            Navigator.pop(context); // Close Choose Address Sheet
-            _showOrderSummaryBottomSheet(context); // Open Order Summary Sheet
-          },
+          onAddressConfirmed: () {}, // Handled via Navigator.pop()
         );
       },
     );
+
+    if (selectedAddressId != null) {
+      _showOrderSummaryBottomSheet(context, selectedAddressId);
+    }
   }
 
-  void _showOrderSummaryBottomSheet(BuildContext context) {
+  void _showOrderSummaryBottomSheet(BuildContext context, String addressId) {
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -77,7 +82,7 @@ class CheckoutSection extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return OrderSummarySheet(cartViewModel: cartViewModel);
+        return OrderSummarySheet(cartViewModel: cartViewModel, addressId: addressId);
       },
     );
   }

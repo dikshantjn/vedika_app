@@ -194,7 +194,9 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: hasAddresses && selectedAddressId != null
-            ? widget.onAddressConfirmed
+            ? () {
+          Navigator.pop(context, selectedAddressId); // Pass selectedAddressId when confirming
+        }
             : () => _navigateToAddNewAddress(viewModel),
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorPalette.primaryColor,
@@ -210,6 +212,7 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
       ),
     );
   }
+
 
   Widget _buildNoAddressView(AddNewAddressViewModel viewModel) {
     return Column(

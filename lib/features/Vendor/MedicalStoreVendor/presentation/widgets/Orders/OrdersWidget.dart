@@ -94,7 +94,7 @@ class OrdersWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Order ID and Status
+          // Order ID and Customer Name and Created Date
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -102,6 +102,26 @@ class OrdersWidget extends StatelessWidget {
                 "Order ID: ${order.orderId}",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
+              // User Name and Created Date
+            ],
+          ),
+          SizedBox(height: 6),
+          Text(
+            "Customer Name: ${order.user.name ?? 'N/A'}",
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+          ),
+          SizedBox(height: 4),
+          Text(
+            "Date: ${DateFormat.yMMMd().format(order.createdAt)}",
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+          SizedBox(height: 10),
+
+          // View Details Button and Order Status at the bottom
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Order Status at the left
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -117,49 +137,35 @@ class OrdersWidget extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 6),
-          // User Name and Created Date
-          Text(
-            "Customer Name: ${order.user.name ?? 'N/A'}",
-            style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
-          ),
-          SizedBox(height: 4),
-          Text(
-            "Date: ${DateFormat.yMMMd().format(order.createdAt)}",
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-          ),
-          SizedBox(height: 10),
-          // View Details Button
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton(
-              onPressed: () => _showProcessOrderScreen(
-                context,
-                viewModel,
-                order.prescriptionId,
-                order.orderId,
-                order.user.name!,
-                DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                side: BorderSide(color: Colors.blueAccent),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              // Process Order Button at the right
+              OutlinedButton(
+                onPressed: () => _showProcessOrderScreen(
+                  context,
+                  viewModel,
+                  order.prescriptionId,
+                  order.orderId,
+                  order.user.name!,
+                  DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  side: BorderSide(color: Colors.blueAccent),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  "Process Order",
+                  style: TextStyle(fontSize: 14, color: Colors.blueAccent),
                 ),
               ),
-              child: Text(
-                "Process Order",
-                style: TextStyle(fontSize: 14, color: Colors.blueAccent),
-              ),
-            ),
+            ],
           ),
         ],
       ),
     );
   }
+
 
   void _showProcessOrderScreen(
       BuildContext context,

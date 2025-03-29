@@ -7,7 +7,7 @@ import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWid
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/CategoryGrid.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/HealthConcernSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/SearchBox.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // Cart Icon
-                  Consumer<CartViewModel>(
+                  Consumer<CartAndPlaceOrderViewModel>(
                     builder: (context, cartViewModel, child) {
                       return Stack(
                         children: [

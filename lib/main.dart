@@ -11,6 +11,7 @@ import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModa
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -33,7 +34,7 @@ import 'package:vedika_healthcare/features/hospital/presentation/viewModal/Hospi
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTestAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/CartService.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
 import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
@@ -92,7 +93,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BloodBankOrderViewModel()),
         ChangeNotifierProvider(create: (_) => BannerViewModel()),
         ChangeNotifierProvider(create: (_) => HealthDaysViewModel()),
-        ChangeNotifierProvider(create: (_) => CartViewModel(UserCartService())),
+        ChangeNotifierProvider(create: (_) => CartAndPlaceOrderViewModel(UserCartService())),
         ChangeNotifierProvider(create: (_) => DeliveryPartnerViewModel()),
         ChangeNotifierProvider(create: (_) => EmergencyViewModel()),
         ChangeNotifierProvider(create: (_) => HospitalSearchViewModel()),
@@ -127,6 +128,8 @@ class MyApp extends StatelessWidget {
         ),
 
         ChangeNotifierProvider(create: (_) => AddNewAddressViewModel()),
+        ChangeNotifierProvider(create: (_) => TrackOrderViewModel()),
+
 
       ],
       child: Builder(

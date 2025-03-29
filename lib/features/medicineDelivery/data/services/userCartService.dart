@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineProduct.dart';
@@ -203,6 +204,39 @@ class UserCartService {
     }
   }
 
+  Future<bool> updateOrder(MedicineOrderModel order) async {
+    try {
+      String url = '${ApiEndpoints.placedOrderWithPayment}/${order.orderId}'; // Build URL with orderId
 
+      // Prepare the data from the MedicineOrderModel to send to the backend
+      Response response = await dio.put(
+        url,
+        data: {
+          "addressId": order.addressId,
+          "appliedCoupon": order.appliedCoupon,
+          "discountAmount": order.discountAmount,
+          "subtotal": order.subtotal,
+          "totalAmount": order.totalAmount,
+          "orderStatus": order.orderStatus,
+          "paymentMethod": order.paymentMethod,
+          "transactionId": order.transactionId,
+          "paymentStatus": order.paymentStatus,
+          "estimatedDeliveryDate": order.estimatedDeliveryDate?.toIso8601String(),
+          "trackingId": order.trackingId,
+          "updatedAt": DateTime.now().toIso8601String(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Order updated successfully
+      } else {
+        debugPrint("❌ Failed to update order: ${response.data}");
+        return false; // Failed to update
+      }
+    } catch (e) {
+      debugPrint("❌ Error updating order: $e");
+      return false; // Handle error
+    }
+  }
 }
 

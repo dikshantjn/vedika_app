@@ -193,40 +193,6 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
 
-
-  /// **🔹 Process Order**
-  Future<void> processOrder() async {
-    if (_cart.isEmpty) {
-      debugPrint("Cart is empty, cannot process order.");
-      return;
-    }
-
-    _setProcessingOrder(true);
-    try {
-      String? vendorId = await _loginService.getVendorId();
-      if (vendorId?.isEmpty ?? true) throw Exception("Vendor ID not found.");
-
-      MedicineOrderModel order = MedicineOrderModel(
-        orderId: " ",
-        prescriptionId: "",
-        userId: "",
-        vendorId: vendorId!,
-        orderStatus: "Pending",
-        createdAt: DateTime.now(),
-        totalAmount: _cart.fold(0, (sum, item) => sum + (item.price * item.quantity)),
-        user: UserModel.empty(),
-        orderItems: _cart,
-      );
-
-      bool success = await _orderService.placeOrder(order);
-      if (success) _cart.clear();
-    } catch (e) {
-      debugPrint("Error processing order: $e");
-    } finally {
-      _setProcessingOrder(false);
-    }
-  }
-
   /// **🔹 Fetch Cart Items**
   Future<void> fetchCart() async {
     try {
@@ -342,4 +308,22 @@ class MedicineOrderViewModel extends ChangeNotifier {
       notifyListeners();  // Notify listeners to update the UI
     }
   }
+
+  // Add this method in your MedicineOrderViewModel class
+  Future<void> updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      // Call the service to update the order status
+      bool result = await _orderService.updateOrderStatus(orderId, newStatus);
+
+      if (result) {
+        _orderStatus = newStatus;  // Update local status if successful
+        notifyListeners();  // Notify listeners to update the UI
+      } else {
+        throw Exception("Failed to update status");
+      }
+    } catch (e) {
+      debugPrint("Error updating order status: $e");
+    }
+  }
+
 }

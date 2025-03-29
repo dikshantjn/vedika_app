@@ -3,21 +3,28 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineProduct.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/CheckoutSection.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
 
   @override
+  _CartScreenState createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CartAndPlaceOrderViewModel>(context, listen: false).fetchOrdersAndCartItems();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cartViewModel = Provider.of<CartViewModel>(context);
-
-    // Fetch the cart items based on the user ID when the screen is loaded
-    // Replace `userId` with the actual userId
-    cartViewModel.fetchOrdersAndCartItems();
-
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
@@ -27,33 +34,23 @@ class CartScreen extends StatelessWidget {
         backgroundColor: ColorPalette.primaryColor,
       ),
       drawer:  DrawerMenu(),
-      body: Consumer<CartViewModel>(
+      body: Consumer<CartAndPlaceOrderViewModel>(
         builder: (context, cartViewModel, child) {
-          return FutureBuilder<List<CartModel>>(
-            future: cartViewModel.fetchOrdersAndCartItems(), // Call the future here
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                // Show loading indicator while fetching data
-                return const Center(child: CircularProgressIndicator());
-              }
+          final cartItems = cartViewModel.cartItems;
 
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.red)),
-                );
-              }
+          if (cartViewModel.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              final cartItems = snapshot.data ?? [];
+          if (cartItems.isEmpty) {
+            return _buildEmptyCart();
+          }
 
-              return cartItems.isEmpty
-                  ? _buildEmptyCart()
-                  : Column(
-                children: [
-                  Expanded(child: _buildCartItems(context, cartViewModel, cartItems)),
-                  CheckoutSection(cartViewModel: cartViewModel),
-                ],
-              );
-            },
+          return Column(
+            children: [
+              Expanded(child: _buildCartItems(context, cartViewModel, cartItems)),
+              CheckoutSection(cartViewModel: cartViewModel),
+            ],
           );
         },
       ),
@@ -73,7 +70,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCartItems(BuildContext context, CartViewModel cartViewModel, List<CartModel> cartItems) {
+  Widget _buildCartItems(BuildContext context, CartAndPlaceOrderViewModel cartViewModel, List<CartModel> cartItems) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: cartItems.length,
@@ -82,7 +79,7 @@ class CartScreen extends StatelessWidget {
         final isRemoved = medicine.quantity == 0;
 
         return FutureBuilder<List<MedicineProduct>>(
-          future: cartViewModel.fetchProductByCartId(medicine.cartId), // Fetch product details by cartId
+          future: cartViewModel.fetchProductByCartId(medicine.cartId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -96,11 +93,8 @@ class CartScreen extends StatelessWidget {
               return const Center(child: Text("No product details available"));
             }
 
-            final product = snapshot.data!.first; // Assuming there's only one product for each cart item
-
-            // Get the first image URL from the productURLs list
+            final product = snapshot.data!.first;
             String imageUrl = product.productURLs.isNotEmpty ? product.productURLs.first : '';
-            print("imageUrl $imageUrl");
 
             return Stack(
               children: [
@@ -124,7 +118,7 @@ class CartScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: imageUrl.isNotEmpty
                             ? Image.network(
-                          imageUrl, // Now using the correct image URL
+                          imageUrl,
                           width: 70,
                           height: 70,
                           fit: BoxFit.cover,
@@ -146,7 +140,7 @@ class CartScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              product.name, // Now using product's name
+                              product.name,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -156,7 +150,7 @@ class CartScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '₹${product.price.toStringAsFixed(2)}', // Now using product's price
+                              '₹${product.price.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
@@ -169,12 +163,10 @@ class CartScreen extends StatelessWidget {
                         ),
                       ),
                       _buildQuantitySelector(cartViewModel, medicine, isRemoved),
-
                     ],
                   ),
                 ),
 
-                // Delete Icon (Top-Right Corner)
                 Positioned(
                   top: 0,
                   right: 0,
@@ -184,7 +176,7 @@ class CartScreen extends StatelessWidget {
                       color: Colors.red,
                     ),
                     onPressed: () {
-                      _removeItemFromCart(cartViewModel, medicine.cartId, context); // Call remove function
+                      _removeItemFromCart(cartViewModel, medicine.cartId, context);
                     },
                   ),
                 ),
@@ -196,11 +188,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-// Method to handle item removal and show snackbar
-  Future<void> _removeItemFromCart(CartViewModel cartViewModel, String cartId, BuildContext context) async {
+  Future<void> _removeItemFromCart(CartAndPlaceOrderViewModel cartViewModel, String cartId, BuildContext context) async {
     await cartViewModel.removeFromCart(cartId);
-
-    // Show Snackbar after removal
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Item removed from cart"),
@@ -209,44 +198,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  void _showProductDetailsDialog(BuildContext context, MedicineProduct product) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(product.name),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Price: ₹${product.price.toStringAsFixed(2)}'),
-                Text('Manufacturer: ${product.manufacturer}'),
-                const SizedBox(height: 10),
-                // Display images if available
-                if (product.productURLs.isNotEmpty)
-                  Image.network(
-                    product.productURLs.first, // Display the first image
-                    height: 150,
-                    width: 150,
-                    fit: BoxFit.cover,
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildQuantitySelector(CartViewModel cartViewModel, CartModel medicine, bool isRemoved) {
+  Widget _buildQuantitySelector(CartAndPlaceOrderViewModel cartViewModel, CartModel medicine, bool isRemoved) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -256,7 +208,6 @@ class CartScreen extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Placeholder text for Quantity
           Text(
             'Quantity: ',
             style: const TextStyle(
@@ -265,7 +216,6 @@ class CartScreen extends StatelessWidget {
               color: Colors.black54,
             ),
           ),
-          // Display the quantity
           Text(
             '${medicine.quantity}',
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),

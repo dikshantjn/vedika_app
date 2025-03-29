@@ -110,5 +110,38 @@ class OrderService {
     }
   }
 
+// Add this method in your OrderService class
+  Future<bool> updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateOrderStatus}/$orderId/status',  // Fetching status using orderId and vendorId
+        data: {
+          "newStatus": newStatus,  // Only send the new status as required by your backend
+        },
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        print("Order status updated successfully: ${response.data}");
+        return true; // Status updated successfully
+      } else {
+        print("Failed to update order status: ${response.data}");
+        return false; // Failed to update status
+      }
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response != null) {
+          print("Error response data: ${e.response?.data}");
+          print("Error status code: ${e.response?.statusCode}");
+        } else {
+          print("Error message: ${e.message}");
+        }
+      } else {
+        print("Error updating order status: $e");
+      }
+      return false; // Return false if an error occurred
+    }
+  }
+
 
 }
