@@ -1,147 +1,169 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 
 class TrackingOrderCard extends StatelessWidget {
-  final MedicineOrderModel order;
+  final TrackOrderViewModel viewModel;
 
-  const TrackingOrderCard({Key? key, required this.order}) : super(key: key);
+  const TrackingOrderCard({Key? key, required this.viewModel}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final steps = _getOrderSteps();
-    final currentStepIndex = 2; // Simulated current step for demo
+    if (viewModel.orders.isEmpty) {
+      return const Center(child: Text("No orders found."));
+    }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color:Colors.grey,
-          width: 2, // Border thickness for the circle
-        ),
-        borderRadius: BorderRadius.circular(12), // Rounded corners for the container
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
-            spreadRadius: 2,
-            offset: const Offset(0, 2),
+    return Column(
+      children: viewModel.orders.map((order) {
+        final steps = _getOrderSteps();
+        final currentStepIndex = _getCurrentStepIndex(order.orderStatus);
+
+        List<CartModel> cartItems = viewModel.orderItems[order.orderId] ?? [];
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey, width: 2),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                blurRadius: 8,
+                spreadRadius: 2,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ], // Add a slight shadow for a "card-like" effect
-      ),
-      child: SingleChildScrollView( // Scrollable area for the entire content
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            Divider(), // Horizontal line to divide sections
-
-            const SizedBox(height: 16),
-            _buildTimeline(steps, currentStepIndex),
-            const SizedBox(height: 16),
-            _buildOrderDetails(),
-            Divider(), // Horizontal line to divide sections
-            if (true) _buildRiderInfo(), // Example condition to show rider info
-          ],
-        ),
-      ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(order),
+                const Divider(),
+                const SizedBox(height: 16),
+                _buildTimeline(steps, currentStepIndex),
+                const SizedBox(height: 16),
+                _buildOrderDetails(cartItems, order.totalAmount),
+                const Divider(),
+                if (order.orderStatus == "OutForDelivery") _buildRiderInfo(),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildHeader(MedicineOrderModel order) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${order.orderId}',
+          'Order ID: ${order.orderId}',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text(
-            'Arriving by 12:30 PM',
-            style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600),
-          ),
+        const SizedBox(height: 4), // Small spacing
+
+        // Estimated arrival time
+        Row(
+          children: [
+            const Icon(Icons.access_time, size: 16, color: Colors.blueAccent), // Clock icon
+            const SizedBox(width: 4),
+            Text(
+              'Arriving by ${viewModel.formatDeliveryDate(order.estimatedDeliveryDate)}',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.blueAccent),
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildTimeline(List<String> steps, int currentStepIndex) {
+    ScrollController _scrollController = ScrollController();
+    ValueNotifier<int> animatedStepIndex = ValueNotifier<int>(-1); // Start from -1 to show animation
+
+    // Function to animate steps one by one
+    Future<void> animateSteps() async {
+      for (int step = 0; step <= currentStepIndex; step++) {
+        await Future.delayed(const Duration(milliseconds: 400)); // Delay between each step
+        animatedStepIndex.value = step;
+
+        // Smooth scrolling
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            (step * 80.0).clamp(0.0, _scrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    }
+
+    // Start animation when the screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) => animateSteps());
+
     return SizedBox(
-      height: 60, // Adjust the height as per your design
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: steps.length,
-        itemBuilder: (context, index) {
-          final step = steps[index];
-          final isCompleted = index < currentStepIndex;
-          final isCurrent = index == currentStepIndex;
-          final isFuture = index > currentStepIndex;
+      height: 80,
+      child: ValueListenableBuilder<int>(
+        valueListenable: animatedStepIndex,
+        builder: (context, animatedIndex, _) {
+          return ListView.builder(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            itemCount: steps.length,
+            itemBuilder: (context, index) {
+              final isCompleted = index <= animatedIndex;
+              final isCurrent = index == animatedIndex;
 
-          Color lineColor = isCompleted ? Colors.green : (isFuture ? Colors.grey.shade300 : Colors.grey.shade300);
-          Color indicatorColor = isCompleted
-              ? Colors.green
-              : (isCurrent ? Colors.blue : Colors.white);
-          Color textColor = isCompleted
-              ? Colors.green
-              : (isCurrent ? Colors.blue : Colors.grey);
+              Color lineColor = isCompleted ? Colors.green : Colors.grey.shade300;
+              Color indicatorColor = isCompleted ? Colors.green : (isCurrent ? Colors.blue : Colors.white);
+              Color textColor = isCompleted ? Colors.green : (isCurrent ? Colors.blue : Colors.grey);
 
-          return SizedBox(
-            width: 80, // Adjust width to fit your design
-            child: TimelineTile(
-              axis: TimelineAxis.horizontal,
-              alignment: TimelineAlign.start, // Align the timeline to start from the left
-              isFirst: index == 0,
-              isLast: index == steps.length - 1,
-              beforeLineStyle: LineStyle(
-                color: lineColor,
-                thickness: 2, // Smaller line thickness
-              ),
-              indicatorStyle: IndicatorStyle(
-                width: 20, // Smaller circle
-                height: 20, // Smaller circle
-                indicator: Container(
-                  decoration: BoxDecoration(
-                    color: indicatorColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isCompleted ? Colors.green : Colors.grey.shade300,
-                      width: 2, // Border thickness for the circle
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                width: 80,
+                child: TimelineTile(
+                  axis: TimelineAxis.horizontal,
+                  alignment: TimelineAlign.start,
+                  isFirst: index == 0,
+                  isLast: index == steps.length - 1,
+                  beforeLineStyle: LineStyle(color: lineColor, thickness: 2),
+                  indicatorStyle: IndicatorStyle(
+                    width: 20,
+                    height: 20,
+                    indicator: AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      decoration: BoxDecoration(
+                        color: indicatorColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isCompleted ? Colors.green : Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ),
+                      child: isCompleted ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
                     ),
                   ),
-                  child: isCompleted
-                      ? Icon(Icons.check, size: 14, color: Colors.white) // Add checkmark
-                      : null,
-                ),
-              ),
-              afterLineStyle: LineStyle(
-                color: lineColor,
-                thickness: 2, // Smaller line thickness
-              ),
-              endChild: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Column(
-                  children: [
-                    Text(
-                      step,
+                  afterLineStyle: LineStyle(color: lineColor, thickness: 2),
+                  endChild: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      steps[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: textColor,
-                      ),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: textColor),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
@@ -149,48 +171,32 @@ class TrackingOrderCard extends StatelessWidget {
   }
 
 
-  Widget _buildOrderDetails() {
+
+  Widget _buildOrderDetails(List<CartModel> cartItems, double totalAmount) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Items Ordered',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 16),
-        // Displaying the items in a list format
         ListView(
-          shrinkWrap: true, // Ensures the list takes only the required space
-          physics: const NeverScrollableScrollPhysics(), // Prevents scrolling within the list view
-          children: [
-            _buildOrderItem('Item 1', 2),
-            _buildOrderItem('Item 2', 1),
-            _buildOrderItem('Item 3', 3), // Add more items here as necessary
-          ],
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: cartItems.map((item) => _buildOrderItem(item)).toList(),
         ),
         const SizedBox(height: 16),
-        // Total amount row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               'Total Amount:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const Text(
-              '₹500.00',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.green,
-              ),
+            Text(
+              '₹${totalAmount.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
             ),
           ],
         ),
@@ -198,27 +204,19 @@ class TrackingOrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderItem(String itemName, int itemCount) {
+  Widget _buildOrderItem(CartModel item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            itemName,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black54,
-              fontWeight: FontWeight.w500,
-            ),
+            item.name,
+            style: const TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500),
           ),
           Text(
-            'x$itemCount',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.blueAccent,
-              fontWeight: FontWeight.bold,
-            ),
+            'x${item.quantity}',
+            style: const TextStyle(fontSize: 14, color: Colors.blueAccent, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -250,14 +248,12 @@ class TrackingOrderCard extends StatelessWidget {
           const Spacer(),
           OutlinedButton.icon(
             onPressed: () {},
-            icon: const Icon(Icons.call, size: 18, color: Colors.green,),
+            icon: const Icon(Icons.call, size: 18, color: Colors.green),
             label: const Text('Call'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.green,
-              side: const BorderSide(color: Colors.green, width: 2), // Border color and thickness
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30), // Rounded corners for the button
-              ),
+              side: const BorderSide(color: Colors.green, width: 2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
           ),
         ],
@@ -265,16 +261,33 @@ class TrackingOrderCard extends StatelessWidget {
     );
   }
 
+  int _getCurrentStepIndex(String orderStatus) {
+    Map<String, String> statusMapping = {
+      "Pending": "Prescription Sent",
+      "Accepted": "Prescription Verified",
+      "AddedItemsInCart": "Items Added",
+      "PaymentConfirmed": "Order Placed",
+      "ReadyForPickup": "Order Placed",  // ✅ Treat "ReadyForPickup" as "Order Placed"
+      "OutForDelivery": "Out for Delivery",
+      "Delivered": "Delivered",
+    };
+
+    String? mappedStep = statusMapping[orderStatus]; // Get the mapped step name
+    List<String> steps = _getOrderSteps(); // Get steps list
+
+    return mappedStep != null ? steps.indexOf(mappedStep) : -1; // Return index or -1 if not found
+  }
 
 
+// 🔹 List of Order Steps (Formatted with Spaces)
   List<String> _getOrderSteps() {
     return [
-      'Prescription Sent',
-      'Accepted',
-      'Items Added',
-      'Order Placed',
-      'Out for Delivery',
-      'Delivered',
+      "Prescription Sent",
+      "Prescription Verified",
+      "Items Added",
+      "Order Placed",
+      "Out for Delivery",
+      "Delivered",
     ];
   }
 }

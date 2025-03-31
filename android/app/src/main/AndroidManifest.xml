@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
 
     <application
@@ -72,7 +73,6 @@
 <!--            android:name="com.google.firebase.auth.RECAPTCHA_SITE_KEY"-->
 <!--            android:value="6LfpGeoqAAAAAIIuJNn6Y5jTeXeu1iyMJeyVCm6_" />-->
 
-
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -95,6 +95,7 @@
             <action android:name="android.intent.action.VIEW"/>
         </intent>
     </queries>
+
 
 
 </manifest>

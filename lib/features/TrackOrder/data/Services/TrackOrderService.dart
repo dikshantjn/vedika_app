@@ -1,107 +1,57 @@
-import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
+import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 
 class TrackOrderService {
-  // Static method to fetch user orders
-  Future<List<MedicineOrderModel>> fetchUserOrders() async {
-    try {
-      // Mock userId
-      String userId = 'sampleUserId';
+  final Dio _dio = Dio();
 
-      // Static data for orders
-      List<MedicineOrderModel> orders = [
-        MedicineOrderModel(
-          orderId: '#ORD12345',
-          prescriptionId: 'PRES123',
-          userId: userId,
-          vendorId: 'VENDOR001',
-          addressId: 'ADDR001',
-          appliedCoupon: 'COUPON01',
-          discountAmount: 50.0,
-          subtotal: 500.0,
-          totalAmount: 450.0,
-          orderStatus: 'Out for Delivery',
-          paymentMethod: 'Credit Card',
-          transactionId: 'TXN123456',
-          paymentStatus: 'Paid',
-          deliveryStatus: 'Out for Delivery',
-          estimatedDeliveryDate: DateTime.now().add(Duration(hours: 2)),
-          trackingId: 'TRACK123',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          user: UserModel.empty(), // Assuming UserModel.empty() provides mock user data
-          orderItems: [
-            CartModel(
-              cartId: '1',
-              productId: '101',
-              name: 'Paracetamol',
-              price: 50.0,
-              quantity: 5,
-            ),
-            CartModel(
-              cartId: '2',
-              productId: '102',
-              name: 'Azithromycin',
-              price: 100.0,
-              quantity: 3,
-            ),
-          ],
-        ),
-        // Add more static orders if necessary
-      ];
-      return orders;
+  // Fetch trackable orders for a specific user
+  Future<List<MedicineOrderModel>> fetchUserOrders(String userId) async {
+    try {
+      final response = await _dio.get('${ApiEndpoints.trackOrder}/track-orders/$userId');
+
+      if (response.statusCode == 200 && response.data['success']) {
+        List<dynamic> ordersJson = response.data['orders'];
+        return ordersJson.map((json) => MedicineOrderModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load orders');
+      }
     } catch (e) {
       print('Error fetching orders: $e');
       throw Exception('Failed to load orders');
     }
   }
 
-  // Static method to update order status
-  Future<MedicineOrderModel> updateOrderStatus(String orderId, String status) async {
+  // **🔹 Fetch Cart Items by Order ID**
+  Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
-      // Static data for a single order update
-      MedicineOrderModel updatedOrder = MedicineOrderModel(
-        orderId: orderId,
-        prescriptionId: 'PRES123',
-        userId: 'sampleUserId',
-        vendorId: 'VENDOR001',
-        addressId: 'ADDR001',
-        appliedCoupon: 'COUPON01',
-        discountAmount: 50.0,
-        subtotal: 500.0,
-        totalAmount: 450.0,
-        orderStatus: status,
-        paymentMethod: 'Credit Card',
-        transactionId: 'TXN123456',
-        paymentStatus: 'Paid',
-        deliveryStatus: status,
-        estimatedDeliveryDate: DateTime.now().add(Duration(hours: 2)),
-        trackingId: 'TRACK123',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        user: UserModel.empty(), // Assuming UserModel.empty() provides mock user data
-        orderItems: [
-          CartModel(
-            cartId: '1',
-            productId: '101',
-            name: 'Paracetamol',
-            price: 50.0,
-            quantity: 5,
-          ),
-          CartModel(
-            cartId: '2',
-            productId: '102',
-            name: 'Azithromycin',
-            price: 100.0,
-            quantity: 3,
-          ),
-        ],
+      final response = await _dio.get(
+        '${ApiEndpoints.getCartItemByOrderId}/$orderId', // Endpoint to fetch cart items by orderId
       );
-      return updatedOrder;
+
+      // Print the full response data
+      print('Response: ${response.data}');  // This will print the response data
+
+      // Check if the request is successful
+      if (response.statusCode == 200) {
+        // Extract the cart items from the response
+        List<dynamic> cartItemsData = response.data['cartItems'] ?? [];
+
+        // Map the raw data to a list of CartModel
+        List<CartModel> cartItems = cartItemsData.map((item) {
+          return CartModel.fromJson(item);  // Convert each item to CartModel
+        }).toList();
+
+        return cartItems;
+      } else {
+        // Return an empty list if the status code is not 200
+        return [];
+      }
     } catch (e) {
-      print('Error updating order status: $e');
-      throw Exception('Failed to update order status');
+      // Handle any error during the request and return an empty list
+      print('Error fetching cart items by order ID: $e');
+      return [];
     }
   }
 }

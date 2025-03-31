@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/PrescriptionUploadViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseFileWidget.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/EnableLocationWidget.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';

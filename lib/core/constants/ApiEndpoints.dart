@@ -61,7 +61,10 @@ class ApiEndpoints {
   static const String deleteDeliveryAddress = '$baseUrl/deliveryAddress/deleteDeliveryAddress';
   static const String placedOrderWithPayment = '$baseUrl/orders/update-order';
   static const String updateOrderStatus = '$baseUrl/orders';
+  static const String trackOrder = '$baseUrl/orders';
 
+  static const String saveFcmToken = '$baseUrl/fcm/save-token';
+  static const String saveVendorFcmToken = '$baseUrl/fcm/vendor/update';
 
 
 }

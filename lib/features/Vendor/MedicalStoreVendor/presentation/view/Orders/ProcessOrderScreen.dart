@@ -238,10 +238,13 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
             return OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(
-                    color: MedicalStoreVendorColorPalette.successColor, width: 2),
+                    color: MedicalStoreVendorColorPalette.successColor,
+                    width: 2
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
+                  borderRadius: BorderRadius.circular(30),
+                ),
                 backgroundColor: Colors.white,
               ),
               onPressed: () async {
@@ -256,7 +259,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                   return;
                 }
 
-                final resultMessage = await viewModel.addToCartDB();
+                // ✅ Ensure orderId is passed
+                final resultMessage = await viewModel.addToCartDB(widget.orderId);
 
                 if (!mounted) return;
 
@@ -271,15 +275,16 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                 );
 
                 if (resultMessage.startsWith("✅")) {
-                  await viewModel.fetchCartItems(widget.orderId); // 👈 await
-                  viewModel.clearCarts(); // optional - clear new items
+                  await viewModel.fetchCartItems(widget.orderId); // ✅ Fetch cart items after update
+                  viewModel.clearCarts(); // ✅ Optionally clear the cart
                 }
               },
               child: const Text(
                 "Add to User Cart",
                 style: TextStyle(
-                    fontSize: 16,
-                    color: MedicalStoreVendorColorPalette.successColor),
+                  fontSize: 16,
+                  color: MedicalStoreVendorColorPalette.successColor,
+                ),
               ),
             );
           },

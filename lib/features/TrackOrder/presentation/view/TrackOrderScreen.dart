@@ -16,9 +16,10 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   @override
   void initState() {
     super.initState();
-    // Call fetchOrders when the screen is initialized
-    final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
-    viewModel.fetchOrders();
+    // Fetch orders when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TrackOrderViewModel>(context, listen: false).fetchOrdersAndCartItems();
+    });
   }
 
   @override
@@ -57,15 +58,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Loop through orders and display each one
-                ...viewModel.orders.map((order) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: TrackingOrderCard(order: order),
-                )),
-              ],
-            ),
+            child: TrackingOrderCard(viewModel: viewModel), // ✅ Pass only viewModel
           );
         },
       ),

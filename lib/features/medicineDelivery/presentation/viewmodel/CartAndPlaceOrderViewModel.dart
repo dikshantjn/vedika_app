@@ -62,6 +62,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     notifyListeners(); // Notify UI to show loading
 
     String? userId = await StorageService.getUserId();
+    print("userId fetched while booting $userId");
     if (userId == null) {
       _isLoading = false;
       notifyListeners();

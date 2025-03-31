@@ -38,7 +38,6 @@ class PrescriptionService {
     }
   }
 
-  /// Checks if a prescription has been accepted by any medical store
   Future<String?> checkPrescriptionAcceptance(String userId) async {
     try {
       Response response = await _dio.post(
@@ -48,7 +47,7 @@ class PrescriptionService {
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        return response.data['acceptedBy']; // Store Name or ID
+        return response.data['acceptedBy']; // Store Name or ID (Accepted Vendor)
       } else {
         return null; // Still pending or not found
       }
@@ -57,4 +56,5 @@ class PrescriptionService {
       return null;
     }
   }
+
 }

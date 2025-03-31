@@ -104,4 +104,51 @@ class MedicineOrderModel {
       "orderItems": orderItems.map((e) => e.toJson()).toList(),
     };
   }
+
+  /// ✅ **Add `copyWith` method**
+  MedicineOrderModel copyWith({
+    String? orderId,
+    String? prescriptionId,
+    String? userId,
+    String? vendorId,
+    String? addressId,
+    String? appliedCoupon,
+    double? discountAmount,
+    double? subtotal,
+    double? totalAmount,
+    String? orderStatus,
+    String? paymentMethod,
+    String? transactionId,
+    String? paymentStatus,
+    String? deliveryStatus,
+    DateTime? estimatedDeliveryDate,
+    String? trackingId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    UserModel? user,
+    List<CartModel>? orderItems,
+  }) {
+    return MedicineOrderModel(
+      orderId: orderId ?? this.orderId,
+      prescriptionId: prescriptionId ?? this.prescriptionId,
+      userId: userId ?? this.userId,
+      vendorId: vendorId ?? this.vendorId,
+      addressId: addressId ?? this.addressId,
+      appliedCoupon: appliedCoupon ?? this.appliedCoupon,
+      discountAmount: discountAmount ?? this.discountAmount,
+      subtotal: subtotal ?? this.subtotal,
+      totalAmount: totalAmount ?? this.totalAmount,
+      orderStatus: orderStatus ?? this.orderStatus,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      transactionId: transactionId ?? this.transactionId,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      estimatedDeliveryDate: estimatedDeliveryDate ?? this.estimatedDeliveryDate,
+      trackingId: trackingId ?? this.trackingId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      user: user ?? this.user,
+      orderItems: orderItems ?? this.orderItems,
+    );
+  }
 }

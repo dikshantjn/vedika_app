@@ -1,7 +1,11 @@
+import 'dart:convert';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
@@ -19,6 +23,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/hospital_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/vendor_registration_view_model.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
@@ -40,6 +45,7 @@ import 'package:vedika_healthcare/features/notifications/data/repositories/Notif
 import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
+import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
@@ -61,6 +67,20 @@ Future<void> getWifiIpAddress() async {
   print("Connected Wi-Fi IP Address: $ip");
 }
 
+void handleNotificationTap(String payload) {
+  print("[Notification Tapped] Payload: $payload");
+
+  if (payload.isNotEmpty) {
+    final Map<String, dynamic> data = jsonDecode(payload);
+    if (data.containsKey("orderId")) {
+      navigatorKey.currentState?.pushNamed(
+        "/orderDetails",
+        arguments: data["orderId"],
+      );
+    }
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -69,7 +89,28 @@ Future<void> main() async {
   );
 
   await AmbulanceRequestNotificationService.initNotifications();
-  await getWifiIpAddress();
+  getWifiIpAddress(); // Non-blocking execution
+
+  final fcmService = FCMService(onNotificationTap: handleNotificationTap);
+  await fcmService.requestNotificationPermission();
+
+  // Check if the user is a normal user or a vendor
+  String? userId = await StorageService.getUserId();
+  String? vendorId = await VendorLoginService().getVendorId(); // Assuming you store the vendor ID
+
+  if (userId != null) {
+    // For normal users
+    print("🧑‍⚖️ User is logged in, requesting FCM token for User.");
+    await fcmService.getTokenAndSend(userId);
+  } else if (vendorId != null) {
+    // For vendors
+    print("💼 Vendor is logged in, requesting FCM token for Vendor.");
+    await fcmService.getVendorTokenAndSend(vendorId); // Similar function for vendors
+  } else {
+    print("❌ No User or Vendor ID found, skipping FCM token registration.");
+  }
+
+  fcmService.setupFCMListener();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -78,6 +119,11 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
+
+
+
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

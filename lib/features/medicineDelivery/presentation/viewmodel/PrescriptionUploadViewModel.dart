@@ -5,11 +5,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/MedicalStore/MedicalStore.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/FirebasePrescriptionUploadService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/MedicineOrderService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/PrescriptionService.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/VerifyPrescriptionDialog.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/AfterVerificationWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/BeforeVerificationWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/FindMoreMedicalShopsWidget.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/PrescriptionUploadLoadingDialog.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class MedicineOrderViewModel extends ChangeNotifier {
@@ -22,7 +26,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   File? _prescription;
   bool _isUploading = false;
   String _uploadStatus = '';
-  bool _isPrescriptionVerified = false;
+  String _isPrescriptionVerified = '';
   bool _isPlaceOrderEnabled = false;
   bool _isRequestAccepted = false; // Added for Request Accepted status
   bool _isPrescriptionVerifiedStatus = false; // Added for Prescription Verified status
@@ -33,7 +37,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   File? get prescription => _prescription;
   bool get isUploading => _isUploading;
   String get uploadStatus => _uploadStatus;
-  bool get isPrescriptionVerified => _isPrescriptionVerified;
+  String get isPrescriptionVerified => _isPrescriptionVerified;
   bool get isPlaceOrderEnabled => _isPlaceOrderEnabled;
   bool get isRequestAccepted => _isRequestAccepted; // Getter for Request Accepted status
   bool get isPrescriptionVerifiedStatus => _isPrescriptionVerifiedStatus; // Getter for Prescription Verified status
@@ -64,7 +68,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
     _uploadStatus = 'Uploading prescription...';
     notifyListeners();
 
-    _showLoadingDialog(context, "Uploading prescription...");
+    LoadingDialog.show(context, "Uploading prescription...");
 
     print('uploadPrescription: $_uploadStatus');
 
@@ -73,16 +77,14 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
     if (prescriptionUrl == null) {
       _uploadStatus = 'Failed to upload prescription';
-      print('uploadPrescription: $_uploadStatus');
       _isUploading = false;
       notifyListeners();
-      Navigator.pop(context);
+      LoadingDialog.hide(context);
       return;
     }
 
     _uploadStatus = 'Fetching user location...';
     notifyListeners();
-    print('uploadPrescription: $_uploadStatus');
 
     LocationProvider locationProvider = Provider.of<LocationProvider>(context, listen: false);
     await locationProvider.fetchLocation();
@@ -92,16 +94,14 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
     if (latitude == null || longitude == null) {
       _uploadStatus = 'Failed to get user location';
-      print('uploadPrescription: $_uploadStatus');
       _isUploading = false;
       notifyListeners();
-      Navigator.pop(context);
+      LoadingDialog.hide(context);
       return;
     }
 
     _uploadStatus = 'Sending prescription to nearby medical stores...';
     notifyListeners();
-    print('uploadPrescription: $_uploadStatus');
 
     var response = await _prescriptionService.uploadPrescription(
       prescriptionUrl: prescriptionUrl,
@@ -110,49 +110,50 @@ class MedicineOrderViewModel extends ChangeNotifier {
       longitude: longitude,
     );
 
-    Navigator.pop(context); // Close loading dialog
-
     if (response['success']) {
       _uploadStatus = 'Prescription uploaded successfully!';
       _isRequestBeingProcessed = true;
-      print('uploadPrescription: ${response['message']}');
+      notifyListeners();
 
+      // Show BeforeVerificationWidget
+      LoadingDialog.update(
+        context,
+        BeforeVerificationWidget(
+          initialTime: 300, // 5-minute countdown
+          onTimeExpired: () {
+            // When time runs out, show FindMoreMedicalShopsWidget
+            LoadingDialog.update(
+              context,
+              FindMoreMedicalShopsWidget(
+                onFindMore: () {
+                  print("Finding more shops");
+                  Navigator.pop(context); // Close dialog
+                  // uploadPrescription(context); // Retry finding stores
+                },
+                onCancel: () {
+                  Navigator.pop(context); // Close the dialog
+                },
+              ),
+            );
+          },
+        ),
+      );
+      // **Start polling for prescription acceptance**
+      Timer.periodic(const Duration(seconds: 5), (timer) async {
+        bool isAccepted = await checkPrescriptionStatus(context);
+        print("isAccepted $isAccepted");
+        if (isAccepted) timer.cancel(); // Stop polling when accepted
+      });
 
     } else {
       _uploadStatus = 'Failed to upload prescription: ${response['message']}';
-      print('uploadPrescription: $_uploadStatus');
+      LoadingDialog.hide(context);
     }
 
     _isUploading = false;
     notifyListeners();
   }
 
-
-  // Enable the place order button
-  void enablePlaceOrderButton() {
-    print('enablePlaceOrderButton: Enabling place order button');
-    _isPlaceOrderEnabled = true;
-    notifyListeners();
-  }
-
-  // **New Methods**
-  void setRequestAccepted() {
-    _isRequestAccepted = true;
-    _uploadStatus = 'Request accepted by store';
-    notifyListeners();
-  }
-
-  void setPrescriptionVerified() {
-    _isPrescriptionVerifiedStatus = true;
-    _uploadStatus = 'Prescription verified';
-    notifyListeners();
-  }
-
-  void addItemsToCart() {
-    _isItemsAddedToCart = true;
-    _uploadStatus = 'Items added to cart';
-    notifyListeners();
-  }
 
   Future<bool> enableLocation(BuildContext context) async {
     print('enableLocation: Started');
@@ -190,28 +191,33 @@ class MedicineOrderViewModel extends ChangeNotifier {
     return true;
   }
 
-  void _showLoadingDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Prevent closing dialog
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(message, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  /// Checks if the prescription has been accepted
+  Future<bool> checkPrescriptionStatus(BuildContext context) async {
+    String? userId = await StorageService.getUserId();
+    if (userId == null) return false;
+
+    String? acceptedBy = await _prescriptionService.checkPrescriptionAcceptance(userId);
+    print("acceptedVendor $acceptedBy");
+    if (acceptedBy != null) {
+      _isRequestAccepted = true;
+      _isPrescriptionVerified = acceptedBy;
+      notifyListeners();
+
+      // **Show AfterVerificationWidget**
+      LoadingDialog.update(
+        context,
+        AfterVerificationWidget(
+          medicalStoreName: acceptedBy,
+          onTrackOrder: () {
+            Navigator.pop(context); // Close dialog
+            Navigator.pushNamed(context, AppRoutes.trackOrderScreen); // Navigate to tracking screen
+          },
+        ),
+      );
+
+      return true; // Stop polling
+    }
+
+    return false; // Continue polling
   }
 }
-

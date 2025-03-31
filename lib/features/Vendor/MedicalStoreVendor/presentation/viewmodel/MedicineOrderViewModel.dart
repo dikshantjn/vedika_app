@@ -177,20 +177,27 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Add Cart Items to Database**
-  Future<String> addToCartDB() async {
+  Future<String> addToCartDB(String orderId) async {
     try {
       for (var item in _cart) {
         String message = await _cartService.addToCart(item);
-        if (message.startsWith("❌")) return message;
+        if (message.startsWith("❌")) return message; // Stop if there's an error
       }
+
+      // ✅ Clear the cart after adding items
       _cart.clear();
       notifyListeners();
-      return "✅ All items added to cart successfully";
+
+      // ✅ Update order status after adding items to cart
+      await updateOrderStatus(orderId, "AddedItemsInCart");
+
+      return "✅ All items added to cart successfully and order status updated";
     } catch (e) {
       debugPrint("Error adding to cart DB: $e");
       return "❌ Error adding to cart DB: $e";
     }
   }
+
 
 
   /// **🔹 Fetch Cart Items**
