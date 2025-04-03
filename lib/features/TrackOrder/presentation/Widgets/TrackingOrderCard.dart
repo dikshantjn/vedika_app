@@ -173,6 +173,8 @@ class TrackingOrderCard extends StatelessWidget {
 
 
   Widget _buildOrderDetails(List<CartModel> cartItems, double totalAmount) {
+    if (cartItems.isEmpty) return const SizedBox.shrink(); // Don't render anything if no items exist
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -203,6 +205,7 @@ class TrackingOrderCard extends StatelessWidget {
       ],
     );
   }
+
 
   Widget _buildOrderItem(CartModel item) {
     return Padding(
@@ -264,7 +267,8 @@ class TrackingOrderCard extends StatelessWidget {
   int _getCurrentStepIndex(String orderStatus) {
     Map<String, String> statusMapping = {
       "Pending": "Prescription Sent",
-      "Accepted": "Prescription Verified",
+      "PrescriptionVerified": "Prescription Verified",
+      "Accepted":"Order Confirmed",
       "AddedItemsInCart": "Items Added",
       "PaymentConfirmed": "Order Placed",
       "ReadyForPickup": "Order Placed",  // ✅ Treat "ReadyForPickup" as "Order Placed"
@@ -284,6 +288,7 @@ class TrackingOrderCard extends StatelessWidget {
     return [
       "Prescription Sent",
       "Prescription Verified",
+      "Order Confirmed",
       "Items Added",
       "Order Placed",
       "Out for Delivery",

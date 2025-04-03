@@ -25,25 +25,6 @@ class OrderService {
     }
   }
 
-  // 📌 Method to place an order
-  Future<bool> placeOrder(MedicineOrderModel order) async {
-    try {
-      final response = await _dio.post(
-        ApiEndpoints.placeOrder,
-        data: order.toJson(), // Convert MedicineOrderModel to JSON
-        options: Options(headers: {"Content-Type": "application/json"}),
-      );
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return true; // Order placed successfully
-      } else {
-        return false; // Failed to place order
-      }
-    } catch (e) {
-      print("Error placing order: $e");
-      return false;
-    }
-  }
 
   // ✅ Method to Accept an Order
   Future<bool> acceptOrder(String orderId, String vendorId) async {
@@ -143,5 +124,37 @@ class OrderService {
     }
   }
 
+// ✅ Method to update Prescription Status
+  Future<bool> updatePrescriptionStatus(String prescriptionId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updatePrescriptionStatus}/$prescriptionId/prescriptionStatus',
+        data: {
+          "newStatus": "PrescriptionVerified",  // Updating status to PrescriptionVerified
+        },
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        print("Prescription status updated successfully: ${response.data}");
+        return true; // Status updated successfully
+      } else {
+        print("Failed to update prescription status: ${response.data}");
+        return false; // Failed to update status
+      }
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response != null) {
+          print("Error response data: ${e.response?.data}");
+          print("Error status code: ${e.response?.statusCode}");
+        } else {
+          print("Error message: ${e.message}");
+        }
+      } else {
+        print("Error updating prescription status: $e");
+      }
+      return false; // Return false if an error occurred
+    }
+  }
 
 }

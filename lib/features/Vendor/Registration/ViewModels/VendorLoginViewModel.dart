@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/shared/services/FCMService.dart';
 
 class VendorLoginViewModel extends ChangeNotifier {
   String? selectedRole;
@@ -58,7 +59,8 @@ class VendorLoginViewModel extends ChangeNotifier {
         var response = await _vendorLoginService.loginVendor(email, password, role);
 
         print("✅ Login response received: $response");
-
+        String? vendorId = await VendorLoginService().getVendorId();
+        await FCMService().getVendorTokenAndSend(vendorId ?? " ");
         if (response.containsKey('success') && response['success'] == true) {
 
           _isVendorLoggedIn = true;  // Update login state
@@ -68,6 +70,7 @@ class VendorLoginViewModel extends ChangeNotifier {
 
           // Navigate to Vendor Dashboard (Adjust route as needed)
           await Navigator.of(context).pushReplacementNamed(AppRoutes.VendorMedicalStoreDashBoard);
+
         } else {
           String errorMessage = response['message'] ?? "Invalid credentials or role.";
           print("❌ Login failed: $errorMessage");
@@ -93,6 +96,8 @@ class VendorLoginViewModel extends ChangeNotifier {
 
   /// **🔹 Logout Vendor**
   Future<void> logout() async {
+    String? vendorId = await VendorLoginService().getVendorId();
+    await FCMService().deleteVendorTokenFromServer(vendorId!);
     await _vendorLoginService.logoutVendor();
     _isVendorLoggedIn = false; // Update login state
     notifyListeners();

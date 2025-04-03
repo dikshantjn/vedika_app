@@ -34,6 +34,13 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
   TextEditingController get landmarkController => _controllers[15];
   TextEditingController get floorController => _controllers[16];
   TextEditingController get locationController => _controllers[17];
+  String get location => locationController.text;
+
+  // Setter for location (if needed)
+  set location(String newLocation) {
+    locationController.text = newLocation;
+    notifyListeners();
+  }
 
   // Dropdown selections
   ValueNotifier<String?> medicineType = ValueNotifier<String?>(null);
@@ -45,6 +52,7 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
   ValueNotifier<bool> isLiftAccess = ValueNotifier<bool>(false);
   ValueNotifier<bool> isWheelchairAccess = ValueNotifier<bool>(false);
   ValueNotifier<bool> isParkingAvailable = ValueNotifier<bool>(false);
+  final ValueNotifier<String?> getLocation = ValueNotifier<String?>(null);
 
   // Medical Store Data
   String generatedStoreId = "";
@@ -199,7 +207,7 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
         isLiftAccess: isLiftAccess.value,
         isWheelchairAccess: isWheelchairAccess.value,
         isParkingAvailable: isParkingAvailable.value,
-        location: locationController.text,
+        location: getLocation.value!,
         availableMedicines: [specialMedicationsController.text],
         registrationCertificates: [], // Initially empty
         complianceCertificates: [],  // Initially empty
@@ -246,7 +254,7 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
           isLiftAccess: isLiftAccess.value,
           isWheelchairAccess: isWheelchairAccess.value,
           isParkingAvailable: isParkingAvailable.value,
-          location: locationController.text,
+          location: getLocation.value!,
           availableMedicines: [specialMedicationsController.text],
           registrationCertificates: [], // Initially empty
           complianceCertificates: [],  // Initially empty
@@ -335,7 +343,8 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
           isLiftAccess: isLiftAccess.value,
           isWheelchairAccess: isWheelchairAccess.value,
           isParkingAvailable: isParkingAvailable.value,
-          location: locationController.text,
+          location: getLocation.value!
+          ,
           availableMedicines: [specialMedicationsController.text],
           registrationCertificates: registrationCertificateUrls,
           complianceCertificates: complianceCertificateUrls,

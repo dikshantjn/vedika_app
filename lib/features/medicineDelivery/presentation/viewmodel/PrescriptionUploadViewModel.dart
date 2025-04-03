@@ -6,6 +6,9 @@ import 'package:location/location.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/MedicalStore/MedicalStore.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/FirebasePrescriptionUploadService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/MedicineOrderService.dart';
@@ -196,28 +199,41 @@ class MedicineOrderViewModel extends ChangeNotifier {
     String? userId = await StorageService.getUserId();
     if (userId == null) return false;
 
-    String? acceptedBy = await _prescriptionService.checkPrescriptionAcceptance(userId);
-    print("acceptedVendor $acceptedBy");
-    if (acceptedBy != null) {
-      _isRequestAccepted = true;
-      _isPrescriptionVerified = acceptedBy;
-      notifyListeners();
+    String? acceptedByVendorId = await _prescriptionService.checkPrescriptionAcceptance(userId);
+    print("Accepted by Vendor ID: $acceptedByVendorId");
 
-      // **Show AfterVerificationWidget**
-      LoadingDialog.update(
-        context,
-        AfterVerificationWidget(
-          medicalStoreName: acceptedBy,
-          onTrackOrder: () {
-            Navigator.pop(context); // Close dialog
-            Navigator.pushNamed(context, AppRoutes.trackOrderScreen); // Navigate to tracking screen
-          },
-        ),
-      );
+    if (acceptedByVendorId != null) {
+      // 🔹 Fetch Vendor Details
+      VendorMedicalStoreProfile? vendor =
+      await MedicalStoreVendorService().fetchVendorById(acceptedByVendorId);
 
-      return true; // Stop polling
+      if (vendor != null) {
+        String vendorName = vendor.name; // Extract vendor name
+        print("Vendor Name: $vendorName");
+
+        _isRequestAccepted = true;
+        _isPrescriptionVerified = vendorName;
+        notifyListeners();
+
+        // **Show AfterVerificationWidget**
+        LoadingDialog.update(
+          context,
+          AfterVerificationWidget(
+            medicalStoreName: vendorName,
+            onTrackOrder: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pushNamed(context, AppRoutes.trackOrderScreen); // Navigate to tracking screen
+            },
+          ),
+        );
+
+        return true; // Stop polling
+      } else {
+        print("Failed to fetch vendor details.");
+      }
     }
 
     return false; // Continue polling
   }
+
 }

@@ -108,4 +108,32 @@ class MedicalStoreVendorService {
       throw Exception('Network error: ${e.message}');
     }
   }
+
+  /// **Fetch Vendor Details by vendorId**
+  Future<VendorMedicalStoreProfile?> fetchVendorById(String vendorId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getMedicalStoreVendorById}/$vendorId',
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Fetch Vendor Response: ${response.data}");
+
+        final data = response.data;
+        if (data != null) {
+          return VendorMedicalStoreProfile.fromJson(data);
+        } else {
+          throw Exception("Vendor data is missing");
+        }
+      } else {
+        throw Exception('Failed to fetch vendor details');
+      }
+    } on DioException catch (e) {
+      _handleDioError(e);
+      return null;
+    }
+  }
 }

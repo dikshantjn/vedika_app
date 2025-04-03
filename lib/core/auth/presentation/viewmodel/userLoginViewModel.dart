@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
+import 'package:vedika_healthcare/shared/services/FCMService.dart';
 
 class UserLoginViewModel extends ChangeNotifier {
   final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey
@@ -96,12 +97,16 @@ class UserLoginViewModel extends ChangeNotifier {
 
           if (registeredUser != null) {
             print("✅ User Registered: ${registeredUser.userId}");
+            if (registeredUser.userId.isNotEmpty) await FCMService().getTokenAndSend(registeredUser.userId);
+
           } else {
             print("⚠️ User already exists or registration failed.");
           }
 
           // Use the navigatorKey to navigate
           if (navigatorKey.currentState != null) {
+            String? userId = await StorageService.getUserId();
+            await FCMService().getTokenAndSend(userId!);
             print("🚀 Navigating to Home Page...");
             navigatorKey.currentState!.pushReplacementNamed(AppRoutes.home);
           } else {
@@ -115,29 +120,6 @@ class UserLoginViewModel extends ChangeNotifier {
       _setLoadingState(false);
     }
   }
-
-  // Future<void> fetchUserDetails(String userId) async {
-  //
-  //   _isLoading = true;
-  //   _errorMessage = null;
-  //   notifyListeners();
-  //
-  //   try {
-  //     // Fetch the user details from the API
-  //     UserModel userData = await UserService().getUserDetails(userId);
-  //
-  //     if (userData != null) {
-  //       _user = UserModel.fromJson(userData);
-  //     } else {
-  //       _errorMessage = 'User not found';
-  //     }
-  //   } catch (e) {
-  //     _errorMessage = 'Failed to load user: $e';
-  //   }
-  //
-  //   _isLoading = false;
-  //   notifyListeners();
-  // }
 
   /// Resends OTP using the stored phone number
   Future<void> resendOtp() async {

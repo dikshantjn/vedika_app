@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/MedicineOrderPage.dart';
@@ -18,6 +19,16 @@ class VendorMedicalStoreDashBoardScreen extends StatefulWidget {
 class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDashBoardScreen> {
   int _currentIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<MedicalStoreVendorDashboardViewModel>(context, listen: false)
+          .fetchVendorStatus();
+    });
+  }
+
+
   final List<Widget> _pages = [
     const DashboardContent(), // Dashboard Page
      MedicineOrderPage(),
@@ -36,6 +47,8 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
       _currentIndex = index;
     });
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,14 +112,26 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
         return Row(
           children: [
             Text(
-              viewModel.isServiceOnline ? "Online" : "Offline",
+              viewModel.isActive ? "Online" : "Offline",
               style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             Switch(
-              value: viewModel.isServiceOnline,
+              value: viewModel.isActive, // ✅ This now reflects the correct status
               activeColor: MedicalStoreVendorColorPalette.secondaryColor,
               inactiveThumbColor: Colors.grey,
-              onChanged: (value) => viewModel.toggleServiceStatus(),
+              onChanged: (value) async {
+                await viewModel.toggleVendorStatus();
+
+                // ✅ Show toast message with different background colors
+                Fluttertoast.showToast(
+                  msg: viewModel.isActive ? "You are now Online" : "You are now Offline",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  backgroundColor: viewModel.isActive ? Colors.green : Colors.black,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+              },
             ),
             IconButton(
               icon: const Icon(Icons.notifications, color: Colors.white),
@@ -117,4 +142,6 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
       },
     );
   }
+
+
 }

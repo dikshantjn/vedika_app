@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/View/hospital_registration_form.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/medical_store_registration.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Views/ambulance_agency_registration_form.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Views/AmbulanceAgencyRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/blood_bank_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
@@ -16,8 +16,8 @@ class VendorRegistrationViewModel extends ChangeNotifier {
   final Map<String, Widget> vendorForms = {
     "Hospital": HospitalRegistrationForm(),
     "Clinic": ClinicRegistrationForm(),
-    "Medical Store": MedicalStoreRegistrationForm(),
-    "Ambulance Agency": AmbulanceAgencyRegistrationForm(),
+    "Medical Store": MedicalStoreRegistrationScreen(),
+    "Ambulance Agency": AmbulanceAgencyRegistrationScreen(),
     "Blood Bank": BloodBankRegistrationForm(),
     "Pathology/Diagnostic Center": PathologyRegistrationForm(),
     "Delivery Partner": DeliveryPartnerRegistrationForm(),

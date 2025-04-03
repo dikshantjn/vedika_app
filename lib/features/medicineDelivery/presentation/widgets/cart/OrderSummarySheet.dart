@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/DeliveryPartner/DeliveryPartner.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/OrderPlacedBottomSheet.dart';
 
 class OrderSummarySheet extends StatefulWidget {
   final CartAndPlaceOrderViewModel cartViewModel;
@@ -32,6 +33,7 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   @override
   void initState() {
     super.initState();
+    widget.cartViewModel.setOnPaymentSuccess(_handlePaymentSuccess); // Add this line
     widget.cartViewModel.setAddressId(widget.addressId);
     _fetchNearbyDeliveryPartners();
     _setupKeyboardListeners();
@@ -39,11 +41,22 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
   @override
   void dispose() {
+    widget.cartViewModel.setOnPaymentSuccess(null);
     _couponFocusNode.dispose(); // Clean up focus node
     super.dispose();
   }
 
 
+  // Add this new method
+  void _handlePaymentSuccess(String paymentId) {
+    // Close the current bottom sheet
+    Navigator.of(context).pop();
+
+    // Show the success bottom sheet
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OrderPlacedBottomSheet.showOrderPlacedBottomSheet(context, paymentId);
+    });
+  }
 
   void _setupKeyboardListeners() {
     // Listen to keyboard visibility changes

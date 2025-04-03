@@ -21,6 +21,38 @@ class TrackOrderViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// **✅ Initialize WebSocket Connection**
+  void initWebSocket() async {
+    String? userId = await StorageService.getUserId();
+    if (userId == null) return;
+
+    try {
+      _channel = IOWebSocketChannel.connect("ws://192.168.1.44:5000/orders/$userId");
+
+      _channel!.stream.listen(
+            (message) {
+          debugPrint("🔹 WebSocket Message Received: $message");
+
+          Map<String, dynamic> data = jsonDecode(message);
+          String eventType = data['eventType']; // Example: "orderUpdated"
+          String orderId = data['orderId']; // Order that changed
+
+          if (eventType == "orderUpdated") {
+            _updateOrderStatus(orderId, data['newStatus']);
+          }
+        },
+        onError: (error) {
+          debugPrint("❌ WebSocket Error: $error");
+        },
+        onDone: () {
+          debugPrint("🔴 WebSocket Disconnected.");
+        },
+      );
+    } catch (e) {
+      debugPrint("❌ WebSocket Connection Failed: $e");
+    }
+  }
+
   /// **✅ Fetch Orders and Cart Items**
   Future<void> fetchOrdersAndCartItems() async {
     _isLoading = true;
@@ -38,10 +70,8 @@ class TrackOrderViewModel extends ChangeNotifier {
         List<CartModel> cartItems = await fetchCartItemsByOrderId(order.orderId);
         _orderItems[order.orderId] = cartItems; // ✅ Store cart items by order ID
       }
-
-      _connectWebSocket(userId); // Connect WebSocket after fetching orders
     } catch (e) {
-      _error = 'Failed to fetch orders: ${e.toString()}';
+      _error = 'No Order Found';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -58,32 +88,20 @@ class TrackOrderViewModel extends ChangeNotifier {
     }
   }
 
-  /// **✅ Connect WebSocket for Real-time Updates**
-  void _connectWebSocket(String userId) {
-    final wsUrl = 'ws://your-server-ip:8080/track-orders/$userId';
-    _channel = IOWebSocketChannel.connect(wsUrl);
-
-    _channel!.stream.listen((message) {
-      final data = json.decode(message);
-      _updateOrderStatus(data['orderId'], data['status']);
-    }, onError: (error) {
-      print("WebSocket error: $error");
-    });
-  }
-
-  /// **✅ Update Order Status in List**
-  void _updateOrderStatus(String orderId, String status) {
-    final index = _orders.indexWhere((o) => o.orderId == orderId);
-    if (index != -1) {
-      _orders[index] = _orders[index].copyWith(orderStatus: status, updatedAt: DateTime.now());
-      notifyListeners();
+  /// **✅ Update Order Status in the List**
+  void _updateOrderStatus(String orderId, String newStatus) {
+    for (var order in _orders) {
+      if (order.orderId == orderId) {
+        order.orderStatus = newStatus; // Update status
+        break;
+      }
     }
+    notifyListeners(); // 🔄 Refresh UI
   }
 
-
+  /// **Format Delivery Date**
   String formatDeliveryDate(DateTime? dateTime) {
     if (dateTime == null) return "Calculating...";
-
     try {
       return DateFormat("EEE, dd MMM yyyy • hh:mm a").format(dateTime);
     } catch (e) {
@@ -91,7 +109,7 @@ class TrackOrderViewModel extends ChangeNotifier {
     }
   }
 
-
+  /// **Dispose WebSocket when not needed**
   @override
   void dispose() {
     _channel?.sink.close();

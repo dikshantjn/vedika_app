@@ -109,8 +109,4 @@ class UserLoginRepository {
     }
   }
 
-  /// Logout using AuthRepository
-  Future<void> logout() async {
-    await _authRepository.logout(); // Call logout method from AuthRepository
-  }
 }

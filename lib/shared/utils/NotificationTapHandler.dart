@@ -1,69 +1,106 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-
+import 'package:vedika_healthcare/main.dart';
 
 class NotificationTapHandler {
-  /// Centralize all the navigation logic here based on notification data
-  static void handleNotification(Map<String, dynamic> data, BuildContext context) {
-    // Checking the type of the notification
-    String type = data['type'];
+  static bool _isHandlingNavigation = false;
 
-    switch (type) {
-      case 'TRACK_ORDER':
-        String orderId = data['orderId'];
-        navigateToTrackOrderScreen(context, orderId);
-        break;
+  static Future<void> handleNotification(Map<String, dynamic> data) async {
+    if (_isHandlingNavigation) return;
+    _isHandlingNavigation = true;
 
-      case 'EMERGENCY_SERVICE':
-        navigateToEmergencyScreen(context);
-        break;
+    String type = data['type']?.toString() ?? 'UNKNOWN';
+    print("Notification Type: $type");
 
-      case 'NEW_ORDER':
-        String orderId = data['orderId'];
-        navigateToOrderDetailsScreen(context, orderId);
-        break;
+    BuildContext? context = navigatorKey.currentContext;
+    if (context == null || !context.mounted) {
+      print("Context not available");
+      _isHandlingNavigation = false;
+      return;
+    }
 
-      case 'USER_PROFILE':
-        navigateToUserProfileScreen(context);
-        break;
+    try {
+      switch (type) {
+        case 'TRACK_ORDER':
+          await _navigateWithClearStack(
+            context,
+            AppRoutes.trackOrderScreen,
+            arguments: {'orderId': data['orderId']},
+          );
+          break;
 
-      case 'NOTIFICATIONS':
-        navigateToNotificationScreen(context);
-        break;
+        case 'EMERGENCY_SERVICE':
+          await _navigateWithClearStack(context, AppRoutes.ambulanceSearch);
+          break;
 
-    // Add more cases as needed
-      default:
-        print("Unknown notification type: $type");
-        break;
+        case 'NEW_ORDER':
+          await _navigateWithHistory(
+            context,
+            AppRoutes.medicineOrder,
+            arguments: {'orderId': data['orderId']},
+          );
+          break;
+
+        case 'USER_PROFILE':
+          await _navigateWithHistory(context, AppRoutes.userProfile);
+          break;
+
+        case 'NOTIFICATIONS':
+          await _navigateWithHistory(context, AppRoutes.notification);
+          break;
+
+        case 'CART_SCREEN':
+          await _navigateWithClearStack(context, AppRoutes.goToCart);
+          break;
+
+        case 'ORDER_HISTORY':
+          await _navigateWithClearStack(context, AppRoutes.orderHistory);
+          break;
+
+        default:
+          print("Unknown notification type: $type");
+      }
+    } catch (e) {
+      print("Navigation error: $e");
+    } finally {
+      _isHandlingNavigation = false;
     }
   }
 
-  // Navigation methods for specific screens using AppRoutes
+  /// For screens where we want to maintain back navigation
+  static Future<void> _navigateWithHistory(
+      BuildContext context,
+      String routeName, {
+        Object? arguments,
+      }) async {
+    // Check if we're already on this screen
+    if (ModalRoute.of(context)?.settings.name == routeName) {
+      return;
+    }
 
-  static void navigateToTrackOrderScreen(BuildContext context, String orderId) {
-    Navigator.pushNamed(
+    await Navigator.pushNamed(
       context,
-      AppRoutes.trackOrderScreen,
+      routeName,
+      arguments: arguments,
     );
   }
 
-  static void navigateToEmergencyScreen(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.ambulanceSearch);
-  }
+  /// For screens where we want a fresh navigation stack
+  static Future<void> _navigateWithClearStack(
+      BuildContext context,
+      String routeName, {
+        Object? arguments,
+      }) async {
+    // Check if we're already on this screen
+    if (ModalRoute.of(context)?.settings.name == routeName) {
+      return;
+    }
 
-  static void navigateToOrderDetailsScreen(BuildContext context, String orderId) {
-    Navigator.pushNamed(
+    await Navigator.pushNamedAndRemoveUntil(
       context,
-      AppRoutes.medicineOrder,
-      arguments: {'orderId': orderId},
+      routeName,
+          (route) => false, // Remove all previous routes
+      arguments: arguments,
     );
-  }
-
-  static void navigateToUserProfileScreen(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.userProfile);
-  }
-
-  static void navigateToNotificationScreen(BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.notification);
   }
 }

@@ -166,7 +166,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Show Status or Accept Order button based on order status
-              if (viewModel.orderStatus == "Pending")
+              if (viewModel.orderStatus == "PrescriptionVerified")
                 OutlinedButton(
                   onPressed: () async {
                     await viewModel.acceptOrder(widget.orderId);
@@ -193,7 +193,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     ),
                   )
                       : const Text(
-                    "Accept Order",
+                    "Confirm Order",
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.green,
@@ -210,7 +210,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     border: Border.all(color: Colors.green.withOpacity(0.3)),
                   ),
                   child: Text(
-                    viewModel.orderStatus, // Show the current order status (e.g., "Accepted" or "Completed")
+                    viewModel.orderStatus == "Accepted" ? "Order Confirmed" : viewModel.orderStatus,
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.green,
@@ -218,6 +218,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     ),
                   ),
                 ),
+
 
               // 🔍 View Prescription Button (always at the right side)
               OutlinedButton(

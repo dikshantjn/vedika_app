@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.42:5000/api";
+  static const String baseUrl = "http://192.168.1.44:5000/api";
   // static const String baseUrl = "http://172.20.10.4:5000/api";
 
   // 📌 Auth APIs
@@ -34,7 +34,7 @@ class ApiEndpoints {
   static const String checkPrescriptionAcceptanceStatus = '$baseUrl/prescription/check-prescription-acceptance';
   static const String getPrescritionRequests = '$baseUrl/prescription/requests';
 
-  static const String acceptPrescriptionRequest = '$baseUrl/prescription/accept-status';
+  static const String acceptPrescriptionStatus = '$baseUrl/prescription/accept-status';
   static const String getOrders = '$baseUrl/orders/getOrders';
   static const String getPrescriptionUrl = '$baseUrl/prescription';
   static const String getMedicineSuggestions = '$baseUrl/orders/search';
@@ -62,9 +62,20 @@ class ApiEndpoints {
   static const String placedOrderWithPayment = '$baseUrl/orders/update-order';
   static const String updateOrderStatus = '$baseUrl/orders';
   static const String trackOrder = '$baseUrl/orders';
+  static const String updatePrescriptionStatus = '$baseUrl/orders';
+
 
   static const String saveFcmToken = '$baseUrl/fcm/save-token';
   static const String saveVendorFcmToken = '$baseUrl/fcm/vendor/update';
+  static const String removeFcmToken = '$baseUrl/fcm/delete-token';
+  static const String removeVendorFcmToken = '$baseUrl/fcm/vendor/delete';
+
+  static const String getMedicalStoreVendorById = '$baseUrl/vendor';
+
+// 📌 Vendor APIs
+  static const String toggleVendorStatus = '$baseUrl/vendors/toggle-status';
+  static const String getVendorStatus = '$baseUrl/vendors/status';
+  static const String getOrdersForOrderHistory = '$baseUrl/orders';
 
 
 }

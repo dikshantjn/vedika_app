@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/models/MedicineOrder.dart';
 
@@ -9,7 +10,7 @@ class MedicineOrderRepository {
   Future<List<MedicineOrderModel>> getOrdersByUser(String userId) async {
     try {
       final response = await _dio.get(
-        'http://192.168.1.42:5000/api/orders/$userId',  // API endpoint to fetch orders
+        '${ApiEndpoints.getOrderStatus}/$userId',  // API endpoint to fetch orders
       );
 
       if (response.statusCode == 200) {

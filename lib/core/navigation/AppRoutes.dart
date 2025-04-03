@@ -4,7 +4,7 @@ import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.da
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Views/vendor_registration_page.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';

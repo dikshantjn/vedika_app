@@ -4,17 +4,19 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart'; // Assuming you have a service for fetching orders
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
 class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool isServiceOnline = true;
   final VendorLoginService _loginService = VendorLoginService();
+  final VendorService _vendorService = VendorService();
 
-  // List to hold fetched orders and return requests
+  // ✅ List to hold fetched orders and return requests
   List<MedicineOrderModel> orders = [];
   List<MedicineReturnRequestModel> returnRequests = [];
 
-  // Store Analytics Data
+  // ✅ Store Analytics Data
   MedicalStoreAnalyticsModel analytics = MedicalStoreAnalyticsModel(
     totalOrders: 0,
     averageOrderValue: 0,
@@ -22,15 +24,59 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     returnsThisWeek: 0,
   );
 
-  final OrderService _orderService = OrderService(); // Assuming you have an OrderService class to fetch data
+  final OrderService _orderService = OrderService();
 
-  // Function to Toggle Online/Offline Status
+  // ✅ Loading and Active Status
+  bool _isLoading = false;
+  bool _isActive = false; // Default inactive
+
+  bool get isLoading => _isLoading;
+  bool get isActive => _isActive;
+
+  // ✅ Fetch Vendor's Initial Active Status
+  Future<void> fetchVendorStatus() async {
+    String? vendorId = await _loginService.getVendorId();
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      bool currentStatus = await _vendorService.getVendorStatus(vendorId!); // API call to get status
+      _isActive = currentStatus;
+    } catch (e) {
+      print("Error fetching vendor status: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+
+  // ✅ Toggle Vendor Status (Activate/Deactivate)
+  Future<void> toggleVendorStatus() async {
+    String? vendorId = await _loginService.getVendorId();
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      bool newStatus = await _vendorService.toggleVendorStatus(vendorId!);
+      _isActive = newStatus; // Update status based on API response
+    } catch (e) {
+      print("Error in toggleVendorStatus: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // ✅ Function to Toggle Online/Offline Status
   void toggleServiceStatus() {
     isServiceOnline = !isServiceOnline;
     notifyListeners();
   }
 
-  // Fetch Orders and Return Requests from API
+  // ✅ Fetch Orders and Return Requests from API
   Future<void> fetchOrdersAndRequests() async {
     try {
       String? vendorId = await _loginService.getVendorId();
@@ -41,19 +87,17 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
       // Fetch return requests
       returnRequests = await _fetchReturnRequests();
 
-      // Update analytics (e.g., count orders, returns, etc.)
+      // Update analytics
       _updateAnalytics();
 
-      // Notify listeners that data has been fetched
       notifyListeners();
     } catch (e) {
       print("Error fetching orders or return requests: $e");
     }
   }
 
-  // Fetching Return Requests (Placeholder, implement this service method)
+  // ✅ Fetching Return Requests (Placeholder, implement this service method)
   Future<List<MedicineReturnRequestModel>> _fetchReturnRequests() async {
-    // Simulating an API call to fetch return requests (replace with actual implementation)
     await Future.delayed(Duration(seconds: 2));
     return [
       MedicineReturnRequestModel(orderId: '006', customerName: 'Mark Lee', status: 'Pending', createdAt: DateTime.now().subtract(Duration(days: 1))),
@@ -64,7 +108,7 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     ];
   }
 
-  // Update Analytics based on fetched data
+  // ✅ Update Analytics based on fetched data
   void _updateAnalytics() {
     int totalOrders = orders.length;
     double averageOrderValue = _calculateAverageOrderValue();
@@ -73,34 +117,34 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
 
     analytics = MedicalStoreAnalyticsModel(
       totalOrders: totalOrders,
-      averageOrderValue: averageOrderValue.toInt(),  // Convert to int
+      averageOrderValue: averageOrderValue.toInt(),
       ordersToday: ordersToday,
       returnsThisWeek: returnsThisWeek,
     );
   }
 
-  // Calculate Average Order Value
+  // ✅ Calculate Average Order Value
   double _calculateAverageOrderValue() {
-    double totalValue = orders.fold(0.0, (sum, order) => sum + order.totalAmount); // Assuming MedicineOrderModel has `totalAmount`
-    return totalValue / orders.length;
+    double totalValue = orders.fold(0.0, (sum, order) => sum + order.totalAmount);
+    return orders.isNotEmpty ? totalValue / orders.length : 0.0;
   }
 
-  // Count orders for today
+  // ✅ Count orders for today
   int _countOrdersToday() {
     DateTime todayStart = DateTime.now().subtract(Duration(days: DateTime.now().day - 1));
     return orders.where((order) => order.createdAt.isAfter(todayStart)).length;
   }
 
-  // Check if the return request is within this week
+  // ✅ Check if the return request is within this week
   bool _isRequestThisWeek(MedicineReturnRequestModel request) {
-    DateTime requestDate = request.createdAt;  // Use the createdAt field
+    DateTime requestDate = request.createdAt;
     DateTime now = DateTime.now();
     int weekOfYear = _getWeekOfYear(now);
     int requestWeekOfYear = _getWeekOfYear(requestDate);
     return weekOfYear == requestWeekOfYear;
   }
 
-  // Get Week of the year
+  // ✅ Get Week of the year
   int _getWeekOfYear(DateTime date) {
     int dayOfYear = int.parse(DateFormat("D").format(date));
     return ((dayOfYear - 1) / 7).floor() + 1;

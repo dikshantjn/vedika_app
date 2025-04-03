@@ -4,8 +4,6 @@ import 'package:vedika_healthcare/features/ambulance/presentation/view/Ambulance
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulancePaymentDialog.dart';
 import 'package:vedika_healthcare/main.dart';
 
-// Define a global navigation key
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class AmbulanceRequestNotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();

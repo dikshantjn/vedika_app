@@ -11,7 +11,7 @@ class MedicineOrderModel {
   final double discountAmount; // ✅ Added Discount Amount
   final double subtotal; // ✅ Added Subtotal
   final double totalAmount;
-  final String orderStatus;
+   String orderStatus;
   final String? paymentMethod; // ✅ Added Payment Method
   final String? transactionId; // ✅ Added Transaction ID
   final String paymentStatus; // ✅ Payment Status (Paid, Unpaid, Failed, Refunded)

@@ -9,7 +9,17 @@ class OrdersWidget extends StatelessWidget {
 
   const OrdersWidget({Key? key, required this.viewModel}) : super(key: key);
 
-  // Define colors for each status
+  // Function to get formatted status text
+  String _formatStatus(String status) {
+    if (status == "Accepted") return "Order Confirmed"; // Special case
+
+    return status.replaceAllMapped(
+      RegExp(r'([a-z])([A-Z])'), // Match camel case transitions
+          (match) => '${match.group(1)} ${match.group(2)}',
+    );
+  }
+
+  // Function to get color based on order status
   Color _getStatusColor(String status) {
     switch (status) {
       case "Pending":
@@ -76,6 +86,8 @@ class OrdersWidget extends StatelessWidget {
   }
 
   Widget _buildOrderCard(MedicineOrderModel order, BuildContext context) {
+    bool showProcessButton = order.orderStatus != "Delivered" && order.orderStatus != "Cancelled";
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.all(14),
@@ -94,7 +106,7 @@ class OrdersWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Order ID and Customer Name and Created Date
+          // Order ID and Created Date
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -102,7 +114,6 @@ class OrdersWidget extends StatelessWidget {
                 "Order ID: ${order.orderId}",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              // User Name and Created Date
             ],
           ),
           SizedBox(height: 6),
@@ -117,11 +128,11 @@ class OrdersWidget extends StatelessWidget {
           ),
           SizedBox(height: 10),
 
-          // View Details Button and Order Status at the bottom
+          // Order Status & Process Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Order Status at the left
+              // Order Status
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -129,7 +140,7 @@ class OrdersWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  order.orderStatus,
+                  _formatStatus(order.orderStatus), // Format status text
                   style: TextStyle(
                     color: _getStatusColor(order.orderStatus),
                     fontWeight: FontWeight.bold,
@@ -137,35 +148,36 @@ class OrdersWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              // Process Order Button at the right
-              OutlinedButton(
-                onPressed: () => _showProcessOrderScreen(
-                  context,
-                  viewModel,
-                  order.prescriptionId,
-                  order.orderId,
-                  order.user.name!,
-                  DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  side: BorderSide(color: Colors.blueAccent),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+
+              // Process Order Button (Hide for "Delivered" orders)
+              if (showProcessButton)
+                OutlinedButton(
+                  onPressed: () => _showProcessOrderScreen(
+                    context,
+                    viewModel,
+                    order.prescriptionId,
+                    order.orderId,
+                    order.user.name!,
+                    DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    side: BorderSide(color: Colors.blueAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    "Process Order",
+                    style: TextStyle(fontSize: 14, color: Colors.blueAccent),
                   ),
                 ),
-                child: Text(
-                  "Process Order",
-                  style: TextStyle(fontSize: 14, color: Colors.blueAccent),
-                ),
-              ),
             ],
           ),
         ],
       ),
     );
   }
-
 
   void _showProcessOrderScreen(
       BuildContext context,
@@ -175,8 +187,7 @@ class OrdersWidget extends StatelessWidget {
       String customerName,
       String orderDate,
       ) async {
-    String? prescriptionUrl =
-    await viewModel.fetchPrescriptionUrl(prescriptionId);
+    String? prescriptionUrl = await viewModel.fetchPrescriptionUrl(prescriptionId);
 
     if (prescriptionUrl != null && prescriptionUrl.isNotEmpty) {
       Navigator.push(

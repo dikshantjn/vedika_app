@@ -96,8 +96,19 @@ class MedicineOrderViewModel extends ChangeNotifier {
       String? vendorId = await _loginService.getVendorId();
       if (vendorId?.isEmpty ?? true) throw Exception("Vendor ID not found.");
 
+      // First, accept the prescription
       bool success = await _prescriptionService.acceptPrescription(prescriptionId, vendorId!);
+
       if (success) {
+        // ✅ Now, update the prescription status to "PrescriptionVerified"
+        bool statusUpdated = await _orderService.updatePrescriptionStatus(prescriptionId);
+
+        if (statusUpdated) {
+          print("✅ Prescription status updated successfully!");
+        } else {
+          print("❌ Failed to update prescription status.");
+        }
+
         // Refresh the entire order list
         await fetchOrders();
       }
@@ -107,6 +118,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
       _setProcessingOrder(false);
     }
   }
+
 
 
   /// **🔹 Fetch Prescription URL**

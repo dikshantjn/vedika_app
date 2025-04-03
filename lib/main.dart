@@ -16,6 +16,7 @@ import 'package:vedika_healthcare/features/EmergencyService/data/services/Emerge
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -25,7 +26,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistrat
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/vendor_registration_view_model.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
@@ -48,13 +49,13 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/L
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
+import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
-
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
@@ -67,62 +68,35 @@ Future<void> getWifiIpAddress() async {
   print("Connected Wi-Fi IP Address: $ip");
 }
 
-void handleNotificationTap(String payload) {
-  print("[Notification Tapped] Payload: $payload");
 
-  if (payload.isNotEmpty) {
-    final Map<String, dynamic> data = jsonDecode(payload);
-    if (data.containsKey("orderId")) {
-      navigatorKey.currentState?.pushNamed(
-        "/orderDetails",
-        arguments: data["orderId"],
-      );
-    }
-  }
-}
-
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  WidgetsBinding.instance.addObserver(AppLifecycleObserver()); // Add lifecycle observer
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize FCM Service
+  final fcmService = FCMService();
 
-  await AmbulanceRequestNotificationService.initNotifications();
-  getWifiIpAddress(); // Non-blocking execution
-
-  final fcmService = FCMService(onNotificationTap: handleNotificationTap);
-  await fcmService.requestNotificationPermission();
-
-  // Check if the user is a normal user or a vendor
-  String? userId = await StorageService.getUserId();
-  String? vendorId = await VendorLoginService().getVendorId(); // Assuming you store the vendor ID
-
-  if (userId != null) {
-    // For normal users
-    print("🧑‍⚖️ User is logged in, requesting FCM token for User.");
-    await fcmService.getTokenAndSend(userId);
-  } else if (vendorId != null) {
-    // For vendors
-    print("💼 Vendor is logged in, requesting FCM token for Vendor.");
-    await fcmService.getVendorTokenAndSend(vendorId); // Similar function for vendors
-  } else {
-    print("❌ No User or Vendor ID found, skipping FCM token registration.");
+  // Handle initial notification (app opened from terminated state)
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fcmService.handleNotificationTap(
+          jsonEncode(initialMessage.data),
+          navigatorKey.currentContext!
+      );
+    });
   }
 
-  fcmService.setupFCMListener();
+  // Request permissions and setup token
+  await fcmService.requestNotificationPermission();
+  String? userId = await StorageService.getUserId();
+  String? vendorId = await VendorLoginService().getVendorId();
+  if (userId != null) await fcmService.getTokenAndSend(userId);
+  else if (vendorId != null) await fcmService.getVendorTokenAndSend(vendorId);
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-
-  runApp(const MyApp());
+  runApp(MyApp());
 }
-
-
-
-
 
 
 class MyApp extends StatelessWidget {
@@ -176,6 +150,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AddNewAddressViewModel()),
         ChangeNotifierProvider(create: (_) => TrackOrderViewModel()),
 
+        ChangeNotifierProvider(create: (_) => AmbulanceAgencyViewModel()),
+
 
       ],
       child: Builder(
@@ -195,6 +171,7 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
             ),
             navigatorKey: navigatorKey,
+            scaffoldMessengerKey:scaffoldMessengerKey,
             initialRoute: "/",
             onGenerateRoute: AppRoutes.generateRoute,
             routes: {

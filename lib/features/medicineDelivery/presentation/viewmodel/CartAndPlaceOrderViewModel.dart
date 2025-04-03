@@ -45,6 +45,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     _razorPayService.onPaymentCancelled = _handlePaymentFailure; // Treat cancellation as a failure
   }
 
+  Function(String paymentId)? _onPaymentSuccess;
+
+  void setOnPaymentSuccess(Function(String paymentId)? callback) {
+    _onPaymentSuccess = callback;
+  }
 
   final MedicineOrderDeliveryRazorPayService _razorPayService =
   MedicineOrderDeliveryRazorPayService();
@@ -316,6 +321,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         // 🔹 **Update Each Order in Database**
         await _cartService.updateOrder(updatedOrder);
         debugPrint("🎉 Order ${order.orderId} updated successfully.");
+
+        // Trigger the callback after everything is done
+        if (_onPaymentSuccess != null) {
+          _onPaymentSuccess!(transactionId);
+        }
       }
     } catch (e) {
       debugPrint("❌ Error updating orders: $e");

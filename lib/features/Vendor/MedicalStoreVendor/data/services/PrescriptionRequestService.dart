@@ -53,11 +53,11 @@ class PrescriptionRequestService {
       }
 
       // API URL
-      print("📡 Sending Accept Prescription Request to: ${ApiEndpoints.acceptPrescriptionRequest}");
+      print("📡 Sending Accept Prescription Request to: ${ApiEndpoints.acceptPrescriptionStatus}");
 
       // Sending POST request
       Response response = await _dio.post(
-        ApiEndpoints.acceptPrescriptionRequest,
+        ApiEndpoints.acceptPrescriptionStatus,
         data: {
           "prescriptionId": prescriptionId,
           "vendorId": vendorId, // ✅ Added vendorId

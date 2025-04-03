@@ -151,67 +151,103 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                   controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: // Expandable Sections
+                  Column(
                     children: [
-                      if (viewModel.fetchedCartItems.isEmpty && viewModel.cart.isEmpty)
-                        _emptyCartWidget()
-                      else ...[
-                        if (viewModel.fetchedCartItems.isNotEmpty)
-                          FetchedCartItemsWidget(
-                            fetchedCartItems: viewModel.fetchedCartItems,
-                            onDelete: (cartId) async {
-                              bool isDeleted = await viewModel.deleteCartItem(cartId);
+                      // Expandable Section: Already Added to Cart
+                      ExpansionTile(
+                        initiallyExpanded: viewModel.fetchedCartItems.isNotEmpty,
+                        title: Text(
+                          "Already Added to Cart",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        children: [
+                          if (viewModel.fetchedCartItems.isNotEmpty)
+                            FetchedCartItemsWidget(
+                              fetchedCartItems: viewModel.fetchedCartItems,
+                              onDelete: (cartId) async {
+                                bool isDeleted = await viewModel.deleteCartItem(cartId);
 
-                              if (isDeleted) {
-                                setState(() {
-                                  viewModel.fetchedCartItems.removeWhere((item) => item.cartId == cartId);
-                                  viewModel.cart.removeWhere((item) => item.cartId == cartId);
-                                });
+                                if (isDeleted) {
+                                  setState(() {
+                                    viewModel.fetchedCartItems.removeWhere((item) => item.cartId == cartId);
+                                    viewModel.cart.removeWhere((item) => item.cartId == cartId);
+                                  });
 
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Cart item deleted successfully!'),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                  ),
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Cart item deleted successfully!'),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to delete cart item.'),
+                                      backgroundColor: Colors.red,
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          if (viewModel.fetchedCartItems.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: Text(
+                                  "No items have been added to the cart yet.",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // Expandable Section: New Items to Add
+                      ExpansionTile(
+                        initiallyExpanded: viewModel.cart.isNotEmpty,
+                        title: Text(
+                          "New Items to Add",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        children: [
+                          if (viewModel.cart.isNotEmpty)
+                            Column(
+                              children: viewModel.cart.map((cartItem) {
+                                return SelectedMedicineWidget(
+                                  cartItem: cartItem,
+                                  onQuantityChanged: (newQuantity) {
+                                    setState(() {
+                                      int index = viewModel.cart.indexWhere(
+                                              (item) => item.productId == cartItem.productId);
+                                      if (index != -1) {
+                                        viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
+                                      }
+                                    });
+                                  },
+                                  onDelete: () {
+                                    setState(() {
+                                      viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
+                                    });
+                                  },
+                                  quantityController: _quantityController,
                                 );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Failed to delete cart item.'),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        if (viewModel.cart.isNotEmpty)
-                          Column(
-                            children: viewModel.cart.map((cartItem) {
-                              return SelectedMedicineWidget(
-                                cartItem: cartItem,
-                                onQuantityChanged: (newQuantity) {
-                                  setState(() {
-                                    int index = viewModel.cart.indexWhere(
-                                            (item) => item.productId == cartItem.productId);
-                                    if (index != -1) {
-                                      viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
-                                    }
-                                  });
-                                },
-                                onDelete: () {
-                                  setState(() {
-                                    viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
-                                  });
-                                },
-                                quantityController: _quantityController,
-                              );
-                            }).toList(),
-                          ),
-                        const SizedBox(height: 100),
-                      ] // Space for the bottom button
+                              }).toList(),
+                            ),
+                          if (viewModel.cart.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: Text(
+                                  "No new medicines selected yet.",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
