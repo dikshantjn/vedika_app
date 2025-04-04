@@ -148,7 +148,8 @@ class LoginWidget extends StatelessWidget {
 
                         // Call the login method
                         await viewModel.login(context);  // Simply call the method
-
+                        print("Selected Role: ${viewModel.selectedRole}");
+                        print("Role Number: ${viewModel.roleNumber}");
                         // Dismiss the loading indicator
                         Navigator.of(context).pop();
                       } else {

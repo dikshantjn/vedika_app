@@ -3,6 +3,8 @@ import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyDashboardScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
@@ -62,6 +64,13 @@ class AppRoutes {
   static const String trackOrderScreen = "/trackOrder";
 
 
+  // Vendor Dashboards
+  static const String VendorHospitalDashBoard = "/VendorHospitalDashBoard";
+  static const String VendorClinicDashBoard = "/VendorClinicDashBoard";
+  static const String AmbulanceAgencyDashboard = "/AmbulanceAgencyDashboard";
+  static const String VendorBloodBankDashBoard = "/VendorBloodBankDashBoard";
+  static const String VendorPathologyDashBoard = "/VendorPathologyDashBoard";
+  static const String VendorDeliveryPartnerDashBoard = "/VendorDeliveryPartnerDashBoard";
 
 
   static Map<String, WidgetBuilder> getRoutes() {
@@ -91,6 +100,13 @@ class AppRoutes {
       VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(), // Added route for EnableLocationPage
       trackOrderScreen: (context) => TrackOrderScreen(), // Added route for EnableLocationPage
 
+      // // Vendor Dashboards
+      // VendorHospitalDashBoard: (context) => VendorHospitalDashBoardScreen(),
+      // VendorClinicDashBoard: (context) => VendorClinicDashBoardScreen(),
+      AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
+      // VendorBloodBankDashBoard: (context) => VendorBloodBankDashBoardScreen(),
+      // VendorPathologyDashBoard: (context) => VendorPathologyDashBoardScreen(),
+      // VendorDeliveryPartnerDashBoard: (context) => VendorDeliveryPartnerDashBoardScreen(),
 
     };
   }

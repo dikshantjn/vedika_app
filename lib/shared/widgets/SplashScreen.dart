@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
@@ -25,6 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
   late EmergencyService emergencyService;
   bool _initializing = false;
   bool _permissionGranted = false;
+  final VendorLoginService _loginService = VendorLoginService();
 
   @override
   void initState() {
@@ -77,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
 
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false); // Access CartAndPlaceOrderViewModel
+      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
 
       // Fetch Orders and Cart Items for the current user
       await cartViewModel.fetchOrdersAndCartItems();
@@ -91,14 +93,20 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
 
       if (!mounted) return;
 
+      // Navigate based on the user role (vendor or regular user)
       if (authViewModel.isLoggedIn) {
+        // Regular user is logged in
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
         );
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
-        Navigator.pushReplacementNamed(context, AppRoutes.VendorMedicalStoreDashBoard);
+        int? role = await _loginService.getVendorRole();
+        print("Role from Splash screeen $role");
+        // Vendor is logged in, navigate to vendor dashboard based on the role
+        await vendorAuthViewModel.navigateToDashboard(context,role);
       } else {
+        // User is not logged in
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => UserLoginScreen()),
@@ -168,3 +176,4 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
     );
   }
 }
+

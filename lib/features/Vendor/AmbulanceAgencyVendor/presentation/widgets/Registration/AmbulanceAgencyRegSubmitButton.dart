@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/AmbulanceAgencyRegistrationDialog.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/AmbulanceAgencyRegistrationDialog.dart';
 
 class AmbulanceAgencyRegSubmitButton extends StatefulWidget {
   final String buttonText;

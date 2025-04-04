@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
   static const String baseUrl = "http://192.168.1.44:5000/api";
-  // static const String baseUrl = "http://172.20.10.4:5000/api";
+  // static const String baseUrl = "http://192.168.173.21:5000/api";
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -76,6 +76,9 @@ class ApiEndpoints {
   static const String toggleVendorStatus = '$baseUrl/vendors/toggle-status';
   static const String getVendorStatus = '$baseUrl/vendors/status';
   static const String getOrdersForOrderHistory = '$baseUrl/orders';
+
+
+  static const String registerAmbulanceAgency = '$baseUrl/ambulance/register-agency';
 
 
 }

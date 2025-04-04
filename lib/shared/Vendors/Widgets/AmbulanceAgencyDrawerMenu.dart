@@ -1,0 +1,109 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/AmbulanceAgencyColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
+class AmbulanceAgencyDrawerMenu extends StatelessWidget {
+  final Function(int) onItemSelected;
+
+  const AmbulanceAgencyDrawerMenu({Key? key, required this.onItemSelected})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: AmbulanceAgencyColorPalette.backgroundWhite,
+      child: Column(
+        children: [
+          // Header Section
+          SizedBox(
+            width: double.infinity,
+            child: Container(
+              constraints: const BoxConstraints.expand(height: 180),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AmbulanceAgencyColorPalette.accentCyan,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.local_hospital, size: 40, color: AmbulanceAgencyColorPalette.primaryRed),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Ambulance Agency",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const Text(
+                    "agency@example.com",
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Menu Items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(context, Icons.dashboard, "Dashboard", 0),
+                _buildDrawerItem(context, Icons.local_taxi, "Requests", 1),
+                _buildDrawerItem(context, Icons.notifications, "Notifications", 2),
+                _buildDrawerItem(context, Icons.person, "Profile", 3),
+                _buildDrawerItem(context, Icons.settings, "Settings", 4),
+
+                const Divider(),
+
+                _buildDrawerItem(context, Icons.exit_to_app, "Logout", -1, isLogout: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, int index, {bool isLogout = false}) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isLogout ? AmbulanceAgencyColorPalette.errorRed : AmbulanceAgencyColorPalette.secondaryTeal,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: isLogout ? AmbulanceAgencyColorPalette.errorRed : AmbulanceAgencyColorPalette.textPrimary,
+        ),
+      ),
+      onTap: () async {
+        if (isLogout) {
+          // Get the ViewModel instance
+          final viewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+
+          // Call the logout method
+          await viewModel.logout();
+
+          // Navigate to Login Page after logout
+          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+        } else {
+          onItemSelected(index);
+          Navigator.pop(context);
+        }
+      },
+      trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+    );
+  }
+}

@@ -142,6 +142,4 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
       },
     );
   }
-
-
 }

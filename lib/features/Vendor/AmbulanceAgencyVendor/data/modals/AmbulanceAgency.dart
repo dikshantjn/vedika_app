@@ -15,19 +15,21 @@ class AmbulanceAgency {
   final List<String> ambulanceTypes;
   final bool gpsTrackingAvailable;
   final List<String> ambulanceEquipment;
-  final List<String> trainingCertifications;
+  final List<Map<String, String>> trainingCertifications;
   final List<String> languageProficiency;
   final List<String> operationalAreas;
   final bool is24x7Available;
   final double distanceLimit;
   final bool isOnlinePaymentAvailable;
-  final String officePhotos;
+  final List<Map<String, String>> officePhotos; // Updated to store name and URL
   final String preciseLocation;
   final String vendorId;
   final String generatedId;
-
-  // Add this field
-  final String driverLicense; // New field for Driver License
+  final String driverLicense;
+  final String state;
+  final String city;
+  final String pinCode;
+  final bool isLive; // Added isLive to track agency's online/offline status
 
   AmbulanceAgency({
     required this.agencyName,
@@ -52,14 +54,17 @@ class AmbulanceAgency {
     required this.is24x7Available,
     required this.distanceLimit,
     required this.isOnlinePaymentAvailable,
-    required this.officePhotos,
+    required this.officePhotos, // Now stores a list of maps
     required this.preciseLocation,
     required this.vendorId,
     required this.generatedId,
-    required this.driverLicense, // Initialize the driverLicense field
+    required this.driverLicense,
+    required this.state,
+    required this.city,
+    required this.pinCode,
+    required this.isLive, // Ensure isLive is initialized
   });
 
-  // CopyWith method to allow updating of fields easily
   AmbulanceAgency copyWith({
     String? agencyName,
     String? gstNumber,
@@ -77,17 +82,21 @@ class AmbulanceAgency {
     List<String>? ambulanceTypes,
     bool? gpsTrackingAvailable,
     List<String>? ambulanceEquipment,
-    List<String>? trainingCertifications,
+    List<Map<String, String>>? trainingCertifications,
     List<String>? languageProficiency,
     List<String>? operationalAreas,
     bool? is24x7Available,
     double? distanceLimit,
     bool? isOnlinePaymentAvailable,
-    String? officePhotos,
+    List<Map<String, String>>? officePhotos,
     String? preciseLocation,
     String? vendorId,
     String? generatedId,
-    String? driverLicense, // Add this field to copyWith
+    String? driverLicense,
+    String? state,
+    String? city,
+    String? pinCode,
+    bool? isLive, // Option to update the isLive status
   }) {
     return AmbulanceAgency(
       agencyName: agencyName ?? this.agencyName,
@@ -116,7 +125,47 @@ class AmbulanceAgency {
       preciseLocation: preciseLocation ?? this.preciseLocation,
       vendorId: vendorId ?? this.vendorId,
       generatedId: generatedId ?? this.generatedId,
-      driverLicense: driverLicense ?? this.driverLicense, // Handle driverLicense
+      driverLicense: driverLicense ?? this.driverLicense,
+      state: state ?? this.state,
+      city: city ?? this.city,
+      pinCode: pinCode ?? this.pinCode,
+      isLive: isLive ?? this.isLive, // Update isLive status
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'agencyName': agencyName,
+      'gstNumber': gstNumber,
+      'panNumber': panNumber,
+      'ownerName': ownerName,
+      'registrationNumber': registrationNumber,
+      'address': address,
+      'landmark': landmark,
+      'contactNumber': contactNumber,
+      'email': email,
+      'website': website,
+      'numOfAmbulances': numOfAmbulances,
+      'driverKYC': driverKYC,
+      'driverTrained': driverTrained,
+      'ambulanceTypes': ambulanceTypes,
+      'gpsTrackingAvailable': gpsTrackingAvailable,
+      'ambulanceEquipment': ambulanceEquipment,
+      'trainingCertifications': trainingCertifications,
+      'languageProficiency': languageProficiency,
+      'operationalAreas': operationalAreas,
+      'is24x7Available': is24x7Available,
+      'distanceLimit': distanceLimit,
+      'isOnlinePaymentAvailable': isOnlinePaymentAvailable,
+      'officePhotos': officePhotos,
+      'preciseLocation': preciseLocation,
+      'vendorId': vendorId,
+      'generatedId': generatedId,
+      'driverLicense': driverLicense,
+      'state': state,
+      'city': city,
+      'pinCode': pinCode,
+      'isLive': isLive, // Add isLive to JSON
+    };
   }
 }

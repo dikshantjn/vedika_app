@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/AgencyInfoSection.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/AmbulanceAgencyRegSubmitButton.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/AmbulanceDetailsSection.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/PaymentLocationSection.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/AgencyInfoSection.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/AmbulanceAgencyRegSubmitButton.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/AmbulanceDetailsSection.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/PaymentLocationSection.dart';
 
 class AmbulanceRegistrationScreen extends StatefulWidget {
   @override
@@ -53,7 +53,6 @@ class _AmbulanceRegistrationScreenState extends State<AmbulanceRegistrationScree
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTimeline(_steps, _currentIndex),
-                      SizedBox(height: 20),
                       _sections[_currentIndex],
                       SizedBox(height: 20),
                       Row(

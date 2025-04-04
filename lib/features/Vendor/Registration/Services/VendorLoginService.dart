@@ -10,6 +10,7 @@ class VendorLoginService {
 
   static const String _tokenKey = "vendor_jwt_token"; // Key for storing token
   static const String _vendorIdKey = "vendor_id"; // Key for storing vendorId
+  static const String _vendorRoleKey = "vendor_role"; // Key for storing vendor role
 
   /// **🔹 Vendor Login & Session Management**
   Future<Map<String, dynamic>> loginVendor(String email, String password, int roleNumber) async {
@@ -26,18 +27,21 @@ class VendorLoginService {
         final data = response.data;
         final String token = data['token'];
 
-        // **🔹 Extract Vendor ID from JWT Token**
+        // **🔹 Extract Vendor ID & Role from JWT Token**
         String vendorId = _extractVendorIdFromToken(token);
-
-        // **🔹 Store Token & Vendor ID Securely**
+        int vendorRole = _extractVendorRoleFromToken(token);  // Use integer for role
+        print("_extractVendorRoleFromToken $vendorRole");
+        // **🔹 Store Token, Vendor ID & Vendor Role Securely**
         await _storage.write(key: _tokenKey, value: token);
         await _storage.write(key: _vendorIdKey, value: vendorId);
+        await _storage.write(key: _vendorRoleKey, value: vendorRole.toString());  // Store as String but treat as int
 
         return {
           'success': true,
           'message': data['message'],
           'token': token,
           'vendorId': vendorId,
+          'vendorRole': vendorRole,
         };
       } else {
         return {
@@ -63,10 +67,22 @@ class VendorLoginService {
     }
   }
 
+  /// **🔹 Extract Vendor Role from JWT Token**
+  int _extractVendorRoleFromToken(String token) {
+    try {
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token); // Decode JWT
+      return int.tryParse(decodedToken['vendorRole'].toString()) ?? 0; // Extract vendor role as int
+    } catch (e) {
+      print("Error decoding token: $e");
+      return 0; // Default to 0 if parsing fails
+    }
+  }
+
   /// **🔹 Logout Vendor & Clear Storage**
   Future<void> logoutVendor() async {
     await _storage.delete(key: _tokenKey); // Remove JWT token
     await _storage.delete(key: _vendorIdKey); // Remove Vendor ID
+    await _storage.delete(key: _vendorRoleKey); // Remove Vendor Role
   }
 
   /// **🔹 Check if Vendor is Logged In**
@@ -85,6 +101,12 @@ class VendorLoginService {
     return await _storage.read(key: _vendorIdKey);
   }
 
+  /// **🔹 Get Vendor Role**
+  Future<int?> getVendorRole() async {
+    String? role = await _storage.read(key: _vendorRoleKey);
+    return role != null ? int.tryParse(role) : null;  // Convert string to int
+  }
+
   /// **🔹 Handle Dio Errors**
   Map<String, dynamic> _handleDioError(DioException e) {
     if (e.response != null) {
@@ -94,3 +116,4 @@ class VendorLoginService {
     }
   }
 }
+
