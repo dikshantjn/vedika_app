@@ -59,7 +59,7 @@ class AmbulanceAgencyDrawerMenu extends StatelessWidget {
               children: [
                 _buildDrawerItem(context, Icons.dashboard, "Dashboard", 0),
                 _buildDrawerItem(context, Icons.local_taxi, "Requests", 1),
-                _buildDrawerItem(context, Icons.notifications, "Notifications", 2),
+                _buildDrawerItem(context, Icons.history, "History", 2),
                 _buildDrawerItem(context, Icons.person, "Profile", 3),
                 _buildDrawerItem(context, Icons.settings, "Settings", 4),
 

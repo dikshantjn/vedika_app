@@ -18,7 +18,8 @@ import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/BookingViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingHistoryViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/FeeViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
@@ -156,8 +157,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AmbulanceAgencyViewModel()),
 
         ChangeNotifierProvider(create: (context) => AgencyViewModel()),  // Bind AgencyViewModel
-        ChangeNotifierProvider(create: (context) => BookingViewModel()), // Bind BookingViewModel
         ChangeNotifierProvider(create: (context) => FeeViewModel()),
+        ChangeNotifierProvider(create: (context) => AmbulanceBookingRequestViewModel()),
+        ChangeNotifierProvider(create: (context) => AmbulanceBookingHistoryViewModel()),
+
 
 
       ],

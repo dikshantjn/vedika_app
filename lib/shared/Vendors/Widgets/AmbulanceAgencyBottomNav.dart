@@ -46,14 +46,14 @@ class _AmbulanceAgencyBottomNavState extends State<AmbulanceAgencyBottomNav> {
           backgroundColor: AmbulanceAgencyColorPalette.cardWhite,
           currentIndex: widget.currentIndex,
           onTap: widget.onTabSelected,
-          selectedItemColor: AmbulanceAgencyColorPalette.primaryRed, // Active icon color
+          selectedItemColor: AmbulanceAgencyColorPalette.accentCyan, // Active icon color
           unselectedItemColor: AmbulanceAgencyColorPalette.iconInactive, // Inactive icon color
           showUnselectedLabels: true,
           elevation: 5,
           items: [
             _buildNavItem(Icons.dashboard, "Dashboard"),
             _buildNavItem(Icons.local_hospital, "Requests"),
-            _buildNavItem(Icons.notifications, "Notifications"),
+            _buildNavItem(Icons.history, "History"),
             _buildNavItem(Icons.person, "Profile"),
           ],
         ),

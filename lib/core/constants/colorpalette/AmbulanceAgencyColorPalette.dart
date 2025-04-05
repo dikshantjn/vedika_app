@@ -21,7 +21,7 @@ class AmbulanceAgencyColorPalette {
   static const Color textSecondary = Color(0xFF757575); // Medium gray for secondary text
   static const Color textOnDark = Color(0xFFFFFFFF); // White text on dark backgrounds
   static const Color iconActive = Color(0xFFFFFFFF); // Red for active icons
-  static const Color iconInactive = Color(0xFF9E9E9E); // Gray for inactive icons
+  static const Color iconInactive = Color(0xFF0B0B0B); // Gray for inactive icons
 
   // Status Colors
   static const Color successGreen = Color(0xFF43A047); // Success green

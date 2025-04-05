@@ -79,6 +79,15 @@ class ApiEndpoints {
 
 
   static const String registerAmbulanceAgency = '$baseUrl/ambulance/register-agency';
+  static const String getAmbulanceAgencyProfile = '$baseUrl/ambulance/profile';
+  static const String updateMediaItem = '$baseUrl/ambulance/ambulance-agency';
+  static const String deleteMediaItem = '$baseUrl/ambulance/ambulance-agency';
+  static const String addMediaItem = '$baseUrl/ambulance/ambulance-agency';
+  static const String updateAgencyProfile = '$baseUrl/ambulance/ambulance-agency';
+
+
+
+
 
 
 }
