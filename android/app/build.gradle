@@ -36,7 +36,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("/home/krish/AndroidStudioProjects/vedika_healthcare/my-release-key.jks")
+            storeFile file("/media/krish/135GBVolume/AndroidStudioProjects/vedika_healthcare/my-release-key.jks")
             storePassword "Krushna@01" // Enter your keystore password here
             keyAlias "my-key-alias" // Enter your key alias here
             keyPassword "Krushna@01" // Enter your key password here
