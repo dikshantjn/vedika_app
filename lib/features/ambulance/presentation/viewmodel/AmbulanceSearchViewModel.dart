@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
@@ -19,6 +20,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   List<Ambulance> ambulances = [];
   bool isLocationEnabled = false;
   bool mounted = true; // Manually track mounting state
+  bool _isDialogShowing = false;
 
 
   double chargePerKM = 50;
@@ -38,13 +40,14 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     if (!serviceEnabled) {
       serviceEnabled = await location.requestService();
       if (!serviceEnabled) {
-        if (!context.mounted) return; // Check if widget is still in the tree
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "ambulance",)),
-        );
         isLocationEnabled = false;
-        if (mounted) notifyListeners(); // Prevent calling after dispose
+        if (mounted) notifyListeners();
+
+        // Delay showing dialog slightly to avoid race condition with system prompt
+        Future.delayed(Duration(milliseconds: 300), () {
+          if (!_isDialogShowing) _showLocationDialog();
+        });
+
         return;
       }
     }
@@ -52,14 +55,15 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     LocationData? userLocation = await location.getLocation();
     if (userLocation.latitude != null && userLocation.longitude != null) {
       isLocationEnabled = true;
-      if (mounted) notifyListeners(); // Ensure it's still active
+      if (mounted) notifyListeners();
       initialize();
     } else {
       isLocationEnabled = false;
-      if (mounted) notifyListeners(); // Ensure it's still active
-      _showLocationDialog();
+      if (mounted) notifyListeners();
+      if (!_isDialogShowing) _showLocationDialog();
     }
   }
+
 
 
   Future<void> initialize() async {
@@ -108,22 +112,48 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
 
 
 
+
   void _showLocationDialog() {
-    showDialog(
+    if (_isDialogShowing) return;
+
+    _isDialogShowing = true;
+    AwesomeDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("Location Required"),
-        content: const Text("Please enable location to use this feature."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+      dialogType: DialogType.warning,
+      animType: AnimType.bottomSlide,
+      title: 'Location Required',
+      desc: 'Please enable location to use this feature.',
+      btnOkText: "Enable Location",
+      btnOkOnPress: () {
+        _isDialogShowing = false;
+        _checkLocationEnabled();
+      },
+      btnCancelText: "Go Back",
+      btnCancelOnPress: () {
+        _isDialogShowing = false;
+        Navigator.pop(context);
+      },
+      customHeader: Align(
+        alignment: Alignment.topCenter,
+        child: Container(
+          margin: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.orange.shade100,
           ),
-        ],
+          padding: const EdgeInsets.all(16),
+          child: const Icon(
+            Icons.wrong_location_outlined,
+            size: 40,
+            color: Colors.redAccent,
+          ),
+        ),
       ),
-    );
+    ).show();
   }
+
+
+
 
   Future<void> _fetchAmbulances() async {
     if (currentPosition == null) return;
