@@ -1,0 +1,1 @@
+/home/krish/AndroidStudioProjects/vedika_healthcare/build/app/intermediates/cxx/RelWithDebInfo/n3t3i3b4/obj/x86

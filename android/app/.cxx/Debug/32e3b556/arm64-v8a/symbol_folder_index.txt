@@ -1,0 +1,1 @@
+/home/krish/AndroidStudioProjects/vedika_healthcare/build/app/intermediates/cxx/Debug/32e3b556/obj/arm64-v8a

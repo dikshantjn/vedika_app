@@ -1,20 +1,22 @@
-allprojects {
+
+buildscript {
+    ext.kotlin_version = '1.9.10' // or latest stable (1.9.22 is fine too)
+
     repositories {
         google()
         mavenCentral()
     }
-    buildscript {
-        ext.kotlin_version = '1.8.20'  // ✅ Use the latest stable version
 
-        repositories {
-            google()
-            mavenCentral()
-        }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.4.0"  // ✅ Gradle plugin version must match required
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"  // ✅ Add Kotlin plugin
 
-        dependencies {
-            classpath "com.android.tools.build:gradle:8.3.0"  // ✅ Update Gradle version
-            classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"  // ✅ Add Kotlin plugin
-        }
+    }
+}
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 
 }
