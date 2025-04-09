@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/ambulance/data/models/Ambulance.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceService.dart';
 
 class AmbulanceDetailsBottomSheet extends StatelessWidget {
-  final Ambulance ambulance;
+  final AmbulanceAgency ambulance;
   final AmbulanceService _ambulanceService = AmbulanceService(); // Initialize Service
 
    AmbulanceDetailsBottomSheet({
@@ -13,7 +13,7 @@ class AmbulanceDetailsBottomSheet extends StatelessWidget {
 
   // ✅ Call Ambulance Service (Trigger Call & SMS)
   void _callAmbulance(BuildContext context) {
-    _ambulanceService.triggerAmbulanceEmergency(ambulance.contact);
+    _ambulanceService.triggerAmbulanceEmergency(ambulance.contactNumber);
   }
 
   @override
@@ -46,7 +46,7 @@ class AmbulanceDetailsBottomSheet extends StatelessWidget {
 
               // Ambulance Name
               Text(
-                ambulance.name,
+                ambulance.agencyName,
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
 
@@ -58,7 +58,7 @@ class AmbulanceDetailsBottomSheet extends StatelessWidget {
                   const Icon(Icons.access_time, color: Colors.blueGrey),
                   const SizedBox(width: 8),
                   Text(
-                    "Availability: ${ambulance.availability}",
+                    "Availability: 24/7",
                     style: const TextStyle(fontSize: 16),
                   ),
                 ],
@@ -74,7 +74,7 @@ class AmbulanceDetailsBottomSheet extends StatelessWidget {
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
-                children: ambulance.services
+                children: ambulance.ambulanceTypes
                     .map((service) => Chip(
                   label: Text(service),
                   backgroundColor: Colors.blue[100],

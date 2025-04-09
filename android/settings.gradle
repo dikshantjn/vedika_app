@@ -26,3 +26,4 @@ plugins {
 }
 
 include ":app"
+rootProject.name = 'vedika_healthcare'

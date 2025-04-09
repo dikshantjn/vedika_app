@@ -21,7 +21,7 @@ class AmbulanceAgency {
   final bool is24x7Available;
   final double distanceLimit;
   final bool isOnlinePaymentAvailable;
-  final List<Map<String, String>> officePhotos; // Updated to store name and URL
+  final List<Map<String, String>> officePhotos;
   final String preciseLocation;
   final String vendorId;
   final String generatedId;
@@ -29,7 +29,7 @@ class AmbulanceAgency {
   final String state;
   final String city;
   final String pinCode;
-  final bool isLive; // Added isLive to track agency's online/offline status
+  final bool isLive;
 
   AmbulanceAgency({
     required this.agencyName,
@@ -54,7 +54,7 @@ class AmbulanceAgency {
     required this.is24x7Available,
     required this.distanceLimit,
     required this.isOnlinePaymentAvailable,
-    required this.officePhotos, // Now stores a list of maps
+    required this.officePhotos,
     required this.preciseLocation,
     required this.vendorId,
     required this.generatedId,
@@ -62,7 +62,7 @@ class AmbulanceAgency {
     required this.state,
     required this.city,
     required this.pinCode,
-    required this.isLive, // Ensure isLive is initialized
+    required this.isLive,
   });
 
   AmbulanceAgency copyWith({
@@ -96,7 +96,7 @@ class AmbulanceAgency {
     String? state,
     String? city,
     String? pinCode,
-    bool? isLive, // Option to update the isLive status
+    bool? isLive,
   }) {
     return AmbulanceAgency(
       agencyName: agencyName ?? this.agencyName,
@@ -129,7 +129,7 @@ class AmbulanceAgency {
       state: state ?? this.state,
       city: city ?? this.city,
       pinCode: pinCode ?? this.pinCode,
-      isLive: isLive ?? this.isLive, // Update isLive status
+      isLive: isLive ?? this.isLive,
     );
   }
 
@@ -165,11 +165,26 @@ class AmbulanceAgency {
       'state': state,
       'city': city,
       'pinCode': pinCode,
-      'isLive': isLive, // Add isLive to JSON
+      'isLive': isLive,
     };
   }
 
   factory AmbulanceAgency.fromJson(Map<String, dynamic> json) {
+    List<Map<String, String>> _parseMediaList(dynamic list) {
+      if (list is List) {
+        return list.map<Map<String, String>>((item) {
+          if (item is Map) {
+            return {
+              'name': item['name']?.toString() ?? '',
+              'url': item['url']?.toString() ?? ''
+            };
+          }
+          return {'name': '', 'url': ''};
+        }).toList();
+      }
+      return [];
+    }
+
     return AmbulanceAgency(
       agencyName: json['agencyName'] ?? '',
       gstNumber: json['gstNumber'] ?? '',
@@ -187,23 +202,13 @@ class AmbulanceAgency {
       ambulanceTypes: List<String>.from(json['ambulanceTypes'] ?? []),
       gpsTrackingAvailable: json['gpsTrackingAvailable'] ?? false,
       ambulanceEquipment: List<String>.from(json['ambulanceEquipment'] ?? []),
-      trainingCertifications: (json['trainingCertifications'] ?? [])
-          .map<Map<String, String>>((item) => {
-        'name': item['name']?.toString() ?? '',
-        'url': item['url']?.toString() ?? ''
-      })
-          .toList(),
+      trainingCertifications: _parseMediaList(json['trainingCertifications']),
       languageProficiency: List<String>.from(json['languageProficiency'] ?? []),
       operationalAreas: List<String>.from(json['operationalAreas'] ?? []),
       is24x7Available: json['is24x7Available'] ?? false,
-      distanceLimit: (json['distanceLimit'] ?? 0).toDouble(),
+      distanceLimit: (json['distanceLimit'] as num?)?.toDouble() ?? 0.0,
       isOnlinePaymentAvailable: json['isOnlinePaymentAvailable'] ?? false,
-      officePhotos: (json['officePhotos'] ?? [])
-          .map<Map<String, String>>((item) => {
-        'name': item['name']?.toString() ?? '',
-        'url': item['url']?.toString() ?? ''
-      })
-          .toList(),
+      officePhotos: _parseMediaList(json['officePhotos']),
       preciseLocation: json['preciseLocation'] ?? '',
       vendorId: json['vendorId'] ?? '',
       generatedId: json['generatedId'] ?? '',
@@ -211,12 +216,10 @@ class AmbulanceAgency {
       state: json['state'] ?? '',
       city: json['city'] ?? '',
       pinCode: json['pinCode'] ?? '',
-      isLive: json['isActive'] ?? false, // isLive comes from `isActive` in API
+      isLive: json['isLive'] ?? json['isActive'] ?? false, // Accepts either field
     );
   }
-
 }
-
 
 class MediaFileTypes {
   static const String officePhotos = 'officePhotos';

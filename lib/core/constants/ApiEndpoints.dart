@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String baseUrl = "http://192.168.1.44:5000/api";
-  static const String baseUrl = "http://192.168.1.46:5000/api";
+  static const String baseUrl = "http://192.168.1.44:5000/api";
+  // static const String baseUrl = "http://192.168.1.46:5000/api";
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -84,4 +84,13 @@ class ApiEndpoints {
   static const String deleteMediaItem = '$baseUrl/ambulance/ambulance-agency';
   static const String addMediaItem = '$baseUrl/ambulance/ambulance-agency';
   static const String updateAgencyProfile = '$baseUrl/ambulance/ambulance-agency';
+  static const String getAmbulances = "$baseUrl/ambulance/ambulances";
+  static const String createAmbulanceBooking = '$baseUrl/ambulanceBooking/request';
+  static const String getPendingAmbulanceBookings = '$baseUrl/ambulanceBooking/pending';
+  static const String acceptAmbulanceBooking = '$baseUrl/ambulanceBooking/accept-booking';
+  static const String getAmbulanceBookingStatus = '$baseUrl/ambulanceBooking/booking-status';
+  static const String getVehicleTypes = '$baseUrl/ambulance/ambulance-agency/vehicle-types';
+  static const String updateAmbulanceServiceDetails = '$baseUrl/ambulanceBooking/update-service-details';
+
+
 }

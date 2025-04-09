@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingHistoryViewModel.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 
 class AmbulanceBookingHistoryScreen extends StatefulWidget {
   @override
@@ -106,7 +106,7 @@ class _AmbulanceBookingHistoryScreenState extends State<AmbulanceBookingHistoryS
           const SizedBox(height: 10),
           // Customer Info
           Text(
-            "Customer: ${booking.customerName}",
+            "Customer: ${booking.user.name}",
             style: TextStyle(fontSize: 16, color: Colors.black54, fontFamily: 'Roboto'),
           ),
           Text(
@@ -118,10 +118,6 @@ class _AmbulanceBookingHistoryScreenState extends State<AmbulanceBookingHistoryS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Urgency: ${booking.urgency}",
-                style: TextStyle(fontSize: 16, color: Colors.black54, fontFamily: 'Roboto'),
-              ),
               Text(
                 "Vehicle: ${booking.vehicleType}",
                 style: TextStyle(fontSize: 16, color: Colors.black54, fontFamily: 'Roboto'),

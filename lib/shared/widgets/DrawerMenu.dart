@@ -51,6 +51,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
             _buildDrawerItem(context, Icons.shopping_bag, "My Order", "/orderHistory"),
             _buildDrawerItem(context, Icons.notification_important, "Notification/Remainder", "/notification"),
             _buildDrawerItem(context, Icons.receipt, "Health Records", "/healthRecords"),
+            _buildDrawerItem(context, Icons.track_changes, "Track Order", AppRoutes.trackOrderScreen),
+
             _buildDrawerItem(context, Icons.logout, "Logout", "/logout"),
           ]),
           Divider(),

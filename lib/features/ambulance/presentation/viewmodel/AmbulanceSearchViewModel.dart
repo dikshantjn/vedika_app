@@ -1,14 +1,16 @@
 import 'dart:math';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:logger/web.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/ambulance/data/models/Ambulance.dart';
-import 'package:vedika_healthcare/features/ambulance/data/repositories/ambulance_data.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceService.dart';
-import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
+import 'package:vedika_healthcare/features/ambulance/data/services/EmergiencyAmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulanceDetailsBottomSheet.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulancePaymentDialog.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
@@ -17,15 +19,21 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   GoogleMapController? mapController;
   LatLng? currentPosition;
   final Set<Marker> markers = {};
-  List<Ambulance> ambulances = [];
+  List<AmbulanceAgency> ambulances = [];
   bool isLocationEnabled = false;
   bool mounted = true; // Manually track mounting state
   bool _isDialogShowing = false;
+  EmergiencyAmbulanceService _service = EmergiencyAmbulanceService();
 
+  final logger = Logger();
+
+  var isLoading = false.obs;
+  var availableAgencies = <AmbulanceAgency>[].obs;
+  var errorMessage = ''.obs;
 
   double chargePerKM = 50;
   double baseFare = 200;
-  double nearbyDistance = 5.0;
+  double nearbyDistance = 15.0;
 
   final BuildContext context;
 
@@ -68,7 +76,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
     await getUserLocation();
-    _fetchAmbulances();
+    fetchAvailableAgencies();
   }
 
   Future<void> getUserLocation() async {
@@ -87,7 +95,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       }
 
       // Fetch nearby ambulances
-      _fetchAmbulances();
+      fetchAvailableAgencies();
     } else {
       _showLocationDialog();
     }
@@ -153,34 +161,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   }
 
 
-
-
-  Future<void> _fetchAmbulances() async {
-    if (currentPosition == null) return;
-
-    List<Ambulance> fetchedAmbulances = getAmbulances(context);
-    List<Ambulance> nearbyAmbulances = [];
-
-    for (Ambulance ambulance in fetchedAmbulances) {
-      double distance = _calculateDistance(
-        currentPosition!.latitude,
-        currentPosition!.longitude,
-        ambulance.location.latitude,
-        ambulance.location.longitude,
-      );
-
-      if (distance <= nearbyDistance) {
-        nearbyAmbulances.add(ambulance);
-      }
-    }
-
-    ambulances = nearbyAmbulances;
-
-    if (mounted) notifyListeners(); // Ensure ViewModel is still active
-    _addAmbulanceMarkers();
-  }
-
-
   void _addAmbulanceMarkers() {
     markers.clear();
 
@@ -196,20 +176,29 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     }
 
     for (var ambulance in ambulances) {
+      if (ambulance.preciseLocation.isEmpty || !ambulance.preciseLocation.contains(',')) {
+        continue; // Skip if invalid
+      }
+
+      List<String> latLngParts = ambulance.preciseLocation.split(',');
+      double lat = double.tryParse(latLngParts[0].trim()) ?? 0.0;
+      double lng = double.tryParse(latLngParts[1].trim()) ?? 0.0;
+
       markers.add(
         Marker(
-          markerId: MarkerId(ambulance.id),
-          position: ambulance.location,
-          infoWindow: InfoWindow(title: ambulance.name),
+          markerId: MarkerId(ambulance.vendorId),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(title: ambulance.agencyName),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
           onTap: () => _showAmbulanceDetails(ambulance),
         ),
       );
     }
+
     notifyListeners();
   }
 
-  void _showAmbulanceDetails(Ambulance ambulance) {
+  void _showAmbulanceDetails(AmbulanceAgency ambulance) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -221,17 +210,26 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     );
   }
 
-  Ambulance? _findNearestAmbulance() {
+  AmbulanceAgency? _findNearestAmbulance() {
     if (currentPosition == null) return null;
-    Ambulance? nearestAmbulance;
+
+    AmbulanceAgency? nearestAmbulance;
     double minDistance = double.infinity;
 
-    for (Ambulance ambulance in ambulances) {
+    for (AmbulanceAgency ambulance in ambulances) {
+      if (ambulance.preciseLocation.isEmpty || !ambulance.preciseLocation.contains(',')) {
+        continue; // Skip if invalid
+      }
+
+      List<String> latLngParts = ambulance.preciseLocation.split(',');
+      double ambulanceLat = double.tryParse(latLngParts[0].trim()) ?? 0.0;
+      double ambulanceLng = double.tryParse(latLngParts[1].trim()) ?? 0.0;
+
       double distance = _calculateDistance(
         currentPosition!.latitude,
         currentPosition!.longitude,
-        ambulance.location.latitude,
-        ambulance.location.longitude,
+        ambulanceLat,
+        ambulanceLng,
       );
 
       if (distance <= nearbyDistance && distance < minDistance) {
@@ -239,8 +237,41 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
         nearestAmbulance = ambulance;
       }
     }
+
+    if (nearestAmbulance != null) {
+      _createBookingWithNearestAmbulance(nearestAmbulance);
+    }
+
     return nearestAmbulance;
   }
+
+  Future<void> _createBookingWithNearestAmbulance(AmbulanceAgency ambulance) async {
+    try {
+      String? userId = await StorageService.getUserId();
+
+      final vendorId = ambulance.vendorId ?? '';
+
+      if (vendorId.isEmpty) {
+        print('⚠️ Vendor ID missing in selected ambulance');
+        return;
+      }
+
+      final booking = await _service.createBooking(
+        userId: userId!,
+        vendorId: vendorId,
+      );
+
+      if (booking != null) {
+        print("✅ Booking confirmed: ${booking.requestId}");
+        // Optionally update state/UI or navigate to tracker
+      } else {
+        print("❌ Booking failed");
+      }
+    } catch (e) {
+      print("🔥 Error creating booking: $e");
+    }
+  }
+
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const R = 6371;
@@ -265,7 +296,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     );
 
     try {
-      Ambulance? nearestAmbulance = _findNearestAmbulance();
+      AmbulanceAgency? nearestAmbulance = _findNearestAmbulance();
       Navigator.pop(context);
 
       if (nearestAmbulance == null) {
@@ -275,44 +306,73 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
         return;
       }
 
-      bool accepted = await AmbulanceService().triggerAmbulanceEmergency(nearestAmbulance.contact);
+      bool accepted = await AmbulanceService().triggerAmbulanceEmergency(nearestAmbulance.contactNumber);
       if (accepted) {
+        List<String> latLngParts = nearestAmbulance.preciseLocation.split(',');
+        double ambulanceLat = double.parse(latLngParts[0]);
+        double ambulanceLng = double.parse(latLngParts[1]);
+
         double totalDistance = _calculateDistance(
           currentPosition!.latitude,
           currentPosition!.longitude,
-          nearestAmbulance.location.latitude,
-          nearestAmbulance.location.longitude,
+          ambulanceLat,
+          ambulanceLng,
         );
 
         double totalAmount = baseFare + (totalDistance * chargePerKM);
         await AmbulanceRequestNotificationService.showAmbulanceRequestNotification(
-          ambulanceName: nearestAmbulance.name,
-          contact: nearestAmbulance.contact,
+          ambulanceName: nearestAmbulance.agencyName,
+          contact: nearestAmbulance.contactNumber,
           totalDistance: totalDistance,
           baseFare: baseFare,
           distanceCharge: totalDistance * chargePerKM,
           totalAmount: totalAmount,
         );
 
-        showDialog(
-          context: context,
-          builder: (context) => AmbulancePaymentDialog(
-            providerName: nearestAmbulance.name,
-            baseFare: baseFare,
-            distanceCharge: totalDistance * chargePerKM,
-            totalAmount: totalAmount,
-            totalDistance: totalDistance,
-            onPaymentSuccess: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Payment Successful! Booking Confirmed.")),
-              );
-            },
-          ),
+        // Show confirmation message directly (without payment dialog)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Payment Successful! Booking Confirmed.")),
         );
       }
     } catch (e) {
       Navigator.pop(context);
       print("Error: $e");
     }
+  }
+
+
+
+  Future<void> fetchAvailableAgencies() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final result = await _service.fetchAmbulances();
+
+      availableAgencies.value = result;
+      ambulances = result; // 🔥 Add this line to update the list used for markers
+
+      logger.i('Fetched ${result.length} ambulance agencies');
+      for (var agency in result) {
+        logger.d({
+          'Agency Name': agency.agencyName,
+          'Vendor ID': agency.vendorId,
+          'Location': agency.preciseLocation,
+          'Contact': agency.contactNumber,
+        });
+      }
+
+      _addAmbulanceMarkers(); // This now has data to work with
+    } catch (e, stackTrace) {
+      errorMessage.value = 'Failed to fetch agencies';
+      logger.e("Error fetching available ambulances", error: e, stackTrace: stackTrace);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // You can also expose a refresh method
+  void refreshAgencies() {
+    fetchAvailableAgencies();
   }
 }
