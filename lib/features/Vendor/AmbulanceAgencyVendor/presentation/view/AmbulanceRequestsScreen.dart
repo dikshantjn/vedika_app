@@ -68,7 +68,11 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
   Widget _buildBookingRequestCard(AmbulanceBooking booking) {
     final formattedTime = DateFormat('d MMM yyyy, h:mm a').format(booking.timestamp);
 
-    final isAccepted = booking.status.toLowerCase() == "accepted";
+    // Check if the status is "pending"
+    final isPending = booking.status.toLowerCase() == "pending";
+
+    // Show "Proceed Request" for any status other than "pending"
+    final showProceedButton = !isPending;
 
     return Container(
       width: double.infinity,
@@ -112,7 +116,9 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isAccepted ? Colors.green.shade100 : Colors.orange.shade100,
+                  color: isPending
+                      ? Colors.orange.shade100
+                      : Colors.green.shade100, // Other statuses are considered accepted
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -120,7 +126,7 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: isAccepted ? Colors.green : Colors.orange,
+                    color: isPending ? Colors.orange : Colors.green, // Treat non-pending statuses as accepted
                   ),
                 ),
               ),
@@ -128,16 +134,21 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
               // Action Button
               OutlinedButton(
                 onPressed: () async {
-                  final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
+                  final viewModel =
+                  Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
 
-                  if (isAccepted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProcessBookingScreen(requestId: booking.requestId),
-                      ),
-                    );
+                  if (!isPending) {
+                    // Navigate to the ProcessBookingScreen if status is not pending
+                    if (context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProcessBookingScreen(requestId: booking.requestId),
+                        ),
+                      );
+                    }
                   } else {
+                    // If the status is "pending", accept the request
                     await viewModel.toggleRequestStatus(booking.requestId);
 
                     if (context.mounted) {
@@ -157,7 +168,7 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
                   }
                 },
                 child: Text(
-                  isAccepted ? 'Proceed Request' : 'Accept Request',
+                  showProceedButton ? 'Proceed Request' : 'Accept Request',
                   style: const TextStyle(color: Colors.cyan),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -172,6 +183,7 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
       ),
     );
   }
+
 
 
 }

@@ -91,6 +91,10 @@ class ApiEndpoints {
   static const String getAmbulanceBookingStatus = '$baseUrl/ambulanceBooking/booking-status';
   static const String getVehicleTypes = '$baseUrl/ambulance/ambulance-agency/vehicle-types';
   static const String updateAmbulanceServiceDetails = '$baseUrl/ambulanceBooking/update-service-details';
+  static const String getActiveAmbulanceRequests = '$baseUrl/ambulanceBooking/active-requests/user';
+  static const String completeAmbulanceBookingPayment = '$baseUrl/ambulanceBooking/update-payment-completed';
 
-
+  static const String updateBookingStatusOnTheWay = '$baseUrl/ambulanceBooking/update-status/on-the-way';
+  static const String updateBookingStatusPickedUp = '$baseUrl/ambulanceBooking/update-status/picked-up';
+  static const String updateBookingStatusCompleted = '$baseUrl/ambulanceBooking/update-status/completed';
 }

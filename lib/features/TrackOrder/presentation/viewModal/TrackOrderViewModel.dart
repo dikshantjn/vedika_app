@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
@@ -21,37 +22,9 @@ class TrackOrderViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// **✅ Initialize WebSocket Connection**
-  void initWebSocket() async {
-    String? userId = await StorageService.getUserId();
-    if (userId == null) return;
 
-    try {
-      _channel = IOWebSocketChannel.connect("ws://192.168.1.44:5000/orders/$userId");
-
-      _channel!.stream.listen(
-            (message) {
-          debugPrint("🔹 WebSocket Message Received: $message");
-
-          Map<String, dynamic> data = jsonDecode(message);
-          String eventType = data['eventType']; // Example: "orderUpdated"
-          String orderId = data['orderId']; // Order that changed
-
-          if (eventType == "orderUpdated") {
-            _updateOrderStatus(orderId, data['newStatus']);
-          }
-        },
-        onError: (error) {
-          debugPrint("❌ WebSocket Error: $error");
-        },
-        onDone: () {
-          debugPrint("🔴 WebSocket Disconnected.");
-        },
-      );
-    } catch (e) {
-      debugPrint("❌ WebSocket Connection Failed: $e");
-    }
-  }
+  List<AmbulanceBooking> _ambulanceBookings = [];
+  List<AmbulanceBooking> get ambulanceBookings => _ambulanceBookings;
 
   /// **✅ Fetch Orders and Cart Items**
   Future<void> fetchOrdersAndCartItems() async {
@@ -88,17 +61,6 @@ class TrackOrderViewModel extends ChangeNotifier {
     }
   }
 
-  /// **✅ Update Order Status in the List**
-  void _updateOrderStatus(String orderId, String newStatus) {
-    for (var order in _orders) {
-      if (order.orderId == orderId) {
-        order.orderStatus = newStatus; // Update status
-        break;
-      }
-    }
-    notifyListeners(); // 🔄 Refresh UI
-  }
-
   /// **Format Delivery Date**
   String formatDeliveryDate(DateTime? dateTime) {
     if (dateTime == null) return "Calculating...";
@@ -108,6 +70,44 @@ class TrackOrderViewModel extends ChangeNotifier {
       return "Invalid Date";
     }
   }
+
+  /// ✅ Fetch active ambulance bookings for current user
+  Future<void> fetchActiveAmbulanceBookings() async {
+    _isLoading = true;
+    notifyListeners();
+
+    debugPrint("📦 Starting to fetch active ambulance bookings...");
+
+    try {
+      String? userId = await StorageService.getUserId();
+      debugPrint("👤 User ID: $userId");
+
+      if (userId == null) {
+        debugPrint("❌ User ID not found");
+        throw Exception("User ID not found");
+      }
+
+      _ambulanceBookings = await _service.fetchActiveAmbulanceBookings(userId);
+      debugPrint("✅ Ambulance bookings fetched: ${_ambulanceBookings.length}");
+
+      for (var booking in _ambulanceBookings) {
+        debugPrint("🚑 Booking ID: ${booking.requestId}, Status: ${booking.status}");
+      }
+
+      _error = null;
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error fetching ambulance bookings: $e");
+      debugPrint("🔍 Stack Trace:\n$stackTrace");
+
+      _ambulanceBookings = [];
+      _error = "No Ambulance Booking Found";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint("📦 Done fetching ambulance bookings.");
+    }
+  }
+
 
   /// **Dispose WebSocket when not needed**
   @override

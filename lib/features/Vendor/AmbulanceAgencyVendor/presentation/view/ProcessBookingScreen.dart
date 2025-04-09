@@ -15,8 +15,8 @@ class ProcessBookingScreen extends StatefulWidget {
   State<ProcessBookingScreen> createState() => _ProcessBookingScreenState();
 }
 
-
 class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
+  late AmbulanceBooking booking;
 
   @override
   void initState() {
@@ -30,7 +30,7 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context);
-    AmbulanceBooking booking = viewModel.bookingRequests.firstWhere((b) => b.requestId == widget.requestId);
+    booking = viewModel.bookingRequests.firstWhere((b) => b.requestId == widget.requestId);
 
     final isDetailsFilled = booking.pickupLocation.isNotEmpty &&
         booking.dropLocation.isNotEmpty &&
@@ -65,6 +65,15 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
               ServiceDetailsCard(booking: booking, isFilled: isDetailsFilled),
 
               const SizedBox(height: 32),
+
+              // Booking Status Menu with Toggle buttons displayed one by one
+              Text("Change Booking Status", style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 10),
+              Column(
+                children: _buildStatusWidgets(viewModel),
+              ),
+
+              const SizedBox(height: 32),
               Center(
                 child: OutlinedButton(
                   onPressed: () {
@@ -97,6 +106,51 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Method to return status widgets dynamically
+  List<Widget> _buildStatusWidgets(AmbulanceBookingRequestViewModel viewModel) {
+    List<Widget> statusWidgets = [];
+
+    if (booking.status == "PaymentCompleted") {
+      statusWidgets.add(_buildStatusBox("On-the-way", "OnTheWay", viewModel));
+    }
+
+    if (booking.status == "OnTheWay") {
+      statusWidgets.add(_buildStatusBox("Picked-up", "PickedUp", viewModel));
+    }
+
+    if (booking.status == "PickedUp") {
+      statusWidgets.add(_buildStatusBox("Completed", "Completed", viewModel));
+    }
+
+    return statusWidgets;
+  }
+
+  Widget _buildStatusBox(String label, String status, AmbulanceBookingRequestViewModel viewModel) {
+    bool isActive = booking.status == status;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: isActive ? Colors.cyan[100] : Colors.grey[300],
+        border: Border.all(color: isActive ? Colors.cyan : Colors.grey),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: isActive ? Colors.cyan : Colors.black)),
+          Switch(
+            value: isActive,
+            onChanged: (value) {
+              if (value) {
+                viewModel.updateBookingStatus(widget.requestId, status);
+              }
+            },
+          ),
+        ],
       ),
     );
   }

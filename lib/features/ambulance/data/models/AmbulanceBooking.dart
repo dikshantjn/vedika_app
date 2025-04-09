@@ -1,4 +1,5 @@
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
 
 class AmbulanceBooking {
   final String requestId;
@@ -15,6 +16,7 @@ class AmbulanceBooking {
   final DateTime timestamp;
   final DateTime requiredDateTime;
   final UserModel user;
+  final AmbulanceAgency? agency;
 
   AmbulanceBooking({
     required this.requestId,
@@ -31,6 +33,9 @@ class AmbulanceBooking {
     required this.timestamp,
     required this.requiredDateTime,
     required this.user,
+    this.agency, // Optional field
+
+
   });
 
   factory AmbulanceBooking.fromJson(Map<String, dynamic> json) {
@@ -49,6 +54,9 @@ class AmbulanceBooking {
       timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
       requiredDateTime: DateTime.tryParse(json['requiredDateTime'] ?? '') ?? DateTime.now(),
       user: json['user'] != null ? UserModel.fromJson(json['user']) : UserModel.empty(),
+      agency: json['agencyProfile'] != null
+          ? AmbulanceAgency.fromJson(json['agencyProfile'])
+          : null,  // Map agencyProfile here
     );
   }
 
@@ -68,8 +76,10 @@ class AmbulanceBooking {
       'timestamp': timestamp.toIso8601String(),
       'requiredDateTime': requiredDateTime.toIso8601String(),
       'user': user.toJson(),
+      'agency': agency?.toJson(), // Optional
     };
   }
+
 
   AmbulanceBooking copyWith({
     String? requestId,
@@ -86,6 +96,7 @@ class AmbulanceBooking {
     DateTime? timestamp,
     DateTime? requiredDateTime,
     UserModel? user,
+    AmbulanceAgency? agency,
   }) {
     return AmbulanceBooking(
       requestId: requestId ?? this.requestId,
@@ -102,6 +113,7 @@ class AmbulanceBooking {
       timestamp: timestamp ?? this.timestamp,
       requiredDateTime: requiredDateTime ?? this.requiredDateTime,
       user: user ?? this.user,
+      agency: agency ?? this.agency,
     );
   }
 }

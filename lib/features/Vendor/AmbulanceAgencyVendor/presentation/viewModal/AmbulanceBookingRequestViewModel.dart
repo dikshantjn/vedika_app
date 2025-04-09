@@ -181,6 +181,37 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
   }
 
 
+  Future<void> updateBookingStatus(String requestId, String status) async {
+    try {
+      // Handle different status updates using a switch case
+      switch (status) {
+        case 'OnTheWay':
+          await _bookingService.updateBookingStatusOnTheWay(requestId);
+          break;
+        case 'PickedUp':
+          await _bookingService.updateBookingStatusPickedUp(requestId);
+          break;
+        case 'Completed':
+          await _bookingService.updateBookingStatusCompleted(requestId);
+          break;
+        default:
+          throw Exception('Unknown status: $status');
+      }
+
+      // Update the status locally after successful API call
+      final booking = bookingRequests.firstWhere((b) => b.requestId == requestId);
+      booking.status = status;
+      notifyListeners();
+
+      // Optionally, display success message using SnackBar or other UI elements
+      Fluttertoast.showToast(msg: 'Booking status updated to: $status');
+    } catch (e) {
+      // Handle any errors
+      print("Error updating status: $e");
+      Fluttertoast.showToast(msg: 'Failed to update status');
+    }
+  }
+
 
   @override
   void dispose() {

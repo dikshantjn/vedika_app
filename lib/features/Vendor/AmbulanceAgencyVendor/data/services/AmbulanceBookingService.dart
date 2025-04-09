@@ -104,5 +104,71 @@ class AmbulanceBookingService {
     }
   }
 
+  // 👇 NEW METHOD: Update Payment Completed Status
+  Future<void> updatePaymentCompleted(String requestId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.completeAmbulanceBookingPayment}/$requestId',
+      );
 
+      if (response.statusCode == 200 && response.data['success']) {
+        print('Payment status updated to completed successfully');
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to update payment status');
+      }
+    } on DioError catch (e) {
+      throw Exception(e.response?.data['message'] ?? e.message);
+    }
+  }
+
+  // Update Status to On The Way
+  Future<void> updateBookingStatusOnTheWay(String requestId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateBookingStatusOnTheWay}/$requestId',
+      );
+
+      if (response.statusCode == 200 && response.data['success']) {
+        print('Status updated to "On The Way" successfully');
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to update booking status to "On The Way"');
+      }
+    } on DioError catch (e) {
+      throw Exception(e.response?.data['message'] ?? e.message);
+    }
+  }
+
+  // Update Status to Picked Up
+  Future<void> updateBookingStatusPickedUp(String requestId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateBookingStatusPickedUp}/$requestId',
+      );
+
+      if (response.statusCode == 200 && response.data['success']) {
+        print('Status updated to "Picked Up" successfully');
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to update booking status to "Picked Up"');
+      }
+    } on DioError catch (e) {
+      throw Exception(e.response?.data['message'] ?? e.message);
+    }
+  }
+
+  // Update Status to Completed
+  Future<void> updateBookingStatusCompleted(String requestId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateBookingStatusCompleted}/$requestId',
+      );
+
+      if (response.statusCode == 200 && response.data['success']) {
+        print('Status updated to "Completed" successfully');
+      } else {
+        throw Exception(response.data['message'] ?? 'Failed to update booking status to "Completed"');
+      }
+    } on DioError catch (e) {
+      throw Exception(e.response?.data['message'] ?? e.message);
+    }
+  }
 }
