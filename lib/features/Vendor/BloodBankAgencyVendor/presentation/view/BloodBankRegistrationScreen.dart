@@ -8,6 +8,8 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 
 class BloodBankRegistrationScreen extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
+  final PageController _pageController = PageController();
+  final ValueNotifier<int> _currentPage = ValueNotifier<int>(0);
 
   @override
   Widget build(BuildContext context) {
@@ -15,121 +17,168 @@ class BloodBankRegistrationScreen extends StatelessWidget {
       create: (_) => BloodBankRegistrationViewModel(),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(backgroundColor: Colors.white, title: Text("Register Blood Bank")),
         body: Consumer<BloodBankRegistrationViewModel>(
           builder: (context, viewModel, _) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    section([
-                      buildTextField("Agency Name", viewModel.agencyNameController),
-                      buildTextField("Owner Name", viewModel.ownerNameController),
-                      buildNumberField("Emergency Contact", viewModel.emergencyContactController),
-                      buildTextField("Email", viewModel.emailController),
-                      buildTextField("GST Number", viewModel.gstNumberController),
-                      buildTextField("PAN Number", viewModel.panNumberController),
-                      buildTextField("Govt Registration Number", viewModel.govtRegNumberController),
-                    ]),
-                    section([
-                      buildMultiSelectChips("Blood Services", viewModel.bloodOptions, viewModel.selectedBloodServices),
-                      buildSwitch("Provides Platelets", viewModel.providesPlatelets, viewModel.togglePlatelets),
-                      buildTextField("Other Services", viewModel.otherServicesController),
-                      buildSwitch("Open 24/7", viewModel.is24x7, viewModel.toggle24x7),
-                      buildSwitch("Open All Days", viewModel.allDaysWorking, viewModel.toggleAllDays),
-                    ]),
-                    section([
-                      buildTextField("Address", viewModel.addressController),
-                      buildTextField("Landmark", viewModel.landmarkController),
-                      buildDropdown("State",viewModel.statesList, viewModel.selectedState),
-                      buildDropdown("City", viewModel.citiesList, viewModel.selectedCity),
-                      buildNumberField("Pincode", viewModel.pincodeController),
-                      buildTextField("Website", viewModel.websiteController),
-                    ]),
-                    section([
-                      buildMultiSelectChips("Languages", viewModel.languages, viewModel.selectedLanguages),
-                      buildChipInputField(
-                        label: "Operational Areas",
-                        chipList: viewModel.operationalAreas.value,
-                        onAddChip: viewModel.addOperationalArea,
-                        onRemoveChip: viewModel.removeOperationalArea,
-                      ),
-                      buildNumberField("Distance Limit (in KM)", viewModel.distanceLimitController),
-                      buildSwitch("Accepts Online Payment", viewModel.acceptsOnlinePayment, viewModel.toggleOnlinePayment),
-                    ]),
-                    section([
-                      UploadSectionWidget(
-                        label: 'Upload License',
-                        onFilesSelected: (files) => files.forEach((fileData) =>
-                            viewModel.addLicenseFile(fileData['file'] as File, fileData['name'] as String)),
-                      ),
-                      UploadSectionWidget(
-                        label: 'Upload Certificates',
-                        onFilesSelected: (files) => files.forEach((fileData) =>
-                            viewModel.addRegistrationCertificateFile(fileData['file'] as File, fileData['name'] as String)),
-                      ),
-                      UploadSectionWidget(
-                        label: 'Upload Office Photos',
-                        onFilesSelected: (files) => files.forEach((fileData) =>
-                            viewModel.addOfficePhoto(fileData['file'] as File, fileData['name'] as String,)),
-                      ),
-                    ]),
-                    section([
-                      AmbulanceAgencyLocationPicker(
-                        onLocationSelected: (location) {
-                          viewModel.preciseLocationController.text = location;
-                        },
-                      ),
-                    ]),
-                    SizedBox(height: 24),
-                    SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          backgroundColor: Theme.of(context).primaryColor,
-                          textStyle: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold),
+            return Column(
+              children: [
+                // Modern Header
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 40,
+                        left: 16,
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        onPressed: viewModel.Loading
-                            ? null
-                            : () async {
-                          if (_formKey.currentState!.validate()) {
-                            try {
-                              await viewModel.submitRegistration();
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: $e')));
-                            }
-                          }
-                        },
-                        child: viewModel.Loading
-                            ? Row(
+                      ),
+                      Center(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.deepPurple),
+                            Icon(Icons.bloodtype, size: 50, color: Colors.white),
+                            SizedBox(height: 10),
+                            Text(
+                              "Register Blood Bank",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            SizedBox(width: 10),
-                            Text("Submitting...",
-                                style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
                           ],
-                        )
-                            : Text("Register Blood Bank"),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 40),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+                // Progress Indicator
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _currentPage,
+                    builder: (context, currentPage, _) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(4, (index) {
+                          return Expanded(
+                            child: Container(
+                              height: 4,
+                              margin: EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: index <= currentPage
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey[300],
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          );
+                        }),
+                      );
+                    },
+                  ),
+                ),
+                // Form Content
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) => _currentPage.value = index,
+                    physics: NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildBasicInfoSection(context, viewModel),
+                      _buildServicesSection(context, viewModel),
+                      _buildLocationSection(context, viewModel),
+                      _buildDocumentsSection(context, viewModel),
+                    ],
+                  ),
+                ),
+                // Navigation Buttons
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      if (_currentPage.value > 0)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              _pageController.previousPage(
+                                duration: Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text("Previous"),
+                          ),
+                        ),
+                      if (_currentPage.value > 0) SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: viewModel.Loading
+                              ? null
+                              : () async {
+                                  if (_currentPage.value < 3) {
+                                    _pageController.nextPage(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  } else {
+                                    if (_formKey.currentState!.validate()) {
+                                      try {
+                                        await viewModel.submitRegistration();
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error: $e')),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Theme.of(context).primaryColor,
+                          ),
+                          child: viewModel.Loading
+                              ? CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                )
+                              : Text(
+                                  _currentPage.value < 3 ? "Next" : "Submit Registration",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -137,42 +186,170 @@ class BloodBankRegistrationScreen extends StatelessWidget {
     );
   }
 
-  Widget section(List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...children,
-        Divider(height: 32, thickness: 1.2, color: Colors.grey[300]),
-      ],
-    );
-  }
-
-  Widget buildTextField(String label, TextEditingController controller, {Function(String)? onChanged}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  Widget _buildBasicInfoSection(BuildContext context, BloodBankRegistrationViewModel viewModel) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _buildTextFieldWithIcon(
+              "Agency Name",
+              viewModel.agencyNameController,
+              Icons.business,
+            ),
+            _buildTextFieldWithIcon(
+              "Owner Name",
+              viewModel.ownerNameController,
+              Icons.person,
+            ),
+            _buildTextFieldWithIcon(
+              "Emergency Contact",
+              viewModel.emergencyContactController,
+              Icons.phone,
+              keyboardType: TextInputType.phone,
+            ),
+            _buildTextFieldWithIcon(
+              "Email",
+              viewModel.emailController,
+              Icons.email,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            _buildTextFieldWithIcon(
+              "GST Number",
+              viewModel.gstNumberController,
+              Icons.receipt,
+            ),
+            _buildTextFieldWithIcon(
+              "PAN Number",
+              viewModel.panNumberController,
+              Icons.credit_card,
+            ),
+            _buildTextFieldWithIcon(
+              "Govt Registration Number",
+              viewModel.govtRegNumberController,
+              Icons.description,
+            ),
+          ],
         ),
-        validator: (val) => val == null || val.isEmpty ? 'Enter $label' : null,
-        onChanged: onChanged,
       ),
     );
   }
 
-  Widget buildNumberField(String label, TextEditingController controller) {
+  Widget _buildServicesSection(BuildContext context, BloodBankRegistrationViewModel viewModel) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildSectionTitle(context, "Blood Services"),
+          _buildMultiSelectChips(context, viewModel.bloodOptions, viewModel.selectedBloodServices),
+          SizedBox(height: 16),
+          _buildSwitchTile(context, "Provides Platelets", viewModel.providesPlatelets, viewModel.togglePlatelets),
+          _buildTextFieldWithIcon(
+            "Other Services",
+            viewModel.otherServicesController,
+            Icons.medical_services,
+          ),
+          _buildSwitchTile(context, "Open 24/7", viewModel.is24x7, viewModel.toggle24x7),
+          _buildSwitchTile(context, "Open All Days", viewModel.allDaysWorking, viewModel.toggleAllDays),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationSection(BuildContext context, BloodBankRegistrationViewModel viewModel) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildTextFieldWithIcon(
+            "Address",
+            viewModel.addressController,
+            Icons.location_on,
+          ),
+          _buildTextFieldWithIcon(
+            "Landmark",
+            viewModel.landmarkController,
+            Icons.place,
+          ),
+          _buildDropdownWithIcon(
+            "State",
+            viewModel.statesList,
+            viewModel.selectedState,
+            Icons.map,
+          ),
+          _buildDropdownWithIcon(
+            "City",
+            viewModel.citiesList,
+            viewModel.selectedCity,
+            Icons.location_city,
+          ),
+          _buildTextFieldWithIcon(
+            "Pincode",
+            viewModel.pincodeController,
+            Icons.pin,
+            keyboardType: TextInputType.number,
+          ),
+          _buildTextFieldWithIcon(
+            "Website",
+            viewModel.websiteController,
+            Icons.web,
+            keyboardType: TextInputType.url,
+          ),
+          SizedBox(height: 16),
+          AmbulanceAgencyLocationPicker(
+            onLocationSelected: (location) {
+              viewModel.preciseLocationController.text = location;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentsSection(BuildContext context, BloodBankRegistrationViewModel viewModel) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildSectionTitle(context, "Required Documents"),
+          UploadSectionWidget(
+            label: 'Upload License',
+            onFilesSelected: (files) => files.forEach((fileData) =>
+                viewModel.addLicenseFile(fileData['file'] as File, fileData['name'] as String)),
+          ),
+          UploadSectionWidget(
+            label: 'Upload Certificates',
+            onFilesSelected: (files) => files.forEach((fileData) =>
+                viewModel.addRegistrationCertificateFile(fileData['file'] as File, fileData['name'] as String)),
+          ),
+          UploadSectionWidget(
+            label: 'Upload Office Photos',
+            onFilesSelected: (files) => files.forEach((fileData) =>
+                viewModel.addOfficePhoto(fileData['file'] as File, fileData['name'] as String)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextFieldWithIcon(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    TextInputType? keyboardType,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: Icon(icon),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         validator: (val) => val == null || val.isEmpty ? 'Enter $label' : null,
@@ -180,25 +357,31 @@ class BloodBankRegistrationScreen extends StatelessWidget {
     );
   }
 
-  Widget buildDropdown(String label, List<String> items, ValueNotifier<String?> selectedValue) {
+  Widget _buildDropdownWithIcon(
+    String label,
+    List<String> items,
+    ValueNotifier<String?> selectedValue,
+    IconData icon,
+  ) {
     return ValueListenableBuilder<String?>(
       valueListenable: selectedValue,
       builder: (context, value, _) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.only(bottom: 16),
           child: DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: label,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              prefixIcon: Icon(icon),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             value: value,
             items: items
                 .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                 .toList(),
-            onChanged: (val) {
-              selectedValue.value = val;
-            },
+            onChanged: (val) => selectedValue.value = val,
             validator: (val) => val == null || val.isEmpty ? 'Select $label' : null,
           ),
         );
@@ -206,107 +389,65 @@ class BloodBankRegistrationScreen extends StatelessWidget {
     );
   }
 
-  Widget buildSwitch(String label, bool value, Function(bool) onChanged) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
-      value: value,
-      onChanged: onChanged,
-    );
-  }
-
-  Widget buildMultiSelectChips(String label, List<String> options, ValueNotifier<List<String>> selectedListNotifier) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ValueListenableBuilder<List<String>>(
-        valueListenable: selectedListNotifier,
-        builder: (context, selectedList, _) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                children: options.map((item) {
-                  final isSelected = selectedList.contains(item);
-                  return FilterChip(
-                    label: Text(item),
-                    selected: isSelected,
-                    selectedColor: Colors.blue.shade100,
-                    checkmarkColor: Colors.blue.shade700,
-                    elevation: 4,
-                    onSelected: (selected) {
-                      if (selected) {
-                        selectedListNotifier.value = [...selectedList, item];
-                      } else {
-                        selectedListNotifier.value = selectedList.where((e) => e != item).toList();
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          );
-        },
+  Widget _buildSwitchTile(BuildContext context, String label, bool value, Function(bool) onChanged) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
+        value: value,
+        onChanged: onChanged,
       ),
     );
   }
 
-  Widget buildChipInputField({
-    required String label,
-    required List<String> chipList,
-    required Function(String) onAddChip,
-    required Function(String) onRemoveChip,
-  }) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        final chipController = TextEditingController();
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-              Wrap(
-                spacing: 8.0,
-                children: chipList.map((chip) {
-                  return InputChip(
-                    label: Text(chip),
-                    onDeleted: () {
-                      onRemoveChip(chip);
-                      setState(() {});
-                    },
-                    elevation: 2,
-                    backgroundColor: Colors.blue.shade50,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: chipController,
-                decoration: InputDecoration(
-                  labelText: 'Add $label',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: () {
-                      final chip = chipController.text.trim();
-                      if (chip.isNotEmpty && !chipList.contains(chip)) {
-                        onAddChip(chip);
-                        setState(() {});
-                        chipController.clear();
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
+  Widget _buildMultiSelectChips(
+    BuildContext context,
+    List<String> options,
+    ValueNotifier<List<String>> selectedListNotifier,
+  ) {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: selectedListNotifier,
+      builder: (context, selectedList, _) {
+        return Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: options.map((item) {
+            final isSelected = selectedList.contains(item);
+            return FilterChip(
+              label: Text(item),
+              selected: isSelected,
+              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+              checkmarkColor: Theme.of(context).primaryColor,
+              elevation: 2,
+              onSelected: (selected) {
+                if (selected) {
+                  selectedListNotifier.value = [...selectedList, item];
+                } else {
+                  selectedListNotifier.value = selectedList.where((e) => e != item).toList();
+                }
+              },
+            );
+          }).toList(),
         );
       },
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).primaryColor,
+        ),
+      ),
     );
   }
 }

@@ -22,96 +22,113 @@ class _userLoginScreenState extends State<UserLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    
     return Scaffold(
-      backgroundColor: ColorPalette.whiteColor,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: 40),
-              SizedBox(height: 20),
-              _buildAvatar(),
-              SizedBox(height: 20),
-              _buildWelcomeText(),
-              SizedBox(height: 30),
-
-              /// Consumer to rebuild only this part when state changes
-              Consumer<UserLoginViewModel>(
-                builder: (context, signupViewModel, child) {
-                  return Column(
-                    children: [
-                      if (!signupViewModel.isOtpSent) ...[
-                        _buildPhoneNumberField(),
-                        SizedBox(height: 30),
-                        if (signupViewModel.isLoading)
-                          Center(child: CircularProgressIndicator(color: ColorPalette.primaryColor))
-                        else
-                          _buildSendOtpButton(signupViewModel),
-                      ] else ...[
-                        VerifyOtpWidget(),
-                      ],
-                      if (signupViewModel.errorMessage != null)
-                        Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Text(
-                            signupViewModel.errorMessage!,
-                            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-
-              SizedBox(height: 20),
-              _buildLoginRedirect(),
-
-              // Go to Home button
-              SizedBox(height: 20),
-              _buildGoToHomeButton(),
-
-              SizedBox(height: 20),
-              _buildLoginAsVendorButton()
+      body: Container(
+        width: double.infinity,
+        height: double.infinity, // 👈 This makes it stretch to full height
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              ColorPalette.primaryColor.withOpacity(0.1),
+              Colors.white,
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.05,
+                vertical: size.height * 0.03,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: size.height * 0.05),
+                    _buildLogo(),
+                    SizedBox(height: size.height * 0.04),
+                    _buildWelcomeText(),
+                    SizedBox(height: size.height * 0.05),
+                    
+                    Consumer<UserLoginViewModel>(
+                      builder: (context, signupViewModel, child) {
+                        return AnimatedSwitcher(
+                          duration: Duration(milliseconds: 300),
+                          child: !signupViewModel.isOtpSent
+                              ? _buildLoginForm(signupViewModel)
+                              : VerifyOtpWidget(),
+                        );
+                      },
+                    ),
+                    
+                    SizedBox(height: size.height * 0.03),
+                    _buildDivider(),
+                    SizedBox(height: size.height * 0.02),
+                    _buildBottomActions(),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Avatar widget
-  Widget _buildAvatar() {
-    return Center(
-      child: CircleAvatar(
-        radius: 50,
-        backgroundColor: ColorPalette.primaryColor.withOpacity(0.2),
-        child: Icon(Icons.person, size: 50, color: ColorPalette.primaryColor),
+  Widget _buildLogo() {
+    return Container(
+      height: 120,
+      width: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor,
+            ColorPalette.primaryColor.withOpacity(0.7),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.3),
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Icon(
+        Icons.medical_services_rounded,
+        size: 60,
+        color: Colors.white,
       ),
     );
   }
 
-  // Welcome text widget
   Widget _buildWelcomeText() {
     return Column(
       children: [
         Text(
-          "Welcome!",
+          "Welcome to Vedika Healthcare",
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
             color: ColorPalette.primaryColor,
+            letterSpacing: 0.5,
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 10),
+        SizedBox(height: 12),
         Text(
-          "Create an account to get started",
+          "Your trusted healthcare companion",
           style: TextStyle(
             fontSize: 16,
             color: Colors.grey.shade600,
+            letterSpacing: 0.3,
           ),
           textAlign: TextAlign.center,
         ),
@@ -119,149 +136,260 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
-  // Phone number field
-  Widget _buildPhoneNumberField() {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: ColorPalette.primaryColor.withOpacity(0.7)),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade200,
-          ),
-          child: Text(
-            "+91",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ColorPalette.primaryColor),
-          ),
+  Widget _buildLoginForm(UserLoginViewModel signupViewModel) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.white.withOpacity(0.95),
+          ],
         ),
-        SizedBox(width: 10),
-        Expanded(
-          child: TextFormField(
-            controller: _phoneController,
-            decoration: InputDecoration(
-              labelText: "Phone Number",
-              prefixIcon: Icon(Icons.phone, color: ColorPalette.primaryColor),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: ColorPalette.primaryColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: ColorPalette.primaryColor.withOpacity(0.7)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: ColorPalette.primaryColor),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "Login with Phone",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: ColorPalette.primaryColor,
+                letterSpacing: 0.5,
               ),
             ),
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.isEmpty) return "Please enter your phone number";
-              if (value.length != 10) return "Enter a valid phone number";
-              return null;
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Send OTP button
-  Widget _buildSendOtpButton(UserLoginViewModel signupViewModel) {
-    return SizedBox(
-      width: double.infinity, // Make button take full width
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 16), // Keep horizontal padding default
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: ColorPalette.primaryColor,
-        ),
-        onPressed: signupViewModel.isLoading
-            ? null // Disable button when loading
-            : () {
-          if (_formKey.currentState!.validate()) {
-            signupViewModel.sendOtp("+91" + _phoneController.text);
-          }
-        },
-        child: signupViewModel.isLoading
-            ? SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        )
-            : Text(
-          "Send OTP",
-          style: TextStyle(fontSize: 18, color: Colors.white),
+            SizedBox(height: 8),
+            Text(
+              "Enter your mobile number to continue",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            SizedBox(height: 25),
+            _buildPhoneNumberField(),
+            SizedBox(height: 25),
+            _buildLoginButton(signupViewModel),
+            if (signupViewModel.errorMessage != null) ...[
+              SizedBox(height: 15),
+              Text(
+                signupViewModel.errorMessage!,
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  // Login redirect widget
-  Widget _buildLoginRedirect() {
+  Widget _buildPhoneNumberField() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey.shade50,
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border(right: BorderSide(color: Colors.grey.shade200)),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  "+91",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: ColorPalette.primaryColor,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              style: TextStyle(
+                fontSize: 16,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: "Enter mobile number",
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 15,
+                ),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return "Please enter your phone number";
+                if (value.length != 10) return "Enter a valid 10-digit phone number";
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginButton(UserLoginViewModel signupViewModel) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor,
+            ColorPalette.primaryColor.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.25),
+            blurRadius: 15,
+            offset: Offset(0, 8),
+            spreadRadius: -4,
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: signupViewModel.isLoading
+            ? null
+            : () {
+                if (_formKey.currentState!.validate()) {
+                  signupViewModel.sendOtp("+91" + _phoneController.text);
+                }
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 14),
+        ),
+        child: signupViewModel.isLoading
+            ? SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                "Continue",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.grey.shade300)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "or continue with",
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: Colors.grey.shade300)),
+      ],
+    );
+  }
+
+  Widget _buildBottomActions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          "Already have an account? ",
-          style: TextStyle(color: Colors.grey.shade600),
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-          },
+        TextButton(
+          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
           child: Text(
-            "Login",
+            "Login as Guest",
             style: TextStyle(
               color: ColorPalette.primaryColor,
-              fontWeight: FontWeight.bold,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Container(
+          height: 15,
+          width: 1,
+          color: Colors.grey.shade300,
+          margin: EdgeInsets.symmetric(horizontal: 8),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pushNamed(context, AppRoutes.vendor),
+          child: Text(
+            "Login as Vendor",
+            style: TextStyle(
+              color: ColorPalette.primaryColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ],
-    );
-  }
-
-  // Go to Home button
-  Widget _buildGoToHomeButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: ColorPalette.primaryColor,
-        ),
-        onPressed: () {
-          // Navigate to home screen (replace with actual HomeScreen widget)
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        },
-        child: Text(
-          "Go to Home",
-          style: TextStyle(fontSize: 18, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  /// 🔹 **Login as Vendor Button**
-  Widget _buildLoginAsVendorButton() {
-    return TextButton(
-      onPressed: () {
-        // Navigate to Vendor Login Screen (replace with actual route)
-        Navigator.pushReplacementNamed(context, AppRoutes.vendor);
-      },
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        foregroundColor: ColorPalette.primaryColor,
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      child: const Text("Are You a Vendor?"),
     );
   }
 }
