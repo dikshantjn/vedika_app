@@ -18,160 +18,278 @@ class VendorRegistrationPage extends StatefulWidget {
 class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
   String? selectedVendorType;
 
+  final List<VendorTypeOption> vendorTypes = [
+    VendorTypeOption("Hospital", Icons.local_hospital, "Register your hospital with us"),
+    VendorTypeOption("Clinic", Icons.medical_services, "Join as a clinic partner"),
+    VendorTypeOption("Medical Store", Icons.local_pharmacy, "List your pharmacy services"),
+    VendorTypeOption("Ambulance Agency", Icons.emergency, "Provide emergency services"),
+    VendorTypeOption("Blood Bank", Icons.bloodtype, "Register your blood bank"),
+    VendorTypeOption("Pathology/Diagnostic Center", Icons.science, "Join as a diagnostic center"),
+    VendorTypeOption("Delivery Partner", Icons.delivery_dining, "Become a delivery partner"),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        selectedVendorType = null;  // Reset value when coming back to the screen
-      });
-    });
+    final size = MediaQuery.of(context).size;
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.teal.shade50,
+            Colors.white,
+          ],
+          stops: [0.0, 1.0],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.05,
+                vertical: size.height * 0.02,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context),
+                  SizedBox(height: size.height * 0.02),
+                  LoginWidget(),
+                  SizedBox(height: size.height * 0.03),
+                  _buildDivider(),
+                  SizedBox(height: size.height * 0.03),
+                  _buildRegistrationSection(size),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          icon: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.arrow_back, color: Colors.teal.shade700),
+          ),
+          onPressed: () {
+            setState(() {
+              selectedVendorType = null;
+            });
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.grey.shade300,
+                  Colors.grey.shade300,
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegistrationSection(Size size) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Join Our Healthcare Network",
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.teal.shade700,
+            letterSpacing: 0.5,
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          "Choose your category and start serving the community",
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        SizedBox(height: size.height * 0.03),
+        _buildVendorTypeGrid(size),
+      ],
+    );
+  }
+
+  Widget _buildVendorTypeGrid(Size size) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: size.width > 600 ? 3 : 2,
+        childAspectRatio: 1.3,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: vendorTypes.length,
+      itemBuilder: (context, index) {
+        return _buildVendorTypeCard(vendorTypes[index]);
+      },
+    );
+  }
+
+  Widget _buildVendorTypeCard(VendorTypeOption vendor) {
+    bool isSelected = selectedVendorType == vendor.title;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedVendorType = vendor.title;
+        });
+        _navigateToRegistrationScreen(vendor.title);
+      },
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.teal.shade700 : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected 
+                  ? Colors.teal.shade100.withOpacity(0.5)
+                  : Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Back Button
-              Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () {
-                    setState(() {
-                      selectedVendorType = null; // Reset the selected vendor type when going back
-                    });
-                    Navigator.pop(context); // Pop the screen
-                  },
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  vendor.icon,
+                  color: Colors.teal.shade700,
+                  size: 28,
                 ),
               ),
-
-              // Display Login Widget
-              LoginWidget(),
-              SizedBox(height: 25),
-              Divider(color: Colors.grey[400], thickness: 1.5),
-              SizedBox(height: 25),
-
-              // Registration Section
+              SizedBox(height: 8),
               Text(
-                "Vendor Registration",
-                textAlign: TextAlign.center,
+                vendor.title,
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: Colors.teal.shade700,
                 ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                "Select the vendor type and fill in the registration form.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              SizedBox(height: 25),
-
-              // Vendor Type Dropdown
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade400, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedVendorType,
-                    hint: Text(
-                      "Choose Vendor Type",
-                      style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-                    ),
-                    items: [
-                      "Hospital",
-                      "Clinic",
-                      "Medical Store",
-                      "Ambulance Agency",
-                      "Blood Bank",
-                      "Pathology/Diagnostic Center",
-                      "Delivery Partner"
-                    ].map((String vendor) {
-                      return DropdownMenuItem<String>(
-                        value: vendor,
-                        child: Row(
-                          children: [
-                            Icon(Icons.business, color: Colors.teal),
-                            SizedBox(width: 10),
-                            Text(vendor, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (String? value) {
-                      setState(() {
-                        selectedVendorType = value;
-                      });
-
-                      // Navigate to the selected vendor's registration screen
-                      if (value != null) {
-                        Widget registrationScreen;
-
-                        // Determine which screen to navigate to based on vendor type
-                        switch (value) {
-                          case "Hospital":
-                            registrationScreen = HospitalRegistrationForm();
-                            break;
-                          case "Clinic":
-                            registrationScreen = ClinicRegistrationForm();
-                            break;
-                          case "Medical Store":
-                            registrationScreen = MedicalStoreRegistrationScreen();
-                            break;
-                          case "Ambulance Agency":
-                            registrationScreen = AmbulanceRegistrationScreen();
-                            break;
-                          case "Blood Bank":
-                            registrationScreen = BloodBankRegistrationScreen();
-                            break;
-                          case "Pathology/Diagnostic Center":
-                            registrationScreen = PathologyRegistrationForm();
-                            break;
-                          case "Delivery Partner":
-                            registrationScreen = DeliveryPartnerRegistrationForm();
-                            break;
-                          default:
-                            registrationScreen = Container(); // Fallback case
-                        }
-
-                        // Navigate to the selected registration screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => registrationScreen,
-                          ),
-                        );
-                      }
-                    },
-                    icon: Icon(Icons.arrow_drop_down_circle, color: Colors.teal),
-                    dropdownColor: Colors.white,
+              SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  vendor.description,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              SizedBox(height: 25),
             ],
           ),
         ),
       ),
     );
   }
+
+  void _navigateToRegistrationScreen(String vendorType) {
+    Widget registrationScreen;
+
+    switch (vendorType) {
+      case "Hospital":
+        registrationScreen = HospitalRegistrationForm();
+        break;
+      case "Clinic":
+        registrationScreen = ClinicRegistrationForm();
+        break;
+      case "Medical Store":
+        registrationScreen = MedicalStoreRegistrationScreen();
+        break;
+      case "Ambulance Agency":
+        registrationScreen = AmbulanceRegistrationScreen();
+        break;
+      case "Blood Bank":
+        registrationScreen = BloodBankRegistrationScreen();
+        break;
+      case "Pathology/Diagnostic Center":
+        registrationScreen = PathologyRegistrationForm();
+        break;
+      case "Delivery Partner":
+        registrationScreen = DeliveryPartnerRegistrationForm();
+        break;
+      default:
+        registrationScreen = Container();
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => registrationScreen),
+    );
+  }
+}
+
+class VendorTypeOption {
+  final String title;
+  final IconData icon;
+  final String description;
+
+  VendorTypeOption(this.title, this.icon, this.description);
 }
