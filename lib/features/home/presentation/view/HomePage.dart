@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
@@ -6,12 +7,12 @@ import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWid
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BrandSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/CategoryGrid.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/HealthConcernSection.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/SearchBox.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart'; // Import MedicalBox widget
+import 'package:flutter/rendering.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,14 +21,73 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isCollapsed = false;
+
+  late AnimationController _placeholderAnimationController;
+  late Animation<double> _opacityAnimation;
+  int _currentPlaceholderIndex = 0;
+  final List<String> _placeholders = [
+    'Search medicines...',
+    'Search doctors...',
+    'Search hospitals...',
+    'Search lab tests...',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<LocationProvider>(context, listen: false).loadSavedLocation();
+    _scrollController.addListener(_onScroll);
+
+    // Initialize animation controller
+    _placeholderAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 800),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _placeholderAnimationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          setState(() {
+            _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
+          });
+          _placeholderAnimationController.forward();
+        }
+      });
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _placeholderAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start the animation
+    _placeholderAnimationController.forward();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _placeholderAnimationController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.offset > 80 && !_isCollapsed) {
+      setState(() {
+        _isCollapsed = true;
+      });
+    } else if (_scrollController.offset <= 80 && _isCollapsed) {
+      setState(() {
+        _isCollapsed = false;
+      });
+    }
   }
 
   void _onNavBarItemTapped(int index) {
@@ -37,156 +97,309 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    Provider.of<LocationProvider>(context, listen: false).loadSavedLocation();
-  }
-
-
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       extendBody: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(100.0),
-        child: ClipPath(
-          clipper: _CurvedAppBarClipper(),
-          child: Container(
-            height: 90.0,
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0).copyWith(top: 28.0),
-              child: Row(
-                children: [
-                  // Drawer Icon (Profile)
-                  Builder(
-                    builder: (context) {
-                      return GestureDetector(
-                        onTap: () {
-                          Scaffold.of(context).openDrawer();
-                        },
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: ColorPalette.primaryColor,
-                          child: Icon(Icons.person, size: 24, color: Colors.white),
-                        ),
-                      );
-                    },
+      drawer: DrawerMenu(),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 160.0,
+                  floating: false,
+                  pinned: false,
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: _buildHeader(),
                   ),
-
-                  // Location Section
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Home',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: ColorPalette.primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Icon(Icons.arrow_drop_down, color: ColorPalette.primaryColor),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 18),
-                            SizedBox(width: 4),
-                            Text(
-                              '123 Random Street, City',
-                              style: TextStyle(fontSize: 14, color: ColorPalette.primaryColor),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                ),
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MedicalBoxRow(),
+                      SizedBox(height: 10),
+                      BannerSlider(),
+                      HealthConcernSection(),
+                      CategoryGrid(),
+                      BrandSection(),
+                      SizedBox(height: 70),
+                    ],
                   ),
-
-                  // Cart Icon
-                  Consumer<CartAndPlaceOrderViewModel>(
-                    builder: (context, cartViewModel, child) {
-                      return Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: ColorPalette.primaryColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, AppRoutes.goToCart);
-                              },
-                              icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
-                            ),
-                          ),
-                          Positioned(
-                            right: 4,
-                            top: 4,
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                              constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-                              child: Text(
-                                cartViewModel.totalItemCount.toString(), // Display the cart item count
-                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                ),
+              ],
+            ),
+            _buildFloatingSearchBar(),
+            Positioned(
+              bottom: -10,
+              left: 0,
+              right: 0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BottomNavBar(
+                  selectedIndex: _selectedIndex,
+                  onItemTapped: _onNavBarItemTapped,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
-      drawer: DrawerMenu(),
-      body: Stack(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: Colors.white,
+      child: Column(
         children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: 70),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          SizedBox(height: MediaQuery.of(context).padding.top + 10),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
               children: [
-                SearchBox(controller: _searchController),
-                MedicalBoxRow(),
-                SizedBox(height: 10),
-                BannerSlider(),
-                HealthConcernSection(),
-                CategoryGrid(),
-                BrandSection(),
+                Builder(
+                  builder: (context) => GestureDetector(
+                    onTap: () => Scaffold.of(context).openDrawer(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ColorPalette.primaryColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: ColorPalette.primaryColor.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Home',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: ColorPalette.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down, color: ColorPalette.primaryColor),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 18),
+                          SizedBox(width: 4),
+                          Text(
+                            '123 Random Street, City',
+                            style: TextStyle(fontSize: 14, color: ColorPalette.primaryColor),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                _buildCartIcon(),
               ],
             ),
           ),
-          Positioned(
-            bottom: -10,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BottomNavBar(
-                selectedIndex: _selectedIndex,
-                onItemTapped: _onNavBarItemTapped,
+          SizedBox(height: 15),
+          if (!_isCollapsed)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildSearchBox(false),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingSearchBar() {
+    return AnimatedPositioned(
+      duration: Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      top: _isCollapsed ? MediaQuery.of(context).padding.top : -100,
+      left: 0,
+      right: 0,
+      child: Container(
+        color: Colors.white,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: _buildSearchBox(true),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBox(bool isCollapsed) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: ColorPalette.primaryColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          if (isCollapsed)
+            BoxShadow(
+              color: ColorPalette.primaryColor.withOpacity(0.08),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (isCollapsed)
+            Padding(
+              padding: EdgeInsets.only(left: 8.0),
+              child: Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () => Scaffold.of(context).openDrawer(),
+                  child: Container(
+                    width: 35,
+                    height: 35,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: ColorPalette.primaryColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: ColorPalette.primaryColor.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
+            ),
+          SizedBox(width: isCollapsed ? 8 : 16),
+          Icon(
+            Icons.search,
+            color: ColorPalette.primaryColor,
+            size: 20,
+          ),
+          Expanded(
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    isDense: true,
+                  ),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                if (_searchController.text.isEmpty)
+                  FadeTransition(
+                    opacity: _opacityAnimation,
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Text(
+                        _placeholders[_currentPlaceholderIndex],
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
+  Widget _buildCartIcon() {
+    return Consumer<CartAndPlaceOrderViewModel>(
+      builder: (context, cartViewModel, child) {
+        return Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: ColorPalette.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.goToCart);
+                },
+                icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
+              ),
+            ),
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+                child: Text(
+                  cartViewModel.totalItemCount.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
 class _CurvedAppBarClipper extends CustomClipper<Path> {
   @override
