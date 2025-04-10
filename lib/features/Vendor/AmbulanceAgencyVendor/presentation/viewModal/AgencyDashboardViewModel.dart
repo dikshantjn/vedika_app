@@ -1,19 +1,17 @@
 import 'package:get/get.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceBookingService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 
 class AgencyDashboardViewModel extends GetxController {
-  // Live Requests
   var liveRequests = <Map<String, String>>[].obs;
 
-  // Summary counts
   var totalBookings = 0.obs;
   var todaysBookings = 0.obs;
+  var avgResponseTime = 0.obs;
+  var operationalKms = 0.0.obs;
 
-  // New stats for response time and kms
-  var avgResponseTime = 0.obs; // in minutes
-  var operationalKms = 0.0.obs; // in kilometers
-
-  // Analytics data (Vehicle type bookings)
-  var vehicleStats = {
+  var vehicleStats = <String, double>{
     "BLS": 40.0,
     "ALS": 70.0,
     "ICU": 50.0,
@@ -21,39 +19,45 @@ class AgencyDashboardViewModel extends GetxController {
     "Train": 10.0,
   }.obs;
 
+  var pendingBookings = <AmbulanceBooking>[].obs;
+
+  final _bookingService = AmbulanceBookingService(); // Use your actual service
+  final _loginService = VendorLoginService();        // Use your actual login service
+
   @override
   void onInit() {
     super.onInit();
     fetchDashboardData();
+    fetchPendingBookings();
   }
 
   void fetchDashboardData() {
-    // Simulate fetching from API/database
     liveRequests.assignAll([
-      {
-        "title": "ICU Ambulance Required",
-        "route": "Kothrud → Pune Station"
-      },
-      {
-        "title": "Air Ambulance Emergency",
-        "route": "Nashik → Mumbai"
-      },
-      {
-        "title": "Train Ambulance Needed",
-        "route": "Solapur → Pune"
-      },
+      {"title": "ICU Ambulance Required"},
+      {"title": "Air Ambulance Emergency"},
+      {"title": "Train Ambulance Needed"},
     ]);
 
     totalBookings.value = 120;
     todaysBookings.value = 8;
+    avgResponseTime.value = 12;
+    operationalKms.value = 20.7;
+  }
 
-    avgResponseTime.value = 12; // in minutes
-    operationalKms.value = 325.7; // in kilometers
+  Future<void> fetchPendingBookings() async {
+    String? vendorId = await _loginService.getVendorId();
+    try {
+      final bookings = await _bookingService.getPendingBookings(vendorId!);
+      pendingBookings.assignAll(bookings);
+    } catch (e) {
+      print("Error fetching bookings: $e");
+    }
+  }
 
-    vehicleStats["BLS"] = 40;
-    vehicleStats["ALS"] = 70;
-    vehicleStats["ICU"] = 50;
-    vehicleStats["Air"] = 30;
-    vehicleStats["Train"] = 10;
+  /// 🔄 Use this inside RefreshIndicator to refresh all dashboard data
+  Future<void> refreshDashboardData() async {
+    await Future.delayed(const Duration(milliseconds: 600)); // optional delay
+    fetchDashboardData();
+    await fetchPendingBookings();
   }
 }

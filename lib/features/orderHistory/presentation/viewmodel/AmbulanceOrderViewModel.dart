@@ -1,8 +1,36 @@
-import 'package:vedika_healthcare/features/orderHistory/data/models/AmbulanceOrder.dart';
+import 'package:flutter/foundation.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/repositories/AmbulanceOrderRepository.dart';
 
-class AmbulanceOrderViewModel {
+class AmbulanceOrderViewModel extends ChangeNotifier {
   final AmbulanceOrderRepository _repository = AmbulanceOrderRepository();
 
-  List<AmbulanceOrder> get orders => _repository.getOrders();
+  List<AmbulanceBooking> _orders = [];
+  List<AmbulanceBooking> get orders => _orders;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  /// Load completed orders from API
+  Future<void> loadCompletedOrders() async {
+    String? userId = await StorageService.getUserId();
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _orders = await _repository.fetchCompletedOrdersByUser(userId!);
+    } catch (e) {
+      _errorMessage = "Failed to load completed orders";
+      print("ViewModel Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

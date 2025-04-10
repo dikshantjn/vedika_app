@@ -184,6 +184,4 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
     );
   }
 
-
-
 }

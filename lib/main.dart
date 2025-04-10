@@ -42,7 +42,6 @@ import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookA
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTestAppointmentViewModel.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/data/services/CartService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
@@ -51,7 +50,6 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/B
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -62,7 +60,6 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<Scaffol
 
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
-  AmbulanceRequestNotificationService.handleNotificationClick(response.payload);
 }
 
 Future<void> getWifiIpAddress() async {

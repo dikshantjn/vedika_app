@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/View/hospital_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Views/AmbulanceAgencyRegistrationScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Views/blood_bank_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/pathology_registration_form.dart';
@@ -17,8 +16,7 @@ class VendorRegistrationViewModel extends ChangeNotifier {
     "Hospital": HospitalRegistrationForm(),
     "Clinic": ClinicRegistrationForm(),
     "Medical Store": MedicalStoreRegistrationScreen(),
-    "Ambulance Agency": AmbulanceAgencyRegistrationScreen(),
-    "Blood Bank": BloodBankRegistrationForm(),
+    "Blood Bank": BloodBankRegistrationScreen(),
     "Pathology/Diagnostic Center": PathologyRegistrationForm(),
     "Delivery Partner": DeliveryPartnerRegistrationForm(),
   };

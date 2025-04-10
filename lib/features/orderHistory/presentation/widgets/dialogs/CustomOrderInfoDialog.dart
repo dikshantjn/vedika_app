@@ -48,8 +48,16 @@ class CustomOrderInfoDialog extends StatelessWidget {
               Divider(height: 24.0, thickness: 1, color: Colors.grey[300]),
 
               // Order Details
-              _buildInfoRow('Order Number:', orderNumber),
-              _buildInfoRow('Date:', date),
+              Center(
+                child: Text(
+                  orderNumber,
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    color: Colors.blueGrey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),              _buildInfoRow('Date:', date),
               _buildInfoRow('Total:', total, isTotal: true),
               _buildInfoRow('Items:', items),
               SizedBox(height: 10.0),

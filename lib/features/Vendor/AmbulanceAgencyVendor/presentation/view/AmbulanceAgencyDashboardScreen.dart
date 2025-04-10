@@ -1,6 +1,12 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/ProcessBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Dashboard/AmbulanceAgencyAnalyticsInsightsChart.dart';
 
 class AmbulanceAgencyDashboardScreen extends StatelessWidget {
@@ -10,17 +16,23 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Obx(() => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTodaySummary(viewModel),
-            const SizedBox(height: 24),
-            _buildLiveBookingRequests(viewModel),
-            const SizedBox(height: 24),
-            AmbulanceAgencyAnalyticsInsightsChart(viewModel: viewModel),
-          ],
+      body: Obx(() => RefreshIndicator(
+        onRefresh: () async {
+          await viewModel.refreshDashboardData();
+        },
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(), // important for RefreshIndicator to work
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTodaySummary(viewModel),
+              const SizedBox(height: 24),
+              _buildLiveBookingRequests(viewModel,context),
+              const SizedBox(height: 24),
+              AmbulanceAgencyAnalyticsInsightsChart(viewModel: viewModel),
+            ],
+          ),
         ),
       )),
     );
@@ -89,9 +101,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
   }
 
 
-
-
-  Widget _buildLiveBookingRequests(AgencyDashboardViewModel vm) {
+  Widget _buildLiveBookingRequests(AgencyDashboardViewModel vm, BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -102,56 +112,140 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(" Booking Requests",
+          Text("Ongoing Booking Requests",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          vm.liveRequests.isEmpty
-              ? Text("No requests at the moment",
-              style: TextStyle(color: Colors.grey[600]))
+          vm.pendingBookings.isEmpty
+              ? SizedBox(
+            width: double.infinity,
+            child: Text(
+              "No ongoing bookings right now",
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          )
               : ListView.separated(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            itemCount: vm.liveRequests.length,
+            itemCount: vm.pendingBookings.length,
             separatorBuilder: (_, __) => Divider(height: 24),
             itemBuilder: (context, index) {
-              final request = vm.liveRequests[index];
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.redAccent.withOpacity(0.1),
-                    child:
-                    Icon(Icons.local_hospital, color: Colors.redAccent),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+              final request = vm.pendingBookings[index];
+              final customerName = request.user.name ?? "Unknown";
+              final contact = request.user.phoneNumber ?? "";
+              final pickup = request.pickupLocation;
+              final drop = request.dropLocation;
+              final status = request.status;
+              final requestId = request.requestId;
+              final time = request.requiredDateTime;
+
+              final isPending = status.toLowerCase() == "pending";
+              Color statusColor = isPending ? Colors.orange : Colors.green;
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// Avatar + Name + Contact + Call
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(request["title"] ?? '',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 4),
-                        Text("From: ${request["route"]}",
-                            style: TextStyle(color: Colors.grey[700])),
+                        CircleAvatar(
+                          backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                          child: Icon(Icons.person, color: Colors.blueAccent),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                customerName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(contact,
+                                        style: TextStyle(color: Colors.grey[700])),
+                                  ),
+                                  OutlinedButton.icon(
+                                    icon: Icon(Icons.call, color: Colors.green, size: 18),
+                                    label: Text("Call", style: TextStyle(color: Colors.green)),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: Colors.green),
+                                      shape: StadiumBorder(),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    onPressed: () {
+                                      launchUrl(Uri.parse('tel:$contact'));
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
                       ],
                     ),
-                  ),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.green,
-                      side: BorderSide(color: Colors.green),
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      textStyle: TextStyle(fontSize: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+
+                    const SizedBox(height: 12),
+                    if (pickup.isNotEmpty && drop.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: Colors.redAccent),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              "$pickup → $drop",
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 6),
+                    ],
+                    const SizedBox(height: 6),
+
+                    /// Time + Status
+                    /// Time + Status
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Time: ${DateFormat('dd MMMM yyyy hh:mm a').format(time.toLocal())}",
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () {},
-                    label: Text("Accept Request"),
-                  )
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -159,5 +253,6 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
       ),
     );
   }
+
 
 }

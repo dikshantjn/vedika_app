@@ -8,7 +8,6 @@ import 'package:logger/web.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
-import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/EmergiencyAmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulanceDetailsBottomSheet.dart';
@@ -317,16 +316,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
           currentPosition!.longitude,
           ambulanceLat,
           ambulanceLng,
-        );
-
-        double totalAmount = baseFare + (totalDistance * chargePerKM);
-        await AmbulanceRequestNotificationService.showAmbulanceRequestNotification(
-          ambulanceName: nearestAmbulance.agencyName,
-          contact: nearestAmbulance.contactNumber,
-          totalDistance: totalDistance,
-          baseFare: baseFare,
-          distanceCharge: totalDistance * chargePerKM,
-          totalAmount: totalAmount,
         );
 
         // Show confirmation message directly (without payment dialog)

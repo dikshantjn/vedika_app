@@ -1,30 +1,26 @@
-import 'package:vedika_healthcare/features/orderHistory/data/models/AmbulanceOrder.dart';
+import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 
 class AmbulanceOrderRepository {
-  List<AmbulanceOrder> getOrders() {
-    return [
-      AmbulanceOrder(
-        orderNumber: 'Order #A12345',
-        date: 'Feb 10, 2024',
-        status: 'Completed',
-        serviceType: 'Emergency',
-        total: '\₹100.00',
-        imageUrls: [
-          'https://img.freepik.com/free-vector/ambulance-car-flat-icon_1284-7929.jpg',
-          'https://img.freepik.com/free-vector/emergency-medical-vehicle-realistic-set_1284-7856.jpg',
-        ],
-      ),
-      AmbulanceOrder(
-        orderNumber: 'Order #A12346',
-        date: 'Feb 12, 2024',
-        status: 'Ongoing',
-        serviceType: 'Non-Emergency',
-        total: '\₹75.50',
-        imageUrls: [
-          'https://img.freepik.com/free-vector/emergency-medical-vehicle-realistic-set_1284-7856.jpg',
-          'https://img.freepik.com/free-vector/ambulance-car-flat-icon_1284-7929.jpg',
-        ],
-      ),
-    ];
+
+  final Dio _dio = Dio();
+
+  /// Dio method to fetch completed bookings by user ID
+  Future<List<AmbulanceBooking>> fetchCompletedOrdersByUser(String userId) async {
+    try {
+      final response = await _dio.get("${ApiEndpoints.getCompletedRequestsByUserEndpoint}/$userId");
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List data = response.data['data'];
+
+        return data.map((json) => AmbulanceBooking.fromJson(json)).toList();
+      } else {
+        throw Exception(response.data['message'] ?? "Failed to fetch completed orders");
+      }
+    } catch (e) {
+      print("Error fetching completed orders: $e");
+      rethrow;
+    }
   }
 }

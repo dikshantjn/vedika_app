@@ -1,34 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/AmbulanceOrder.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/AppointmentOrder.dart';
+import 'package:intl/intl.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/AmbulanceOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomAmbulanceOrderInfoDialog.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomOrderInfoDialog.dart';
 
+class AmbulanceTab extends StatefulWidget {
+  @override
+  State<AmbulanceTab> createState() => _AmbulanceTabState();
+}
 
-class AmbulanceTab extends StatelessWidget {
+class _AmbulanceTabState extends State<AmbulanceTab> {
   final AmbulanceOrderViewModel viewModel = AmbulanceOrderViewModel();
+  List<AmbulanceBooking> bookings = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings() async {
+    await viewModel.loadCompletedOrders();
+    setState(() {
+      bookings = viewModel.orders; // get the updated orders
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final orders = viewModel.orders;
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    return ListView.builder(
-      padding: EdgeInsets.all(16.0),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return _buildOrderItem(context, order);
-      },
+    if (bookings.isEmpty) {
+      return const Center(child: Text("No completed ambulance orders found."));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadBookings,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: bookings.length,
+        itemBuilder: (context, index) {
+          final booking = bookings[index];
+          return _buildBookingCard(context, booking);
+        },
+      ),
     );
   }
 
-  Widget _buildOrderItem(BuildContext context, AmbulanceOrder order) {
+
+  Widget _buildBookingCard(BuildContext context, AmbulanceBooking booking) {
+    final formattedDate =
+    DateFormat('dd MMMM yyyy hh:mm a').format(booking.timestamp);
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -37,61 +70,72 @@ class AmbulanceTab extends StatelessWidget {
           ),
         ],
       ),
-      margin: EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  order.orderNumber,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Agency Name & Status Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  booking.agency?.agencyName ?? "Unknown Agency",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              _buildStatusChip(booking.status),
+            ],
+          ),
+
+          SizedBox(height: 12),
+
+          // Location Row
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${booking.pickupLocation} → ${booking.dropLocation}',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 10),
+
+          // Vehicle & Distance
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Vehicle: ${booking.vehicleType}',
+                  style: TextStyle(fontSize: 14)),
+              Text('Distance: ${booking.totalDistance.toStringAsFixed(2)} km',
+                  style: TextStyle(fontSize: 14)),
+            ],
+          ),
+
+          SizedBox(height: 8),
+
+          // Total Amount & Date
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total: ₹${booking.totalAmount.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey[800],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.info_outline, color: Colors.blueGrey, size: 24.0),
-                  onPressed: () {
-                    _showOrderDetails(context, order);
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: 8.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Date: ${order.date}',
-                  style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
-                ),
-                Text(
-                  'Total: ${order.total}',
-                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.green[700]),
-                ),
-              ],
-            ),
-            SizedBox(height: 8.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Service: ${order.serviceType}',
-                  style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
-                ),
-                _buildStatusChip(order.status),
-              ],
-            ),
-          ],
-        ),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700])),
+              Text(formattedDate,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ],
+          ),
+        ],
       ),
     );
   }
+
 
   Widget _buildStatusChip(String status) {
     Color chipColor;
@@ -109,26 +153,16 @@ class AmbulanceTab extends StatelessWidget {
         chipColor = Colors.grey;
     }
 
-    return Chip(
-      label: Text(status, style: TextStyle(color: Colors.white, fontSize: 12.0)),
-      backgroundColor: chipColor,
-      shape: StadiumBorder(),
-    );
-  }
-
-  void _showOrderDetails(BuildContext context, AmbulanceOrder order) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return CustomAmbulanceOrderInfoDialog(
-          orderNumber: order.orderNumber,
-          imageUrls: order.imageUrls ?? [], // Assuming AppointmentOrder has an image list
-          date: order.date,
-          status: order.status,
-          total: order.total,
-          serviceType: order.serviceType, // Adjust as needed
-        );
-      },
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: Colors.white, fontSize: 12),
+      ),
     );
   }
 }

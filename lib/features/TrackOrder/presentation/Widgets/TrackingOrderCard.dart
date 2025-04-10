@@ -24,46 +24,74 @@ class TrackingOrderCard extends StatelessWidget {
 
         List<CartModel> cartItems = viewModel.orderItems[order.orderId] ?? [];
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey, width: 2),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                blurRadius: 8,
-                spreadRadius: 2,
-                offset: const Offset(0, 2),
+        return Stack(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.deepPurple, width: 2),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(order),
-                const Divider(),
-                const SizedBox(height: 16),
-                _buildTimeline(steps, currentStepIndex),
-                const SizedBox(height: 16),
-                _buildOrderDetails(cartItems, order.totalAmount),
-                const Divider(),
-                if (order.orderStatus == "OutForDelivery") _buildRiderInfo(),
-              ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(order),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    _buildTimeline(steps, currentStepIndex),
+                    const SizedBox(height: 16),
+                    _buildOrderDetails(cartItems, order.totalAmount),
+                    const Divider(),
+                    if (order.orderStatus == "OutForDelivery") _buildRiderInfo(),
+                  ],
+                ),
+              ),
             ),
-          ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.deepPurple,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(10),
+                    bottomLeft: Radius.circular(10),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: const Text(
+                  'Medicine Order',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       }).toList(),
     );
   }
 
+
   Widget _buildHeader(MedicineOrderModel order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 8),
         Text(
           'Order ID: ${order.orderId}',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

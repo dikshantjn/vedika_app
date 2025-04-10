@@ -97,4 +97,6 @@ class ApiEndpoints {
   static const String updateBookingStatusOnTheWay = '$baseUrl/ambulanceBooking/update-status/on-the-way';
   static const String updateBookingStatusPickedUp = '$baseUrl/ambulanceBooking/update-status/picked-up';
   static const String updateBookingStatusCompleted = '$baseUrl/ambulanceBooking/update-status/completed';
+  static const String getCompletedRequestsByUserEndpoint = "$baseUrl/ambulanceBooking/completed-requests";
+  static const String getCompletedRequestsByVendorEndpoint = "$baseUrl/ambulanceBooking/completed/vendor"; // e.g. /completed/vendor/:vendorId
 }

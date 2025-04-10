@@ -5,10 +5,7 @@ import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dar
 import 'package:vedika_healthcare/core/auth/data/repositories/SignUpRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/UserLoginRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
-import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
-import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceRequestNotificationService.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 
 class UserLoginViewModel extends ChangeNotifier {

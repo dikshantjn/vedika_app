@@ -29,7 +29,7 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.blueAccent, width: 2),
+                border: Border.all(color: Colors.teal, width: 2),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -47,8 +47,8 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                   _buildTimeline(steps, currentStepIndex),
                   const SizedBox(height: 16),
                   _buildBookingDetails(booking),
-                  if (booking.status == "OnTheWay" || booking.status == "PickedUp")
-                    _buildDriverInfo(booking),
+                  // if (booking.status == "OnTheWay" || booking.status == "PickedUp")
+                  //   _buildDriverInfo(booking),
                 ],
               ),
             ),
@@ -57,7 +57,7 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
               top: 0,
               child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.redAccent,
+                  color: Colors.teal,
                   borderRadius: BorderRadius.only(
                     topRight: Radius.circular(10),
                     bottomLeft: Radius.circular(10),
@@ -86,7 +86,8 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Booking ID: ${booking.requestId}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Text('Agency: ${booking.agency?.agencyName ?? "No Agency"}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Row(
           children: [
@@ -182,54 +183,37 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
     // Create an instance of AmbulanceBookingRazorPayService
     final razorpayService = AmbulanceBookingRazorPayService();
 
+    // Check for empty or null values
+    if (booking.pickupLocation == null ||
+        booking.pickupLocation.trim().isEmpty ||
+        booking.dropLocation == null ||
+        booking.dropLocation.trim().isEmpty ||
+        booking.totalAmount == null ||
+        booking.totalAmount == 0.0) {
+      return SizedBox.shrink(); // Don't show anything
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Agency Name section
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.local_hospital, color: Colors.blueAccent),
-              SizedBox(width: 10),
-              Text(
-                booking.agency?.agencyName ?? 'No Agency',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 20),
-
         // Vertical Timeline for Pickup and Drop Location
         Row(
           children: [
             // Left Column for timeline
             Column(
               children: [
-                // Start point (Pickup Location)
                 CircleAvatar(
                   radius: 12,
                   backgroundColor: Colors.green,
                   child: Icon(Icons.location_on, size: 18, color: Colors.white),
                 ),
-                SizedBox(height: 10), // Spacer between the circles
-                // Line connecting points
+                SizedBox(height: 10),
                 Container(
                   width: 4,
-                  height: 40, // Length of the line
+                  height: 40,
                   color: Colors.grey[300],
                 ),
                 SizedBox(height: 10),
-                // End point (Drop Location)
                 CircleAvatar(
                   radius: 12,
                   backgroundColor: Colors.red,
@@ -237,8 +221,6 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                 ),
               ],
             ),
-
-            // Right Column for text descriptions
             SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +233,7 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 20), // Spacer between Pickup and Drop location text
+                SizedBox(height: 20),
                 Text(
                   booking.dropLocation,
                   style: TextStyle(
@@ -266,46 +248,45 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
         ),
         SizedBox(height: 20),
 
-        // Estimated Cost and Make Payment Button in a Row
+        // Estimated Cost and Make Payment Button
         Container(
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12), // Reduced padding
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: BoxDecoration(
             color: Colors.greenAccent.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute items evenly
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Total: ₹${booking.totalAmount.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontSize: 18, // Reduced font size for Total Amount
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
                 ),
               ),
-              // Make Payment Button if status is WaitingForPayment
               if (booking.status == 'WaitingForPayment')
                 ElevatedButton(
                   onPressed: () {
-                    razorpayService.openPaymentGateway(// Replace with the user's email
+                    razorpayService.openPaymentGateway(
                       requestId: booking.requestId,
                       amount: booking.totalAmount,
-                      description:"Ambulance Booking #${booking.requestId}",
+                      description: "Ambulance Booking #${booking.requestId}",
                       email: "USER_EMAIL",
                       name: "Ambulance Booking",
                       phoneNumber: "USER_PHONE_NUMBER",
-                      key: ApiConstants.razorpayApiKey
+                      key: ApiConstants.razorpayApiKey,
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.cyan,
-                    padding: EdgeInsets.symmetric(vertical: 6, horizontal: 14), // Reduced button padding
+                    padding: EdgeInsets.symmetric(vertical: 6, horizontal: 14),
                   ),
                   child: Text(
-                    'Pay Now', // Updated button text for better clarity
+                    'Pay Now',
                     style: TextStyle(
-                      fontSize: 14, // Reduced font size for the button text
+                      fontSize: 14,
                       color: Colors.white,
                     ),
                   ),
@@ -319,45 +300,46 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
   }
 
 
-  Widget _buildDriverInfo(AmbulanceBooking booking) {
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: Colors.blue,
-            child: Icon(Icons.local_hospital, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text('Ambulance Driver', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              Text('Driver Name', style: TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: () {
-              // TODO: Implement call
-            },
-            icon: const Icon(Icons.call, size: 18, color: Colors.green),
-            label: const Text('Call'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.green,
-              side: const BorderSide(color: Colors.green, width: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
+  // Widget _buildDriverInfo(AmbulanceBooking booking) {
+  //   return Container(
+  //     margin: const EdgeInsets.only(top: 16),
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey.shade100,
+  //       borderRadius: BorderRadius.circular(30),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const CircleAvatar(
+  //           backgroundColor: Colors.blue,
+  //           child: Icon(Icons.local_hospital, color: Colors.white),
+  //         ),
+  //         const SizedBox(width: 12),
+  //         Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: const [
+  //             Text('Ambulance Driver', style: TextStyle(fontSize: 12, color: Colors.grey)),
+  //             Text('Driver Name', style: TextStyle(fontWeight: FontWeight.bold)),
+  //           ],
+  //         ),
+  //         const Spacer(),
+  //         OutlinedButton.icon(
+  //           onPressed: () {
+  //             // TODO: Implement call
+  //           },
+  //           icon: const Icon(Icons.call, size: 18, color: Colors.green),
+  //           label: const Text('Call'),
+  //           style: OutlinedButton.styleFrom(
+  //             foregroundColor: Colors.green,
+  //             side: const BorderSide(color: Colors.green, width: 2),
+  //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   List<String> _getSteps(String status) {
 

@@ -74,7 +74,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       _verticalTitles[index],
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 16, // Slightly smaller font size for better readability
+                        fontSize: 16,
                       ),
                     ),
                     selected: _selectedIndex == index,
@@ -83,20 +83,21 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         _selectedIndex = index;
                       });
                     },
-                    selectedColor: ColorPalette.primaryColor, // Consistent with AppBar
+                    selectedColor: ColorPalette.primaryColor,
                     backgroundColor: Colors.grey.shade200,
+                    showCheckmark: false, // 👈 this line removes the checkmark
                     labelStyle: TextStyle(
                       color: _selectedIndex == index ? Colors.white : Colors.black,
                       fontWeight: FontWeight.w600,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25), // Larger radius for a more modern look
+                      borderRadius: BorderRadius.circular(25),
                       side: BorderSide(
-                        color: _selectedIndex == index ? Colors.white : Colors.transparent, // White border on selected
-                        width: 2, // Border width
+                        color: _selectedIndex == index ? Colors.white : Colors.transparent,
+                        width: 2,
                       ),
                     ),
-                    elevation: 3, // Slight elevation for better focus effect
+                    elevation: 3,
                   ),
                 );
               },
