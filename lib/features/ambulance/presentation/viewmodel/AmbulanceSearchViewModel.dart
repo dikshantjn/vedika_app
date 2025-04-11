@@ -7,7 +7,9 @@ import 'package:location/location.dart';
 import 'package:logger/web.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
+import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/EmergiencyAmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulanceDetailsBottomSheet.dart';
@@ -23,6 +25,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   bool mounted = true; // Manually track mounting state
   bool _isDialogShowing = false;
   EmergiencyAmbulanceService _service = EmergiencyAmbulanceService();
+  final TrackOrderService _trackOrderService = TrackOrderService(); // Service instance
 
   final logger = Logger();
 
@@ -34,6 +37,10 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   double baseFare = 200;
   double nearbyDistance = 15.0;
 
+  List<AmbulanceBooking> _ambulanceBookings = [];
+  List<AmbulanceBooking> get ambulanceBookings => _ambulanceBookings;
+
+  bool _isLoading = false;
   final BuildContext context;
 
   AmbulanceSearchViewModel(this.context) {
@@ -76,6 +83,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await getUserLocation();
     fetchAvailableAgencies();
+    await fetchActiveAmbulanceBookings();
   }
 
   Future<void> getUserLocation() async {
@@ -358,6 +366,74 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// ✅ Fetch active ambulance bookings for current user
+  Future<void> fetchActiveAmbulanceBookings() async {
+    _isLoading = true;
+    notifyListeners();
+
+    debugPrint("📦 Starting to fetch active ambulance bookings...");
+
+    try {
+      String? userId = await StorageService.getUserId();
+      debugPrint("👤 User ID: $userId");
+
+      if (userId == null) {
+        debugPrint("❌ User ID not found");
+        throw Exception("User ID not found");
+      }
+
+      _ambulanceBookings = await _trackOrderService.fetchActiveAmbulanceBookings(userId);
+      debugPrint("✅ Ambulance bookings fetched: ${_ambulanceBookings.length}");
+
+      for (var booking in _ambulanceBookings) {
+        debugPrint("🚑 Booking ID: ${booking.requestId}, Status: ${booking.status}");
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error fetching ambulance bookings: $e");
+      debugPrint("🔍 Stack Trace:\n$stackTrace");
+
+      _ambulanceBookings = [];
+      errorMessage = "No Ambulance Booking Found".obs;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint("📦 Done fetching ambulance bookings.");
+    }
+  }
+
+
+  List<String> getSteps(String status) {
+    List<String> steps = [
+      "Booking Requested",
+      "Agency Accepted",
+      "Waiting For Payment",  // This step will dynamically change
+      "On the Way",
+      "Patient Picked Up",
+      "Reached Hospital",
+    ];
+// If status is paymentCompleted, update the step in the timeline
+    if (status == "paymentCompleted") {
+      steps[2] = "Payment Completed";  // Modify step 2 if status is "PaymentCompleted"
+    }
+
+    return steps;
+  }
+
+  int getCurrentStepIndex(String status) {
+    final Map<String, int> statusMap = {
+      "pending": 0,
+      "accepted": 1,
+      "WaitingForPayment": 2, // Both 'WaitingForPayment' and 'paymentCompleted' will point to the same step
+      "paymentCompleted": 2,   // Both statuses will point to index 2
+      "OnTheWay": 3,
+      "PickedUp": 4,
+      "Completed": 5,
+    };
+
+    return statusMap[status] ?? 0;  // Default to index 0 if the status is unrecognized
   }
 
   // You can also expose a refresh method

@@ -30,6 +30,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistrati
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorRegistrationViewModel.dart';
+import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/AmbulanceSearchViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
@@ -156,6 +157,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => AmbulanceBookingRequestViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceBookingHistoryViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceMainViewModel()),
+        ChangeNotifierProvider(create: (context) => AmbulanceSearchViewModel(context)),
 
 
 
