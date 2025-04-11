@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:timeline_tile/timeline_tile.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
@@ -31,51 +32,56 @@ class TrackingOrderCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.deepPurple, width: 2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: ColorPalette.primaryColor.withOpacity(0.2),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(order),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    _buildTimeline(steps, currentStepIndex),
-                    const SizedBox(height: 16),
-                    _buildOrderDetails(cartItems, order.totalAmount),
-                    const Divider(),
-                    if (order.orderStatus == "OutForDelivery") _buildRiderInfo(),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(order),
+                  Divider(color: Colors.grey.shade200),
+                  const SizedBox(height: 16),
+                  _buildTimeline(steps, currentStepIndex),
+                  const SizedBox(height: 16),
+                  _buildOrderDetails(cartItems, order.totalAmount),
+                  if (order.orderStatus == "OutForDelivery") 
+                    Column(
+                      children: [
+                        Divider(color: Colors.grey.shade200),
+                        _buildRiderInfo(),
+                      ],
+                    ),
+                ],
               ),
             ),
             Positioned(
               right: 0,
               top: 0,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.deepPurple,
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(10),
-                    bottomLeft: Radius.circular(10),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: const Text(
                   'Medicine Order',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
               ),

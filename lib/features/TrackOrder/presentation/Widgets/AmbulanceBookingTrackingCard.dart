@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBookingRazorPayService.dart';
 
@@ -29,13 +30,16 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Colors.teal, width: 2),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: ColorPalette.primaryColor.withOpacity(0.2),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.05),
-                    blurRadius: 8,
-                    spreadRadius: 2,
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -43,12 +47,11 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(booking),
-                  const Divider(),
+                  Divider(color: Colors.grey.shade200),
+                  const SizedBox(height: 16),
                   _buildTimeline(steps, currentStepIndex),
                   const SizedBox(height: 16),
                   _buildBookingDetails(booking),
-                  // if (booking.status == "OnTheWay" || booking.status == "PickedUp")
-                  //   _buildDriverInfo(booking),
                 ],
               ),
             ),
@@ -56,17 +59,21 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
               right: 0,
               top: 0,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.teal,
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(10),
-                    bottomLeft: Radius.circular(10),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: const Text(
                   'Ambulance Booking',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
@@ -299,50 +306,7 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
     );
   }
 
-
-
-  // Widget _buildDriverInfo(AmbulanceBooking booking) {
-  //   return Container(
-  //     margin: const EdgeInsets.only(top: 16),
-  //     padding: const EdgeInsets.all(12),
-  //     decoration: BoxDecoration(
-  //       color: Colors.grey.shade100,
-  //       borderRadius: BorderRadius.circular(30),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         const CircleAvatar(
-  //           backgroundColor: Colors.blue,
-  //           child: Icon(Icons.local_hospital, color: Colors.white),
-  //         ),
-  //         const SizedBox(width: 12),
-  //         Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: const [
-  //             Text('Ambulance Driver', style: TextStyle(fontSize: 12, color: Colors.grey)),
-  //             Text('Driver Name', style: TextStyle(fontWeight: FontWeight.bold)),
-  //           ],
-  //         ),
-  //         const Spacer(),
-  //         OutlinedButton.icon(
-  //           onPressed: () {
-  //             // TODO: Implement call
-  //           },
-  //           icon: const Icon(Icons.call, size: 18, color: Colors.green),
-  //           label: const Text('Call'),
-  //           style: OutlinedButton.styleFrom(
-  //             foregroundColor: Colors.green,
-  //             side: const BorderSide(color: Colors.green, width: 2),
-  //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   List<String> _getSteps(String status) {
-
     List<String> steps = [
       "Booking Requested",
       "Agency Accepted",
@@ -355,7 +319,6 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
     if (status == "paymentCompleted") {
       steps[2] = "Payment Completed";  // Modify step 2 if status is "PaymentCompleted"
     }
-
 
     return steps;
   }
@@ -373,5 +336,4 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
 
     return statusMap[status] ?? 0;  // Default to index 0 if the status is unrecognized
   }
-
 }

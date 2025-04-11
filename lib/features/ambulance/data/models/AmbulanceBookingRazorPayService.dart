@@ -60,7 +60,16 @@ class AmbulanceBookingRazorPayService {
     required String phoneNumber,
     required String email,
     required String requestId,  // Accept requestId as a parameter
+    Function()? onPaymentSuccess,
+
   }) {
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, (PaymentSuccessResponse response) {
+      if (onPaymentSuccess != null) {
+        onPaymentSuccess();
+      }
+      // maybe show toast or alert
+    });
     // Store the requestId so it can be used later in the success handler
     _requestId = requestId;
 
