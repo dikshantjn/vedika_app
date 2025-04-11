@@ -78,8 +78,8 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         final titles = ["BLS", "ALS", "ICU", "Air", "Train"];
-                        return SideTitleWidget(
-                          meta: meta,
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             titles[value.toInt()],
                             style: TextStyle(fontSize: 12),

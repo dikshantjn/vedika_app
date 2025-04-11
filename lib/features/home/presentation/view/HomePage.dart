@@ -266,7 +266,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: ColorPalette.primaryColor.withOpacity(0.3),
+          color: ColorPalette.primaryColor,
           width: 1.5,
         ),
         boxShadow: [
@@ -398,25 +398,5 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         );
       },
     );
-  }
-}
-
-class _CurvedAppBarClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, 0); // Start from top left corner
-    path.lineTo(0, size.height); // Go down the left edge
-    path.quadraticBezierTo(
-        size.width * 0.25, size.height, size.width * 0.75, size.height); // Create curve
-    path.quadraticBezierTo(size.width, size.height, size.width, size.height - 30); // Create curve
-    path.lineTo(size.width, 0); // Go up the right edge
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
   }
 }

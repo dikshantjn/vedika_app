@@ -55,9 +55,10 @@ dependencies:
   firebase_messaging: ^15.2.4
   logger: ^2.5.0
   get: ^4.7.2
-  fl_chart: ^0.70.2
+  fl_chart: ^0.66.2
   awesome_snackbar_content: ^0.1.5
   awesome_dialog: ^3.2.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

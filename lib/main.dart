@@ -20,6 +20,8 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/FeeViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -158,6 +160,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => AmbulanceBookingHistoryViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceMainViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceSearchViewModel(context)),
+        ChangeNotifierProvider(create: (context) => VendorBloodBankDashBoardViewModel()),
+        ChangeNotifierProvider(create: (context) => BloodBankRequestViewModel()),
+
+
 
 
 

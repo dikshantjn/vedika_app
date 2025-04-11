@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankRegistrationService.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodbankAgencyStorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Models/Vendor.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 import 'package:logger/logger.dart';
 
@@ -19,8 +22,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
   final govtRegNumberController = TextEditingController();
   final addressController = TextEditingController();
   final landmarkController = TextEditingController();
-  final mainContactController = TextEditingController();
-  final emergencyContactController = TextEditingController();
   final emailController = TextEditingController();
   final websiteController = TextEditingController();
   final distanceLimitController = TextEditingController();
@@ -69,6 +70,10 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
 
   BloodBankRegistrationViewModel() {
     selectedState.addListener(_onStateChanged);
+    // Initialize multi-select lists
+    selectedBloodServices.value = [];
+    selectedLanguages.value = [];
+    operationalAreas.value = [];
   }
 
   void _onStateChanged() {
@@ -177,12 +182,11 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
     notifyListeners();  // Notify UI to reflect changes
   }
 
-  Future<void> submitRegistration() async {
+  Future<void> submitRegistration(BuildContext context) async {
     if (isLoading) {
       logger.w('Uploading in progress. Please wait until all files are uploaded.');
       return;
     }
-
 
     // Set loading state to true when the process starts
     isLoading = true;
@@ -204,7 +208,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
         uploadedLicenseFiles.add({'name': name, 'url': downloadUrl});
         notifyListeners(); // Update UI after each file upload if needed
       }
-
     }
 
     // Upload Registration Certificate Files
@@ -215,7 +218,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
         final downloadUrl = await storageService.uploadFile(file, fileType: 'registration_certificates');
         uploadedRegistrationCertificateFiles.add({'name': name, 'url': downloadUrl});
         notifyListeners(); // Update UI after each file upload if needed
-
       }
     }
 
@@ -227,7 +229,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
         final downloadUrl = await storageService.uploadFile(file, fileType: 'agency_photos');
         uploadedAgencyPhotos.add({'name': name, 'url': downloadUrl});
         notifyListeners(); // Update UI after each file upload if needed
-
       }
     }
 
@@ -239,7 +240,11 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
       ownerName: ownerNameController.text,
       completeAddress: addressController.text,
       nearbyLandmark: landmarkController.text,
-      emergencyContactNumber: emergencyContactController.text,
+      emergencyContactNumber: '',
+      phoneNumber: phoneNumberController.text,
+      state: selectedState.value ?? '',
+      city: selectedCity.value ?? '',
+      pincode: pincodeController.text,
       email: emailController.text,
       website: websiteController.text.isNotEmpty ? websiteController.text : null,
       languageProficiency: selectedLanguages.value.join(', '),
@@ -259,24 +264,76 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
       licenseFiles: uploadedLicenseFiles,
       registrationCertificateFiles: uploadedRegistrationCertificateFiles,
       googleMapsLocation: preciseLocationController.text,
-      state: selectedState.value ?? '',
-      city: selectedCity.value ?? '',
-      pincode: pincodeController.text,
-      phoneNumber: phoneNumberController.text,
     );
 
     logger.i("Submitting Agency:");
     logger.d(agency.toJson());
 
-    // TODO: Call repository/API to submit agency.toJson()
+    // Create Vendor model
+    final vendor = Vendor(
+      vendorRole: 5, // Blood bank vendor role
+      phoneNumber: phoneNumberController.text,
+      email: emailController.text,
+      generatedId: '', // This will be set by the backend
+    );
+
+    logger.i("Submitting Vendor:");
+    logger.d(vendor.toJson());
+
+    // ✅ CALL THE API HERE
+    try {
+      final bloodBankService = BloodBankRegistrationService();
+      final Map<String, dynamic> response = await bloodBankService.registerBloodBank(
+        agency: agency,
+        vendor: vendor,
+      );
+
+      logger.i("Registration successful");
+      logger.d(response);
+
+      // Convert response to BloodBankAgency
+      final registeredAgency = BloodBankAgency.fromJson(response['agency']);
+      final registeredVendor = Vendor(
+        vendorRole: 5,
+        vendorId: response['vendor']['vendorId'],
+        phoneNumber: response['vendor']['phoneNumber'],
+        email: response['vendor']['email'],
+        generatedId: response['vendor']['generatedId'],
+        password: response['plainPassword'],
+      );
+
+      // 🎉 Show success dialog
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.success,
+        animType: AnimType.bottomSlide,
+        title: 'Success',
+        desc: 'Blood bank agency registered successfully!\n'
+              'Your ID: ${registeredVendor.generatedId}\n'
+              'Password: ${registeredVendor.password}',
+        btnOkOnPress: () {
+          // Maybe clear form or navigate
+        },
+      ).show();
+
+    } catch (e) {
+      logger.e('Registration failed: $e');
+
+      // ❌ Show error dialog
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.topSlide,
+        title: 'Registration Failed',
+        desc: e.toString(),
+        btnOkOnPress: () {},
+      ).show();
+    }
 
     // Reset loading state after the submission
     isLoading = false;
     notifyListeners(); // Update UI after each file upload if needed
-
   }
-
-
 
   // Clean-up
   void disposeControllers() {
@@ -287,8 +344,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
     govtRegNumberController.dispose();
     addressController.dispose();
     landmarkController.dispose();
-    mainContactController.dispose();
-    emergencyContactController.dispose();
     emailController.dispose();
     websiteController.dispose();
     distanceLimitController.dispose();

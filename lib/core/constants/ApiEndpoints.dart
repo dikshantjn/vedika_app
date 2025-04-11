@@ -99,4 +99,7 @@ class ApiEndpoints {
   static const String updateBookingStatusCompleted = '$baseUrl/ambulanceBooking/update-status/completed';
   static const String getCompletedRequestsByUserEndpoint = "$baseUrl/ambulanceBooking/completed-requests";
   static const String getCompletedRequestsByVendorEndpoint = "$baseUrl/ambulanceBooking/completed/vendor"; // e.g. /completed/vendor/:vendorId
+
+  static const String bloodBankRegistration = "$baseUrl/blood-bank/register"; // e.g. /completed/vendor/:vendorId
+
 }

@@ -6,10 +6,10 @@ class BloodBankAgency {
   String completeAddress;
   String nearbyLandmark;
   String emergencyContactNumber;
-  String phoneNumber; // ✅ Newly added
-  String state;       // ✅ Newly added
-  String city;        // ✅ Newly added
-  String pincode;     // ✅ Newly added
+  String phoneNumber;
+  String state;
+  String city;
+  String pincode;
   String email;
   String? website;
   String languageProficiency;
@@ -22,12 +22,14 @@ class BloodBankAgency {
   List<String> otherServicesProvided;
   bool acceptsOnlinePayment;
 
-  // ✅ Updated Media Fields: List of Maps
-  List<Map<String, String>> agencyPhotos; // List of Maps for photos
-  List<Map<String, String>> licenseFiles; // List of Maps for license files
-  List<Map<String, String>> registrationCertificateFiles; // List of Maps for registration certificates
-
+  List<Map<String, String>> agencyPhotos;
+  List<Map<String, String>> licenseFiles;
+  List<Map<String, String>> registrationCertificateFiles;
   String googleMapsLocation;
+
+  // ✅ Newly added optional fields
+  String? vendorId;
+  String? generatedId;
 
   BloodBankAgency({
     required this.agencyName,
@@ -37,10 +39,10 @@ class BloodBankAgency {
     required this.completeAddress,
     required this.nearbyLandmark,
     required this.emergencyContactNumber,
-    required this.phoneNumber, // ✅
-    required this.state,       // ✅
-    required this.city,        // ✅
-    required this.pincode,     // ✅
+    required this.phoneNumber,
+    required this.state,
+    required this.city,
+    required this.pincode,
     required this.email,
     this.website,
     required this.languageProficiency,
@@ -56,6 +58,8 @@ class BloodBankAgency {
     required this.licenseFiles,
     required this.registrationCertificateFiles,
     required this.googleMapsLocation,
+    this.vendorId,         // ✅ optional
+    this.generatedId,      // ✅ optional
   });
 
   Map<String, dynamic> toJson() {
@@ -67,10 +71,10 @@ class BloodBankAgency {
       'completeAddress': completeAddress,
       'nearbyLandmark': nearbyLandmark,
       'emergencyContactNumber': emergencyContactNumber,
-      'phoneNumber': phoneNumber, // ✅
-      'state': state,             // ✅
-      'city': city,               // ✅
-      'pincode': pincode,         // ✅
+      'phoneNumber': phoneNumber,
+      'state': state,
+      'city': city,
+      'pincode': pincode,
       'email': email,
       'website': website,
       'languageProficiency': languageProficiency,
@@ -83,9 +87,11 @@ class BloodBankAgency {
       'otherServicesProvided': otherServicesProvided,
       'acceptsOnlinePayment': acceptsOnlinePayment,
       'agencyPhotos': agencyPhotos,
-      'licenseFiles': licenseFiles, // List of Maps
-      'registrationCertificateFiles': registrationCertificateFiles, // List of Maps
+      'licenseFiles': licenseFiles,
+      'registrationCertificateFiles': registrationCertificateFiles,
       'googleMapsLocation': googleMapsLocation,
+      'vendorId': vendorId,           // ✅ included in toJson
+      'generatedId': generatedId,     // ✅ included in toJson
     };
   }
 
@@ -98,10 +104,10 @@ class BloodBankAgency {
       completeAddress: json['completeAddress'],
       nearbyLandmark: json['nearbyLandmark'],
       emergencyContactNumber: json['emergencyContactNumber'],
-      phoneNumber: json['phoneNumber'],   // ✅
-      state: json['state'],               // ✅
-      city: json['city'],                 // ✅
-      pincode: json['pincode'],           // ✅
+      phoneNumber: json['phoneNumber'],
+      state: json['state'],
+      city: json['city'],
+      pincode: json['pincode'],
       email: json['email'],
       website: json['website'],
       languageProficiency: json['languageProficiency'],
@@ -120,6 +126,8 @@ class BloodBankAgency {
       registrationCertificateFiles: List<Map<String, String>>.from(
           json['registrationCertificateFiles'].map((item) => Map<String, String>.from(item))),
       googleMapsLocation: json['googleMapsLocation'],
+      vendorId: json['vendorId'],         // ✅ safe since it's nullable
+      generatedId: json['generatedId'],   // ✅ safe since it's nullable
     );
   }
 }
