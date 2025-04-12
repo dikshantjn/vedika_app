@@ -7,6 +7,8 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodAvailabilityViewModel.dart';
+import 'dart:developer' as developer;
 
 class VendorBloodBankMainScreen extends StatefulWidget {
 
@@ -23,24 +25,33 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
   final List<Widget> _screens = [];
   final Map<String, Widget> _screenCache = {};
   late final VendorBloodBankMainViewModel _viewModel;
+  late final BloodAvailabilityViewModel _bloodAvailabilityViewModel;
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
+    developer.log('VendorBloodBankMainScreen: initState called', name: 'BloodAvailability');
     _viewModel = VendorBloodBankMainViewModel();
+    _bloodAvailabilityViewModel = BloodAvailabilityViewModel();
     _initializeScreens();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.initializeServiceStatus();
+      if (!_disposed) {
+        _viewModel.initializeServiceStatus();
+      }
     });
   }
 
   @override
   void dispose() {
-    _viewModel.dispose();
+    developer.log('VendorBloodBankMainScreen: dispose called', name: 'BloodAvailability');
+    _disposed = true;
+    // Don't dispose the view models here, they should persist
     super.dispose();
   }
 
   void _initializeScreens() {
+    developer.log('VendorBloodBankMainScreen: Initializing screens', name: 'BloodAvailability');
     // Initialize screens with caching
     _screens.add(_getCachedScreen('dashboard', const VendorBloodBankDashBoardScreen()));
     _screens.add(_getCachedScreen('availability', const BloodAvailabilityScreen()));
@@ -51,6 +62,7 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
 
   Widget _getCachedScreen(String key, Widget screen) {
     if (!_screenCache.containsKey(key)) {
+      developer.log('VendorBloodBankMainScreen: Creating new screen for $key', name: 'BloodAvailability');
       _screenCache[key] = screen;
     }
     return _screenCache[key]!;
@@ -61,8 +73,11 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _viewModel),
+        ChangeNotifierProvider.value(value: _bloodAvailabilityViewModel),
+      ],
       child: Consumer<VendorBloodBankMainViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {

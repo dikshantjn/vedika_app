@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodInventoryService.dart';
 import '../../data/model/BloodInventory.dart';
+import 'package:logger/logger.dart';
+import 'dart:developer' as developer;
 
 class BloodAvailabilityViewModel extends ChangeNotifier {
+  final BloodInventoryService _service = BloodInventoryService();
+  final _logger = Logger();
+  
   List<BloodInventory> _bloodInventory = [];
   bool _isLoading = false;
   String? _error;
   final TextEditingController _unitsController = TextEditingController();
   String? _selectedBloodType;
+  bool _isInitialized = false;
+  bool _isDisposed = false;
 
   // Getters
   List<BloodInventory> get bloodInventory => _bloodInventory;
@@ -14,6 +23,7 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
   String? get error => _error;
   TextEditingController get unitsController => _unitsController;
   String? get selectedBloodType => _selectedBloodType;
+  bool get isInitialized => _isInitialized;
 
   // Blood types for dropdown
   final List<String> bloodTypes = [
@@ -22,6 +32,7 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
 
   // Initialize the view model
   BloodAvailabilityViewModel() {
+    developer.log('BloodAvailabilityViewModel: Constructor called', name: 'BloodAvailability');
     _unitsController.addListener(_updateAvailability);
   }
 
@@ -45,123 +56,135 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
            int.tryParse(_unitsController.text) != null;
   }
 
-  // Add new blood type
-  Future<void> addBloodType(BloodInventory bloodType) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Add new blood type
-      _bloodInventory.add(
-        BloodInventory(
-          bloodType: bloodType.bloodType,
-          unitsAvailable: bloodType.unitsAvailable,
-          isAvailable: bloodType.isAvailable,
-          vendorId: 'vendor123', // This should come from user session
-        ),
-      );
-
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to add blood type';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Update existing blood type
-  Future<void> updateBloodType(BloodInventory bloodType) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final index = _bloodInventory.indexWhere(
-        (item) => item.bloodType == bloodType.bloodType,
-      );
-      if (index != -1) {
-        _bloodInventory[index] = BloodInventory(
-          bloodType: bloodType.bloodType,
-          unitsAvailable: bloodType.unitsAvailable,
-          isAvailable: bloodType.isAvailable,
-          vendorId: 'vendor123', // This should come from user session
-        );
-      }
-
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to update blood type';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Delete blood type by blood type string
-  Future<void> deleteBloodType(String bloodType) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      _bloodInventory.removeWhere((item) => item.bloodType == bloodType);
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to delete blood type';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
+  // Load blood inventory from the API
   Future<void> loadBloodInventory() async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      // Sample data
-      _bloodInventory = [
-        BloodInventory(
-          bloodType: 'A+',
-          unitsAvailable: 5,
-          isAvailable: true,
-          vendorId: 'current_vendor_id',
-        ),
-        BloodInventory(
-          bloodType: 'B+',
-          unitsAvailable: 3,
-          isAvailable: true,
-          vendorId: 'current_vendor_id',
-        ),
-        BloodInventory(
-          bloodType: 'O+',
-          unitsAvailable: 0,
-          isAvailable: false,
-          vendorId: 'current_vendor_id',
-        ),
-      ];
-    } catch (e) {
-      _error = 'Failed to load blood inventory';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+    if (_isDisposed) return;
+    
+    if (_isLoading) {
+      developer.log('BloodAvailabilityViewModel: Already loading inventory, skipping', name: 'BloodAvailability');
+      return;
     }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    developer.log('BloodAvailabilityViewModel: Loading blood inventory...', name: 'BloodAvailability');
+
+    try {
+      final inventory = await _service.getBloodInventory();
+      if (_isDisposed) return;
+      
+      _bloodInventory.clear();
+      _bloodInventory.addAll(inventory);
+      _isInitialized = true;
+      developer.log('BloodAvailabilityViewModel: Blood inventory loaded successfully: ${_bloodInventory.length} items', name: 'BloodAvailability');
+    } catch (e, stackTrace) {
+      if (_isDisposed) return;
+      
+      _error = 'Failed to load blood inventory: ${e.toString()}';
+      developer.log('BloodAvailabilityViewModel: Error loading blood inventory', name: 'BloodAvailability', error: e, stackTrace: stackTrace);
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  // Add a new blood type
+  Future<bool> addBloodType(BloodInventory bloodType) async {
+    if (_isDisposed) return false;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    developer.log('BloodAvailabilityViewModel: Adding blood type: ${bloodType.bloodType}', name: 'BloodAvailability');
+
+    try {
+      await _service.upsertBloodInventory(bloodType);
+      if (_isDisposed) return false;
+      
+      developer.log('BloodAvailabilityViewModel: Blood type added successfully', name: 'BloodAvailability');
+      return true;
+    } catch (e, stackTrace) {
+      if (_isDisposed) return false;
+      
+      _error = 'Failed to add blood type: ${e.toString()}';
+      developer.log('BloodAvailabilityViewModel: Error adding blood type', name: 'BloodAvailability', error: e, stackTrace: stackTrace);
+      return false;
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  // Update an existing blood type
+  Future<bool> updateBloodType(BloodInventory bloodType) async {
+    if (_isDisposed) return false;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _service.upsertBloodInventory(bloodType);
+      if (_isDisposed) return false;
+      
+      return true;
+    } catch (e, stackTrace) {
+      if (_isDisposed) return false;
+      
+      _error = 'Failed to update blood type: ${e.toString()}';
+      developer.log('BloodAvailabilityViewModel: Error updating blood type', name: 'BloodAvailability', error: e, stackTrace: stackTrace);
+      return false;
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  // Delete a blood type
+  Future<bool> deleteBloodType(String bloodType) async {
+    if (_isDisposed) return false;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _service.deleteBloodInventory(bloodType);
+      if (_isDisposed) return false;
+      
+      return true;
+    } catch (e, stackTrace) {
+      if (_isDisposed) return false;
+      
+      _error = 'Failed to delete blood type: ${e.toString()}';
+      developer.log('BloodAvailabilityViewModel: Error deleting blood type', name: 'BloodAvailability', error: e, stackTrace: stackTrace);
+      return false;
+    } finally {
+      if (!_isDisposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 
   @override
   void dispose() {
+    developer.log('BloodAvailabilityViewModel: dispose called', name: 'BloodAvailability');
+    _isDisposed = true;
     _unitsController.dispose();
     super.dispose();
   }
