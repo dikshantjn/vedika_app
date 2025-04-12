@@ -1,54 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
+import '../../data/model/BloodBankRequest.dart';
+import '../../data/services/BloodBankRequestService.dart';
+import '../../../../../core/auth/data/models/UserModel.dart';
 
 class BloodBankRequestViewModel extends ChangeNotifier {
-  List<BloodBankRequest> _requests = [
-    BloodBankRequest(
-      requestId: '1',
-      userId: 'user1',
-      customerName: 'John Doe',
-      bloodType: 'A+',
-      units: 2,
-      deliveryFees: 100.0,
-      gst: 18.0,
-      discount: 0.0,
-      totalAmount: 118.0,
-      prescriptionUrls: ['https://example.com/prescription1.jpg'],
-      requestedVendors: ['vendor1', 'vendor2'],
-      status: 'Pending',
-      createdAt: DateTime.now(),
-    ),
-    BloodBankRequest(
-      requestId: '2',
-      userId: 'user2',
-      customerName: 'Jane Smith',
-      bloodType: 'B+',
-      units: 1,
-      deliveryFees: 100.0,
-      gst: 18.0,
-      discount: 0.0,
-      totalAmount: 118.0,
-      prescriptionUrls: ['https://example.com/prescription2.jpg'],
-      requestedVendors: ['vendor1', 'vendor2'],
-      status: 'Accepted',
-      createdAt: DateTime.now(),
-    ),
-    BloodBankRequest(
-      requestId: '3',
-      userId: 'user3',
-      customerName: 'Mike Johnson',
-      bloodType: 'O+',
-      units: 3,
-      deliveryFees: 150.0,
-      gst: 27.0,
-      discount: 50.0,
-      totalAmount: 127.0,
-      prescriptionUrls: ['https://example.com/prescription3.jpg'],
-      requestedVendors: ['vendor1', 'vendor2'],
-      status: 'Processed',
-      createdAt: DateTime.now(),
-    ),
-  ];
+  final BloodBankRequestService _service = BloodBankRequestService();
+  List<BloodBankRequest> _requests = [];
   bool _isLoading = false;
   String? _error;
 
@@ -57,14 +14,23 @@ class BloodBankRequestViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // Filtered getters
+  List<BloodBankRequest> get pendingRequests => 
+      _requests.where((request) => request.status == 'pending').toList();
+  
+  List<BloodBankRequest> get expiredRequests =>
+      _requests.where((request) => request.status == 'expired').toList();
+  
+  List<BloodBankRequest> get acceptedRequests =>
+      _requests.where((request) => request.status == 'accepted').toList();
+
   Future<void> loadRequests(String vendorId) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      _requests = await _service.getRequests(vendorId);
     } catch (e) {
       _error = 'Failed to load requests';
     } finally {
@@ -79,15 +45,8 @@ class BloodBankRequestViewModel extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final index = _requests.indexWhere((r) => r.requestId == requestId);
-      if (index != -1) {
-        _requests[index] = _requests[index].copyWith(
-          status: 'Accepted',
-        );
-      }
+      await _service.updateRequestStatus(requestId, 'accepted');
+      await loadRequests(vendorId); // Reload the requests to get updated data
     } catch (e) {
       _error = 'Failed to accept request';
     } finally {
@@ -102,15 +61,8 @@ class BloodBankRequestViewModel extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final index = _requests.indexWhere((r) => r.requestId == requestId);
-      if (index != -1) {
-        _requests[index] = _requests[index].copyWith(
-          status: 'Processed',
-        );
-      }
+      await _service.updateRequestStatus(requestId, 'processed');
+      await loadRequests(vendorId); // Reload the requests to get updated data
     } catch (e) {
       _error = 'Failed to process request';
     } finally {
@@ -121,15 +73,22 @@ class BloodBankRequestViewModel extends ChangeNotifier {
 
   Future<List<String>> getPrescriptionUrls(String requestId) async {
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
-
       final request = _requests.firstWhere((r) => r.requestId == requestId);
       return request.prescriptionUrls;
     } catch (e) {
       _error = 'Failed to load prescription URLs';
       notifyListeners();
       return [];
+    }
+  }
+
+  // Get user details for a request
+  UserModel? getUserDetails(String requestId) {
+    try {
+      final request = _requests.firstWhere((r) => r.requestId == requestId);
+      return request.user;
+    } catch (e) {
+      return null;
     }
   }
 } 

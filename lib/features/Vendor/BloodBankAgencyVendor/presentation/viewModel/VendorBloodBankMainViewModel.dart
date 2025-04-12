@@ -1,68 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankRegistrationService.dart';
-import 'package:logger/logger.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
 class VendorBloodBankMainViewModel extends ChangeNotifier {
-  final Logger logger = Logger();
-  final BloodBankRegistrationService _bloodBankService = BloodBankRegistrationService();
+  final VendorService _statusService = VendorService();
+  final VendorLoginService _loginService = VendorLoginService();
 
   bool _isServiceActive = false;
   bool _isLoading = false;
-  String? _errorMessage;
+  String? _error;
+  bool _isToggling = false;
 
-  // Getters
   bool get isServiceActive => _isServiceActive;
   bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
+  String? get error => _error;
+  bool get isToggling => _isToggling;
 
-  // Initialize the service status
   Future<void> initializeServiceStatus() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call to get service status
-      // final response = await _bloodBankService.getServiceStatus();
-      // _isServiceActive = response['isActive'];
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
       
-      // Mock data for now
-      _isServiceActive = true;
-      
-      _isLoading = false;
-      notifyListeners();
+      final status = await _statusService.getVendorStatus(vendorId);
+      _isServiceActive = status;
+      _error = null;
     } catch (e) {
-      logger.e('Error initializing service status: $e');
-      _errorMessage = 'Failed to load service status';
+      _error = e.toString();
+      _isServiceActive = false;
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Toggle service status
   Future<void> toggleServiceStatus() async {
-    _isLoading = true;
+    if (_isToggling) return; // Prevent multiple simultaneous toggles
+    
+    _isToggling = true;
+    _error = null;
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call to toggle service status
-      // await _bloodBankService.updateServiceStatus(!_isServiceActive);
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
       
-      // Mock data for now
+      // Optimistically update the UI
       _isServiceActive = !_isServiceActive;
-      
-      _isLoading = false;
       notifyListeners();
+      
+      // Perform the actual toggle
+      final newStatus = await _statusService.toggleVendorStatus(vendorId);
+      
+      // Update with the actual status from the server
+      _isServiceActive = newStatus;
+      _error = null;
     } catch (e) {
-      logger.e('Error toggling service status: $e');
-      _errorMessage = 'Failed to update service status';
-      _isLoading = false;
+      // Revert the optimistic update on error
+      _isServiceActive = !_isServiceActive;
+      _error = e.toString();
+    } finally {
+      _isToggling = false;
       notifyListeners();
     }
-  }
-
-  // Clear error message
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
   }
 } 

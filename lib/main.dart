@@ -20,8 +20,12 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/FeeViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodAvailabilityViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankAgencyProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankBookingViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -162,6 +166,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => AmbulanceSearchViewModel(context)),
         ChangeNotifierProvider(create: (context) => VendorBloodBankDashBoardViewModel()),
         ChangeNotifierProvider(create: (context) => BloodBankRequestViewModel()),
+
+        ChangeNotifierProvider(create: (context) => BloodBankBookingViewModel()),
+        ChangeNotifierProvider(create: (context) => BloodAvailabilityViewModel()),
+        ChangeNotifierProvider(create: (context) => BloodBankAgencyProfileViewModel()),
+        ChangeNotifierProvider(create: (context) => VendorBloodBankMainViewModel()),
 
 
 

@@ -5,7 +5,6 @@ class BloodBankAgency {
   String ownerName;
   String completeAddress;
   String nearbyLandmark;
-  String emergencyContactNumber;
   String phoneNumber;
   String state;
   String city;
@@ -38,7 +37,6 @@ class BloodBankAgency {
     required this.ownerName,
     required this.completeAddress,
     required this.nearbyLandmark,
-    required this.emergencyContactNumber,
     required this.phoneNumber,
     required this.state,
     required this.city,
@@ -62,6 +60,67 @@ class BloodBankAgency {
     this.generatedId,      // ✅ optional
   });
 
+  // Add copyWith method
+  BloodBankAgency copyWith({
+    String? agencyName,
+    String? gstNumber,
+    String? panNumber,
+    String? ownerName,
+    String? completeAddress,
+    String? nearbyLandmark,
+    String? phoneNumber,
+    String? state,
+    String? city,
+    String? pincode,
+    String? email,
+    String? website,
+    String? languageProficiency,
+    List<String>? deliveryOperationalAreas,
+    int? distanceLimitations,
+    bool? is24x7Operational,
+    bool? isAllDaysWorking,
+    List<String>? bloodServicesProvided,
+    List<String>? plateletServicesProvided,
+    List<String>? otherServicesProvided,
+    bool? acceptsOnlinePayment,
+    List<Map<String, String>>? agencyPhotos,
+    List<Map<String, String>>? licenseFiles,
+    List<Map<String, String>>? registrationCertificateFiles,
+    String? googleMapsLocation,
+    String? vendorId,
+    String? generatedId,
+  }) {
+    return BloodBankAgency(
+      agencyName: agencyName ?? this.agencyName,
+      gstNumber: gstNumber ?? this.gstNumber,
+      panNumber: panNumber ?? this.panNumber,
+      ownerName: ownerName ?? this.ownerName,
+      completeAddress: completeAddress ?? this.completeAddress,
+      nearbyLandmark: nearbyLandmark ?? this.nearbyLandmark,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      state: state ?? this.state,
+      city: city ?? this.city,
+      pincode: pincode ?? this.pincode,
+      email: email ?? this.email,
+      website: website ?? this.website,
+      languageProficiency: languageProficiency ?? this.languageProficiency,
+      deliveryOperationalAreas: deliveryOperationalAreas ?? List.from(this.deliveryOperationalAreas),
+      distanceLimitations: distanceLimitations ?? this.distanceLimitations,
+      is24x7Operational: is24x7Operational ?? this.is24x7Operational,
+      isAllDaysWorking: isAllDaysWorking ?? this.isAllDaysWorking,
+      bloodServicesProvided: bloodServicesProvided ?? List.from(this.bloodServicesProvided),
+      plateletServicesProvided: plateletServicesProvided ?? List.from(this.plateletServicesProvided),
+      otherServicesProvided: otherServicesProvided ?? List.from(this.otherServicesProvided),
+      acceptsOnlinePayment: acceptsOnlinePayment ?? this.acceptsOnlinePayment,
+      agencyPhotos: agencyPhotos ?? List.from(this.agencyPhotos),
+      licenseFiles: licenseFiles ?? List.from(this.licenseFiles),
+      registrationCertificateFiles: registrationCertificateFiles ?? List.from(this.registrationCertificateFiles),
+      googleMapsLocation: googleMapsLocation ?? this.googleMapsLocation,
+      vendorId: vendorId ?? this.vendorId,
+      generatedId: generatedId ?? this.generatedId,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'agencyName': agencyName,
@@ -70,7 +129,6 @@ class BloodBankAgency {
       'ownerName': ownerName,
       'completeAddress': completeAddress,
       'nearbyLandmark': nearbyLandmark,
-      'emergencyContactNumber': emergencyContactNumber,
       'phoneNumber': phoneNumber,
       'state': state,
       'city': city,
@@ -103,7 +161,6 @@ class BloodBankAgency {
       ownerName: json['ownerName'],
       completeAddress: json['completeAddress'],
       nearbyLandmark: json['nearbyLandmark'],
-      emergencyContactNumber: json['emergencyContactNumber'],
       phoneNumber: json['phoneNumber'],
       state: json['state'],
       city: json['city'],

@@ -240,7 +240,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
       ownerName: ownerNameController.text,
       completeAddress: addressController.text,
       nearbyLandmark: landmarkController.text,
-      emergencyContactNumber: '',
       phoneNumber: phoneNumberController.text,
       state: selectedState.value ?? '',
       city: selectedCity.value ?? '',

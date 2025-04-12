@@ -1,25 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 
-class BloodBankRequestScreen extends StatelessWidget {
+class BloodBankRequestScreen extends StatefulWidget {
   const BloodBankRequestScreen({super.key});
+
+  @override
+  State<BloodBankRequestScreen> createState() => _BloodBankRequestScreenState();
+}
+
+class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => context.read<BloodBankRequestViewModel>().loadRequests('vendor1'));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Consumer<BloodBankRequestViewModel>(
         builder: (context, viewModel, child) {
-          if (viewModel.isLoading && viewModel.requests.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+          if (viewModel.isLoading) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading requests...',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           if (viewModel.error != null) {
             return Center(
-              child: Text(
-                viewModel.error!,
-                style: const TextStyle(color: Colors.red),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    viewModel.error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => viewModel.loadRequests('vendor1'),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
             );
           }
@@ -35,10 +73,7 @@ class BloodBankRequestScreen extends StatelessWidget {
             itemCount: viewModel.requests.length,
             itemBuilder: (context, index) {
               final request = viewModel.requests[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _RequestCard(request: request),
-              );
+              return RequestCard(request: request);
             },
           );
         },
@@ -47,218 +82,211 @@ class BloodBankRequestScreen extends StatelessWidget {
   }
 }
 
-class _RequestCard extends StatelessWidget {
+class RequestCard extends StatelessWidget {
   final BloodBankRequest request;
 
-  const _RequestCard({required this.request});
+  const RequestCard({super.key, required this.request});
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.read<BloodBankRequestViewModel>();
+    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.3),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.grey.shade200,
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.05),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: theme.primaryColor,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      request.customerName,
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      request.user.name![0].toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 16,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        request.user.name!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${request.bloodType}',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${request.units} units',
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(request.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    request.status,
+                    request.status.toUpperCase(),
                     style: TextStyle(
                       color: _getStatusColor(request.status),
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 12),
+            Row(
               children: [
-                _buildInfoRow(
-                  icon: Icons.bloodtype,
-                  iconColor: Colors.red,
-                  title: 'Blood Type',
-                  value: '${request.bloodType} (${request.units} units)',
+                Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  dateFormat.format(request.createdAt),
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                _buildInfoRow(
-                  icon: Icons.attach_money,
-                  iconColor: Colors.green,
-                  title: 'Total Amount',
-                  value: '₹${request.totalAmount.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 8),
-                _buildInfoRow(
-                  icon: Icons.local_offer,
-                  iconColor: Colors.orange,
-                  title: 'Discount',
-                  value: '₹${request.discount.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _showPrescriptionDialog(context, request),
-                      icon: const Icon(Icons.visibility, size: 16),
-                      label: const Text(
-                        'View Prescription',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
+                const Spacer(),
+                if (request.prescriptionUrls.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => _showPrescriptionDialog(context, request),
+                    icon: const Icon(Icons.medical_services, size: 14),
+                    label: const Text('View Prescription'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    if (request.status == 'Pending')
-                      ElevatedButton(
-                        onPressed: () => viewModel.acceptRequest(
-                          request.requestId!,
-                          'current_vendor_id',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Text(
-                          'Accept',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      )
-                    else if (request.status == 'Accepted')
-                      ElevatedButton(
-                        onPressed: () => viewModel.processRequest(
-                          request.requestId!,
-                          'current_vendor_id',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Text(
-                          'Process',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (request.status == 'pending')
+                  ElevatedButton(
+                    onPressed: () => context.read<BloodBankRequestViewModel>().acceptRequest(
+                      request.requestId!,
+                      'vendor1',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Accept',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  )
+                else if (request.status == 'accepted')
+                  ElevatedButton(
+                    onPressed: () => context.read<BloodBankRequestViewModel>().processRequest(
+                      request.requestId!,
+                      'vendor1',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Process',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 
@@ -270,8 +298,10 @@ class _RequestCard extends StatelessWidget {
         return Colors.blue;
       case 'processed':
         return Colors.green;
-      case 'rejected':
+      case 'cancelled':
         return Colors.red;
+      case 'expired':
+        return Colors.grey;
       default:
         return Colors.grey;
     }

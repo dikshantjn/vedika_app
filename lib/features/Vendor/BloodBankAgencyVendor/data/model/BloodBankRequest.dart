@@ -1,29 +1,24 @@
+import '../../../../../core/auth/data/models/UserModel.dart';
 
 class BloodBankRequest {
   final String? requestId;
   final String userId;
+  final UserModel user;
   final String customerName;
   final String bloodType;
   final int units;
-  final double deliveryFees;
-  final double gst;
-  final double discount;
-  final double totalAmount;
   final List<String> prescriptionUrls;
   final List<String> requestedVendors;
-  final String status;
+  final String status; // pending, cancelled, expired
   final DateTime createdAt;
 
   BloodBankRequest({
     this.requestId,
     required this.userId,
+    required this.user,
     required this.customerName,
     required this.bloodType,
     required this.units,
-    required this.deliveryFees,
-    required this.gst,
-    required this.discount,
-    required this.totalAmount,
     required this.prescriptionUrls,
     required this.requestedVendors,
     required this.status,
@@ -33,13 +28,10 @@ class BloodBankRequest {
   BloodBankRequest copyWith({
     String? requestId,
     String? userId,
+    UserModel? user,
     String? customerName,
     String? bloodType,
     int? units,
-    double? deliveryFees,
-    double? gst,
-    double? discount,
-    double? totalAmount,
     List<String>? prescriptionUrls,
     List<String>? requestedVendors,
     String? status,
@@ -48,13 +40,10 @@ class BloodBankRequest {
     return BloodBankRequest(
       requestId: requestId ?? this.requestId,
       userId: userId ?? this.userId,
+      user: user ?? this.user,
       customerName: customerName ?? this.customerName,
       bloodType: bloodType ?? this.bloodType,
       units: units ?? this.units,
-      deliveryFees: deliveryFees ?? this.deliveryFees,
-      gst: gst ?? this.gst,
-      discount: discount ?? this.discount,
-      totalAmount: totalAmount ?? this.totalAmount,
       prescriptionUrls: prescriptionUrls ?? this.prescriptionUrls,
       requestedVendors: requestedVendors ?? this.requestedVendors,
       status: status ?? this.status,
@@ -66,13 +55,10 @@ class BloodBankRequest {
     return {
       'requestId': requestId,
       'userId': userId,
+      'user': user.toJson(),
       'customerName': customerName,
       'bloodType': bloodType,
       'units': units,
-      'deliveryFees': deliveryFees,
-      'gst': gst,
-      'discount': discount,
-      'totalAmount': totalAmount,
       'prescriptionUrls': prescriptionUrls,
       'requestedVendors': requestedVendors,
       'status': status,
@@ -84,13 +70,10 @@ class BloodBankRequest {
     return BloodBankRequest(
       requestId: json['requestId'],
       userId: json['userId'],
+      user: UserModel.fromJson(json['user']),
       customerName: json['customerName'],
       bloodType: json['bloodType'],
       units: json['units'],
-      deliveryFees: json['deliveryFees'].toDouble(),
-      gst: json['gst'].toDouble(),
-      discount: json['discount'].toDouble(),
-      totalAmount: json['totalAmount'].toDouble(),
       prescriptionUrls: List<String>.from(json['prescriptionUrls']),
       requestedVendors: List<String>.from(json['requestedVendors']),
       status: json['status'],
@@ -100,7 +83,7 @@ class BloodBankRequest {
 
   @override
   String toString() {
-    return 'BloodBankRequest(requestId: $requestId, userId: $userId, customerName: $customerName, bloodType: $bloodType, units: $units, status: $status)';
+    return 'BloodBankRequest(requestId: $requestId, userId: $userId, user: ${user.name}, customerName: $customerName, bloodType: $bloodType, units: $units, status: $status)';
   }
 
   @override

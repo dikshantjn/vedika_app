@@ -101,5 +101,6 @@ class ApiEndpoints {
   static const String getCompletedRequestsByVendorEndpoint = "$baseUrl/ambulanceBooking/completed/vendor"; // e.g. /completed/vendor/:vendorId
 
   static const String bloodBankRegistration = "$baseUrl/blood-bank/register"; // e.g. /completed/vendor/:vendorId
+  static const String bloodBankProfile = "$baseUrl/blood-bank/profile"; // e.g. /blood-bank/profile/:vendorId
 
 }

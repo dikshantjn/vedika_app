@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodInventory.dart';
+import '../../data/model/BloodInventory.dart';
 
 class BloodAvailabilityViewModel extends ChangeNotifier {
   List<BloodInventory> _bloodInventory = [];
@@ -45,7 +45,8 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
            int.tryParse(_unitsController.text) != null;
   }
 
-  Future<void> submitBloodType({BloodInventory? existingBloodType}) async {
+  // Add new blood type
+  Future<void> addBloodType(BloodInventory bloodType) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -53,41 +54,27 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
       // Simulate API call delay
       await Future.delayed(const Duration(milliseconds: 500));
 
-      if (existingBloodType != null) {
-        // Update existing blood type
-        final index = _bloodInventory.indexWhere(
-          (item) => item.bloodType == existingBloodType.bloodType,
-        );
-        if (index != -1) {
-          _bloodInventory[index] = BloodInventory(
-            bloodType: _selectedBloodType!,
-            unitsAvailable: int.parse(_unitsController.text),
-            isAvailable: int.parse(_unitsController.text) > 0,
-            vendorId: 'vendor123', // This should come from user session
-          );
-        }
-      } else {
-        // Add new blood type
-        _bloodInventory.add(
-          BloodInventory(
-            bloodType: _selectedBloodType!,
-            unitsAvailable: int.parse(_unitsController.text),
-            isAvailable: int.parse(_unitsController.text) > 0,
-            vendorId: 'vendor123', // This should come from user session
-          ),
-        );
-      }
+      // Add new blood type
+      _bloodInventory.add(
+        BloodInventory(
+          bloodType: bloodType.bloodType,
+          unitsAvailable: bloodType.unitsAvailable,
+          isAvailable: bloodType.isAvailable,
+          vendorId: 'vendor123', // This should come from user session
+        ),
+      );
 
       _error = null;
     } catch (e) {
-      _error = 'Failed to ${existingBloodType != null ? 'update' : 'add'} blood type';
+      _error = 'Failed to add blood type';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> deleteBloodType(BloodInventory bloodType) async {
+  // Update existing blood type
+  Future<void> updateBloodType(BloodInventory bloodType) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -95,7 +82,37 @@ class BloodAvailabilityViewModel extends ChangeNotifier {
       // Simulate API call delay
       await Future.delayed(const Duration(milliseconds: 500));
 
-      _bloodInventory.removeWhere((item) => item.bloodType == bloodType.bloodType);
+      final index = _bloodInventory.indexWhere(
+        (item) => item.bloodType == bloodType.bloodType,
+      );
+      if (index != -1) {
+        _bloodInventory[index] = BloodInventory(
+          bloodType: bloodType.bloodType,
+          unitsAvailable: bloodType.unitsAvailable,
+          isAvailable: bloodType.isAvailable,
+          vendorId: 'vendor123', // This should come from user session
+        );
+      }
+
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to update blood type';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Delete blood type by blood type string
+  Future<void> deleteBloodType(String bloodType) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Simulate API call delay
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      _bloodInventory.removeWhere((item) => item.bloodType == bloodType);
       _error = null;
     } catch (e) {
       _error = 'Failed to delete blood type';

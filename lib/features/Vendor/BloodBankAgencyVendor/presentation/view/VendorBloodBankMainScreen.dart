@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodAvailabilityScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankAgencyProfileScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRequestScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 
 class VendorBloodBankMainScreen extends StatefulWidget {
-  const VendorBloodBankMainScreen({super.key});
+
+  const VendorBloodBankMainScreen({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<VendorBloodBankMainScreen> createState() => _VendorBloodBankMainScreenState();
@@ -17,11 +22,22 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [];
   final Map<String, Widget> _screenCache = {};
+  late final VendorBloodBankMainViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
+    _viewModel = VendorBloodBankMainViewModel();
     _initializeScreens();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.initializeServiceStatus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   void _initializeScreens() {
@@ -29,8 +45,8 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
     _screens.add(_getCachedScreen('dashboard', const VendorBloodBankDashBoardScreen()));
     _screens.add(_getCachedScreen('availability', const BloodAvailabilityScreen()));
     _screens.add(_getCachedScreen('requests', const BloodBankRequestScreen()));
-    _screens.add(_getCachedScreen('bookings', const Center(child: Text('Bookings'))));
-    _screens.add(_getCachedScreen('profile', const Center(child: Text('Profile'))));
+    _screens.add(_getCachedScreen('bookings', const BloodBankBookingScreen()));
+    _screens.add(_getCachedScreen('profile', const BloodBankAgencyProfileScreen()));
   }
 
   Widget _getCachedScreen(String key, Widget screen) {
@@ -45,10 +61,41 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return ChangeNotifierProvider(
-      create: (_) => VendorBloodBankMainViewModel(),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
       child: Consumer<VendorBloodBankMainViewModel>(
         builder: (context, viewModel, child) {
+          if (viewModel.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (viewModel.error != null) {
+            return Scaffold(
+              body: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Error: ${viewModel.error}',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => viewModel.initializeServiceStatus(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
           String getAppBarTitle() {
             switch (_currentIndex) {
               case 0:
@@ -94,11 +141,27 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
                         ),
                       ),
                     ),
-                    Switch(
-                      value: viewModel.isServiceActive,
-                      onChanged: (value) => viewModel.toggleServiceStatus(),
-                      activeColor: Colors.green,
-                      activeTrackColor: Colors.green.withOpacity(0.3),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Switch(
+                          value: viewModel.isServiceActive,
+                          onChanged: viewModel.isToggling
+                              ? null
+                              : (value) => viewModel.toggleServiceStatus(),
+                          activeColor: Colors.green,
+                          activeTrackColor: Colors.green.withOpacity(0.3),
+                        ),
+                        if (viewModel.isToggling)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(width: 8),
                   ],
