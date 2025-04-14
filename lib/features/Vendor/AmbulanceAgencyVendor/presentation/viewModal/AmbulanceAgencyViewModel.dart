@@ -195,7 +195,6 @@ class AmbulanceAgencyViewModel extends ChangeNotifier {
       // 4. Build vendor model from agency data
       final vendor = Vendor(
         vendorRole: 4, // Example: 3 for Ambulance agency vendor
-        vendorId: vendorIdController.text,
         phoneNumber: contactNumberController.text,
         email: emailController.text,
         generatedId: generatedIdController.text,

@@ -104,6 +104,6 @@ class ApiEndpoints {
   static const String bloodBankProfile = "$baseUrl/blood-bank/profile"; // e.g. /blood-bank/profile/:vendorId
   static const String AddBloodAvaibility = "$baseUrl/blood-bank/upsert"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodAvaibility = "$baseUrl/blood-bank/vendor"; // e.g. /blood-bank/profile/:vendorId
-
+  static const String deleteBloodAvaibility = "$baseUrl/blood-bank/blood-inventory"; // e.g. /blood-bank/profile/:vendorId
 
 }

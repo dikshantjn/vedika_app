@@ -2,7 +2,6 @@ import 'dart:math';
 
 class Vendor {
   int vendorRole; // Role to determine if medical store exists
-  String? vendorId; // Making vendorId optional
   String phoneNumber;
   String email;
   String? password; // Making password optional
@@ -11,7 +10,6 @@ class Vendor {
   // Constructor
   Vendor({
     required this.vendorRole,
-    this.vendorId, // vendorId is now optional
     required this.phoneNumber,
     required this.email,
     this.password, // password is now optional
@@ -27,7 +25,6 @@ class Vendor {
   Map<String, dynamic> toJson() {
     return {
       'vendorRole': vendorRole,
-      'vendorId': vendorId, // No need to change here as null will be handled
       'phoneNumber': phoneNumber,
       'email': email,
       'password': password,

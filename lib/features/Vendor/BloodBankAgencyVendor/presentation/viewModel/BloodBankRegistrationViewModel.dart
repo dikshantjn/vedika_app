@@ -294,7 +294,6 @@ class BloodBankRegistrationViewModel extends ChangeNotifier {
       final registeredAgency = BloodBankAgency.fromJson(response['agency']);
       final registeredVendor = Vendor(
         vendorRole: 5,
-        vendorId: response['vendor']['vendorId'],
         phoneNumber: response['vendor']['phoneNumber'],
         email: response['vendor']['email'],
         generatedId: response['vendor']['generatedId'],

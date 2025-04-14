@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodInventoryService.dart';
 import '../viewModel/BloodAvailabilityViewModel.dart';
 import '../../data/model/BloodInventory.dart';
+import 'package:logger/logger.dart';
 
 class BloodAvailabilityScreen extends StatefulWidget {
   const BloodAvailabilityScreen({super.key});
@@ -35,12 +35,6 @@ class _BloodAvailabilityScreenState extends State<BloodAvailabilityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Blood Inventory'),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      ),
       body: Consumer<BloodAvailabilityViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading && viewModel.bloodInventory.isEmpty) {
@@ -155,8 +149,11 @@ class _BloodAvailabilityScreenState extends State<BloodAvailabilityScreen> {
   void _showEditDialog(BuildContext context, BloodInventory bloodType) {
     showDialog(
       context: context,
-      builder: (context) => BloodTypeDialog(
-        bloodType: bloodType,
+      builder: (context) => EditBloodTypeDialog(
+        bloodInventoryId: bloodType.bloodInventoryId!,
+        initialBloodType: bloodType.bloodType,
+        initialUnits: bloodType.unitsAvailable,
+        initialIsAvailable: bloodType.isAvailable,
         onSave: (updatedBloodType) {
           if (_mounted) {
             context.read<BloodAvailabilityViewModel>().updateBloodType(updatedBloodType);
@@ -218,7 +215,7 @@ class _BloodAvailabilityScreenState extends State<BloodAvailabilityScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_mounted) {
-                        context.read<BloodAvailabilityViewModel>().deleteBloodType(bloodType.bloodType);
+                        context.read<BloodAvailabilityViewModel>().deleteBloodType(bloodType.bloodInventoryId!);
                       }
                       Navigator.pop(context);
                     },
@@ -387,8 +384,6 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
   late TextEditingController bloodTypeController;
   late TextEditingController unitsController;
   late bool isAvailable;
-  final BloodInventoryService _service = BloodInventoryService();
-  String? _vendorId;
   bool _isLoading = false;
 
   @override
@@ -397,14 +392,20 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
     bloodTypeController = TextEditingController(text: widget.bloodType?.bloodType ?? '');
     unitsController = TextEditingController(text: widget.bloodType?.unitsAvailable.toString() ?? '0');
     isAvailable = widget.bloodType?.isAvailable ?? true;
-    _loadVendorId();
+    
+    // Use post-frame callback to load vendor ID
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVendorId();
+    });
   }
 
   Future<void> _loadVendorId() async {
-    try {
-      _vendorId = await _service.getVendorId();
-    } catch (e) {
-      // Handle error
+    if (mounted) {
+      setState(() => _isLoading = true);
+      await context.read<BloodAvailabilityViewModel>().loadVendorId();
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -415,10 +416,34 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
     super.dispose();
   }
 
+  Future<void> _handleSave() async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    final viewModel = context.read<BloodAvailabilityViewModel>();
+    final newBloodType = BloodInventory(
+      vendorId: viewModel.vendorId ?? '',
+      bloodType: bloodTypeController.text,
+      unitsAvailable: int.tryParse(unitsController.text) ?? 0,
+      isAvailable: isAvailable,
+    );
+
+    final success = await viewModel.handleSave(newBloodType);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.bloodType != null;
     final theme = Theme.of(context);
+    final viewModel = context.watch<BloodAvailabilityViewModel>();
     
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -459,6 +484,7 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
                 ),
                 prefixIcon: const Icon(Icons.bloodtype),
               ),
+              enabled: !_isLoading,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -471,6 +497,7 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
                 prefixIcon: const Icon(Icons.inventory_2),
               ),
               keyboardType: TextInputType.number,
+              enabled: !_isLoading,
             ),
             const SizedBox(height: 16),
             Container(
@@ -481,57 +508,28 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
               child: SwitchListTile(
                 title: const Text('Available'),
                 value: isAvailable,
-                onChanged: (value) => setState(() => isAvailable = value),
+                onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
                 activeColor: theme.primaryColor,
               ),
             ),
+            if (viewModel.error != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                viewModel.error!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : () async {
-                    if (_vendorId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Error: Vendor ID not found'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    try {
-                      final newBloodType = BloodInventory(
-                        vendorId: _vendorId!,
-                        bloodType: bloodTypeController.text,
-                        unitsAvailable: int.tryParse(unitsController.text) ?? 0,
-                        isAvailable: isAvailable,
-                      );
-                      
-                      widget.onSave(newBloodType);
-                      Navigator.pop(context);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: ${e.toString()}'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } finally {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
@@ -550,6 +548,205 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
                           ),
                         )
                       : Text(isEdit ? 'Update' : 'Add'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class EditBloodTypeDialog extends StatefulWidget {
+  final String bloodInventoryId;
+  final String initialBloodType;
+  final int initialUnits;
+  final bool initialIsAvailable;
+  final Function(BloodInventory) onSave;
+
+  const EditBloodTypeDialog({
+    super.key,
+    required this.bloodInventoryId,
+    required this.initialBloodType,
+    required this.initialUnits,
+    required this.initialIsAvailable,
+    required this.onSave,
+  });
+
+  @override
+  State<EditBloodTypeDialog> createState() => _EditBloodTypeDialogState();
+}
+
+class _EditBloodTypeDialogState extends State<EditBloodTypeDialog> {
+  late TextEditingController bloodTypeController;
+  late TextEditingController unitsController;
+  late bool isAvailable;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    bloodTypeController = TextEditingController(text: widget.initialBloodType);
+    unitsController = TextEditingController(text: widget.initialUnits.toString());
+    isAvailable = widget.initialIsAvailable;
+    
+    // Use post-frame callback to load vendor ID
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVendorId();
+    });
+  }
+
+  Future<void> _loadVendorId() async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+      await context.read<BloodAvailabilityViewModel>().loadVendorId();
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    bloodTypeController.dispose();
+    unitsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    final viewModel = context.read<BloodAvailabilityViewModel>();
+    final updatedBloodType = BloodInventory(
+      bloodInventoryId: widget.bloodInventoryId,
+      vendorId: viewModel.vendorId ?? '',
+      bloodType: bloodTypeController.text,
+      unitsAvailable: int.tryParse(unitsController.text) ?? 0,
+      isAvailable: isAvailable,
+    );
+
+    print('Updating blood type: ${updatedBloodType.toJson()}');
+    final success = await viewModel.handleSave(updatedBloodType);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final viewModel = context.watch<BloodAvailabilityViewModel>();
+    
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.edit,
+                color: theme.primaryColor,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Edit Blood Type',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: bloodTypeController,
+              decoration: InputDecoration(
+                labelText: 'Blood Type',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.bloodtype),
+              ),
+              enabled: !_isLoading,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: unitsController,
+              decoration: InputDecoration(
+                labelText: 'Units Available',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.inventory_2),
+              ),
+              keyboardType: TextInputType.number,
+              enabled: !_isLoading,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SwitchListTile(
+                title: const Text('Available'),
+                value: isAvailable,
+                onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
+                activeColor: theme.primaryColor,
+              ),
+            ),
+            if (viewModel.error != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                viewModel.error!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _handleSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Update'),
                 ),
               ],
             ),
