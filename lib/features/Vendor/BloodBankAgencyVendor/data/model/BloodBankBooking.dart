@@ -10,10 +10,13 @@ class BloodBankBooking {
   final String healthIssue;
   final String deliveryLocation;
   final int units;
+  final double pricePerUnit;
   final double deliveryFees;
   final double gst;
   final double discount;
   final double totalAmount;
+  final String deliveryType;
+  final String paymentStatus;
   final String status; // confirmed, completed, cancelled
   final DateTime createdAt;
   final DateTime? scheduledDate;
@@ -31,10 +34,13 @@ class BloodBankBooking {
     required this.healthIssue,
     required this.deliveryLocation,
     required this.units,
+    required this.pricePerUnit,
     required this.deliveryFees,
     required this.gst,
     required this.discount,
     required this.totalAmount,
+    required this.deliveryType,
+    required this.paymentStatus,
     required this.status,
     required this.createdAt,
     this.scheduledDate,
@@ -53,10 +59,13 @@ class BloodBankBooking {
     String? healthIssue,
     String? deliveryLocation,
     int? units,
+    double? pricePerUnit,
     double? deliveryFees,
     double? gst,
     double? discount,
     double? totalAmount,
+    String? deliveryType,
+    String? paymentStatus,
     String? status,
     DateTime? createdAt,
     DateTime? scheduledDate,
@@ -74,10 +83,13 @@ class BloodBankBooking {
       healthIssue: healthIssue ?? this.healthIssue,
       deliveryLocation: deliveryLocation ?? this.deliveryLocation,
       units: units ?? this.units,
+      pricePerUnit: pricePerUnit ?? this.pricePerUnit,
       deliveryFees: deliveryFees ?? this.deliveryFees,
       gst: gst ?? this.gst,
       discount: discount ?? this.discount,
       totalAmount: totalAmount ?? this.totalAmount,
+      deliveryType: deliveryType ?? this.deliveryType,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       scheduledDate: scheduledDate ?? this.scheduledDate,
@@ -98,10 +110,13 @@ class BloodBankBooking {
       'healthIssue': healthIssue,
       'deliveryLocation': deliveryLocation,
       'units': units,
+      'pricePerUnit': pricePerUnit,
       'deliveryFees': deliveryFees,
       'gst': gst,
       'discount': discount,
       'totalAmount': totalAmount,
+      'deliveryType': deliveryType,
+      'paymentStatus': paymentStatus,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
       'scheduledDate': scheduledDate?.toIso8601String(),
@@ -112,11 +127,10 @@ class BloodBankBooking {
   }
 
   factory BloodBankBooking.fromJson(Map<String, dynamic> json) {
-    // Extract user data from bloodRequest if available, otherwise use the user field
     UserModel userModel;
-    if (json.containsKey('bloodRequest') && 
-        json['bloodRequest'] != null && 
-        json['bloodRequest'].containsKey('user') && 
+    if (json.containsKey('bloodRequest') &&
+        json['bloodRequest'] != null &&
+        json['bloodRequest'].containsKey('user') &&
         json['bloodRequest']['user'] != null) {
       userModel = UserModel.fromJson(json['bloodRequest']['user']);
     } else if (json.containsKey('user') && json['user'] != null) {
@@ -131,40 +145,44 @@ class BloodBankBooking {
       vendorId: json['vendorId'],
       userId: json['userId'],
       user: userModel,
-      bloodType: json['bloodType'] is String 
-          ? [json['bloodType']] 
+      bloodType: json['bloodType'] is String
+          ? [json['bloodType']]
           : List<String>.from(json['bloodType'] ?? []),
       healthIssue: json['healthIssue'] ?? '',
       deliveryLocation: json['deliveryLocation'] ?? '',
       units: json['units']?.toInt() ?? 0,
-      deliveryFees: json['deliveryFees'] is String 
-          ? double.parse(json['deliveryFees']) 
+      pricePerUnit: json['pricePerUnit'] is String
+          ? double.parse(json['pricePerUnit'])
+          : json['pricePerUnit']?.toDouble() ?? 0.0,
+      deliveryFees: json['deliveryFees'] is String
+          ? double.parse(json['deliveryFees'])
           : json['deliveryFees']?.toDouble() ?? 0.0,
-      gst: json['gst'] is String 
-          ? double.parse(json['gst']) 
+      gst: json['gst'] is String
+          ? double.parse(json['gst'])
           : json['gst']?.toDouble() ?? 0.0,
-      discount: json['discount'] is String 
-          ? double.parse(json['discount']) 
+      discount: json['discount'] is String
+          ? double.parse(json['discount'])
           : json['discount']?.toDouble() ?? 0.0,
-      totalAmount: json['totalAmount'] is String 
-          ? double.parse(json['totalAmount']) 
+      totalAmount: json['totalAmount'] is String
+          ? double.parse(json['totalAmount'])
           : json['totalAmount']?.toDouble() ?? 0.0,
-      status: json['status'],
+      deliveryType: json['deliveryType'] ?? '',
+      paymentStatus: json['paymentStatus'] ?? '',
+      status: json['status'] ?? '',
       createdAt: DateTime.parse(json['createdAt']),
-      scheduledDate: json['scheduledDate'] != null 
-          ? DateTime.parse(json['scheduledDate']) 
+      scheduledDate: json['scheduledDate'] != null
+          ? DateTime.parse(json['scheduledDate'])
           : null,
       notes: json['notes'],
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
           : null,
-      bloodRequest: json['bloodRequest'] != null 
-          ? BloodRequest.fromJson(json['bloodRequest']) 
+      bloodRequest: json['bloodRequest'] != null
+          ? BloodRequest.fromJson(json['bloodRequest'])
           : null,
     );
   }
 
-  // Calculate total amount including all charges
   static double calculateTotalAmount(double baseAmount, double deliveryFees, double gst, double discount) {
     final subtotal = baseAmount + deliveryFees;
     final gstAmount = subtotal * (gst / 100);
@@ -185,6 +203,7 @@ class BloodBankBooking {
   @override
   int get hashCode => bookingId.hashCode;
 }
+
 
 class BloodRequest {
   final String requestId;
@@ -240,4 +259,4 @@ class BloodRequest {
       user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
     );
   }
-} 
+}

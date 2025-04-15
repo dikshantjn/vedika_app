@@ -1,60 +1,83 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
+import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankAgencyService.dart';
 
 class BloodBankPaymentService {
   final Razorpay _razorpay = Razorpay();
+  final BloodBankAgencyService _bloodBankAgencyService = BloodBankAgencyService();
 
-  // Callback functions to handle payment response
+  // Callback functions
   Function(PaymentSuccessResponse)? onPaymentSuccess;
   Function(PaymentFailureResponse)? onPaymentError;
   Function(PaymentFailureResponse)? onPaymentCancelled;
 
+  // Store bookingId to use after success
+  late String _currentBookingId;
+
   BloodBankPaymentService() {
-    // Initialize Razorpay listeners
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentCancelled); // Correct usage
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentCancelled); // optional
   }
 
-  // Handle successful payment
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+  // ✅ Handle successful payment
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     if (onPaymentSuccess != null) {
       onPaymentSuccess!(response);
     }
+
+    try {
+      print("Calling update API for bookingId: $_currentBookingId");
+      await _bloodBankAgencyService.updatePaymentDetails(_currentBookingId);
+      print('✅ Payment details updated successfully.');
+    } catch (e) {
+      print('❌ Error updating payment details: $e');
+    }
   }
 
-  // Handle payment error
+  // Error handler
   void _handlePaymentError(PaymentFailureResponse response) {
     if (onPaymentError != null) {
       onPaymentError!(response);
     }
   }
 
-  // Handle payment cancellation (using PaymentFailureResponse here)
+  // Cancel handler
   void _handlePaymentCancelled(PaymentFailureResponse response) {
     if (onPaymentCancelled != null) {
       onPaymentCancelled!(response);
     }
   }
 
-  // Open Razorpay payment gateway for blood bank payment
-  void openPaymentGateway(int amount, String name, String description) {
+  // ✅ Payment Gateway trigger with bookingId storage
+  void openPaymentGateway({
+    required double amount,
+    required String name,
+    required String description,
+    required String bookingId,
+    required Function onPaymentSuccess,
+  }) {
+    _currentBookingId = bookingId; // ✅ Save for later use in success callback
+
+    // Optional immediate success callback (before actual payment)
+    onPaymentSuccess();
+
     var options = {
-      'key': ApiConstants.razorpayApiKey, // Use global API key
-      'amount': amount * 100, // The amount in paise
+      'key': ApiConstants.razorpayApiKey,
+      'amount': amount * 100,
       'name': name,
       'description': description,
       'prefill': {
-        'contact': 'USER_PHONE_NUMBER', // Replace with the actual user's phone number
-        'email': 'USER_EMAIL', // Replace with the actual user's email
+        'contact': 'USER_PHONE_NUMBER', // Replace with dynamic values
+        'email': 'USER_EMAIL',
       },
       'theme': {'color': '#38A3A5'},
     };
 
     try {
-      _razorpay.open(options); // Open Razorpay payment gateway
+      _razorpay.open(options);
     } catch (e) {
-      print('Error: $e');
+      print('❌ Error opening Razorpay: $e');
     }
   }
 
@@ -62,3 +85,4 @@ class BloodBankPaymentService {
     _razorpay.clear();
   }
 }
+

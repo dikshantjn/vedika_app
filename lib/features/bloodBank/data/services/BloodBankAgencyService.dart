@@ -241,4 +241,26 @@ class BloodBankAgencyService {
       throw Exception('Failed to fetch blood bank bookings: $e');
     }
   }
+
+  Future<void> updatePaymentDetails(String bookingId) async {
+    try {
+      _logger.i('Updating payment details for booking ID: $bookingId');
+
+      // Ensure token is set
+      await _setupDioWithAuthToken();
+
+      final response = await _dio.put(
+        '${ApiEndpoints.updatePaymentDetails}/$bookingId/update-payment',
+      );
+
+      if (response.statusCode == 200) {
+        _logger.i('Payment details updated successfully');
+      } else {
+        _logger.e('Failed to update payment details: ${response.statusMessage}');
+      }
+    } catch (e) {
+      _logger.e('Error updating payment details: $e');
+      throw Exception('Failed to update payment details: $e');
+    }
+  }
 } 

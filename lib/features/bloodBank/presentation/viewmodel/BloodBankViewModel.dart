@@ -60,9 +60,6 @@ class BloodBankViewModel extends ChangeNotifier {
 
   Future<void> ensureLocationEnabled()async {
     debugPrint("Starting location check...");
-    String? token = await _authRepository.getToken();
-    String? userId = await StorageService.getUserId();
-
 
     var locationProvider = Provider.of<LocationProvider>(context, listen: false);
 
@@ -91,7 +88,7 @@ class BloodBankViewModel extends ChangeNotifier {
       notifyListeners();
 
       // Fetch bookings first
-      await fetchBookingsForVendor(userId!, token!);
+      await fetchBookingsForVendor();
 
       // If bookings exist, we already showed the bottom sheet inside that method
       if (_bookings.isNotEmpty) {
@@ -424,13 +421,16 @@ class BloodBankViewModel extends ChangeNotifier {
     });
   }
 
-  Future<void> fetchBookingsForVendor(String vendorId, String token) async {
+  Future<void> fetchBookingsForVendor() async {
+    String? token = await _authRepository.getToken();
+    String? userId = await StorageService.getUserId();
+
     _isLoadingBookings = true;
     _bookingError = null;
     notifyListeners();
 
     try {
-      _bookings = await _agencyService.getBookings(vendorId, token);
+      _bookings = await _agencyService.getBookings(userId!, token!);
       debugPrint('Bookings fetched: ${_bookings.length}');
       if (_bookings.isNotEmpty) {
         _showBookingDetailsBottomSheet(_bookings.first);
@@ -512,5 +512,4 @@ class BloodBankViewModel extends ChangeNotifier {
       ),
     );
   }
-
 }
