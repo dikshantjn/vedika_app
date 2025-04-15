@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodAvailabilityScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankAgencyProfileScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankBookingScreen.dart';
@@ -292,26 +293,8 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
                       // Close the drawer first
                       Navigator.pop(context);
                       
-                      // Show confirmation dialog
-                      final shouldLogout = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Logout'),
-                          content: const Text('Are you sure you want to logout?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Logout'),
-                            ),
-                          ],
-                        ),
-                      ) ?? false;
 
-                      if (shouldLogout && context.mounted) {
+                      if (context.mounted) {
                         try {
                           final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
                           await loginViewModel.logout();
@@ -319,7 +302,7 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
                           if (context.mounted) {
                             Navigator.pushNamedAndRemoveUntil(
                               context,
-                              '/vendor-login',
+                              AppRoutes.login,
                               (route) => false,
                             );
                           }

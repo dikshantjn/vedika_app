@@ -105,5 +105,15 @@ class ApiEndpoints {
   static const String AddBloodAvaibility = "$baseUrl/blood-bank/upsert"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodAvaibility = "$baseUrl/blood-bank/vendor"; // e.g. /blood-bank/profile/:vendorId
   static const String deleteBloodAvaibility = "$baseUrl/blood-bank/blood-inventory"; // e.g. /blood-bank/profile/:vendorId
+  static const String getNearestBloodBankAndSendRequest = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
+  static const String getAllBloodBankAgencies = "$baseUrl/blood-bank/blood-bank-agencies"; // e.g. /blood-bank/profile/:vendorId
+  static const String getAllBloodBankRequestByVendorId = "$baseUrl/blood-bank/vendor"; // e.g. /blood-bank/profile/:vendorId
+  static const String updateBBrequestStatus = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
+  static const String acceptBloodBankRequest = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/requests/:requestId/accept
+  static const String updateBloodBankBookingStatus = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
+  static const String getBloodBankBookingsByVendorId = "$baseUrl/blood-bank-bookings/vendor"; // e.g. /blood-bank/profile/:vendorId
+  static const String getBloodBankRequestById = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
+  static const String BloodBlankBookingwaitingforPaytmentStatus = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
+  static const String getBloodBankBookingsByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank/profile/:vendorId
 
 }

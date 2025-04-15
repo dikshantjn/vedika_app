@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import '../../data/model/BloodBankRequest.dart';
 import '../../data/services/BloodBankRequestService.dart';
 import '../../../../../core/auth/data/models/UserModel.dart';
 
 class BloodBankRequestViewModel extends ChangeNotifier {
   final BloodBankRequestService _service = BloodBankRequestService();
+  final VendorLoginService _loginService = VendorLoginService(); // Vendor Login Service
+
   List<BloodBankRequest> _requests = [];
   bool _isLoading = false;
   String? _error;
@@ -24,13 +27,16 @@ class BloodBankRequestViewModel extends ChangeNotifier {
   List<BloodBankRequest> get acceptedRequests =>
       _requests.where((request) => request.status == 'accepted').toList();
 
-  Future<void> loadRequests(String vendorId) async {
+  Future<void> loadRequests() async {
+    String? token = await _loginService.getVendorToken();
+    String? vendorId = await _loginService.getVendorId();
+
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      _requests = await _service.getRequests(vendorId);
+      _requests = await _service.getRequests(vendorId!, token!);
     } catch (e) {
       _error = 'Failed to load requests';
     } finally {
@@ -39,14 +45,16 @@ class BloodBankRequestViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> acceptRequest(String requestId, String vendorId) async {
+  Future<void> acceptRequest(String requestId) async {
+    String? token = await _loginService.getVendorToken();
+    String? vendorId = await _loginService.getVendorId();
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      await _service.updateRequestStatus(requestId, 'accepted');
-      await loadRequests(vendorId); // Reload the requests to get updated data
+      await _service.acceptRequest(requestId, vendorId!, token!);
+      await loadRequests(); // Reload the requests to get updated data
     } catch (e) {
       _error = 'Failed to accept request';
     } finally {
@@ -55,14 +63,17 @@ class BloodBankRequestViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> processRequest(String requestId, String vendorId) async {
+  Future<void> processRequest(String requestId) async {
+    String? token = await _loginService.getVendorToken();
+    String? vendorId = await _loginService.getVendorId();
+
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      await _service.updateRequestStatus(requestId, 'processed');
-      await loadRequests(vendorId); // Reload the requests to get updated data
+      await _service.updateRequestStatus(requestId, 'processed', token!);
+      await loadRequests(); // Reload the requests to get updated data
     } catch (e) {
       _error = 'Failed to process request';
     } finally {

@@ -41,8 +41,8 @@ class NotificationTapHandler {
           );
           break;
 
-        case 'USER_PROFILE':
-          await _navigateWithHistory(context, AppRoutes.userProfile);
+        case 'AmbulancePage':
+          await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
           break;
 
         case 'NOTIFICATIONS':

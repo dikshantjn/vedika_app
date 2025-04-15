@@ -15,13 +15,22 @@ class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<BloodBankRequestViewModel>().loadRequests('vendor1'));
+    Future.microtask(() => context.read<BloodBankRequestViewModel>().loadRequests());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'Blood Requests',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: Consumer<BloodBankRequestViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
@@ -54,7 +63,7 @@ class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => viewModel.loadRequests('vendor1'),
+                    onPressed: () => viewModel.loadRequests(),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -62,17 +71,40 @@ class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
             );
           }
 
-          if (viewModel.requests.isEmpty) {
+          // Filter to show only pending requests
+          final pendingRequests = viewModel.requests
+              .where((request) => request.status.toLowerCase() == 'pending')
+              .toList();
+
+          if (pendingRequests.isEmpty) {
             return const Center(
-              child: Text('No requests found'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No pending requests',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: viewModel.requests.length,
+            itemCount: pendingRequests.length,
             itemBuilder: (context, index) {
-              final request = viewModel.requests[index];
+              final request = pendingRequests[index];
               return RequestCard(request: request);
             },
           );
@@ -118,7 +150,7 @@ class RequestCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      request.user.name![0].toUpperCase(),
+                      request.user.name?[0].toUpperCase() ?? 'A',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -133,7 +165,7 @@ class RequestCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        request.user.name!,
+                        request.user.name ?? 'Anonymous',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -190,13 +222,13 @@ class RequestCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(request.status).withOpacity(0.1),
+                    color: Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    request.status.toUpperCase(),
+                  child: const Text(
+                    'PENDING',
                     style: TextStyle(
-                      color: _getStatusColor(request.status),
+                      color: Colors.orange,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -234,77 +266,34 @@ class RequestCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (request.status == 'pending')
-                  ElevatedButton(
-                    onPressed: () => context.read<BloodBankRequestViewModel>().acceptRequest(
-                      request.requestId!,
-                      'vendor1',
+                ElevatedButton(
+                  onPressed: () => context.read<BloodBankRequestViewModel>().acceptRequest(
+                    request.requestId!,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Accept',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  )
-                else if (request.status == 'accepted')
-                  ElevatedButton(
-                    onPressed: () => context.read<BloodBankRequestViewModel>().processRequest(
-                      request.requestId!,
-                      'vendor1',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Process',
-                      style: TextStyle(fontSize: 12),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: const Text(
+                    'Accept',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
               ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return Colors.orange;
-      case 'accepted':
-        return Colors.blue;
-      case 'processed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      case 'expired':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 
   void _showPrescriptionDialog(BuildContext context, BloodBankRequest request) {

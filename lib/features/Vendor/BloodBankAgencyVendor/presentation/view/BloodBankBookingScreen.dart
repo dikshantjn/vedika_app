@@ -3,40 +3,72 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewModel/BloodBankBookingViewModel.dart';
 import '../../data/model/BloodBankBooking.dart';
-import '../../data/model/BloodBankRequest.dart';
+import '../../../../../core/auth/data/models/UserModel.dart';
+import 'ProcessBloodBankBookingScreen.dart';
 
 class BloodBankBookingScreen extends StatefulWidget {
-  const BloodBankBookingScreen({super.key});
+  const BloodBankBookingScreen({Key? key}) : super(key: key);
 
   @override
   State<BloodBankBookingScreen> createState() => _BloodBankBookingScreenState();
 }
 
-class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> {
+class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<BloodBankBookingViewModel>().loadBookings('vendor1'));
+    _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BloodBankBookingViewModel>().loadBookings();
+    });
+  }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       body: Consumer<BloodBankBookingViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
             return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (viewModel.error != null) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
+                  Icon(
+                    Icons.error_outline,
+                    size: 60,
+                    color: Colors.red[300],
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    'Loading bookings...',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
+                    viewModel.error!,
+                    style: TextStyle(color: Colors.red[700]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => viewModel.loadBookings(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
                     ),
                   ),
                 ],
@@ -44,58 +76,143 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> {
             );
           }
 
-          if (viewModel.completedBookings.isEmpty) {
-            return const Center(
-              child: Text('No completed bookings found'),
+          if (viewModel.bookings.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No bookings found',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'New bookings will appear here',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: viewModel.completedBookings.length,
-            itemBuilder: (context, index) {
-              final booking = viewModel.completedBookings[index];
-              final request = viewModel.getRequestById(booking.requestId);
-              
-              if (request == null) {
-                return const SizedBox.shrink();
-              }
-              
-              return BookingCard(booking: booking, request: request);
-            },
+          return Column(
+            children: [
+              Container(
+                color: Theme.of(context).primaryColor,
+                child: SafeArea(
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: Colors.white,
+                    indicatorWeight: 3,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white70,
+                    tabs: [
+                      Tab(
+                        child: Text(
+                          'Confirmed (${viewModel.confirmedBookings.length})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Tab(
+                        child: Text(
+                          'Completed (${viewModel.completedBookings.length})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Tab(
+                        child: Text(
+                          'Cancelled (${viewModel.cancelledBookings.length})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await viewModel.loadBookings();
+                  },
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildBookingsList(viewModel.confirmedBookings, viewModel),
+                      _buildBookingsList(viewModel.completedBookings, viewModel),
+                      _buildBookingsList(viewModel.cancelledBookings, viewModel),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class BookingCard extends StatelessWidget {
-  final BloodBankBooking booking;
-  final BloodBankRequest request;
+  Widget _buildBookingsList(List<BloodBankBooking> bookings, BloodBankBookingViewModel viewModel) {
+    if (bookings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _getEmptyIconForTab(_tabController.index),
+              size: 60,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _getEmptyMessageForTab(_tabController.index),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
-  const BookingCard({
-    super.key,
-    required this.booking,
-    required this.request,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
-    final currencyFormat = NumberFormat.currency(
-      symbol: '₹',
-      decimalDigits: 2,
-      locale: 'en_IN',
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: bookings.length,
+      itemBuilder: (context, index) {
+        final booking = bookings[index];
+        final user = booking.user;
+        final bloodRequestDetails = viewModel.getBloodRequestDetailsForBooking(booking.bookingId!);
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildBookingCard(booking, user, bloodRequestDetails),
+        );
+      },
     );
+  }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey.shade200,
+  Widget _buildBookingCard(BloodBankBooking booking, UserModel user, Map<String, dynamic>? bloodRequestDetails) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.purple[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.purple[100]!,
           width: 1,
         ),
       ),
@@ -104,104 +221,33 @@ class BookingCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              color: Colors.purple[100],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      request.user.name![0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.bloodtype,
+                      color: Colors.purple[700],
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Booking #${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 16,
+                        color: Colors.purple[700],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        request.user.name!,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Blood Type: ${request.bloodType}',
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Units: ${request.units}',
-                              style: TextStyle(
-                                color: Colors.purple.shade700,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    booking.status.toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                _buildStatusChip(booking.status),
               ],
             ),
           ),
@@ -210,51 +256,44 @@ class BookingCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 8),
-                    Text(
-                      dateFormat.format(booking.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                if (request.prescriptionUrls.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.medical_services, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Prescription',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
+                if (user != null) ...[
+                  _buildInfoRow(Icons.person, 'Patient', user.name ?? "Not Mention"),
+                  if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
+                    _buildInfoRow(Icons.phone, 'Phone', user.phoneNumber!),
+                ],
+                const SizedBox(height: 16),
+                if (bloodRequestDetails != null) ...[
+                  _buildInfoRow(Icons.bloodtype, 'Blood Type', bloodRequestDetails['bloodTypes'].join(", ")),
+                  _buildInfoRow(Icons.numbers, 'Units Required', bloodRequestDetails['units'].toString()),
+                ],
+                const SizedBox(height: 16),
+                if (booking.status.toLowerCase() != 'cancelled' && booking.status.toLowerCase() != 'completed')
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // Navigate to ProcessBloodBankBookingScreen with the entire booking object
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProcessBloodBankBookingScreen(
+                              booking: booking,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.medical_services),
+                      label: const Text('Process Booking'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.purple[700],
+                        side: BorderSide(color: Colors.purple[700]!),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: request.prescriptionUrls.map((url) => 
-                      ActionChip(
-                        avatar: const Icon(Icons.link, size: 16),
-                        label: const Text('View Prescription'),
-                        onPressed: () {
-                          // TODO: Implement prescription view
-                        },
-                      ),
-                    ).toList(),
-                  ),
-                ],
-                const Divider(height: 24),
-                _buildPriceBreakdown(booking, currencyFormat),
               ],
             ),
           ),
@@ -263,69 +302,101 @@ class BookingCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceBreakdown(BloodBankBooking booking, NumberFormat currencyFormat) {
-    return Column(
-      children: [
-        _buildPriceRow(
-          'Delivery Fees',
-          currencyFormat.format(booking.deliveryFees),
-        ),
-        const SizedBox(height: 8),
-        _buildPriceRow(
-          'GST (${booking.gst}%)',
-          currencyFormat.format(booking.totalAmount * booking.gst / 100),
-        ),
-        if (booking.discount > 0) ...[
-          const SizedBox(height: 8),
-          _buildPriceRow(
-            'Discount',
-            '- ${currencyFormat.format(booking.discount)}',
-            valueColor: Colors.green.shade700,
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: Colors.purple[700],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.purple[700],
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
-        const Divider(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total Amount',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              currencyFormat.format(booking.totalAmount),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildPriceRow(String label, String value, {Color? valueColor}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
+  Widget _buildStatusChip(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.purple[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status,
+        style: const TextStyle(
+          fontSize: 12, // Smaller text
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            color: valueColor,
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return Colors.green;
+      case 'completed':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getEmptyIconForTab(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        return Icons.check_circle_outline;
+      case 1:
+        return Icons.done_all;
+      case 2:
+        return Icons.cancel_outlined;
+      default:
+        return Icons.calendar_today_outlined;
+    }
+  }
+
+  String _getEmptyMessageForTab(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        return 'No confirmed bookings';
+      case 1:
+        return 'No completed bookings';
+      case 2:
+        return 'No cancelled bookings';
+      default:
+        return 'No bookings found';
+    }
   }
 } 

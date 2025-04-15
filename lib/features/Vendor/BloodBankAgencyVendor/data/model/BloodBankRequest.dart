@@ -9,8 +9,10 @@ class BloodBankRequest {
   final int units;
   final List<String> prescriptionUrls;
   final List<String> requestedVendors;
-  final String status; // pending, cancelled, expired
+  final String? acceptedVendorId;
+  final String status; // pending, cancelled, expired, completed
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   BloodBankRequest({
     this.requestId,
@@ -21,8 +23,10 @@ class BloodBankRequest {
     required this.units,
     required this.prescriptionUrls,
     required this.requestedVendors,
+    this.acceptedVendorId,
     required this.status,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   BloodBankRequest copyWith({
@@ -34,8 +38,10 @@ class BloodBankRequest {
     int? units,
     List<String>? prescriptionUrls,
     List<String>? requestedVendors,
+    String? acceptedVendorId,
     String? status,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return BloodBankRequest(
       requestId: requestId ?? this.requestId,
@@ -46,8 +52,10 @@ class BloodBankRequest {
       units: units ?? this.units,
       prescriptionUrls: prescriptionUrls ?? this.prescriptionUrls,
       requestedVendors: requestedVendors ?? this.requestedVendors,
+      acceptedVendorId: acceptedVendorId ?? this.acceptedVendorId,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -61,8 +69,10 @@ class BloodBankRequest {
       'units': units,
       'prescriptionUrls': prescriptionUrls,
       'requestedVendors': requestedVendors,
+      'acceptedVendorId': acceptedVendorId,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
@@ -76,8 +86,10 @@ class BloodBankRequest {
       units: json['units'],
       prescriptionUrls: List<String>.from(json['prescriptionUrls']),
       requestedVendors: List<String>.from(json['requestedVendors']),
+      acceptedVendorId: json['acceptedVendorId'],
       status: json['status'],
       createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
 

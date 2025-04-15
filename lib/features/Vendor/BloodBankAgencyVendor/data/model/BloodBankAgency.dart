@@ -187,4 +187,40 @@ class BloodBankAgency {
       generatedId: json['generatedId'],   // ✅ safe since it's nullable
     );
   }
+  
+  // Add fromMap method to create a BloodBankAgency from Firestore data
+  factory BloodBankAgency.fromMap(Map<String, dynamic> data, String id) {
+    return BloodBankAgency(
+      agencyName: data['agencyName'] ?? '',
+      gstNumber: data['gstNumber'] ?? '',
+      panNumber: data['panNumber'] ?? '',
+      ownerName: data['ownerName'] ?? '',
+      completeAddress: data['completeAddress'] ?? '',
+      nearbyLandmark: data['nearbyLandmark'] ?? '',
+      phoneNumber: data['phoneNumber'] ?? '',
+      state: data['state'] ?? '',
+      city: data['city'] ?? '',
+      pincode: data['pincode'] ?? '',
+      email: data['email'] ?? '',
+      website: data['website'],
+      languageProficiency: data['languageProficiency'] ?? '',
+      deliveryOperationalAreas: List<String>.from(data['deliveryOperationalAreas'] ?? []),
+      distanceLimitations: data['distanceLimitations'] ?? 0,
+      is24x7Operational: data['is24x7Operational'] ?? false,
+      isAllDaysWorking: data['isAllDaysWorking'] ?? false,
+      bloodServicesProvided: List<String>.from(data['bloodServicesProvided'] ?? []),
+      plateletServicesProvided: List<String>.from(data['plateletServicesProvided'] ?? []),
+      otherServicesProvided: List<String>.from(data['otherServicesProvided'] ?? []),
+      acceptsOnlinePayment: data['acceptsOnlinePayment'] ?? false,
+      agencyPhotos: List<Map<String, String>>.from(
+          (data['agencyPhotos'] ?? []).map((item) => Map<String, String>.from(item))),
+      licenseFiles: List<Map<String, String>>.from(
+          (data['licenseFiles'] ?? []).map((item) => Map<String, String>.from(item))),
+      registrationCertificateFiles: List<Map<String, String>>.from(
+          (data['registrationCertificateFiles'] ?? []).map((item) => Map<String, String>.from(item))),
+      googleMapsLocation: data['googleMapsLocation'] ?? '',
+      vendorId: data['vendorId'],
+      generatedId: id,
+    );
+  }
 }

@@ -144,7 +144,9 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     final steps = viewModel.getSteps(booking.status ?? "pending");
     final currentStepIndex = viewModel.getCurrentStepIndex(booking.status ?? "pending");
 
+    final isPaymentCompleted = booking.status == "paymentCompleted";
     final isWaitingForPayment = booking.status == "WaitingForPayment";
+
     final hasPaymentInfo = booking.totalAmount != null &&
         booking.totalDistance != null &&
         booking.costPerKm != null &&
@@ -154,172 +156,174 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
         ? DateFormat("dd MMMM yyyy hh:mm a").format(booking.timestamp)
         : "N/A";
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                Icon(Icons.local_shipping_rounded, size: 32, color: Colors.green),
-                SizedBox(height: 8),
-                Text(
-                  "Ongoing Ambulance Booking",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await viewModel.fetchActiveAmbulanceBookings();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(), // Required for RefreshIndicator
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
           ),
-          SizedBox(height: 16),
-
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.apartment_rounded, size: 20, color: Colors.blueGrey),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  booking.agency?.agencyName ?? "Unknown Agency",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.local_shipping_rounded, size: 32, color: Colors.green),
+                    SizedBox(height: 8),
+                    Text(
+                      "Ongoing Ambulance Booking",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 16),
+              SizedBox(height: 16),
 
-          // Vertical Timeline between pickup and drop
-          Column(
-            children: [
-              _buildHorizontalPickupDropTimeline(booking),
-
-            ],
-          ),
-
-          SizedBox(height: 10),
-          Row(
-            children: [
-              Icon(Icons.access_time, size: 18, color: Colors.grey),
-              SizedBox(width: 8),
-              Text("Date: $formattedDate", style: TextStyle(fontSize: 14, color: Colors.black87)),
-            ],
-          ),
-          SizedBox(height: 20),
-
-          _buildTimeline(steps, currentStepIndex),
-          SizedBox(height: 20),
-
-          // ✅ Always show the receipt if there's valid payment info
-          if (hasPaymentInfo)
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Text("Payment Receipt", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Spacer(),
-                      if (!isWaitingForPayment)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green, size: 16),
-                              SizedBox(width: 4),
-                              Text("Payment Completed", style: TextStyle(color: Colors.green, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                    ],
+                  Icon(Icons.apartment_rounded, size: 20, color: Colors.blueGrey),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      booking.agency?.agencyName ?? "Unknown Agency",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  SizedBox(height: 10),
-                  _buildReceiptRow("Base Charge", "₹${booking.baseCharge!.toStringAsFixed(2)}"),
-                  _buildReceiptRow("Distance", "${booking.totalDistance} km"),
-                  _buildReceiptRow("Rate per km", "₹${booking.costPerKm!.toStringAsFixed(2)}"),
-                  Divider(height: 24, thickness: 1),
-                  _buildReceiptRow("Total Amount", "₹${booking.totalAmount!.toStringAsFixed(2)}", bold: true),
                 ],
               ),
-            ),
+              SizedBox(height: 16),
 
-          SizedBox(height: 12),
-          if (isWaitingForPayment)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  razorpayService.openPaymentGateway(
-                    requestId: booking.requestId,
-                    amount: booking.totalAmount,
-                    description: "Ambulance Booking #${booking.requestId}",
-                    email: "USER_EMAIL",
-                    name: "Ambulance Booking",
-                    phoneNumber: "USER_PHONE_NUMBER",
-                    key: ApiConstants.razorpayApiKey,
-                    onPaymentSuccess: () async {
-                      await viewModel.fetchActiveAmbulanceBookings(); // ✅ Re-fetch after payment
+              _buildHorizontalPickupDropTimeline(booking),
+              SizedBox(height: 10),
+
+              Row(
+                children: [
+                  Icon(Icons.access_time, size: 18, color: Colors.grey),
+                  SizedBox(width: 8),
+                  Text("Date: $formattedDate", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                ],
+              ),
+              SizedBox(height: 20),
+
+              _buildTimeline(steps, currentStepIndex),
+              SizedBox(height: 20),
+
+              if (hasPaymentInfo && (isWaitingForPayment || isPaymentCompleted))
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text("Payment Receipt", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Spacer(),
+                          if (isPaymentCompleted)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                  SizedBox(width: 4),
+                                  Text("Payment Completed", style: TextStyle(color: Colors.green, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      _buildReceiptRow("Base Charge", "₹${booking.baseCharge!.toStringAsFixed(2)}"),
+                      _buildReceiptRow("Distance", "${booking.totalDistance} km"),
+                      _buildReceiptRow("Rate per km", "₹${booking.costPerKm!.toStringAsFixed(2)}"),
+                      Divider(height: 24, thickness: 1),
+                      _buildReceiptRow("Total Amount", "₹${booking.totalAmount!.toStringAsFixed(2)}", bold: true),
+                    ],
+                  ),
+                ),
+
+              SizedBox(height: 12),
+
+              if (isWaitingForPayment)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      razorpayService.openPaymentGateway(
+                        requestId: booking.requestId,
+                        amount: booking.totalAmount,
+                        description: "Ambulance Booking #${booking.requestId}",
+                        email: "USER_EMAIL",
+                        name: "Ambulance Booking",
+                        phoneNumber: "USER_PHONE_NUMBER",
+                        key: ApiConstants.razorpayApiKey,
+                        onPaymentSuccess: () async {
+                          await viewModel.fetchActiveAmbulanceBookings(); // ✅ Re-fetch after payment
+                        },
+                      );
                     },
-                  );
-                },
-                icon: Icon(Icons.payment_outlined),
-                label: Text("Pay Now"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.teal,
-                  side: BorderSide(color: Colors.teal),
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    icon: Icon(Icons.payment_outlined),
+                    label: Text("Pay Now"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.teal,
+                      side: BorderSide(color: Colors.teal),
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+
+              SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final contactNumber = booking.agency?.contactNumber ?? "";
+                    final Uri phoneUri = Uri(scheme: 'tel', path: contactNumber);
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(phoneUri);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Unable to launch phone dialer")),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.call),
+                  label: Text("Call Agency"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
-            ),
-
-
-          SizedBox(height: 12),
-          // Always show Call button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final contactNumber = booking.agency?.contactNumber ?? "";
-                final Uri phoneUri = Uri(scheme: 'tel', path: contactNumber);
-                if (await canLaunchUrl(phoneUri)) {
-                  await launchUrl(phoneUri);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Unable to launch phone dialer")),
-                  );
-                }
-              },
-              icon: Icon(Icons.call),
-              label: Text("Call Agency"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+
 
 // Receipt row helper
   Widget _buildReceiptRow(String label, String value, {bool bold = false}) {
@@ -485,5 +489,4 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
       ),
     );
   }
-
 }

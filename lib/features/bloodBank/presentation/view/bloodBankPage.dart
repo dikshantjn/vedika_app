@@ -5,6 +5,8 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodBankDetailsBottomSheet.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
 
 class BloodBankMapScreen extends StatelessWidget {
   @override
@@ -27,17 +29,20 @@ class BloodBankMapScreen extends StatelessWidget {
                     ? Center(child: CircularProgressIndicator())
                     : GoogleMap(
                   onMapCreated: (GoogleMapController controller) {
-                    // Set the map controller in the ViewModel
                     Provider.of<BloodBankViewModel>(context, listen: false).setMapController(controller);
                   },
                   initialCameraPosition: CameraPosition(
-                    target: viewModel.currentPosition, // Correctly using viewModel's current position
-                    zoom: 14, // Adjust zoom level as needed
+                    target: viewModel.currentPosition,
+                    zoom: 14,
                   ),
-                  markers: viewModel.markers, // Markers are set from the viewModel
-                  myLocationEnabled: true, // Shows the current location on the map
-                  compassEnabled: true, // Shows the compass on the map
-                  zoomControlsEnabled: true, // Enables zoom controls
+                  markers: viewModel.markers,
+                  myLocationEnabled: true,
+                  compassEnabled: true,
+                  zoomControlsEnabled: true,
+                  onTap: (_) {
+                    // Close any open bottom sheet when tapping on the map
+                    Navigator.pop(context);
+                  },
                 ),
                 Align(
                   alignment: Alignment.bottomCenter,
