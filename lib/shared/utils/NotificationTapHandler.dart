@@ -5,7 +5,7 @@ import 'package:vedika_healthcare/main.dart';
 class NotificationTapHandler {
   static bool _isHandlingNavigation = false;
 
-  static Future<void> handleNotification(Map<String, dynamic> data) async {
+  static Future<void> handleNotification(Map<String, dynamic> data, {bool isAppLaunch = false}) async {
     if (_isHandlingNavigation) return;
     _isHandlingNavigation = true;
 
@@ -22,39 +22,194 @@ class NotificationTapHandler {
     try {
       switch (type) {
         case 'TRACK_ORDER':
-          await _navigateWithClearStack(
-            context,
-            AppRoutes.trackOrderScreen,
-            arguments: {'orderId': data['orderId']},
-          );
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.trackOrderScreen,
+              arguments: {'orderId': data['orderId']},
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.trackOrderScreen,
+              arguments: {'orderId': data['orderId']},
+            );
+          }
           break;
 
         case 'EMERGENCY_SERVICE':
-          await _navigateWithClearStack(context, AppRoutes.ambulanceSearch);
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
+          } else {
+            await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
+          }
           break;
 
         case 'NEW_ORDER':
-          await _navigateWithHistory(
-            context,
-            AppRoutes.medicineOrder,
-            arguments: {'orderId': data['orderId']},
-          );
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.medicineOrder,
+              arguments: {'orderId': data['orderId']},
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.medicineOrder,
+              arguments: {'orderId': data['orderId']},
+            );
+          }
           break;
 
         case 'AmbulancePage':
-          await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
+          } else {
+            await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
+          }
           break;
 
         case 'NOTIFICATIONS':
-          await _navigateWithHistory(context, AppRoutes.notification);
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(context, AppRoutes.notification);
+          } else {
+            await _navigateWithHistory(context, AppRoutes.notification);
+          }
           break;
 
         case 'CART_SCREEN':
-          await _navigateWithClearStack(context, AppRoutes.goToCart);
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(context, AppRoutes.goToCart);
+          } else {
+            await _navigateWithHistory(context, AppRoutes.goToCart);
+          }
           break;
 
         case 'ORDER_HISTORY':
-          await _navigateWithClearStack(context, AppRoutes.orderHistory);
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(context, AppRoutes.orderHistory);
+          } else {
+            await _navigateWithHistory(context, AppRoutes.orderHistory);
+          }
+          break;
+
+        case 'BLOOD_BANK_REQUEST':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorBloodBankDashBoard,
+              arguments: {'initialTab': 2},
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorBloodBankDashBoard,
+              arguments: {'initialTab': 2},
+            );
+          }
+          break;
+
+        case 'BLOOD_BANK_BOOKING':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBank,
+              arguments: {'initialTab': 2},
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBank,
+              arguments: {'initialTab': 2},
+            );
+          }
+          break;
+
+        case 'BLOOD_BANK_ORDER_HISTORY':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 4}, // 4 is the index for Blood Bank tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 4}, // 4 is the index for Blood Bank tab
+            );
+          }
+          break;
+
+        case 'BLOOD_PAYMENT_COMPLETED':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBankBooking,
+              arguments: {'initialTab': 3}, // 1 is the index for Completed tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBankBooking,
+              arguments: {'initialTab': 3}, // 1 is the index for Completed tab
+            );
+          }
           break;
 
         default:

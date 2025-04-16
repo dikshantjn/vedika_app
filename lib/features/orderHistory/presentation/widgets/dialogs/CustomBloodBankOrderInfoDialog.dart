@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/BloodBankOrder.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 
 class CustomBloodBankOrderInfoDialog extends StatelessWidget {
-  final BloodBankOrder order;
+  final BloodBankBooking booking;
 
-  const CustomBloodBankOrderInfoDialog({Key? key, required this.order}) : super(key: key);
+  const CustomBloodBankOrderInfoDialog({Key? key, required this.booking}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class CustomBloodBankOrderInfoDialog extends StatelessWidget {
             children: [
               Center(
                 child: Text(
-                  'Blood Bank Order Details',
+                  'Blood Bank Booking Details',
                   style: TextStyle(
                     fontSize: 22.0,
                     fontWeight: FontWeight.bold,
@@ -32,21 +32,24 @@ class CustomBloodBankOrderInfoDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              Divider(height: 24.0, thickness: 1, color: Colors.grey[300]),
-              _buildInfoRow('Order ID:', order.orderId),
-              _buildInfoRow('Blood Bank:', order.bloodBankName),
-              _buildInfoRow('Blood Type:', order.bloodType),
-              _buildInfoRow('Units Ordered:', order.unitsOrdered.toString()),
-              _buildInfoRow('Date:', order.orderDate),
-              _buildInfoRow('Total Price:', '₹${order.totalPrice}', isTotal: true),
-              SizedBox(height: 10.0),
-              _buildInfoRow('Status:', '', widget: _buildStatusChip(order.status)),
-              SizedBox(height: 10.0),
+              const Divider(height: 24.0, thickness: 1, color: Colors.grey),
+              _buildInfoRow('Booking ID:', booking.bookingId ?? 'N/A'),
+              _buildInfoRow('Blood Type:', booking.bloodType.join(", ")),
+              _buildInfoRow('Units Required:', booking.units.toString()),
+              _buildInfoRow('Date:', booking.createdAt.toString().split(' ')[0]),
+              _buildInfoRow('Total Amount:', '₹${booking.totalAmount.toStringAsFixed(2)}', isTotal: true),
+              if (booking.discount != null && booking.discount! > 0)
+                _buildInfoRow('Discount:', '₹${booking.discount!.toStringAsFixed(2)}'),
+              if (booking.notes != null && booking.notes!.isNotEmpty)
+                _buildInfoRow('Notes:', booking.notes!),
+              const SizedBox(height: 10.0),
+              _buildInfoRow('Status:', '', widget: _buildStatusChip(booking.status)),
+              const SizedBox(height: 10.0),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
+                  child: const Text(
                     'Close',
                     style: TextStyle(
                       fontSize: 16.0,
@@ -67,7 +70,7 @@ class CustomBloodBankOrderInfoDialog extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Ensure spacing
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             key,
@@ -98,8 +101,6 @@ class CustomBloodBankOrderInfoDialog extends StatelessWidget {
     );
   }
 
-
-
   Widget _buildStatusChip(String status) {
     Color chipColor;
     switch (status.toLowerCase()) {
@@ -119,13 +120,13 @@ class CustomBloodBankOrderInfoDialog extends StatelessWidget {
     return Chip(
       label: Text(
         status,
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 12.0,
         ),
       ),
       backgroundColor: chipColor,
-      shape: StadiumBorder(),
+      shape: const StadiumBorder(),
     );
   }
 }

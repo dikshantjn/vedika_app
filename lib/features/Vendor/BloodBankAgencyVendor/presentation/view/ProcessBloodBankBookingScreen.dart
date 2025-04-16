@@ -22,6 +22,8 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
   final TextEditingController _totalAmountController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   final TextEditingController _unitsController = TextEditingController();
+  final TextEditingController _pricePerUnitController = TextEditingController();
+  final TextEditingController _deliveryTypeController = TextEditingController();
 
   @override
   void dispose() {
@@ -29,6 +31,8 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
     _totalAmountController.dispose();
     _discountController.dispose();
     _unitsController.dispose();
+    _pricePerUnitController.dispose();
+    _deliveryTypeController.dispose();
     super.dispose();
   }
 
@@ -665,6 +669,49 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                       FilteringTextInputFormatter.digitsOnly,
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _pricePerUnitController,
+                    decoration: InputDecoration(
+                      labelText: 'Price per Unit',
+                      hintText: 'Enter price per unit',
+                      prefixIcon: const Icon(Icons.currency_rupee),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _deliveryTypeController.text.isEmpty ? null : _deliveryTypeController.text,
+                    decoration: InputDecoration(
+                      labelText: 'Delivery Type',
+                      hintText: 'Select delivery type',
+                      prefixIcon: const Icon(Icons.delivery_dining),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'pickup',
+                        child: Text('Pickup'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'delivery',
+                        child: Text('Delivery'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        _deliveryTypeController.text = value;
+                      }
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -712,6 +759,12 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                                         : null,
                                     units: _unitsController.text.isNotEmpty
                                         ? int.parse(_unitsController.text)
+                                        : null,
+                                    pricePerUnit: _pricePerUnitController.text.isNotEmpty
+                                        ? double.parse(_pricePerUnitController.text)
+                                        : null,
+                                    deliveryType: _deliveryTypeController.text.isNotEmpty
+                                        ? _deliveryTypeController.text
                                         : null,
                                   );
 

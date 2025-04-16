@@ -479,7 +479,7 @@ class BloodBankViewModel extends ChangeNotifier {
             child: BloodRequestDetailsBottomSheet(
               booking: booking, // Passing the full booking object
               onCallBloodBank: () {
-                final phoneNumber = booking.user.phoneNumber; // Assuming this exists in the UserModel
+                final phoneNumber = booking.agency?.phoneNumber; // Assuming this exists in the UserModel
                 if (phoneNumber != null && phoneNumber.isNotEmpty) {
                   launchUrl(Uri.parse('tel:$phoneNumber'));
                 } else {

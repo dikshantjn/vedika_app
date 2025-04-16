@@ -1,56 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/BloodBankOrder.dart';
+import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/repositories/BloodBankOrderRepository.dart';
 
 class BloodBankOrderViewModel extends ChangeNotifier {
   final BloodBankOrderRepository _repository = BloodBankOrderRepository();
+  final AuthRepository _authRepository = AuthRepository();
 
-  List<BloodBankOrder> _orders = [];
+  List<BloodBankBooking> _bookings = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<BloodBankOrder> get orders => _orders;
+  List<BloodBankBooking> get bookings => _bookings;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  /// Fetch Orders
-  Future<void> fetchOrders(String userId) async {
+  /// Fetch Completed Bookings
+  Future<void> fetchCompletedBookings() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _orders = await _repository.getBloodBankOrders(userId);
+      // Get user ID and token
+      final userId = await StorageService.getUserId();
+      final token = await _authRepository.getToken();
+
+      if (userId == null || token == null) {
+        throw Exception('User not authenticated');
+      }
+
+      _bookings = await _repository.getBloodBankOrders(userId, token);
     } catch (e) {
-      _errorMessage = "Failed to load orders.";
+      _errorMessage = e.toString();
     }
 
     _isLoading = false;
     notifyListeners();
   }
 
-  /// Place a New Order
-  Future<bool> placeOrder(BloodBankOrder order) async {
+  /// Place a New Booking
+  Future<bool> placeBooking(BloodBankBooking booking) async {
     try {
-      await _repository.placeBloodBankOrder(order);
-      _orders.add(order);
+      await _repository.placeBloodBankOrder(booking);
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = "Failed to place order.";
+      _errorMessage = "Failed to place booking.";
       notifyListeners();
       return false;
     }
   }
 
-  /// Cancel an Order
-  Future<void> cancelOrder(String orderId) async {
+  /// Cancel a Booking
+  Future<void> cancelBooking(String bookingId) async {
     try {
-      await _repository.cancelBloodBankOrder(orderId);
-      _orders.removeWhere((order) => order.orderId == orderId);
+      await _repository.cancelBloodBankOrder(bookingId);
       notifyListeners();
     } catch (e) {
-      _errorMessage = "Failed to cancel order.";
+      _errorMessage = "Failed to cancel booking.";
       notifyListeners();
     }
   }

@@ -3,16 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankPaymentService.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import '../../../../../core/constants/colorpalette/ColorPalette.dart';
 
 class BloodRequestDetailsBottomSheet extends StatefulWidget {
   final BloodBankBooking booking;
   final VoidCallback? onCallBloodBank;
+  final Future<void> Function()? onRefresh;
 
   const BloodRequestDetailsBottomSheet({
     Key? key,
     required this.booking,
     this.onCallBloodBank,
+    this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -22,6 +26,7 @@ class BloodRequestDetailsBottomSheet extends StatefulWidget {
 class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBottomSheet> {
   final ScrollController _timelineScrollController = ScrollController();
   final razorpayService = BloodBankPaymentService();
+  bool _isRefreshing = false;
 
   final steps = [
     'PENDING',
@@ -56,14 +61,44 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
     });
   }
 
-  // This method will be triggered when the user performs the swipe-to-refresh action
   Future<void> _onRefresh() async {
-    // Logic for refreshing the content, like re-fetching the booking details or other data
-    // Example: You could call a method in your view model or service to fetch updated data
-    // await widget.viewModel.fetchBookingDetails(widget.booking.bookingId);
+    if (_isRefreshing) return;
+    
     setState(() {
-      // You can add any changes to state here that would reflect the updated data
+      _isRefreshing = true;
     });
+
+    try {
+      // Call the refresh callback if provided
+      if (widget.onRefresh != null) {
+        await widget.onRefresh!();
+      }
+      
+      // Also fetch bookings from ViewModel
+      final viewModel = Provider.of<BloodBankViewModel>(context, listen: false);
+      await viewModel.fetchBookingsForVendor();
+      
+      // Force a rebuild after refresh
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error refreshing: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error refreshing data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -72,25 +107,32 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
     final formattedCreatedAt = DateFormat("dd MMM yyyy, hh:mm a").format(booking.createdAt);
     final isPaymentCompleted = steps.indexOf(booking.status) >= steps.indexOf('PaymentCompleted');
     final isWaitingForPayment = booking.status == 'WaitingForPayment';
-
     final hasPaymentInfo = booking.totalAmount != null;
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         RefreshIndicator(
-          onRefresh: _onRefresh, // Trigger the refresh function
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: SingleChildScrollView(
+          onRefresh: _onRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_isRefreshing)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
                   Center(
                     child: Container(
                       width: 50,
@@ -124,46 +166,53 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
                     _buildPaymentReceipt(),
 
                   if (isWaitingForPayment)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          razorpayService.openPaymentGateway(
-                            amount: booking.totalAmount,
-                            name: "Blood Bank Booking Payment",
-                            description: "Payment for Blood Bank Booking",
-                            bookingId: booking.bookingId!,
-                            onPaymentSuccess: () async {
-                              // await widget.viewModel.fetchBookingsForVendor(); // Re-fetch after payment
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              razorpayService.openPaymentGateway(
+                                amount: booking.totalAmount!,
+                                name: "Blood Bank Booking Payment",
+                                description: "Payment for Blood Bank Booking",
+                                bookingId: booking.bookingId!,
+                                onPaymentSuccess: (response) async {
+                                  // Call both refresh methods
+                                  await _onRefresh();
+                                },
+                                onRefreshData: _onRefresh,
+                              );
                             },
-                          );
-                        },
-                        icon: Icon(Icons.payment_outlined),
-                        label: Text("Pay Now"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.teal,
-                          side: BorderSide(color: Colors.teal),
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            icon: Icon(Icons.payment_outlined),
+                            label: Text("Pay Now"),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.teal,
+                              side: BorderSide(color: Colors.teal),
+                              padding: EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
                         ),
-                      ),
+                        SizedBox(height: 12),
+                      ],
                     ),
 
-                  if (isPaymentCompleted)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: widget.onCallBloodBank,
-                        icon: const Icon(Icons.call),
-                        label: const Text("Call Blood Bank"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorPalette.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+                  // Always show the call button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onCallBloodBank,
+                      icon: const Icon(Icons.call),
+                      label: const Text("Call Blood Bank"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColorPalette.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

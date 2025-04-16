@@ -1,64 +1,55 @@
-import 'package:vedika_healthcare/features/orderHistory/data/models/BloodBankOrder.dart';
+import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 
 class BloodBankOrderRepository {
-  // Mock Data List
-  final List<BloodBankOrder> _mockOrders = [
-    BloodBankOrder(
-      orderId: "BB001",
-      userId: "U123",
-      bloodBankId: "BBANK01",
-      bloodBankName: "Red Cross Blood Bank",
-      bloodType: "O+",
-      unitsOrdered: 2,
-      orderDate: "2025-02-27",
-      totalPrice: 500.0,
-      status: "Completed",
-    ),
-    BloodBankOrder(
-      orderId: "BB002",
-      userId: "U123",
-      bloodBankId: "BBANK02",
-      bloodBankName: "City Hospital Blood Bank",
-      bloodType: "A-",
-      unitsOrdered: 1,
-      orderDate: "2025-02-26",
-      totalPrice: 250.0,
-      status: "Pending",
-    ),
-    BloodBankOrder(
-      orderId: "BB003",
-      userId: "U123",
-      bloodBankId: "BBANK03",
-      bloodBankName: "Lifeline Blood Center",
-      bloodType: "B+",
-      unitsOrdered: 3,
-      orderDate: "2025-02-25",
-      totalPrice: 750.0,
-      status: "Cancelled",
-    ),
-  ];
+  final Dio _dio;
 
-  /// Fetch Blood Bank Orders (Mock Data)
-  Future<List<BloodBankOrder>> getBloodBankOrders(String userId) async {
-    // Simulate network delay
+  BloodBankOrderRepository({Dio? dio}) : _dio = dio ?? Dio();
 
-    // Filter orders for the given userId
-    return _mockOrders.where((order) => order.userId == userId).toList();
+  /// Fetch Blood Bank Orders
+  Future<List<BloodBankBooking>> getBloodBankOrders(String userId, String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getCompletedBloodBankBookingsByUserId}/$userId/completed',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          final List<dynamic> bookings = data['data'];
+          return bookings.map((booking) => BloodBankBooking.fromJson(booking)).toList();
+        } else {
+          throw Exception(data['message'] ?? 'Failed to fetch blood bank orders');
+        }
+      } else {
+        throw Exception('Failed to fetch blood bank orders: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        throw Exception(e.response?.data['message'] ?? 'Error fetching blood bank orders');
+      }
+      throw Exception('Error fetching blood bank orders: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching blood bank orders: $e');
+    }
   }
 
-  /// Place a Blood Bank Order (Mock Data)
-  Future<void> placeBloodBankOrder(BloodBankOrder order) async {
-    await Future.delayed(Duration(seconds: 1));
-
-    // Add the new order to mock list
-    _mockOrders.add(order);
+  /// Place a Blood Bank Booking
+  Future<void> placeBloodBankOrder(BloodBankBooking booking) async {
+    // TODO: Implement when API is available
+    throw UnimplementedError('Place blood bank booking not implemented yet');
   }
 
-  /// Cancel Blood Bank Order (Mock Data)
-  Future<void> cancelBloodBankOrder(String orderId) async {
-    await Future.delayed(Duration(seconds: 1));
-
-    // Find and remove the order by orderId
-    _mockOrders.removeWhere((order) => order.orderId == orderId);
+  /// Cancel Blood Bank Booking
+  Future<void> cancelBloodBankOrder(String bookingId) async {
+    // TODO: Implement when API is available
+    throw UnimplementedError('Cancel blood bank booking not implemented yet');
   }
 }

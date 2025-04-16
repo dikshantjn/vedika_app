@@ -5,6 +5,9 @@ import 'package:vedika_healthcare/features/HealthRecords/presentation/view/Healt
 import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyMainScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankBookingScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRequestScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/ProcessBloodBankBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
@@ -73,7 +76,7 @@ class AppRoutes {
   static const String VendorBloodBankDashBoard = "/VendorBloodBankDashBoard";
   static const String VendorPathologyDashBoard = "/VendorPathologyDashBoard";
   static const String VendorDeliveryPartnerDashBoard = "/VendorDeliveryPartnerDashBoard";
-
+  static const String bloodBankBooking = "/bloodBankBooking";
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -96,6 +99,7 @@ class AppRoutes {
       login: (context) => UserLoginScreen(), // Added route for EnableLocationPage
       logout: (context) => LogoutPage(), // Added route for EnableLocationPage
 
+      bloodBankBooking: (context) => BloodBankBookingScreen(), // Added route for EnableLocationPage
 
       //vendor
       vendor: (context) => VendorRegistrationPage(), // Added route for EnableLocationPage
@@ -139,5 +143,4 @@ class AppRoutes {
         );
     }
   }
-
 }

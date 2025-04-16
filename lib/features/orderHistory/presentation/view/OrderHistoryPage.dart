@@ -15,6 +15,16 @@ class OrderHistoryPage extends StatefulWidget {
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
   int _selectedIndex = 0;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get the initialTab from route arguments
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && args.containsKey('initialTab')) {
+      _selectedIndex = args['initialTab'] as int;
+    }
+  }
+
   final List<Widget> _verticals = [
     MedicineTab(),
     AmbulanceTab(),

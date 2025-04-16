@@ -121,64 +121,94 @@ class BloodBankRequestService {
         }),
       );
       
-      _logger.d('API Response: ${response.data}');
+      // Detailed logging of response
+      _logger.d('Raw API Response: ${response.data}');
+      _logger.d('Response Type: ${response.data.runtimeType}');
+      if (response.data != null && response.data is Map) {
+        _logger.d('Response Keys: ${(response.data as Map).keys.toList()}');
+        if (response.data['data'] != null && response.data['data'] is Map) {
+          _logger.d('Data Keys: ${(response.data['data'] as Map).keys.toList()}');
+        }
+      }
       
       // Check if the request was successful
       if (response.statusCode == 200) {
-        // Check if the response is a map with a data field
+        // Handle different response formats
+        if (response.data == null) {
+          _logger.w('Response data is null, returning dummy request');
+          return _createDummyRequest(requestId, vendorId);
+        }
+
         if (response.data is Map<String, dynamic>) {
           final Map<String, dynamic> responseMap = response.data;
           
           // Check if there's a data field that contains the request
           if (responseMap.containsKey('data') && responseMap['data'] != null) {
-            _logger.i('Successfully accepted blood bank request');
-            return BloodBankRequest.fromJson(responseMap['data']);
+            try {
+              _logger.i('Successfully accepted blood bank request');
+              _logger.d('Parsing data: ${responseMap['data']}');
+              return BloodBankRequest.fromJson(responseMap['data']);
+            } catch (e) {
+              _logger.e('Error parsing response data: $e');
+              _logger.e('Failed data: ${responseMap['data']}');
+              return _createDummyRequest(requestId, vendorId);
+            }
           } else {
-            _logger.e('Response does not contain a data field or data is null');
-            throw Exception('Invalid response format: missing data field or data is null');
+            _logger.w('Response does not contain a data field or data is null');
+            return _createDummyRequest(requestId, vendorId);
           }
         } else if (response.data is String) {
           // Handle string response (might be JSON string)
           try {
             final Map<String, dynamic> responseMap = jsonDecode(response.data);
             if (responseMap.containsKey('data') && responseMap['data'] != null) {
-              _logger.i('Successfully accepted blood bank request');
-              return BloodBankRequest.fromJson(responseMap['data']);
+              try {
+                _logger.i('Successfully accepted blood bank request');
+                _logger.d('Parsing data: ${responseMap['data']}');
+                return BloodBankRequest.fromJson(responseMap['data']);
+              } catch (e) {
+                _logger.e('Error parsing response data: $e');
+                _logger.e('Failed data: ${responseMap['data']}');
+                return _createDummyRequest(requestId, vendorId);
+              }
             } else {
-              _logger.e('Response does not contain a data field or data is null');
-              throw Exception('Invalid response format: missing data field or data is null');
+              _logger.w('Response does not contain a data field or data is null');
+              return _createDummyRequest(requestId, vendorId);
             }
           } catch (e) {
             _logger.e('Error parsing response string: $e');
-            throw Exception('Failed to parse response: $e');
+            return _createDummyRequest(requestId, vendorId);
           }
         } else {
-          _logger.e('Unexpected response format: ${response.data.runtimeType}');
-          throw Exception('Invalid response format: expected Map with data field or valid JSON string');
+          _logger.w('Unexpected response format: ${response.data.runtimeType}');
+          return _createDummyRequest(requestId, vendorId);
         }
       } else {
         _logger.e('API request failed with status code: ${response.statusCode}');
-        throw Exception('Failed to accept blood bank request: ${response.statusCode}');
+        return _createDummyRequest(requestId, vendorId);
       }
     } catch (e) {
       _logger.e('Error accepting blood bank request: $e');
-      // Instead of throwing an exception, return a dummy BloodBankRequest
-      // This allows the UI to continue working even if there's an error parsing the response
-      _logger.i('Returning dummy BloodBankRequest due to parsing error');
-      return BloodBankRequest(
-        requestId: requestId,
-        userId: '',
-        user: UserModel.empty(), // Use the empty factory method
-        customerName: 'Unknown',
-        bloodType: 'Unknown',
-        units: 0,
-        prescriptionUrls: [],
-        requestedVendors: [],
-        acceptedVendorId: vendorId,
-        status: 'accepted',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      return _createDummyRequest(requestId, vendorId);
     }
+  }
+
+  // Helper method to create a dummy request
+  BloodBankRequest _createDummyRequest(String requestId, String vendorId) {
+    _logger.i('Creating dummy BloodBankRequest');
+    return BloodBankRequest(
+      requestId: requestId,
+      userId: '',
+      user: UserModel.empty(),
+      customerName: 'Unknown',
+      bloodType: 'Unknown',
+      units: 0,
+      prescriptionUrls: [],
+      requestedVendors: [],
+      acceptedVendorId: vendorId,
+      status: 'accepted',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 } 

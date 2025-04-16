@@ -185,6 +185,8 @@ class BloodBankBookingService {
     double? totalAmount,
     double? discount,
     int? units,
+    double? pricePerUnit,
+    String? deliveryType,
   }) async {
     try {
       _logger.i('Notifying user about booking payment: $bookingId');
@@ -202,6 +204,8 @@ class BloodBankBookingService {
           if (totalAmount != null) 'totalAmount': totalAmount,
           if (discount != null) 'discount': discount,
           if (units != null) 'units': units,
+          if (pricePerUnit != null) 'pricePerUnit': pricePerUnit,
+          if (deliveryType != null) 'deliveryType': deliveryType,
         },
       );
       

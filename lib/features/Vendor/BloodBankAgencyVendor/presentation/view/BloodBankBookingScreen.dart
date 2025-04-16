@@ -231,27 +231,34 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
+                  flex: 2,
                   child: Row(
                     children: [
                       Icon(
                         Icons.bloodtype,
                         color: Colors.purple[700],
+                        size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Booking #${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.purple[700],
+                      Expanded(
+                        child: Text(
+                          'Booking #${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.purple[700],
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                _buildStatusChip(booking.status),
+                Expanded(
+                  flex: 1,
+                  child: _buildStatusChip(booking.status),
+                ),
               ],
             ),
           ),

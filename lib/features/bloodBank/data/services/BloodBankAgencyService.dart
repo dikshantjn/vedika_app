@@ -131,48 +131,35 @@ class BloodBankAgencyService {
       // Ensure token is set
       await _setupDioWithAuthToken();
       
-      // Create a request for each blood type
-      List<Future<Response>> requests = bloodTypes.map((bloodType) async {
-        final response = await _dio.post(
-          '${ApiEndpoints.getNearestBloodBankAndSendRequest}',
-          data: {
-            'userId': actualUserId,
-            'customerName': customerName,
-            'bloodType': bloodType,
-            'units': units,
-            'prescriptionUrls': prescriptionUrls,
-            'latitude': latitude,
-            'longitude': longitude,
-            'radius': DEFAULT_SEARCH_RADIUS, // Using default 5 km radius
-          },
-        );
-        return response;
-      }).toList();
+      // Create a single request with all blood types
+      final response = await _dio.post(
+        '${ApiEndpoints.getNearestBloodBankAndSendRequest}',
+        data: {
+          'userId': actualUserId,
+          'customerName': customerName,
+          'bloodType': bloodTypes.join(','), // Join blood types with comma
+          'units': units,
+          'prescriptionUrls': prescriptionUrls,
+          'latitude': latitude,
+          'longitude': longitude,
+          'radius': DEFAULT_SEARCH_RADIUS,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500, // Accept 400 responses
+        ),
+      );
       
-      // Wait for all requests to complete
-      final responses = await Future.wait(requests);
-      
-      // Check if all requests were successful
-      final bool allSuccessful = responses.every((response) => response.statusCode == 200);
-      
-      if (allSuccessful) {
-        // Parse the first response to get the request ID
-        final Map<String, dynamic> responseData = responses.first.data;
-        
+      if (response.statusCode == 200) {
         return {
           'success': true,
           'message': 'Blood request sent successfully',
-          'data': responseData,
+          'data': response.data,
         };
       } else {
-        // Find the first error response
-        final failedResponse = responses.firstWhere((response) => response.statusCode != 200);
-        final Map<String, dynamic> errorData = failedResponse.data;
-        
         return {
           'success': false,
-          'message': errorData['message'] ?? 'Failed to send blood request',
-          'error': errorData,
+          'message': response.data['message'] ?? 'Failed to send blood request',
+          'error': response.data,
         };
       }
     } catch (e) {

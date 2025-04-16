@@ -83,6 +83,8 @@ class BloodBankBookingViewModel extends ChangeNotifier {
     double? totalAmount,
     double? discount,
     int? units,
+    double? pricePerUnit,
+    String? deliveryType,
   }) async {
     try {
       _isLoading = true;
@@ -100,6 +102,8 @@ class BloodBankBookingViewModel extends ChangeNotifier {
         totalAmount: totalAmount,
         discount: discount,
         units: units,
+        pricePerUnit: pricePerUnit,
+        deliveryType: deliveryType,
       );
 
       // Reload bookings after notifying user

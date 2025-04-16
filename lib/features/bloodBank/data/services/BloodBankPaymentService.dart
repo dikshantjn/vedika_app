@@ -10,6 +10,7 @@ class BloodBankPaymentService {
   Function(PaymentSuccessResponse)? onPaymentSuccess;
   Function(PaymentFailureResponse)? onPaymentError;
   Function(PaymentFailureResponse)? onPaymentCancelled;
+  Function()? onRefreshData;
 
   // Store bookingId to use after success
   late String _currentBookingId;
@@ -22,16 +23,27 @@ class BloodBankPaymentService {
 
   // ✅ Handle successful payment
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    if (onPaymentSuccess != null) {
-      onPaymentSuccess!(response);
-    }
-
     try {
       print("Calling update API for bookingId: $_currentBookingId");
       await _bloodBankAgencyService.updatePaymentDetails(_currentBookingId);
       print('✅ Payment details updated successfully.');
+      
+      // Call the refresh callback after successful payment update
+      if (onRefreshData != null) {
+        print('🔄 Refreshing data after payment success');
+        await onRefreshData!();
+      }
+
+      // Call payment success callback after all operations are complete
+      if (onPaymentSuccess != null) {
+        onPaymentSuccess!(response);
+      }
     } catch (e) {
       print('❌ Error updating payment details: $e');
+      // Still call payment success callback even if refresh fails
+      if (onPaymentSuccess != null) {
+        onPaymentSuccess!(response);
+      }
     }
   }
 
@@ -55,12 +67,12 @@ class BloodBankPaymentService {
     required String name,
     required String description,
     required String bookingId,
-    required Function onPaymentSuccess,
+    required Function(PaymentSuccessResponse) onPaymentSuccess,
+    Function()? onRefreshData,
   }) {
     _currentBookingId = bookingId; // ✅ Save for later use in success callback
-
-    // Optional immediate success callback (before actual payment)
-    onPaymentSuccess();
+    this.onRefreshData = onRefreshData; // Store the refresh callback
+    this.onPaymentSuccess = onPaymentSuccess; // Store the success callback
 
     var options = {
       'key': ApiConstants.razorpayApiKey,

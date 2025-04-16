@@ -30,7 +30,15 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
     super.initState();
     _viewModel = VendorBloodBankMainViewModel();
     _initializeScreens();
+    
+    // Check for initialTab argument
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('initialTab')) {
+        setState(() {
+          _currentIndex = args['initialTab'] as int;
+        });
+      }
       _viewModel.initializeServiceStatus();
     });
   }
