@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
@@ -22,9 +24,11 @@ class TrackOrderViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-
   List<AmbulanceBooking> _ambulanceBookings = [];
   List<AmbulanceBooking> get ambulanceBookings => _ambulanceBookings;
+
+  List<BloodBankBooking> _bloodBankBookings = [];
+  List<BloodBankBooking> get bloodBankBookings => _bloodBankBookings;
 
   /// **✅ Fetch Orders and Cart Items**
   Future<void> fetchOrdersAndCartItems() async {
@@ -108,6 +112,41 @@ class TrackOrderViewModel extends ChangeNotifier {
     }
   }
 
+  /// ✅ Fetch blood bank bookings for current user
+  Future<void> fetchBloodBankBookings() async {
+    _isLoading = true;
+    notifyListeners();
+
+    debugPrint("📦 Starting to fetch blood bank bookings...");
+
+    try {
+      String? userId = await StorageService.getUserId();
+      String? token = await AuthRepository().getToken();
+
+      if (userId == null || token == null) {
+        throw Exception("User ID or token not found");
+      }
+
+      _bloodBankBookings = await _service.getBookings(userId, token);
+      debugPrint("✅ Blood bank bookings fetched: ${_bloodBankBookings.length}");
+
+      for (var booking in _bloodBankBookings) {
+        debugPrint("🩸 Booking ID: ${booking.bookingId}, Status: ${booking.status}");
+      }
+
+      _error = null;
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error fetching blood bank bookings: $e");
+      debugPrint("🔍 Stack Trace:\n$stackTrace");
+
+      _bloodBankBookings = [];
+      _error = "No Blood Bank Bookings Found";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint("📦 Done fetching blood bank bookings.");
+    }
+  }
 
   /// **Dispose WebSocket when not needed**
   @override

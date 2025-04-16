@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankBookingViewModel.dart';
+import 'package:flutter/services.dart';
 
 class ProcessBloodBankBookingScreen extends StatefulWidget {
   final BloodBankBooking booking;
@@ -17,6 +18,19 @@ class ProcessBloodBankBookingScreen extends StatefulWidget {
 class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingScreen> {
   bool _isProcessing = false;
   int? _selectedPrescriptionIndex;
+  final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _totalAmountController = TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _unitsController = TextEditingController();
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    _totalAmountController.dispose();
+    _discountController.dispose();
+    _unitsController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -223,14 +237,16 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                 const SizedBox(height: 16),
                 
                 // Action buttons based on status
-                if (widget.booking.status.toLowerCase() == 'paymentcompleted')
+                if (widget.booking.status.toLowerCase() == 'confirmed')
+                  _buildNotifyPaymentButton()
+                else if (widget.booking.status.toLowerCase() == 'paymentcompleted')
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
                       onPressed: _isProcessing ? null : _markAsWaitingForPickup,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -544,5 +560,272 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
         });
       }
     }
+  }
+
+  Future<void> _showNotifyPaymentDialog() async {
+    return showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.payment,
+                          color: Colors.red,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Notify Payment Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _notesController,
+                    decoration: InputDecoration(
+                      labelText: 'Notes',
+                      hintText: 'Enter any additional notes',
+                      prefixIcon: const Icon(Icons.note),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _totalAmountController,
+                    decoration: InputDecoration(
+                      labelText: 'Total Amount',
+                      hintText: 'Enter total amount',
+                      prefixIcon: const Icon(Icons.currency_rupee),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _discountController,
+                    decoration: InputDecoration(
+                      labelText: 'Discount',
+                      hintText: 'Enter discount amount',
+                      prefixIcon: const Icon(Icons.discount),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _unitsController,
+                    decoration: InputDecoration(
+                      labelText: 'Units',
+                      hintText: 'Enter number of units',
+                      prefixIcon: const Icon(Icons.bloodtype),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _isProcessing
+                            ? null
+                            : () async {
+                                if (widget.booking.bookingId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      elevation: 0,
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: Colors.transparent,
+                                      content: AwesomeSnackbarContent(
+                                        title: 'Error!',
+                                        message: 'Booking ID is missing',
+                                        contentType: ContentType.failure,
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  _isProcessing = true;
+                                });
+
+                                try {
+                                  await context.read<BloodBankBookingViewModel>().notifyUser(
+                                    widget.booking.bookingId!,
+                                    notes: _notesController.text.isNotEmpty
+                                        ? _notesController.text
+                                        : null,
+                                    totalAmount: _totalAmountController.text.isNotEmpty
+                                        ? double.parse(_totalAmountController.text)
+                                        : null,
+                                    discount: _discountController.text.isNotEmpty
+                                        ? double.parse(_discountController.text)
+                                        : null,
+                                    units: _unitsController.text.isNotEmpty
+                                        ? int.parse(_unitsController.text)
+                                        : null,
+                                  );
+
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        elevation: 0,
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: Colors.transparent,
+                                        content: AwesomeSnackbarContent(
+                                          title: 'Success!',
+                                          message: 'Payment details notified to user',
+                                          contentType: ContentType.success,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        elevation: 0,
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: Colors.transparent,
+                                        content: AwesomeSnackbarContent(
+                                          title: 'Error!',
+                                          message: 'Error notifying user: $e',
+                                          contentType: ContentType.failure,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isProcessing = false;
+                                    });
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isProcessing
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Notify'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotifyPaymentButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: _isProcessing ? null : _showNotifyPaymentDialog,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: _isProcessing
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Icon(Icons.notifications),
+        label: _isProcessing
+            ? const Text(
+                'Processing...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            : const Text(
+                'Notify Payment to User',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
   }
 } 

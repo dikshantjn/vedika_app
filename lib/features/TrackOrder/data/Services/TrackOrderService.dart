@@ -64,10 +64,13 @@ class TrackOrderService {
   }
 
   // 🔹 Fetch blood bank bookings
-  Future<List<BloodBankBooking>> getBloodBankBookings(String userId, String token) async {
+  Future<List<BloodBankBooking>> getBookings(String userId, String token) async {
     try {
+      print('Fetching blood bank bookings for user: $userId');
+
+      // Make the API call
       final response = await _dio.get(
-        '${ApiEndpoints.getBloodBankBookingsByVendorId}/$userId',
+        '${ApiEndpoints.getBloodBankBookingsByUserId}/$userId',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -75,23 +78,45 @@ class TrackOrderService {
           },
         ),
       );
-      
+
+      print('API Response: ${response.data}');
+
+      // Check if the request was successful
       if (response.statusCode == 200) {
+        // Check if the response is a map with a data field
         if (response.data is Map<String, dynamic>) {
           final Map<String, dynamic> responseMap = response.data;
+
+          // Check if there's a data field that contains the list
           if (responseMap.containsKey('data') && responseMap['data'] != null) {
-            final List<dynamic> data = responseMap['data'];
-            return data.map((json) => BloodBankBooking.fromJson(json)).toList();
+            if (responseMap['data'] is List) {
+              final List<dynamic> data = responseMap['data'];
+              print('Found ${data.length} blood bank bookings');
+              return data.map((json) => BloodBankBooking.fromJson(json)).toList();
+            } else {
+              print('Data field is not a list: ${responseMap['data'].runtimeType}');
+              throw Exception('Invalid response format: data field is not a list');
+            }
+          } else {
+            print('Response does not contain a data field or data is null');
+            throw Exception('Invalid response format: missing data field or data is null');
           }
         } else if (response.data is List) {
+          // Direct list response
           final List<dynamic> data = response.data;
+          print('Found ${data.length} blood bank bookings');
           return data.map((json) => BloodBankBooking.fromJson(json)).toList();
+        } else {
+          print('Unexpected response format: ${response.data.runtimeType}');
+          throw Exception('Invalid response format: expected List or Map with data field');
         }
+      } else {
+        print('API request failed with status code: ${response.statusCode}');
+        throw Exception('Failed to load blood bank bookings: ${response.statusCode}');
       }
-      return [];
     } catch (e) {
       print('Error fetching blood bank bookings: $e');
-      return [];
+      throw Exception('Failed to fetch blood bank bookings: $e');
     }
   }
 }

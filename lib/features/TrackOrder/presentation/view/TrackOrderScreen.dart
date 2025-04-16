@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/AmbulanceBookingTrackingCard.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/BloodBankBookingTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/TrackingOrderCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
@@ -23,6 +24,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
       viewModel.fetchOrdersAndCartItems();
       viewModel.fetchActiveAmbulanceBookings();
+      viewModel.fetchBloodBankBookings();
     });
   }
 
@@ -30,6 +32,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
     final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
     await viewModel.fetchOrdersAndCartItems();
     await viewModel.fetchActiveAmbulanceBookings();
+    await viewModel.fetchBloodBankBookings();
   }
 
   @override
@@ -101,7 +104,9 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                       if (viewModel.error != null) {
                         return _buildErrorState(viewModel.error!);
                       }
-                      if (viewModel.orders.isEmpty) {
+                      if (viewModel.orders.isEmpty && 
+                          viewModel.ambulanceBookings.isEmpty && 
+                          viewModel.bloodBankBookings.isEmpty) {
                         return _buildEmptyState();
                       }
                       return _buildOrdersList(viewModel);
@@ -144,6 +149,15 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (viewModel.bloodBankBookings.isNotEmpty) ...[
+            const Text(
+              'Blood Bank Bookings',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            BloodBankBookingTrackingCard(bookings: viewModel.bloodBankBookings),
+            const SizedBox(height: 20),
+          ],
           if (viewModel.ambulanceBookings.isNotEmpty) ...[
             const Text(
               'Ambulance Bookings',
@@ -153,12 +167,14 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
             AmbulanceBookingTrackingCard(bookings: viewModel.ambulanceBookings),
             const SizedBox(height: 20),
           ],
-          const Text(
-            'Medicine Orders',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          TrackingOrderCard(viewModel: viewModel),
+          if (viewModel.orders.isNotEmpty) ...[
+            const Text(
+              'Medicine Orders',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            TrackingOrderCard(viewModel: viewModel),
+          ],
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import '../../../../../core/auth/data/models/UserModel.dart';
+import 'BloodBankAgency.dart';
 
 class BloodBankBooking {
   final String? bookingId;
@@ -23,6 +24,7 @@ class BloodBankBooking {
   final String? notes;
   final DateTime? updatedAt;
   final BloodRequest? bloodRequest;
+  final BloodBankAgency? agency;
 
   BloodBankBooking({
     this.bookingId,
@@ -47,6 +49,7 @@ class BloodBankBooking {
     this.notes,
     this.updatedAt,
     this.bloodRequest,
+    this.agency,
   });
 
   BloodBankBooking copyWith({
@@ -72,6 +75,7 @@ class BloodBankBooking {
     String? notes,
     DateTime? updatedAt,
     BloodRequest? bloodRequest,
+    BloodBankAgency? agency,
   }) {
     return BloodBankBooking(
       bookingId: bookingId ?? this.bookingId,
@@ -96,6 +100,7 @@ class BloodBankBooking {
       notes: notes ?? this.notes,
       updatedAt: updatedAt ?? this.updatedAt,
       bloodRequest: bloodRequest ?? this.bloodRequest,
+      agency: agency ?? this.agency,
     );
   }
 
@@ -123,6 +128,7 @@ class BloodBankBooking {
       'notes': notes,
       'updatedAt': updatedAt?.toIso8601String(),
       'bloodRequest': bloodRequest?.toJson(),
+      'agency': agency?.toJson(),
     };
   }
 
@@ -137,6 +143,11 @@ class BloodBankBooking {
       userModel = UserModel.fromJson(json['user']);
     } else {
       userModel = UserModel.empty();
+    }
+
+    BloodBankAgency? agency;
+    if (json.containsKey('agency') && json['agency'] != null) {
+      agency = BloodBankAgency.fromJson(json['agency']);
     }
 
     return BloodBankBooking(
@@ -180,6 +191,7 @@ class BloodBankBooking {
       bloodRequest: json['bloodRequest'] != null
           ? BloodRequest.fromJson(json['bloodRequest'])
           : null,
+      agency: agency,
     );
   }
 

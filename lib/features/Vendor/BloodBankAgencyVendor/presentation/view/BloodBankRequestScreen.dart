@@ -22,15 +22,6 @@ class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Blood Requests',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: Consumer<BloodBankRequestViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
