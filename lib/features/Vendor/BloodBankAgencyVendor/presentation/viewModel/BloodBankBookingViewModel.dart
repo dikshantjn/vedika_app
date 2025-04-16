@@ -17,11 +17,6 @@ class BloodBankBookingViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  bool _isProcessing = false;
-  bool _isMarkingCompleted = false;
-  bool get isMarkingCompleted => _isMarkingCompleted;
-
-
   // Filtered getters
   List<BloodBankBooking> get confirmedBookings => 
       _bookings.where((booking) => 
@@ -82,7 +77,8 @@ class BloodBankBookingViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> notifyUser(String bookingId, {
+  Future<void> notifyUser(
+    String bookingId, {
     String? notes,
     double? totalAmount,
     double? discount,
@@ -92,23 +88,51 @@ class BloodBankBookingViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final token = await _loginService.getVendorToken();
-      final vendorId = await _loginService.getVendorId();
-
-      if (token == null || vendorId == null) {
-        throw Exception('Vendor authentication information not found');
+      final vendorToken = await _loginService.getVendorToken();
+      if (vendorToken == null) {
+        throw Exception('Vendor token not found');
       }
 
       await _service.notifyUser(
         bookingId,
-        token,
+        vendorToken,
         notes: notes,
         totalAmount: totalAmount,
         discount: discount,
         units: units,
       );
 
-      // Reload bookings after notifying
+      // Reload bookings after notifying user
+      await loadBookings();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateBookingStatus(String bookingId, String status) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final vendorToken = await _loginService.getVendorToken();
+      if (vendorToken == null) {
+        throw Exception('Vendor token not found');
+      }
+
+      if (status.toLowerCase() == 'completed') {
+        // Use the new endpoint for completed status
+        await _service.markBookingAsCompleted(bookingId, vendorToken);
+      } else {
+        // Use the existing endpoint for other statuses
+        await _service.updateBookingStatus(bookingId, status, vendorToken);
+      }
+
+      // Reload bookings after updating status
       await loadBookings();
     } catch (e) {
       _error = e.toString();

@@ -150,7 +150,7 @@ class BloodBankBookingService {
       
       // Make the API call
       final response = await _dio.put(
-        '${ApiEndpoints.updateBloodBankBookingStatus}/$bookingId',
+        '${ApiEndpoints.updateBookingStatusAsWaitingForPickup}/$bookingId/status/waiting-for-pickup',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -212,6 +212,32 @@ class BloodBankBookingService {
       }
     } catch (e) {
       _logger.e('Error notifying user about payment: $e');
+      rethrow;
+    }
+  }
+
+  // Mark booking as completed
+  Future<void> markBookingAsCompleted(String bookingId, String token) async {
+    try {
+      _logger.i('Marking booking as completed: $bookingId');
+      
+      final response = await _dio.patch(
+        '${ApiEndpoints.BloodBankBookings}/$bookingId/complete',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      _logger.i('Mark as completed response: ${response.data}');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to mark booking as completed: ${response.statusMessage}');
+      }
+    } catch (e) {
+      _logger.e('Error marking booking as completed: $e');
       rethrow;
     }
   }

@@ -432,8 +432,14 @@ class BloodBankViewModel extends ChangeNotifier {
     try {
       _bookings = await _agencyService.getBookings(userId!, token!);
       debugPrint('Bookings fetched: ${_bookings.length}');
-      if (_bookings.isNotEmpty) {
-        _showBookingDetailsBottomSheet(_bookings.first);
+      
+      // Filter out completed bookings and show bottom sheet for the first non-completed booking
+      final activeBookings = _bookings.where((booking) => 
+        booking.status.toLowerCase() != 'completed'
+      ).toList();
+      
+      if (activeBookings.isNotEmpty) {
+        _showBookingDetailsBottomSheet(activeBookings.first);
       }
     } catch (e) {
       debugPrint('Error fetching bookings: $e');

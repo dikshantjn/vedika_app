@@ -230,23 +230,27 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.bloodtype,
-                      color: Colors.purple[700],
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Booking #${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.bloodtype,
                         color: Colors.purple[700],
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Booking #${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.purple[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 _buildStatusChip(booking.status),
               ],
             ),
@@ -257,7 +261,7 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (user != null) ...[
-                  _buildInfoRow(Icons.person, 'Patient', user.name ?? "Not Mention"),
+                  _buildInfoRow(Icons.person, 'Patient', user.name!),
                   if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
                     _buildInfoRow(Icons.phone, 'Phone', user.phoneNumber!),
                 ],
@@ -283,7 +287,7 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
                         );
                       },
                       icon: const Icon(Icons.medical_services),
-                      label: const Text('Process Booking'),
+                      label: const Text('Process Confirm Request'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.purple[700],
                         side: BorderSide(color: Colors.purple[700]!),
@@ -341,23 +345,21 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
   }
 
   Widget _buildStatusChip(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.purple[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status,
+    return Chip(
+      label: Text(
+        status.toUpperCase(),
         style: const TextStyle(
-          fontSize: 12, // Smaller text
-          fontWeight: FontWeight.w500,
           color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
         ),
       ),
+      backgroundColor: _getStatusColor(status),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     );
   }
-
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
@@ -62,4 +63,35 @@ class TrackOrderService {
     }
   }
 
+  // 🔹 Fetch blood bank bookings
+  Future<List<BloodBankBooking>> getBloodBankBookings(String userId, String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getBloodBankBookingsByVendorId}/$userId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          final Map<String, dynamic> responseMap = response.data;
+          if (responseMap.containsKey('data') && responseMap['data'] != null) {
+            final List<dynamic> data = responseMap['data'];
+            return data.map((json) => BloodBankBooking.fromJson(json)).toList();
+          }
+        } else if (response.data is List) {
+          final List<dynamic> data = response.data;
+          return data.map((json) => BloodBankBooking.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching blood bank bookings: $e');
+      return [];
+    }
+  }
 }

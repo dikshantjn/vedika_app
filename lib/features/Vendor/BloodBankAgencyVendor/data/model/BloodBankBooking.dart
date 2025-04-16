@@ -17,7 +17,7 @@ class BloodBankBooking {
   final double totalAmount;
   final String deliveryType;
   final String paymentStatus;
-  final String status; // confirmed, completed, cancelled
+   String status; // confirmed, completed, cancelled
   final DateTime createdAt;
   final DateTime? scheduledDate;
   final String? notes;

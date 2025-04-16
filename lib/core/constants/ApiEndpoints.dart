@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String baseUrl = "http://192.168.1.44:5000/api";
-  static const String baseUrl = "http://192.168.1.46:5000/api";
+  static const String baseUrl = "http://192.168.1.45:5000/api";
+  // static const String baseUrl = "http://192.168.1.46:5000/api";
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -110,11 +110,11 @@ class ApiEndpoints {
   static const String getAllBloodBankRequestByVendorId = "$baseUrl/blood-bank/vendor"; // e.g. /blood-bank/profile/:vendorId
   static const String updateBBrequestStatus = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
   static const String acceptBloodBankRequest = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/requests/:requestId/accept
-  static const String updateBloodBankBookingStatus = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodBankBookingsByVendorId = "$baseUrl/blood-bank-bookings/vendor"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodBankRequestById = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
   static const String BloodBlankBookingwaitingforPaytmentStatus = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodBankBookingsByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank/profile/:vendorId
   static const String updatePaymentDetails = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
-
+  static const String updateBookingStatusAsWaitingForPickup = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
+  static const String BloodBankBookings = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
 }
