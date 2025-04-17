@@ -17,7 +17,41 @@ class BloodBankMapScreen extends StatelessWidget {
         builder: (context, viewModel, child) {
           return Scaffold(
             appBar: AppBar(
-              title: Text("Blood Banks Nearby"),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Blood Banks"),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButton<String>(
+                      value: viewModel.selectedCity,
+                      dropdownColor: Theme.of(context).colorScheme.primary,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      underline: const SizedBox(),
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                      items: viewModel.cities.map((String city) {
+                        return DropdownMenuItem<String>(
+                          value: city,
+                          child: Text(city),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          viewModel.setSelectedCity(newValue);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: ColorPalette.primaryColor,
               centerTitle: true,
               foregroundColor: Colors.white,
@@ -25,25 +59,51 @@ class BloodBankMapScreen extends StatelessWidget {
             drawer: DrawerMenu(),
             body: Stack(
               children: [
-                viewModel.isLoadingLocation
-                    ? Center(child: CircularProgressIndicator())
-                    : GoogleMap(
-                  onMapCreated: (GoogleMapController controller) {
-                    Provider.of<BloodBankViewModel>(context, listen: false).setMapController(controller);
-                  },
-                  initialCameraPosition: CameraPosition(
-                    target: viewModel.currentPosition,
-                    zoom: 14,
+                if (viewModel.isLoadingLocation)
+                  const Center(child: CircularProgressIndicator())
+                else if (viewModel.currentPosition == null)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.location_off,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "Location not available",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => viewModel.ensureLocationEnabled(),
+                          child: Text("Retry"),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  GoogleMap(
+                    onMapCreated: (GoogleMapController controller) {
+                      viewModel.setMapController(controller);
+                    },
+                    initialCameraPosition: CameraPosition(
+                      target: viewModel.currentPosition!,
+                      zoom: 14,
+                    ),
+                    markers: viewModel.markers,
+                    myLocationEnabled: true,
+                    compassEnabled: true,
+                    zoomControlsEnabled: true,
+                    onTap: (_) {
+                      Navigator.pop(context);
+                    },
                   ),
-                  markers: viewModel.markers,
-                  myLocationEnabled: true,
-                  compassEnabled: true,
-                  zoomControlsEnabled: true,
-                  onTap: (_) {
-                    // Close any open bottom sheet when tapping on the map
-                    Navigator.pop(context);
-                  },
-                ),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(

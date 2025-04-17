@@ -26,12 +26,12 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineProductViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/ViewModal/hospital_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
@@ -140,7 +140,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => UserViewModel()),
         ChangeNotifierProvider(create: (_) => MicViewModel()),
-        ChangeNotifierProvider(create: (_) => HospitalRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => VendorRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => MedicalStoreRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => VendorLoginViewModel()),
@@ -171,6 +170,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => BloodAvailabilityViewModel()),
         ChangeNotifierProvider(create: (context) => BloodBankAgencyProfileViewModel()),
         ChangeNotifierProvider(create: (context) => VendorBloodBankMainViewModel()),
+        ChangeNotifierProvider(create: (context) => HospitalRegistrationViewModel()),
 
 
 

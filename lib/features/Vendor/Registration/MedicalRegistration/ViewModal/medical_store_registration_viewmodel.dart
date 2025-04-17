@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/MedicalStoreFileUploadService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Widgets/SuccessDialog.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/Vendor.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
@@ -41,6 +42,28 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
     locationController.text = newLocation;
     notifyListeners();
   }
+
+  // Credentials
+  String _email = "";
+  String _password = "";
+
+  // Getters for credentials
+  String get email => _email;
+  String get password => _password;
+
+  // Setters for credentials
+  set email(String value) {
+    _email = value;
+    notifyListeners();
+  }
+
+  set password(String value) {
+    _password = value;
+    notifyListeners();
+  }
+
+  final vendorData = "";
+  final vendorId = "";
 
   // Dropdown selections
   ValueNotifier<String?> medicineType = ValueNotifier<String?>(null);
@@ -226,9 +249,42 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
 
       // Handle the response
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Extract vendorId from the server response
-        final vendorId = response.data['vendor']['vendorId'];
+        // Extract vendorId and credentials from the server response
+        final responseData = response.data;
+        final vendorData = responseData['vendor'];
+        final vendorId = vendorData['vendorId'];
+        
+        // Extract and set credentials from the response
+        final responseEmail = vendorData['email'];
+        final responsePassword = vendorData['password'];
+        
+        if (responseEmail == null || responsePassword == null) {
+          throw Exception('Email or password not received from server');
+        }
+        
+        // Update credentials using setters
+        email = responseEmail;
+        password = responsePassword;
+        
         print("Extracted vendorId: $vendorId");
+        print("Extracted email: $email");
+        print("Extracted password: $password");
+
+        // Show success dialog with credentials
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => SuccessDialog(
+              onLoginPressed: () {
+                Navigator.pop(context); // Close the dialog
+                Navigator.pushNamed(context, '/vendor-login'); // Navigate to login page
+              },
+              email: email,
+              password: password,
+            ),
+          );
+        }
 
         // Update the medical store object with the vendorId
         final updatedMedicalStore = VendorMedicalStoreProfile(
@@ -343,8 +399,7 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
           isLiftAccess: isLiftAccess.value,
           isWheelchairAccess: isWheelchairAccess.value,
           isParkingAvailable: isParkingAvailable.value,
-          location: getLocation.value!
-          ,
+          location: getLocation.value!,
           availableMedicines: [specialMedicationsController.text],
           registrationCertificates: registrationCertificateUrls,
           complianceCertificates: complianceCertificateUrls,
@@ -356,41 +411,38 @@ class MedicalStoreRegistrationViewModel extends ChangeNotifier {
           medicalStore: updatedMedicalStoreWithUrls,
         );
 
-        if (updateResponse.statusCode == 200) {
+        if (updateResponse.statusCode != 200) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Failed to update medical store with file URLs: ${updateResponse.data}"),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Vendor registered and files uploaded successfully"),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Failed to update medical store with file URLs: ${updateResponse.data}"),
+              content: Text("Failed to register vendor: ${response.data}"),
               backgroundColor: Colors.red,
             ),
           );
         }
-      } else {
+      }
+    } catch (e) {
+      print("Error during registration: $e");
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Failed to register vendor: ${response.data}"),
+            content: Text("Error during registration: $e"),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      print("Error during registration: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error during registration: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
-
-
 
   /// **Dispose Controllers Properly**
   @override

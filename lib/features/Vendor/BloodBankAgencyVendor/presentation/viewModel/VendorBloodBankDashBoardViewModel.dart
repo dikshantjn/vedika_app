@@ -1,46 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankRegistrationService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankAgencyProfileService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankRequestService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
 import 'package:logger/logger.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
   final Logger logger = Logger();
-  final BloodBankRegistrationService _bloodBankService = BloodBankRegistrationService();
+  final BloodBankAgencyProfileService _profileService = BloodBankAgencyProfileService();
+  final BloodBankRequestService _requestService = BloodBankRequestService();
+  final VendorLoginService _loginService = VendorLoginService(); // Vendor Login Service
 
   // Dashboard data
   BloodBankAgency? _agencyDetails;
+  List<BloodBankRequest> _recentRequests = [];
   bool _isLoading = false;
   int _totalRequests = 0;
   int _pendingRequests = 0;
   int _completedRequests = 0;
+  String? _errorMessage;
 
   // Getters
   BloodBankAgency? get agencyDetails => _agencyDetails;
+  List<BloodBankRequest> get recentRequests => _recentRequests;
   bool get isLoading => _isLoading;
   int get totalRequests => _totalRequests;
   int get pendingRequests => _pendingRequests;
   int get completedRequests => _completedRequests;
+  String? get errorMessage => _errorMessage;
 
   // Initialize dashboard
   Future<void> initializeDashboard() async {
+    if (_isLoading) return; // Prevent multiple simultaneous calls
+    String? token = await _loginService.getVendorToken();
+    String? vendorId = await _loginService.getVendorId();
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call to fetch agency details
-      // _agencyDetails = await _bloodBankService.getAgencyDetails();
+      // Get agency profile
+      try {
+        _agencyDetails = await _profileService.getAgencyProfile(vendorId!); // TODO: Replace with actual vendor ID
+      } catch (e) {
+        logger.w('Failed to fetch agency profile: $e');
+        // Continue with default values if profile fetch fails
+      }
       
-      // Mock data for now
-      _totalRequests = 25;
-      _pendingRequests = 8;
-      _completedRequests = 17;
+      // Get recent requests
+      try {
+        _recentRequests = await _requestService.getRequests(vendorId!, token!); // TODO: Replace with actual token
+      } catch (e) {
+        logger.w('Failed to fetch recent requests: $e');
+        _errorMessage = 'Failed to load recent requests';
+      }
       
-      _isLoading = false;
-      notifyListeners();
+      // Calculate statistics
+      _totalRequests = _recentRequests.length;
+      _pendingRequests = _recentRequests.where((request) => request.status.toLowerCase() == 'pending').length;
+      _completedRequests = _recentRequests.where((request) => request.status.toLowerCase() == 'completed').length;
+      
     } catch (e) {
       logger.e('Error initializing dashboard: $e');
+      _errorMessage = 'Failed to load dashboard data';
+    } finally {
       _isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
     }
   }
 
@@ -56,5 +84,13 @@ class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
       'pendingRequests': _pendingRequests,
       'completedRequests': _completedRequests,
     };
+  }
+
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 } 

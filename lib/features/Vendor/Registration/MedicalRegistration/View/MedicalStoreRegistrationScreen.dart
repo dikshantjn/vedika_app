@@ -54,7 +54,10 @@ class _MedicalStoreRegistrationScreenState extends State<MedicalStoreRegistratio
         if (context.mounted) {
           showDialog(
             context: context,
+            barrierDismissible: false,
             builder: (_) => SuccessDialog(
+              email: viewModel.email,
+              password: viewModel.password,
               onLoginPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.vendor),
             ),
           );

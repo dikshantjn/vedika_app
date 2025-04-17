@@ -17,15 +17,61 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
             return _buildShimmerLoading();
           }
 
-          return Container(
-            color: Colors.grey[50],
-            child: SingleChildScrollView(
+          if (viewModel.errorMessage != null) {
+            return Center(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildHeader(context, viewModel),
-                  _buildRecentRequests(context),
-                  _buildCharts(context, viewModel),
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    viewModel.errorMessage!,
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => viewModel.refreshDashboard(),
+                    child: const Text('Retry'),
+                  ),
                 ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => viewModel.refreshDashboard(),
+            child: Container(
+              color: Colors.grey[50],
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    _buildHeader(context, viewModel),
+                    if (viewModel.recentRequests.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              const Icon(Icons.inbox, size: 48, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No requests found',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      _buildRecentRequests(context, viewModel),
+                    _buildCharts(context, viewModel),
+                  ],
+                ),
               ),
             ),
           );
@@ -110,19 +156,15 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  const Text(
-                    'Blood Bank Agency',
-                    style: TextStyle(
+                  Text(
+                    viewModel.agencyDetails?.agencyName ?? 'Blood Bank Agency',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: () => viewModel.refreshDashboard(),
               ),
             ],
           ),
@@ -359,7 +401,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentRequests(BuildContext context) {
+  Widget _buildRecentRequests(BuildContext context, VendorBloodBankDashBoardViewModel viewModel) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -391,8 +433,9 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: 5,
+            itemCount: viewModel.recentRequests.length,
             itemBuilder: (context, index) {
+              final request = viewModel.recentRequests[index];
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
@@ -425,7 +468,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Blood Request #${1000 + index}',
+                              'Blood Request #${request.user.name}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -441,7 +484,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    'A+',
+                                    request.bloodType,
                                     style: TextStyle(
                                       color: Colors.blue,
                                       fontSize: 12,
@@ -457,7 +500,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '2 units',
+                                    '${request.units} units',
                                     style: TextStyle(
                                       color: Colors.green,
                                       fontSize: 12,
@@ -473,7 +516,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                                 const Icon(Icons.access_time, size: 14, color: Colors.grey),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '2 hours ago',
+                                  _getTimeAgo(request.createdAt),
                                   style: TextStyle(
                                     color: Colors.grey[600],
                                     fontSize: 12,
@@ -483,13 +526,13 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
+                                    color: _getStatusColor(request.status).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: const Text(
-                                    'Pending',
+                                  child: Text(
+                                    request.status,
                                     style: TextStyle(
-                                      color: Colors.orange,
+                                      color: _getStatusColor(request.status),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -508,5 +551,31 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inDays > 0) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutes ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 } 

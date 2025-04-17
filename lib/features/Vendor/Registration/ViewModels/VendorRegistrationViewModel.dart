@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRegistrationScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/View/hospital_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
@@ -13,7 +12,7 @@ class VendorRegistrationViewModel extends ChangeNotifier {
 
   // Vendor types with corresponding registration forms
   final Map<String, Widget> vendorForms = {
-    "Hospital": HospitalRegistrationForm(),
+    "Hospital": MedicalStoreRegistrationScreen(),
     "Clinic": ClinicRegistrationForm(),
     "Medical Store": MedicalStoreRegistrationScreen(),
     "Blood Bank": BloodBankRegistrationScreen(),

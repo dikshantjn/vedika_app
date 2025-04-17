@@ -14,10 +14,13 @@ import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodR
 import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodTypeSelectionDialog.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart';
 
 class BloodBankViewModel extends ChangeNotifier {
   final BuildContext context;
-  late LatLng _currentPosition;
+  LatLng? _currentPosition; // Make currentPosition nullable
   bool _isLoadingLocation = true;
   bool _isBloodTypeSelected = false;
   List<BloodBankAgency> _bloodBankAgencies = [];
@@ -25,25 +28,48 @@ class BloodBankViewModel extends ChangeNotifier {
   Set<Marker> _markers = {};
   bool _isLoadingAgencies = false;
   String? _errorMessage;
+  String _selectedCity = 'All Cities'; // Default city
+  GoogleMapController? _mapController; // Make map controller nullable
+
+  // City coordinates mapping
+  final Map<String, LatLng> _cityCoordinates = {
+    'Mumbai': LatLng(19.0760, 72.8777),
+    'Delhi': LatLng(28.7041, 77.1025),
+    'Bangalore': LatLng(12.9716, 77.5946),
+    'Hyderabad': LatLng(17.3850, 78.4867),
+    'Chennai': LatLng(13.0827, 80.2707),
+    'Kolkata': LatLng(22.5726, 88.3639),
+    'Pune': LatLng(18.5204, 73.8567),
+    'Ahmedabad': LatLng(23.0225, 72.5714),
+    'Jaipur': LatLng(26.9124, 75.7873),
+    'Lucknow': LatLng(26.8467, 80.9462),
+  };
+
+  final List<String> _cities = [
+    'All Cities',
+    'Mumbai',
+    'Delhi',
+    'Bangalore',
+    'Hyderabad',
+    'Chennai',
+    'Kolkata',
+    'Pune',
+    'Ahmedabad',
+    'Jaipur',
+    'Lucknow'
+  ];
 
   List<BloodBankBooking> _bookings = [];
   bool _isLoadingBookings = false;
   String? _bookingError;
 
-  List<BloodBankBooking> get bookings => _bookings;
-  bool get isLoadingBookings => _isLoadingBookings;
-  String? get bookingError => _bookingError;
-
-  // Added missing map controller
-  late GoogleMapController _mapController;
-  
   // Service for fetching blood bank agencies
   final BloodBankAgencyService _agencyService = BloodBankAgencyService();
   final AuthRepository _authRepository = AuthRepository();
 
   BloodBankViewModel(this.context);
 
-  LatLng get currentPosition => _currentPosition;
+  LatLng? get currentPosition => _currentPosition;
   bool get isLoadingLocation => _isLoadingLocation;
   List<BloodBankAgency> get bloodBankAgencies => _bloodBankAgencies;
   Set<Marker> get markers => _markers;
@@ -51,65 +77,214 @@ class BloodBankViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Getter and setter for map controller
-  GoogleMapController get mapController => _mapController;
+  GoogleMapController? get mapController => _mapController;
+
+  // Getters
+  String get selectedCity => _selectedCity;
+  List<String> get cities => _cities;
+
+  // Set selected city and update map
+  void setSelectedCity(String city) {
+    _selectedCity = city;
+    notifyListeners();
+    _updateMapForSelectedCity();
+  }
+
+  // Update map based on selected city
+  Future<void> _updateMapForSelectedCity() async {
+    if (_mapController == null) {
+      debugPrint("Map controller is null, cannot update map");
+      return;
+    }
+
+    // Clear existing markers
+    _markers.clear();
+    
+    if (_selectedCity == 'All Cities') {
+      // Show all agencies
+      _addBloodBankAgencyMarkers();
+      return;
+    }
+
+    // Get city coordinates
+    final cityLocation = _cityCoordinates[_selectedCity];
+    if (cityLocation == null) {
+      debugPrint("City coordinates not found for $_selectedCity");
+      return;
+    }
+
+    try {
+      // Add city center marker
+      _markers.add(
+        Marker(
+          markerId: MarkerId("city_center"),
+          position: cityLocation,
+          infoWindow: InfoWindow(title: _selectedCity),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        ),
+      );
+
+      // Filter agencies by city
+      final cityAgencies = _bloodBankAgencies.where((agency) => 
+        agency.city.toLowerCase() == _selectedCity.toLowerCase()
+      ).toList();
+      
+      // Add markers for agencies in selected city
+      for (var agency in cityAgencies) {
+        final locationParts = agency.googleMapsLocation.split(',');
+        if (locationParts.length == 2) {
+          try {
+            final latitude = double.parse(locationParts[0].trim());
+            final longitude = double.parse(locationParts[1].trim());
+            
+            final location = LatLng(latitude, longitude);
+            
+            _markers.add(
+              Marker(
+                markerId: MarkerId(agency.generatedId ?? agency.vendorId ?? 'agency_${agency.agencyName}'),
+                position: location,
+                infoWindow: InfoWindow(
+                  title: agency.agencyName,
+                  snippet: '${agency.completeAddress}, ${agency.city}',
+                ),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                onTap: () => _showBloodBankAgencyDetails(agency),
+              ),
+            );
+          } catch (e) {
+            debugPrint("Error parsing location for agency ${agency.agencyName}: $e");
+          }
+        }
+      }
+
+      // Animate camera to selected city
+      await _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: cityLocation,
+            zoom: 12,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint("Error updating map for selected city: $e");
+    }
+
+    notifyListeners();
+  }
 
   void setMapController(GoogleMapController controller) {
+    if (_mapController != null) {
+      _mapController!.dispose();
+    }
     _mapController = controller;
     notifyListeners();
   }
 
-  Future<void> ensureLocationEnabled()async {
+  @override
+  void dispose() {
+    if (_mapController != null) {
+      _mapController!.dispose();
+      _mapController = null;
+    }
+    super.dispose();
+  }
+
+  Future<void> ensureLocationEnabled() async {
     debugPrint("Starting location check...");
 
-    var locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    try {
+      Location location = Location();
+      bool serviceEnabled = await location.serviceEnabled();
 
-    bool serviceEnabled = await locationProvider.isLocationServiceEnabled();
-    debugPrint("Location service enabled: $serviceEnabled");
-
-    bool permissionGranted = await locationProvider.requestLocationPermission();
-    debugPrint("Location permission granted: $permissionGranted");
-
-    if (!serviceEnabled || !permissionGranted) {
-      debugPrint("Service not enabled or permission not granted, navigating to settings...");
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, AppRoutes.enableBloodBankLocation);
-      });
-      return;
-    }
-
-    debugPrint("Fetching and saving location...");
-    await locationProvider.loadSavedLocation();
-
-    if (locationProvider.latitude != null && locationProvider.longitude != null) {
-      debugPrint("Location fetched: (${locationProvider.latitude}, ${locationProvider.longitude})");
-
-      _currentPosition = LatLng(locationProvider.latitude!, locationProvider.longitude!);
-      _isLoadingLocation = false;
-      notifyListeners();
-
-      // Fetch bookings first
-      await fetchBookingsForVendor();
-
-      // If bookings exist, we already showed the bottom sheet inside that method
-      if (_bookings.isNotEmpty) {
-        debugPrint("Bookings available. Skipping blood type selection dialog.");
-        _fetchBloodBankAgencies(); // Still load agencies and markers
-        return;
+      if (!serviceEnabled) {
+        serviceEnabled = await location.requestService();
+        if (!serviceEnabled) {
+          _handleLocationError();
+          return;
+        }
       }
 
-      debugPrint("No bookings found. Fetching blood banks and showing blood type dialog...");
-      await _fetchBloodBankAgencies();
+      // Check location permission
+      PermissionStatus permissionStatus = await location.hasPermission();
+      if (permissionStatus == PermissionStatus.denied) {
+        permissionStatus = await location.requestPermission();
+        if (permissionStatus != PermissionStatus.granted) {
+          _handleLocationError();
+          return;
+        }
+      }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showBloodTypeSelectionDialog();
-      });
-    } else {
-      debugPrint("Location is null. Could not fetch location.");
-      _errorMessage = "Could not determine your location.";
-      notifyListeners();
+      // Get current location
+      LocationData? userLocation = await location.getLocation();
+      if (userLocation.latitude != null && userLocation.longitude != null) {
+        _isLoadingLocation = false;
+        _currentPosition = LatLng(userLocation.latitude!, userLocation.longitude!);
+        notifyListeners();
+
+        // Fetch agencies after getting location
+        await _fetchBloodBankAgencies();
+      } else {
+        _handleLocationError();
+      }
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      _handleLocationError();
     }
   }
 
+  Future<void> _handleLocationError() async {
+    _isLoadingLocation = false;
+    // Set default location to Pune
+    _currentPosition = _cityCoordinates['Pune'];
+    notifyListeners();
+    
+    // Fetch agencies for Pune
+    await _fetchBloodBankAgencies();
+    
+    if (!_isDialogShowing) _showLocationDialog();
+  }
+
+  bool _isDialogShowing = false;
+
+  void _showLocationDialog() {
+    if (_isDialogShowing) return;
+
+    _isDialogShowing = true;
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.bottomSlide,
+      title: 'Location Required',
+      desc: 'Please enable location to find blood banks near you.',
+      btnOkText: "Enable Location",
+      btnOkOnPress: () {
+        _isDialogShowing = false;
+        ensureLocationEnabled();
+      },
+      btnCancelText: "Go Back",
+      btnCancelOnPress: () {
+        _isDialogShowing = false;
+        Navigator.pop(context);
+      },
+      customHeader: Align(
+        alignment: Alignment.topCenter,
+        child: Container(
+          margin: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.orange.shade100,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: const Icon(
+            Icons.wrong_location_outlined,
+            size: 40,
+            color: Colors.redAccent,
+          ),
+        ),
+      ),
+    ).show();
+  }
 
   // Fetch blood bank agencies from API
   Future<void> _fetchBloodBankAgencies() async {
@@ -163,7 +338,7 @@ class BloodBankViewModel extends ChangeNotifier {
           final location = LatLng(latitude, longitude);
           
           // Calculate distance from user
-          final distance = _calculateDistance(_currentPosition, location);
+          final distance = _calculateDistance(_currentPosition!, location);
           
           if (distance < minDistance) {
             minDistance = distance;
@@ -182,15 +357,17 @@ class BloodBankViewModel extends ChangeNotifier {
   void _addBloodBankAgencyMarkers() {
     _markers.clear();
     
-    // Add user location marker
-    _markers.add(
-      Marker(
-        markerId: MarkerId("user_location"),
-        position: _currentPosition,
-        infoWindow: InfoWindow(title: "Your Location"),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ),
-    );
+    // Add user location marker only if currentPosition is available
+    if (_currentPosition != null) {
+      _markers.add(
+        Marker(
+          markerId: MarkerId("user_location"),
+          position: _currentPosition!,
+          infoWindow: InfoWindow(title: "Your Location"),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
     
     for (var agency in _bloodBankAgencies) {
       // Parse the Google Maps location string to get latitude and longitude
@@ -202,11 +379,15 @@ class BloodBankViewModel extends ChangeNotifier {
           
           final location = LatLng(latitude, longitude);
           
-          // Calculate distance from user
-          final distance = _calculateDistance(_currentPosition, location);
+          // Only calculate distance if currentPosition is available
+          bool shouldAddMarker = true;
+          if (_currentPosition != null) {
+            final distance = _calculateDistance(_currentPosition!, location);
+            // Only add markers for agencies within 5km if we have user location
+            shouldAddMarker = distance <= 5.0;
+          }
           
-          // Only add markers for agencies within 5km
-          if (distance <= 5.0) {
+          if (shouldAddMarker) {
             _markers.add(
               Marker(
                 markerId: MarkerId(agency.generatedId ?? agency.vendorId ?? 'agency_${agency.agencyName}'),

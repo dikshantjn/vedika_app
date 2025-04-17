@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRegistrationScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/View/hospital_registration_form.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/HospitalRegistration/Widgets/login_widget.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
 
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Views/login_widget.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/pathology_registration_form.dart';
 
 
@@ -255,7 +255,7 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
 
     switch (vendorType) {
       case "Hospital":
-        registrationScreen = HospitalRegistrationForm();
+        registrationScreen = HospitalRegistrationScreen();
         break;
       case "Clinic":
         registrationScreen = ClinicRegistrationForm();

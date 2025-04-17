@@ -12,7 +12,7 @@ class MedicalStoreVendorService {
     required Vendor vendor,
     required VendorMedicalStoreProfile medicalStore,
   }) async {
-    if (vendor.phoneNumber == null || vendor.email == null || vendor.password == null) {
+    if (vendor.phoneNumber == null || vendor.email == null) {
       throw Exception('Vendor information is incomplete');
     }
 
@@ -35,6 +35,19 @@ class MedicalStoreVendorService {
       );
 
       print("✅ Register Response: ${response.statusCode}, Data: ${response.data}");
+      
+      // If registration is successful but no password is provided, generate a default one
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = response.data;
+        if (responseData['vendor'] != null && responseData['vendor']['password'] == null) {
+          // Generate a default password using the first 6 characters of the phone number
+          final phoneNumber = responseData['vendor']['phoneNumber'] as String;
+          final defaultPassword = phoneNumber.substring(phoneNumber.length - 6);
+          responseData['vendor']['password'] = defaultPassword;
+          print("🔑 Generated default password: $defaultPassword");
+        }
+      }
+      
       return response;
     } on DioException catch (e) {
       return _handleDioError(e);

@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 
 class SuccessDialog extends StatelessWidget {
   final Function onLoginPressed;
+  final String email;
+  final String password;
 
-  SuccessDialog({required this.onLoginPressed});
+  SuccessDialog({
+    required this.onLoginPressed,
+    required this.email,
+    required this.password,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.white, // Set background to white
+      backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15), // Rounded corners
+        borderRadius: BorderRadius.circular(15),
       ),
-      title: Center( // Title centered
+      title: Center(
         child: Text(
           'Request Sent Successfully',
           style: TextStyle(
@@ -24,13 +30,13 @@ class SuccessDialog extends StatelessWidget {
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-        crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.check_circle_outline,
             color: Colors.green,
-            size: 60.0, // Slightly bigger icon
+            size: 60.0,
           ),
           SizedBox(height: 15),
           Text(
@@ -39,22 +45,56 @@ class SuccessDialog extends StatelessWidget {
               fontSize: 16,
               color: Colors.black87,
             ),
-            textAlign: TextAlign.center, // Center the text
+            textAlign: TextAlign.center,
           ),
           SizedBox(height: 20),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Login Credentials:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8),
+                _buildCredentialRow('Email:', email),
+                SizedBox(height: 4),
+                _buildCredentialRow('Password:', password),
+                SizedBox(height: 8),
+                Text(
+                  'Please save these credentials securely.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       actions: [
-        Center( // Center the button horizontally
+        Center(
           child: ElevatedButton(
             onPressed: () {
-              onLoginPressed(); // Navigate to the vendor login page
+              onLoginPressed();
             },
             style: ElevatedButton.styleFrom(
               foregroundColor: Colors.white,
-              backgroundColor: Colors.green, // Green button
+              backgroundColor: Colors.green,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10), // Rounded button
+                borderRadius: BorderRadius.circular(10),
               ),
               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 10),
             ),
@@ -68,6 +108,32 @@ class SuccessDialog extends StatelessWidget {
           ),
         ),
         SizedBox(width: 10),
+      ],
+    );
+  }
+
+  Widget _buildCredentialRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
       ],
     );
   }

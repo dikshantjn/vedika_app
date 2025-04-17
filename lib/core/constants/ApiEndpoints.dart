@@ -1,7 +1,9 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.45:5000/api";
+  // static const String baseUrl = "http://192.168.1.45:5000/api";
   // static const String baseUrl = "http://192.168.1.46:5000/api";
+  static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
+
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
