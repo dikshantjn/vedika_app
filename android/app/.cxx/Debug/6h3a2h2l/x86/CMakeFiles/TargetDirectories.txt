@@ -1,0 +1,2 @@
+/home/krish/AndroidStudioProjects/vedika_healthcare/android/app/.cxx/Debug/6h3a2h2l/x86/CMakeFiles/edit_cache.dir
+/home/krish/AndroidStudioProjects/vedika_healthcare/android/app/.cxx/Debug/6h3a2h2l/x86/CMakeFiles/rebuild_cache.dir

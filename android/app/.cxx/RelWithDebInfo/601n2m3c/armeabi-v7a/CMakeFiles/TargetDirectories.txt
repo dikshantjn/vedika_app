@@ -1,0 +1,2 @@
+/home/krish/AndroidStudioProjects/vedika_healthcare/android/app/.cxx/RelWithDebInfo/601n2m3c/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/krish/AndroidStudioProjects/vedika_healthcare/android/app/.cxx/RelWithDebInfo/601n2m3c/armeabi-v7a/CMakeFiles/rebuild_cache.dir
