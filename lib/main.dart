@@ -26,7 +26,11 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalRegistrationViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/ProcessAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -61,9 +65,6 @@ import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -175,7 +176,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => VendorBloodBankMainViewModel()),
         ChangeNotifierProvider(create: (context) => HospitalRegistrationViewModel()),
 
+        ChangeNotifierProvider(create: (context) => HospitalDashboardViewModel()),
+        ChangeNotifierProvider(create: (context) => AppointmentViewModel()),
 
+        ChangeNotifierProvider(create: (context) => HospitalProfileViewModel()),
+        ChangeNotifierProvider(create: (context) => ProcessAppointmentViewModel()),
 
 
 
@@ -206,136 +211,6 @@ class MyApp extends StatelessWidget {
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver {
-  late LocationProvider locationProvider;
-  late EmergencyService emergencyService;
-  bool _initializing = false;
-  bool _permissionGranted = false;
-  final VendorLoginService _loginService = VendorLoginService();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // Add a timeout to prevent infinite waiting
-    Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && !_permissionGranted) {
-        _proceedWithoutPermission();
-      }
-    });
-    _checkAndRequestPermission();
-  }
-
-  Future<void> _checkAndRequestPermission() async {
-    try {
-      var status = await Permission.location.status;
-      if (!status.isGranted) {
-        var result = await Permission.location.request();
-        if (!result.isGranted) {
-          // If permission is denied, proceed anyway
-          _proceedWithoutPermission();
-          return;
-        }
-      }
-      _permissionGranted = true;
-      _initializeApp();
-    } catch (e) {
-      print("Permission request error: $e");
-      _proceedWithoutPermission();
-    }
-  }
-
-  void _proceedWithoutPermission() {
-    // Proceed with basic app initialization without location features
-    _permissionGranted = false;
-    _initializeApp();
-  }
-
-  Future<void> _initializeApp() async {
-    if (_initializing) return;
-    _initializing = true;
-
-    try {
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ));
-
-      locationProvider = LocationProvider();
-      if (_permissionGranted) {
-        await locationProvider.loadSavedLocation();
-        await getWifiIpAddress();
-        emergencyService = EmergencyService(locationProvider);
-        emergencyService.initialize();
-      }
-
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
-
-      // Fetch Orders and Cart Items for the current user
-      await cartViewModel.fetchOrdersAndCartItems();
-
-      await Future.wait([
-        authViewModel.checkLoginStatus(),
-        vendorAuthViewModel.checkLoginStatus(),
-      ]);
-
-      // Ensure minimum splash screen duration
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (!mounted) return;
-
-      // Navigate based on the user role
-      if (authViewModel.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      } else if (vendorAuthViewModel.isVendorLoggedIn) {
-        int? role = await _loginService.getVendorRole();
-        await vendorAuthViewModel.navigateToDashboard(context, role);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
-      }
-    } catch (e) {
-      print("Initialization error: $e");
-      // Fallback navigation in case of errors
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkAndRequestPermission();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Implement the build method to return the splash screen widget
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Add your loading indicator here
-            CircularProgressIndicator(),
-            SizedBox(height: 20),
-            Text("Loading..."),
-          ],
-        ),
       ),
     );
   }

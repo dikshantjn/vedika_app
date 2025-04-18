@@ -33,6 +33,7 @@ class HospitalProfile {
   final String state;
   final String city;
   final String pincode;
+  final bool isActive;
 
   HospitalProfile({
     this.vendorId,
@@ -67,6 +68,7 @@ class HospitalProfile {
     required this.state,
     required this.city,
     required this.pincode,
+    this.isActive = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -103,6 +105,7 @@ class HospitalProfile {
       'state': state,
       'city': city,
       'pincode': pincode,
+      'isActive': isActive,
     };
   }
 
@@ -140,6 +143,79 @@ class HospitalProfile {
       state: json['state'],
       city: json['city'],
       pincode: json['pincode'],
+      isActive: json['isActive'] ?? false,
+    );
+  }
+
+  HospitalProfile copyWith({
+    String? vendorId,
+    String? generatedId,
+    String? name,
+    String? gstNumber,
+    String? panNumber,
+    String? address,
+    String? landmark,
+    String? ownerName,
+    List<Map<String, String>>? certifications,
+    List<Map<String, String>>? licenses,
+    List<String>? specialityTypes,
+    List<String>? servicesOffered,
+    int? bedsAvailable,
+    List<Map<String, dynamic>>? doctors,
+    String? workingTime,
+    String? workingDays,
+    String? contactNumber,
+    String? email,
+    String? website,
+    bool? hasLiftAccess,
+    bool? hasParking,
+    bool? providesAmbulanceService,
+    String? about,
+    bool? hasWheelchairAccess,
+    bool? providesOnlineConsultancy,
+    String? feesRange,
+    List<String>? otherFacilities,
+    List<String>? insuranceCompanies,
+    List<Map<String, String>>? photos,
+    String? state,
+    String? city,
+    String? pincode,
+    bool? isActive,
+  }) {
+    return HospitalProfile(
+      vendorId: vendorId ?? this.vendorId,
+      generatedId: generatedId ?? this.generatedId,
+      name: name ?? this.name,
+      gstNumber: gstNumber ?? this.gstNumber,
+      panNumber: panNumber ?? this.panNumber,
+      address: address ?? this.address,
+      landmark: landmark ?? this.landmark,
+      ownerName: ownerName ?? this.ownerName,
+      certifications: certifications ?? this.certifications,
+      licenses: licenses ?? this.licenses,
+      specialityTypes: specialityTypes ?? this.specialityTypes,
+      servicesOffered: servicesOffered ?? this.servicesOffered,
+      bedsAvailable: bedsAvailable ?? this.bedsAvailable,
+      doctors: doctors ?? this.doctors,
+      workingTime: workingTime ?? this.workingTime,
+      workingDays: workingDays ?? this.workingDays,
+      contactNumber: contactNumber ?? this.contactNumber,
+      email: email ?? this.email,
+      website: website ?? this.website,
+      hasLiftAccess: hasLiftAccess ?? this.hasLiftAccess,
+      hasParking: hasParking ?? this.hasParking,
+      providesAmbulanceService: providesAmbulanceService ?? this.providesAmbulanceService,
+      about: about ?? this.about,
+      hasWheelchairAccess: hasWheelchairAccess ?? this.hasWheelchairAccess,
+      providesOnlineConsultancy: providesOnlineConsultancy ?? this.providesOnlineConsultancy,
+      feesRange: feesRange ?? this.feesRange,
+      otherFacilities: otherFacilities ?? this.otherFacilities,
+      insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
+      photos: photos ?? this.photos,
+      state: state ?? this.state,
+      city: city ?? this.city,
+      pincode: pincode ?? this.pincode,
+      isActive: isActive ?? this.isActive,
     );
   }
 } 

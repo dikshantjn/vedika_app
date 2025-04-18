@@ -121,5 +121,8 @@ class ApiEndpoints {
   static const String BloodBankBookings = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String getCompletedBloodBankBookingsByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank-bookings/user/:userId/completed
   static const String getBloodBankRequestByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank/profile/:vendorId
+  static const String registerHospital = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
+  static const String getHospitalProfile = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
+  static const String updateHospitalProfile = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
 
 }

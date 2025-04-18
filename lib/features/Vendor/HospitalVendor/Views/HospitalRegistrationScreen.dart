@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/LocationSection.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/MedicalInfoSection.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/PhotoSection.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
 
 class HospitalRegistrationScreen extends StatefulWidget {
   const HospitalRegistrationScreen({Key? key}) : super(key: key);
@@ -119,7 +120,7 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('OK'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -273,6 +274,27 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
         elevation: 0,
         backgroundColor: HospitalVendorColorPalette.primaryBlue,
         centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HospitalDashboardScreen(),
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: HospitalVendorColorPalette.textInverse,
+            ),
+            child: const Text(
+              'Go to Dashboard',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,

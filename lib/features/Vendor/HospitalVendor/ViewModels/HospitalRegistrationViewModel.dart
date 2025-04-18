@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorStorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Models/Vendor.dart';
 
 class HospitalRegistrationViewModel extends ChangeNotifier {
   final HospitalVendorService _service = HospitalVendorService();
@@ -337,6 +338,14 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         }
       }
 
+      final vendor = Vendor(
+        vendorRole: 1,
+        phoneNumber: phone,
+        email: email,
+        password: password,
+        generatedId: tempVendorId,
+      );
+
       final hospital = HospitalProfile(
         name: hospitalName,
         gstNumber: gstNumber,
@@ -370,7 +379,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         pincode: pincode,
       );
       
-      final response = await _service.registerHospital(hospital);
+      final response = await _service.registerHospital(vendor, hospital);
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         _certificationFiles.clear();
