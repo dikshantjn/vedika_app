@@ -14,7 +14,7 @@ class CertificationSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Certifications and Licenses',
+          'Certifications and Documents',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -22,7 +22,7 @@ class CertificationSection extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const Text(
-          'Certifications',
+          'Hospital Certifications',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -60,7 +60,48 @@ class CertificationSection extends StatelessWidget {
             }
           },
         ),
-       
+        const SizedBox(height: 20),
+        const Text(
+          'PAN Card',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        UploadSectionWidget(
+          label: 'Upload PAN Card',
+          onFilesSelected: (files) {
+            // Only use the first file for PAN card
+            if (files.isNotEmpty) {
+              // Set the new PAN card file (this will replace any existing one)
+              viewModel.setPanCardFile({
+                'name': files[0]['name'] as String,
+                'url': '', // URL will be set after upload
+              });
+            }
+          },
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Business Registration Documents',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        UploadSectionWidget(
+          label: 'Upload Business Registration Documents',
+          onFilesSelected: (files) {
+            for (var file in files) {
+              viewModel.addBusinessDocument({
+                'name': file['name'] as String,
+                'url': '', // URL will be set after upload
+              });
+            }
+          },
+        ),
       ],
     );
   }

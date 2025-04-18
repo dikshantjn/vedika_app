@@ -30,7 +30,9 @@ class HospitalProfile {
   final List<String> otherFacilities;
   final List<String> insuranceCompanies;
   final List<Map<String, String>> photos;
-  final String location;
+  final String state;
+  final String city;
+  final String pincode;
 
   HospitalProfile({
     this.vendorId,
@@ -62,7 +64,9 @@ class HospitalProfile {
     required this.otherFacilities,
     required this.insuranceCompanies,
     required this.photos,
-    required this.location,
+    required this.state,
+    required this.city,
+    required this.pincode,
   });
 
   Map<String, dynamic> toJson() {
@@ -96,7 +100,9 @@ class HospitalProfile {
       'otherFacilities': otherFacilities,
       'insuranceCompanies': insuranceCompanies,
       'photos': photos,
-      'location': location,
+      'state': state,
+      'city': city,
+      'pincode': pincode,
     };
   }
 
@@ -131,7 +137,9 @@ class HospitalProfile {
       otherFacilities: List<String>.from(json['otherFacilities']),
       insuranceCompanies: List<String>.from(json['insuranceCompanies']),
       photos: List<Map<String, String>>.from(json['photos']),
-      location: json['location'],
+      state: json['state'],
+      city: json['city'],
+      pincode: json['pincode'],
     );
   }
 } 

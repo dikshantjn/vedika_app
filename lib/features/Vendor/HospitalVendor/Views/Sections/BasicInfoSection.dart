@@ -14,14 +14,13 @@ class BasicInfoSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Hospital Details',
+          'Basic Information',
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: HospitalVendorColorPalette.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         _buildTextField(
           label: 'Hospital Name',
           controller: viewModel.hospitalNameController,
@@ -57,8 +56,8 @@ class BasicInfoSection extends StatelessWidget {
             if (value == null || value.isEmpty) {
               return 'Please enter password';
             }
-            if (value.length < 8) {
-              return 'Password must be at least 8 characters';
+            if (value.length < 6) {
+              return 'Password must be at least 6 characters';
             }
             return null;
           },
@@ -89,13 +88,88 @@ class BasicInfoSection extends StatelessWidget {
             if (value == null || value.isEmpty) {
               return 'Please enter phone number';
             }
-            if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
-              return 'Please enter a valid 10-digit phone number';
+            if (value.length != 10) {
+              return 'Phone number must be 10 digits';
             }
             return null;
           },
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: 'GST Number',
+          controller: viewModel.gstNumberController,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter GST number';
+            }
+            if (!RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$').hasMatch(value)) {
+              return 'Please enter a valid GST number';
+            }
+            return null;
+          },
+          prefixIcon: Icons.receipt_long,
+          textCapitalization: TextCapitalization.characters,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: 'Website',
+          controller: viewModel.websiteController,
+          validator: (value) {
+            if (value != null && value.isNotEmpty) {
+              if (!RegExp(r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$').hasMatch(value)) {
+                return 'Please enter a valid website URL';
+              }
+            }
+            return null;
+          },
+          prefixIcon: Icons.language,
+          keyboardType: TextInputType.url,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: 'Owner Name',
+          controller: viewModel.ownerNameController,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter owner\'s name';
+            }
+            return null;
+          },
+          prefixIcon: Icons.person,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: 'Owner Contact Number',
+          controller: viewModel.ownerContactController,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter owner\'s contact number';
+            }
+            if (value.length != 10) {
+              return 'Contact number must be 10 digits';
+            }
+            return null;
+          },
+          prefixIcon: Icons.phone,
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: 'PAN Number',
+          controller: viewModel.panNumberController,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter PAN number';
+            }
+            if (!RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$').hasMatch(value)) {
+              return 'Please enter a valid PAN number';
+            }
+            return null;
+          },
+          prefixIcon: Icons.credit_card,
+          textCapitalization: TextCapitalization.characters,
         ),
       ],
     );
@@ -108,12 +182,14 @@ class BasicInfoSection extends StatelessWidget {
     required IconData prefixIcon,
     bool obscureText = false,
     TextInputType? keyboardType,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
       validator: validator,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       style: const TextStyle(
         color: HospitalVendorColorPalette.textPrimary,
         fontSize: 14,

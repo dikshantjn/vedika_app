@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalRegistrationViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/AddressSection.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/BasicInfoSection.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/CertificationSection.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/Sections/FacilitiesSection.dart';
@@ -24,6 +25,7 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
 
   final List<Widget> _sections = [
     const BasicInfoSection(),
+    const AddressSection(),
     const MedicalInfoSection(),
     const CertificationSection(),
     const FacilitiesSection(),
@@ -33,6 +35,7 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
 
   final List<String> _sectionTitles = [
     'Basic Information',
+    'Address Information',
     'Medical Information',
     'Certifications',
     'Facilities',
@@ -187,7 +190,52 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final viewModel = Provider.of<HospitalRegistrationViewModel>(context, listen: false);
+      
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Submitting Registration...',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please wait while we upload your files and register your hospital.',
+                    style: TextStyle(
+                      color: HospitalVendorColorPalette.textSecondary,
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
       final success = await viewModel.registerHospital();
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
       
       if (success && mounted) {
         _showSubmissionDialog(

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorStorageService.dart';
 
 class HospitalRegistrationViewModel extends ChangeNotifier {
   final HospitalVendorService _service = HospitalVendorService();
+  final HospitalVendorStorageService _storageService = HospitalVendorStorageService();
   
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -28,6 +31,14 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   final TextEditingController aboutController = TextEditingController();
   final TextEditingController feesRangeController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
+  final TextEditingController pincodeController = TextEditingController();
+  final TextEditingController ownerContactController = TextEditingController();
+  
+  String _selectedState = '';
+  String get selectedState => _selectedState;
+  
+  String _selectedCity = '';
+  String get selectedCity => _selectedCity;
   
   List<Map<String, String>> _certifications = [];
   List<Map<String, String>> get certifications => _certifications;
@@ -71,6 +82,13 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   List<Map<String, String>> _photos = [];
   List<Map<String, String>> get photos => _photos;
   
+  List<File> _certificationFiles = [];
+  List<File> _licenseFiles = [];
+  List<File> _photoFiles = [];
+  
+  Map<String, dynamic>? panCardFile;
+  List<Map<String, dynamic>> businessDocuments = [];
+  
   String get email => emailController.text;
   String get password => passwordController.text;
   String get hospitalName => hospitalNameController.text;
@@ -82,6 +100,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   String get ownerName => ownerNameController.text;
   String get contactNumber => contactNumberController.text;
   String get website => websiteController.text;
+  String get pincode => pincodeController.text;
   
   void updateBedsAvailable(int value) {
     _bedsAvailable = value;
@@ -153,6 +172,64 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
     notifyListeners();
   }
   
+  void updateState(String state) {
+    _selectedState = state;
+    _selectedCity = ''; // Reset city when state changes
+    notifyListeners();
+  }
+
+  void updateCity(String city) {
+    _selectedCity = city;
+    notifyListeners();
+  }
+  
+  void addCertificationFile(File file) {
+    _certificationFiles.add(file);
+    notifyListeners();
+  }
+
+  void addLicenseFile(File file) {
+    _licenseFiles.add(file);
+    notifyListeners();
+  }
+
+  void addPhotoFile(File file) {
+    _photoFiles.add(file);
+    notifyListeners();
+  }
+
+  void removeCertificationFile(int index) {
+    _certificationFiles.removeAt(index);
+    notifyListeners();
+  }
+
+  void removeLicenseFile(int index) {
+    _licenseFiles.removeAt(index);
+    notifyListeners();
+  }
+
+  void removePhotoFile(int index) {
+    _photoFiles.removeAt(index);
+    notifyListeners();
+  }
+  
+  void setPanCardFile(Map<String, dynamic> file) {
+    panCardFile = file;
+    notifyListeners();
+  }
+
+  void addBusinessDocument(Map<String, dynamic> document) {
+    businessDocuments.add(document);
+    notifyListeners();
+  }
+
+  void removeBusinessDocument(int index) {
+    if (index >= 0 && index < businessDocuments.length) {
+      businessDocuments.removeAt(index);
+      notifyListeners();
+    }
+  }
+  
   Future<bool> registerHospital() async {
     try {
       _isLoading = true;
@@ -160,19 +237,104 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
       if (hospitalName.isEmpty) {
         _error = 'Hospital name is required';
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
       if (email.isEmpty) {
         _error = 'Email is required';
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
       if (password.isEmpty) {
         _error = 'Password is required';
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
       if (phone.isEmpty) {
         _error = 'Phone number is required';
+        _isLoading = false;
+        notifyListeners();
         return false;
+      }
+      if (gstNumber.isEmpty) {
+        _error = 'GST number is required';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (panNumber.isEmpty) {
+        _error = 'PAN number is required';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (_selectedState.isEmpty) {
+        _error = 'State is required';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (_selectedCity.isEmpty) {
+        _error = 'City is required';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (pincode.isEmpty) {
+        _error = 'Pincode is required';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final String tempVendorId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      if (_certificationFiles.isNotEmpty) {
+        try {
+          _certifications = await _storageService.uploadMultipleFiles(
+            _certificationFiles,
+            vendorId: tempVendorId,
+            fileType: 'certifications',
+          );
+        } catch (e) {
+          _error = 'Failed to upload certifications: $e';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      if (_licenseFiles.isNotEmpty) {
+        try {
+          _licenses = await _storageService.uploadMultipleFiles(
+            _licenseFiles,
+            vendorId: tempVendorId,
+            fileType: 'licenses',
+          );
+        } catch (e) {
+          _error = 'Failed to upload licenses: $e';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      if (_photoFiles.isNotEmpty) {
+        try {
+          _photos = await _storageService.uploadMultipleFiles(
+            _photoFiles,
+            vendorId: tempVendorId,
+            fileType: 'photos',
+          );
+        } catch (e) {
+          _error = 'Failed to upload photos: $e';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
       }
 
       final hospital = HospitalProfile(
@@ -190,7 +352,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         doctors: _doctors,
         workingTime: workingTimeController.text,
         workingDays: workingDaysController.text,
-        contactNumber: contactNumber,
+        contactNumber: phone,
         email: email,
         website: website,
         hasLiftAccess: _hasLiftAccess,
@@ -203,10 +365,22 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         otherFacilities: _otherFacilities,
         insuranceCompanies: _insuranceCompanies,
         photos: _photos,
-        location: locationController.text,
+        state: _selectedState,
+        city: _selectedCity,
+        pincode: pincode,
       );
       
       final response = await _service.registerHospital(hospital);
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _certificationFiles.clear();
+        _licenseFiles.clear();
+        _photoFiles.clear();
+        _certifications.clear();
+        _licenses.clear();
+        _photos.clear();
+      }
+
       _isLoading = false;
       notifyListeners();
       return response.statusCode == 200 || response.statusCode == 201;
@@ -237,6 +411,8 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
     aboutController.dispose();
     feesRangeController.dispose();
     locationController.dispose();
+    pincodeController.dispose();
+    ownerContactController.dispose();
     super.dispose();
   }
 } 
