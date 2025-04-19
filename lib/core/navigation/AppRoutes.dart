@@ -10,6 +10,8 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/ProcessBloodBankBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
@@ -107,7 +109,7 @@ class AppRoutes {
       trackOrderScreen: (context) => TrackOrderScreen(), // Added route for EnableLocationPage
 
       // // Vendor Dashboards
-      // VendorHospitalDashBoard: (context) => VendorHospitalDashBoardScreen(),
+      VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
       // VendorClinicDashBoard: (context) => VendorClinicDashBoardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
       VendorBloodBankDashBoard: (context) => VendorBloodBankMainScreen(),
@@ -120,7 +122,7 @@ class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case bookAppointment:
-        final hospital = settings.arguments as Map<String, dynamic>;
+        final hospital = settings.arguments as HospitalProfile;
         return MaterialPageRoute(
           builder: (context) => BookAppointmentPage(hospital: hospital),
         );

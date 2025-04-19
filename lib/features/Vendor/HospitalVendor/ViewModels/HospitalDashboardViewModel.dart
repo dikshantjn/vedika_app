@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
 class HospitalDashboardViewModel extends ChangeNotifier {
+  final HospitalVendorService _hospitalService = HospitalVendorService();
+  final VendorLoginService _loginService = VendorLoginService();
+  final VendorService _vendorService = VendorService();
+  String? _vendorId;
+
+  Future<String?> getVendorId() async {
+    return await _loginService.getVendorId();
+  }
   int _currentIndex = 0;
   int get currentIndex => _currentIndex;
   
@@ -13,6 +24,9 @@ class HospitalDashboardViewModel extends ChangeNotifier {
   
   bool _isActive = false;
   bool get isActive => _isActive;
+  
+  HospitalProfile? _hospitalProfile;
+  HospitalProfile? get hospitalProfile => _hospitalProfile;
   
   // Appointments Data
   List<Appointment> _todayAppointments = [];
@@ -57,61 +71,6 @@ class HospitalDashboardViewModel extends ChangeNotifier {
   // Time Period for Analytics
   String _selectedTimePeriod = 'week';
   String get selectedTimePeriod => _selectedTimePeriod;
-  
-  // Static hospital profile data
-  HospitalProfile? get hospitalProfile => HospitalProfile(
-    name: 'City General Hospital',
-    gstNumber: 'GST123456789',
-    panNumber: 'PAN123456789',
-    address: '123 Medical Street',
-    landmark: 'Near City Mall',
-    ownerName: 'Dr. John Smith',
-    certifications: [
-      {'name': 'ISO 9001', 'year': '2020'},
-      {'name': 'NABH', 'year': '2021'},
-    ],
-    licenses: [
-      {'name': 'Medical License', 'number': 'ML12345'},
-      {'name': 'Pharmacy License', 'number': 'PL67890'},
-    ],
-    specialityTypes: ['Cardiology', 'Neurology', 'Orthopedics'],
-    servicesOffered: ['Emergency Care', 'Surgery', 'Diagnostics'],
-    bedsAvailable: 100,
-    doctors: [
-      {
-        'name': 'Dr. Sarah Johnson',
-        'speciality': 'Cardiology',
-        'experience': '15 years',
-      },
-      {
-        'name': 'Dr. Michael Brown',
-        'speciality': 'Neurology',
-        'experience': '12 years',
-      },
-    ],
-    workingTime: '24/7',
-    workingDays: 'Monday to Sunday',
-    contactNumber: '+91 9876543210',
-    email: 'info@cityhospital.com',
-    website: 'www.cityhospital.com',
-    hasLiftAccess: true,
-    hasParking: true,
-    providesAmbulanceService: true,
-    about: 'City General Hospital is a leading healthcare provider with state-of-the-art facilities and experienced medical professionals. We are committed to providing the best healthcare services to our patients.',
-    hasWheelchairAccess: true,
-    providesOnlineConsultancy: true,
-    feesRange: '₹500 - ₹5000',
-    otherFacilities: ['Cafeteria', 'Pharmacy', 'ATM'],
-    insuranceCompanies: ['ICICI Lombard', 'HDFC Ergo', 'Bajaj Allianz'],
-    photos: [
-      {'url': 'hospital1.jpg', 'caption': 'Main Building'},
-      {'url': 'hospital2.jpg', 'caption': 'Emergency Ward'},
-    ],
-    state: 'Maharashtra',
-    city: 'Mumbai',
-    pincode: '400001',
-    isActive: true,
-  );
 
   void updateCurrentIndex(int index) {
     _currentIndex = index;
@@ -127,8 +86,31 @@ class HospitalDashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
+    // Get vendor ID from storage
+    _vendorId = await getVendorId();
+    print("🔹 Fetching Dashboard Data - Vendor ID: $_vendorId");
+    
+    if (_vendorId == null) {
+      print("❌ Error: Vendor ID is null");
+      _error = 'Vendor ID not found';
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
-      // Simulate API calls
+      // Get current vendor status
+      print("🔹 Fetching Current Vendor Status...");
+      _isActive = await _vendorService.getVendorStatus(_vendorId!);
+      print("✅ Current Vendor Status: $_isActive");
+      
+      print("🔹 Fetching Hospital Profile...");
+      // Fetch hospital profile
+      _hospitalProfile = await _hospitalService.getHospitalProfile(_vendorId!);
+      print("✅ Hospital Profile Fetched: ${_hospitalProfile?.name}");
+      print("✅ Hospital Profile Data: ${_hospitalProfile?.toJson()}");
+      
+      // Simulate API calls for other data
       await Future.delayed(const Duration(seconds: 2));
       
       // Mock data for demonstration
@@ -216,17 +198,63 @@ class HospitalDashboardViewModel extends ChangeNotifier {
       };
       
       _error = null;
-    } catch (e) {
+      print("✅ Dashboard Data Loaded Successfully");
+    } catch (e, stackTrace) {
+      print("❌ Error fetching dashboard data: $e");
+      print("❌ Stack Trace: $stackTrace");
       _error = 'Failed to load dashboard data. Please try again.';
     } finally {
       _isLoading = false;
       notifyListeners();
+      print("🔹 Dashboard Loading State: $_isLoading");
+      print("🔹 Hospital Profile State: ${_hospitalProfile?.name ?? 'null'}");
+      print("🔹 Current Vendor Status: $_isActive");
     }
   }
 
   Future<void> toggleActiveStatus() async {
-    _isActive = !_isActive;
-    notifyListeners();
+    try {
+      print("🔄 Toggling Vendor Status...");
+      
+      // Get vendor ID if not already available
+      if (_vendorId == null) {
+        _vendorId = await getVendorId();
+        if (_vendorId == null) {
+          print("❌ Error: Vendor ID is null during toggle");
+          return;
+        }
+      }
+
+      // Call the toggle status API
+      final newStatus = await _vendorService.toggleVendorStatus(_vendorId!);
+      print("✅ Vendor Status Toggled: $newStatus");
+      
+      // Update local state
+      _isActive = newStatus;
+      notifyListeners();
+      
+      // If we have a hospital profile, update its active status
+      if (_hospitalProfile != null) {
+        _hospitalProfile = _hospitalProfile!.copyWith(isActive: newStatus);
+      }
+      
+      print("✅ Local State Updated - isActive: $_isActive");
+      
+      // Verify the new status matches the server
+      final verifiedStatus = await _vendorService.getVendorStatus(_vendorId!);
+      print("✅ Verified Server Status: $verifiedStatus");
+      
+      if (verifiedStatus != newStatus) {
+        print("⚠️ Status mismatch detected. Updating to server status.");
+        _isActive = verifiedStatus;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("❌ Error toggling vendor status: $e");
+      // Revert the switch if the API call fails
+      _isActive = !_isActive;
+      notifyListeners();
+    }
   }
 
   Future<void> acceptAppointment(String appointmentId) async {
@@ -246,6 +274,24 @@ class HospitalDashboardViewModel extends ChangeNotifier {
         status: 'completed',
       );
       notifyListeners();
+    }
+  }
+
+  // Add a method to refresh the hospital profile
+  Future<void> refreshHospitalProfile() async {
+    print("🔄 Refreshing Hospital Profile...");
+    try {
+      _vendorId = await getVendorId();
+      if (_vendorId == null) {
+        print("❌ Error: Vendor ID is null during refresh");
+        return;
+      }
+      
+      _hospitalProfile = await _hospitalService.getHospitalProfile(_vendorId!);
+      print("✅ Hospital Profile Refreshed: ${_hospitalProfile?.name}");
+      notifyListeners();
+    } catch (e) {
+      print("❌ Error refreshing hospital profile: $e");
     }
   }
 }

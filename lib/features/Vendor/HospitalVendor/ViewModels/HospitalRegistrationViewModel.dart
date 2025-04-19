@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorStorageService.dart';
@@ -8,6 +9,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Models/Vendor.dar
 class HospitalRegistrationViewModel extends ChangeNotifier {
   final HospitalVendorService _service = HospitalVendorService();
   final HospitalVendorStorageService _storageService = HospitalVendorStorageService();
+  final Logger _logger = Logger();
   
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -102,6 +104,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   String get contactNumber => contactNumberController.text;
   String get website => websiteController.text;
   String get pincode => pincodeController.text;
+  String get location => locationController.text;
   
   void updateBedsAvailable(int value) {
     _bedsAvailable = value;
@@ -215,7 +218,41 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   }
   
   void setPanCardFile(Map<String, dynamic> file) {
-    panCardFile = file;
+    _logger.i('Setting PAN card file with data: $file');
+    
+    // Validate input
+    if (file == null) {
+      _logger.e('setPanCardFile called with null file data');
+      return;
+    }
+
+    if (file['file'] == null) {
+      _logger.e('PAN card file object is null');
+      return;
+    }
+
+    if (file['name'] == null || file['name'].toString().isEmpty) {
+      _logger.e('PAN card file name is null or empty');
+      return;
+    }
+
+    // Ensure the file is actually a File object
+    if (!(file['file'] is File)) {
+      _logger.e('PAN card file is not a File object, type: ${file['file'].runtimeType}');
+      return;
+    }
+
+    // Set the file data
+    panCardFile = {
+      'name': file['name'],
+      'file': file['file'],
+    };
+    
+    _logger.i('PAN card file set successfully:');
+    _logger.i('Name: ${panCardFile!['name']}');
+    _logger.i('File type: ${panCardFile!['file'].runtimeType}');
+    _logger.i('File path: ${(panCardFile!['file'] as File).path}');
+    
     notifyListeners();
   }
 
@@ -238,70 +275,83 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
       if (hospitalName.isEmpty) {
         _error = 'Hospital name is required';
+        _logger.e('Registration failed: Hospital name is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (email.isEmpty) {
         _error = 'Email is required';
+        _logger.e('Registration failed: Email is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (password.isEmpty) {
         _error = 'Password is required';
+        _logger.e('Registration failed: Password is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (phone.isEmpty) {
         _error = 'Phone number is required';
+        _logger.e('Registration failed: Phone number is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (gstNumber.isEmpty) {
         _error = 'GST number is required';
+        _logger.e('Registration failed: GST number is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (panNumber.isEmpty) {
         _error = 'PAN number is required';
+        _logger.e('Registration failed: PAN number is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (_selectedState.isEmpty) {
         _error = 'State is required';
+        _logger.e('Registration failed: State is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (_selectedCity.isEmpty) {
         _error = 'City is required';
+        _logger.e('Registration failed: City is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (pincode.isEmpty) {
         _error = 'Pincode is required';
+        _logger.e('Registration failed: Pincode is required');
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
       final String tempVendorId = DateTime.now().millisecondsSinceEpoch.toString();
+      _logger.i('Starting file uploads with tempVendorId: $tempVendorId');
 
       if (_certificationFiles.isNotEmpty) {
         try {
+          _logger.i('Uploading ${_certificationFiles.length} certification files');
           _certifications = await _storageService.uploadMultipleFiles(
             _certificationFiles,
             vendorId: tempVendorId,
             fileType: 'certifications',
           );
+          _logger.i('Successfully uploaded certification files');
         } catch (e) {
           _error = 'Failed to upload certifications: $e';
+          _logger.e('Certification upload failed', error: e, stackTrace: StackTrace.current);
           _isLoading = false;
           notifyListeners();
           return false;
@@ -310,13 +360,16 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
       if (_licenseFiles.isNotEmpty) {
         try {
+          _logger.i('Uploading ${_licenseFiles.length} license files');
           _licenses = await _storageService.uploadMultipleFiles(
             _licenseFiles,
             vendorId: tempVendorId,
             fileType: 'licenses',
           );
+          _logger.i('Successfully uploaded license files');
         } catch (e) {
           _error = 'Failed to upload licenses: $e';
+          _logger.e('License upload failed', error: e, stackTrace: StackTrace.current);
           _isLoading = false;
           notifyListeners();
           return false;
@@ -325,13 +378,115 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
       if (_photoFiles.isNotEmpty) {
         try {
+          _logger.i('Uploading ${_photoFiles.length} photo files');
           _photos = await _storageService.uploadMultipleFiles(
             _photoFiles,
             vendorId: tempVendorId,
             fileType: 'photos',
           );
+          _logger.i('Successfully uploaded photo files');
         } catch (e) {
           _error = 'Failed to upload photos: $e';
+          _logger.e('Photo upload failed', error: e, stackTrace: StackTrace.current);
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      // Debug logging for PAN card file
+      if (panCardFile != null) {
+        _logger.i('PAN card file before upload:');
+        _logger.i('Name: ${panCardFile!['name']}');
+        _logger.i('File type: ${panCardFile!['file']?.runtimeType}');
+        if (panCardFile!['file'] != null) {
+          _logger.i('File path: ${(panCardFile!['file'] as File).path}');
+        } else {
+          _logger.w('PAN card file object is null');
+        }
+      } else {
+        _logger.w('PAN card file is null before upload attempt');
+      }
+
+      // Upload PAN card file if exists
+      if (panCardFile != null && panCardFile!['file'] != null) {
+        try {
+          final file = panCardFile!['file'] as File;
+          final fileName = panCardFile!['name'] as String?;
+          
+          if (fileName == null || fileName.isEmpty) {
+            _error = 'PAN card file name is missing';
+            _logger.e('PAN card file name is missing in upload attempt');
+            _isLoading = false;
+            notifyListeners();
+            return false;
+          }
+
+          _logger.i('Uploading PAN card file: $fileName');
+          final result = await _storageService.uploadFile(
+            file,
+            vendorId: tempVendorId,
+            fileType: 'pan_card',
+          );
+          panCardFile = {
+            'name': fileName,
+            'url': result['url'],
+          };
+          _logger.i('Successfully uploaded PAN card file');
+        } catch (e) {
+          _error = 'Failed to upload PAN card: $e';
+          _logger.e('PAN card upload failed - File: ${panCardFile!['name']}', 
+            error: e, 
+            stackTrace: StackTrace.current
+          );
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      if (businessDocuments.isNotEmpty) {
+        try {
+          _logger.i('Uploading ${businessDocuments.length} business documents');
+          for (int i = 0; i < businessDocuments.length; i++) {
+            final doc = businessDocuments[i];
+            final file = doc['file'] as File?;
+            final fileName = doc['name'] as String?;
+
+            if (file == null) {
+              _error = 'Business document file is null';
+              _logger.e('Business document file is null at index $i');
+              _isLoading = false;
+              notifyListeners();
+              return false;
+            }
+
+            if (fileName == null || fileName.isEmpty) {
+              _error = 'Business document file name is missing';
+              _logger.e('Business document file name is missing at index $i');
+              _isLoading = false;
+              notifyListeners();
+              return false;
+            }
+
+            _logger.i('Uploading business document: $fileName');
+            final result = await _storageService.uploadFile(
+              file,
+              vendorId: tempVendorId,
+              fileType: 'business_documents',
+            );
+            businessDocuments[i] = {
+              'name': fileName,
+              'url': result['url'],
+            };
+            _logger.i('Successfully uploaded business document: $fileName');
+          }
+        } catch (e) {
+          _error = 'Failed to upload business documents: $e';
+          _logger.e('Business documents upload failed - Count: ${businessDocuments.length}', 
+            error: e, 
+            stackTrace: StackTrace.current
+          );
           _isLoading = false;
           notifyListeners();
           return false;
@@ -345,6 +500,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         password: password,
         generatedId: tempVendorId,
       );
+      _logger.i('Created vendor object with ID: $tempVendorId');
 
       final hospital = HospitalProfile(
         name: hospitalName,
@@ -377,17 +533,28 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         state: _selectedState,
         city: _selectedCity,
         pincode: pincode,
+        location: location,
+        panCardFile: panCardFile,
+        businessDocuments: businessDocuments,
       );
-      
+      _logger.i('Created hospital profile object');
+
+      _logger.i('Calling hospital registration API');
       final response = await _service.registerHospital(vendor, hospital);
-      
+      _logger.i('API response status code: ${response.statusCode}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
+        _logger.i('Registration successful, clearing file lists');
         _certificationFiles.clear();
         _licenseFiles.clear();
         _photoFiles.clear();
         _certifications.clear();
         _licenses.clear();
         _photos.clear();
+        panCardFile = null;
+        businessDocuments.clear();
+      } else {
+        _logger.w('Registration failed with status code: ${response.statusCode}');
       }
 
       _isLoading = false;
@@ -395,6 +562,10 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       _error = e.toString();
+      _logger.e('Registration failed - Hospital: $hospitalName, Email: $email, Phone: $phone', 
+        error: e, 
+        stackTrace: StackTrace.current
+      );
       _isLoading = false;
       notifyListeners();
       return false;
@@ -423,5 +594,86 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
     pincodeController.dispose();
     ownerContactController.dispose();
     super.dispose();
+  }
+
+  // Add these new methods for file uploads
+  void uploadCertifications(List<Map<String, Object>> files) {
+    if (files.isNotEmpty) {
+      for (var file in files) {
+        final fileName = file['name'] as String?;
+        final fileObj = file['file'] as File?;
+        
+        if (fileName != null && fileObj != null) {
+          // Add to certification files list for later upload
+          _certificationFiles.add(fileObj);
+          
+          // Add to certifications list with name only (URL will be added after upload)
+          if (!_certifications.any((e) => e['name'] == fileName)) {
+            _certifications.add({
+              'name': fileName,
+              'url': '', // URL will be set after upload
+            });
+          }
+        }
+      }
+      notifyListeners();
+    }
+  }
+
+  void uploadLicenses(List<Map<String, Object>> files) {
+    if (files.isNotEmpty) {
+      for (var file in files) {
+        final fileName = file['name'] as String?;
+        final fileObj = file['file'] as File?;
+        
+        if (fileName != null && fileObj != null) {
+          // Add to license files list for later upload
+          _licenseFiles.add(fileObj);
+          
+          // Add to licenses list with name only (URL will be added after upload)
+          if (!_licenses.any((e) => e['name'] == fileName)) {
+            _licenses.add({
+              'name': fileName,
+              'url': '', // URL will be set after upload
+            });
+          }
+        }
+      }
+      notifyListeners();
+    }
+  }
+
+  void uploadPanCard(Map<String, Object> file) {
+    final fileName = file['name'] as String?;
+    final fileObj = file['file'] as File?;
+    
+    if (fileName != null && fileObj != null) {
+      // Set PAN card file for later upload
+      panCardFile = {
+        'name': fileName,
+        'file': fileObj,
+      };
+      notifyListeners();
+    }
+  }
+
+  void uploadBusinessDocuments(List<Map<String, Object>> files) {
+    if (files.isNotEmpty) {
+      for (var file in files) {
+        final fileName = file['name'] as String?;
+        final fileObj = file['file'] as File?;
+        
+        if (fileName != null && fileObj != null) {
+          // Add to business documents list with file object
+          if (!businessDocuments.any((e) => e['name'] == fileName)) {
+            businessDocuments.add({
+              'name': fileName,
+              'file': fileObj,
+            });
+          }
+        }
+      }
+      notifyListeners();
+    }
   }
 } 

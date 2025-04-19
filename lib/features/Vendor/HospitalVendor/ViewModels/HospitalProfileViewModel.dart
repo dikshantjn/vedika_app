@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorStorageService.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
 class HospitalProfileViewModel extends ChangeNotifier {
   bool _isLoading = false;
@@ -14,9 +18,14 @@ class HospitalProfileViewModel extends ChangeNotifier {
   bool _isEditing = false;
   bool get isEditing => _isEditing;
   
+  bool _isActive = false;
+  bool get isActive => _isActive;
+  
   HospitalProfile? _hospitalProfile;
   HospitalProfile? get hospitalProfile => _hospitalProfile;
-  
+  final VendorLoginService _loginService = VendorLoginService();
+  final VendorService _vendorService = VendorService();
+
   // Controllers for editing
   final TextEditingController nameController = TextEditingController();
   final TextEditingController ownerNameController = TextEditingController();
@@ -36,6 +45,7 @@ class HospitalProfileViewModel extends ChangeNotifier {
   final TextEditingController feesRangeController = TextEditingController();
   final TextEditingController aboutController = TextEditingController();
 
+  final HospitalVendorService _service = HospitalVendorService();
   final HospitalVendorStorageService _storageService = HospitalVendorStorageService();
   String? _vendorId;
 
@@ -69,6 +79,10 @@ class HospitalProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Get the vendor ID from the login service
+  Future<String?> getVendorId() async {
+    return await _loginService.getVendorId();
+  }
   void _initializeControllers() {
     nameController.text = _hospitalProfile!.name;
     ownerNameController.text = _hospitalProfile!.ownerName;
@@ -95,64 +109,26 @@ class HospitalProfileViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call
-      await Future.delayed(const Duration(seconds: 1));
-      _hospitalProfile = HospitalProfile(
-        name: 'City General Hospital',
-        gstNumber: 'GST123456789',
-        panNumber: 'PAN123456789',
-        address: '123 Medical Street',
-        landmark: 'Near City Mall',
-        ownerName: 'Dr. John Smith',
-        certifications: [
-          {'name': 'ISO 9001', 'url': 'cert1.pdf'},
-          {'name': 'NABH', 'url': 'cert2.pdf'},
-        ],
-        licenses: [
-          {'name': 'Medical License', 'url': 'license1.pdf'},
-          {'name': 'Pharmacy License', 'url': 'license2.pdf'},
-        ],
-        specialityTypes: ['Cardiology', 'Neurology', 'Orthopedics'],
-        servicesOffered: ['Emergency Care', 'Surgery', 'Diagnostics'],
-        bedsAvailable: 100,
-        doctors: [
-          {
-            'name': 'Dr. Sarah Johnson',
-            'speciality': 'Cardiology',
-            'experience': '15 years',
-          },
-          {
-            'name': 'Dr. Michael Brown',
-            'speciality': 'Neurology',
-            'experience': '12 years',
-          },
-        ],
-        workingTime: '24/7',
-        workingDays: 'Monday to Sunday',
-        contactNumber: '+91 9876543210',
-        email: 'info@cityhospital.com',
-        website: 'www.cityhospital.com',
-        hasLiftAccess: true,
-        hasParking: true,
-        providesAmbulanceService: true,
-        about: 'City General Hospital is a leading healthcare provider with state-of-the-art facilities and experienced medical professionals.',
-        hasWheelchairAccess: true,
-        providesOnlineConsultancy: true,
-        feesRange: '₹500 - ₹5000',
-        otherFacilities: ['Cafeteria', 'Pharmacy', 'ATM'],
-        insuranceCompanies: ['ICICI Lombard', 'HDFC Ergo', 'Bajaj Allianz'],
-        photos: [
-          {'name': 'Main Building', 'url': 'hospital1.jpg'},
-          {'name': 'Emergency Ward', 'url': 'hospital2.jpg'},
-        ],
-        state: 'Maharashtra',
-        city: 'Mumbai',
-        pincode: '400001',
-        isActive: true,
-      );
-      _vendorId = 'HOSP123';
+      // Get vendor ID from storage
+      _vendorId = await getVendorId();
+      if (_vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+
+      // Fetch current vendor status
+      _isActive = await _vendorService.getVendorStatus(_vendorId!);
+      print("✅ Current Vendor Status: $_isActive");
+
+      // Fetch profile from API
+      _hospitalProfile = await _service.getHospitalProfile(_vendorId!);
+      
+      // Update profile's active status
+      if (_hospitalProfile != null) {
+        _hospitalProfile = _hospitalProfile!.copyWith(isActive: _isActive);
+      }
     } catch (e) {
       _error = 'Failed to load hospital profile: $e';
+      print("❌ Error fetching profile: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -160,17 +136,15 @@ class HospitalProfileViewModel extends ChangeNotifier {
   }
 
   Future<void> updateProfile() async {
-    if (_hospitalProfile == null) return;
+    if (_hospitalProfile == null || _vendorId == null) return;
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      _hospitalProfile = _hospitalProfile!.copyWith(
+      // Create updated profile
+      final updatedProfile = _hospitalProfile!.copyWith(
         name: nameController.text,
         ownerName: ownerNameController.text,
         gstNumber: gstNumberController.text,
@@ -190,6 +164,11 @@ class HospitalProfileViewModel extends ChangeNotifier {
         about: aboutController.text,
       );
 
+      // Update profile via API
+      await _service.updateHospitalProfile(_vendorId!, updatedProfile);
+      
+      // Update local profile
+      _hospitalProfile = updatedProfile;
       _isEditing = false;
     } catch (e) {
       _error = 'Failed to update profile: $e';
@@ -384,6 +363,56 @@ class HospitalProfileViewModel extends ChangeNotifier {
         servicesOffered: servicesOffered ?? _hospitalProfile!.servicesOffered,
         insuranceCompanies: insuranceCompanies ?? _hospitalProfile!.insuranceCompanies,
       );
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleActiveStatus() async {
+    try {
+      print("🔄 Toggling Vendor Status...");
+      
+      if (_vendorId == null) {
+        _vendorId = await getVendorId();
+        if (_vendorId == null) {
+          print("❌ Error: Vendor ID is null during toggle");
+          return;
+        }
+      }
+
+      // Call the toggle status API
+      final newStatus = await _vendorService.toggleVendorStatus(_vendorId!);
+      print("✅ Vendor Status Toggled: $newStatus");
+      
+      // Update local state
+      _isActive = newStatus;
+      
+      // Update profile's active status
+      if (_hospitalProfile != null) {
+        _hospitalProfile = _hospitalProfile!.copyWith(isActive: newStatus);
+      }
+      
+      notifyListeners();
+      print("✅ Local State Updated - isActive: $_isActive");
+      
+      // Verify the new status matches the server
+      final verifiedStatus = await _vendorService.getVendorStatus(_vendorId!);
+      print("✅ Verified Server Status: $verifiedStatus");
+      
+      if (verifiedStatus != newStatus) {
+        print("⚠️ Status mismatch detected. Updating to server status.");
+        _isActive = verifiedStatus;
+        if (_hospitalProfile != null) {
+          _hospitalProfile = _hospitalProfile!.copyWith(isActive: verifiedStatus);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print("❌ Error toggling vendor status: $e");
+      // Revert the switch if the API call fails
+      _isActive = !_isActive;
+      if (_hospitalProfile != null) {
+        _hospitalProfile = _hospitalProfile!.copyWith(isActive: _isActive);
+      }
       notifyListeners();
     }
   }

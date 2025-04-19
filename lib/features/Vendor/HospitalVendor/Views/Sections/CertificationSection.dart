@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/UpdateProfile/UploadSectionWidget.dart';
 
@@ -31,13 +32,8 @@ class CertificationSection extends StatelessWidget {
         const SizedBox(height: 8),
         UploadSectionWidget(
           label: 'Upload Certifications',
-          onFilesSelected: (files) {
-            for (var file in files) {
-              viewModel.addCertification({
-                'name': file['name'] as String,
-                'url': '', // URL will be set after upload
-              });
-            }
+          onFilesSelected: (List<Map<String, Object>> files) {
+            viewModel.uploadCertifications(files);
           },
         ),
         const SizedBox(height: 20),
@@ -51,13 +47,8 @@ class CertificationSection extends StatelessWidget {
         const SizedBox(height: 8),
         UploadSectionWidget(
           label: 'Upload Government Licenses',
-          onFilesSelected: (files) {
-            for (var file in files) {
-              viewModel.addLicense({
-                'name': file['name'] as String,
-                'url': '', // URL will be set after upload
-              });
-            }
+          onFilesSelected: (List<Map<String, Object>> files) {
+            viewModel.uploadLicenses(files);
           },
         ),
         const SizedBox(height: 20),
@@ -71,14 +62,9 @@ class CertificationSection extends StatelessWidget {
         const SizedBox(height: 8),
         UploadSectionWidget(
           label: 'Upload PAN Card',
-          onFilesSelected: (files) {
-            // Only use the first file for PAN card
+          onFilesSelected: (List<Map<String, Object>> files) {
             if (files.isNotEmpty) {
-              // Set the new PAN card file (this will replace any existing one)
-              viewModel.setPanCardFile({
-                'name': files[0]['name'] as String,
-                'url': '', // URL will be set after upload
-              });
+              viewModel.uploadPanCard(files[0]);
             }
           },
         ),
@@ -93,13 +79,8 @@ class CertificationSection extends StatelessWidget {
         const SizedBox(height: 8),
         UploadSectionWidget(
           label: 'Upload Business Registration Documents',
-          onFilesSelected: (files) {
-            for (var file in files) {
-              viewModel.addBusinessDocument({
-                'name': file['name'] as String,
-                'url': '', // URL will be set after upload
-              });
-            }
+          onFilesSelected: (List<Map<String, Object>> files) {
+            viewModel.uploadBusinessDocuments(files);
           },
         ),
       ],

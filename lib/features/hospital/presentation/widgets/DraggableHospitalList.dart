@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 
 class DraggableHospitalList extends StatelessWidget {
-  final List<Map<String, dynamic>> hospitals;
+  final List<HospitalProfile> hospitals;
   final List<bool> expandedItems;
   final Function(int, double, double) onHospitalTap;
 
@@ -46,6 +47,7 @@ class DraggableHospitalList extends StatelessWidget {
   Widget buildDoctorChip(Map<String, dynamic> doctor) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: EdgeInsets.only(right: 8, bottom: 8),
       decoration: BoxDecoration(
         color: Colors.blue.shade100,
         borderRadius: BorderRadius.circular(20),
@@ -54,7 +56,7 @@ class DraggableHospitalList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "${doctor["name"]} - ${doctor["specialization"]}",
+            "${doctor["name"]} - ${doctor["speciality"]}",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -62,13 +64,31 @@ class DraggableHospitalList extends StatelessWidget {
             ),
           ),
           Text(
-            "Fee: ₹${doctor["fee"]} | Slots: ${doctor["timeSlots"].join(", ")}",
+            "Experience: ${doctor["experience"]}",
             style: TextStyle(
               fontSize: 12,
               color: Colors.blueGrey[600],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget buildFacilityChip(String facility) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: EdgeInsets.only(right: 8, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.green.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        facility,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.green[800],
+        ),
       ),
     );
   }
@@ -125,9 +145,12 @@ class DraggableHospitalList extends StatelessWidget {
                     itemBuilder: (_, index) {
                       var hospital = hospitals[index];
                       bool isExpanded = expandedItems[index];
+                      final locationParts = hospital.location.split(',');
+                      final lat = double.tryParse(locationParts[0]) ?? 0.0;
+                      final lng = double.tryParse(locationParts[1]) ?? 0.0;
 
                       return GestureDetector(
-                        onTap: () => onHospitalTap(index, hospital["lat"], hospital["lng"]),
+                        onTap: () => onHospitalTap(index, lat, lng),
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 300),
                           padding: EdgeInsets.all(16),
@@ -144,7 +167,7 @@ class DraggableHospitalList extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      hospital["name"],
+                                      hospital.name,
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -165,29 +188,26 @@ class DraggableHospitalList extends StatelessWidget {
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      hospital["address"],
+                                      hospital.address,
                                       style: TextStyle(color: Colors.blueGrey[600], fontSize: 14),
-                                      overflow: TextOverflow.ellipsis, // optional, to avoid overflow with long text
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
                               if (isExpanded) ...[
                                 Divider(color: Colors.blueGrey[300]),
-                                buildDetailRow("Phone:", hospital["contact"]),
-                                buildDetailRow("Email:", hospital["email"]),
-                                buildDetailRow("Website:", hospital["website"]),
-                                buildDetailRow("Specialties:", hospital["specialties"].join(", ")),
-                                buildDetailRow("Available Beds:", "${hospital["beds"]}"),
-                                buildDetailRow("Ratings:", "${hospital["ratings"]} ⭐"),
-                                buildDetailRow("Services:", hospital["services"].join(", ")),
-                                buildDetailRow("Visiting Hours:", hospital["visitingHours"]),
-                                buildDetailRow("Insurance:", hospital["insuranceProviders"].join(", ")),
-                                buildDetailRow("Labs:", hospital["labs"].join(", ")),
-                                Divider(color: Colors.blueGrey[300]),
-                                SizedBox(height: 10),
+                                buildDetailRow("Contact:", hospital.contactNumber),
+                                buildDetailRow("Email:", hospital.email),
+                                buildDetailRow("Website:", hospital.website ?? "Not available"),
+                                buildDetailRow("Working Hours:", hospital.workingTime),
+                                buildDetailRow("Working Days:", hospital.workingDays),
+                                buildDetailRow("Beds Available:", "${hospital.bedsAvailable}"),
+                                buildDetailRow("Fees Range:", hospital.feesRange),
+                                
+                                SizedBox(height: 8),
                                 Text(
-                                  "Doctors",
+                                  "Specialties",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -197,10 +217,49 @@ class DraggableHospitalList extends StatelessWidget {
                                 Wrap(
                                   spacing: 8.0,
                                   runSpacing: 8.0,
-                                  children: hospital["doctors"]
-                                      .map<Widget>((doctor) => buildDoctorChip(doctor))
+                                  children: hospital.specialityTypes
+                                      .map<Widget>((speciality) => buildFacilityChip(speciality))
                                       .toList(),
                                 ),
+                                
+                                SizedBox(height: 8),
+                                Text(
+                                  "Facilities",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueGrey[800],
+                                  ),
+                                ),
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  children: [
+                                    if (hospital.hasLiftAccess) buildFacilityChip("Lift Access"),
+                                    if (hospital.hasParking) buildFacilityChip("Parking"),
+                                    if (hospital.hasWheelchairAccess) buildFacilityChip("Wheelchair Access"),
+                                    if (hospital.providesAmbulanceService) buildFacilityChip("Ambulance Service"),
+                                    if (hospital.providesOnlineConsultancy) buildFacilityChip("Online Consultancy"),
+                                  ],
+                                ),
+
+                                SizedBox(height: 8),
+                                Text(
+                                  "Insurance Companies",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueGrey[800],
+                                  ),
+                                ),
+                                Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 8.0,
+                                  children: hospital.insuranceCompanies
+                                      .map<Widget>((company) => buildFacilityChip(company))
+                                      .toList(),
+                                ),
+
                                 SizedBox(height: 12),
                                 ElevatedButton.icon(
                                   onPressed: () {
@@ -211,7 +270,7 @@ class DraggableHospitalList extends StatelessWidget {
                                     );
                                   },
                                   icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
-                                  label: Text("Book Appointment"),
+                                  label: Text("Book Bed"),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue,
                                     foregroundColor: Colors.white,

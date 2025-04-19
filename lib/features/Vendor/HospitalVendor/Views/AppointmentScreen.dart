@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/Appointment.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/ProcessAppointmentScreen.dart';
 
-class AppointmentScreen extends StatelessWidget {
+class AppointmentScreen extends StatefulWidget {
   const AppointmentScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AppointmentScreen> createState() => _AppointmentScreenState();
+}
+
+class _AppointmentScreenState extends State<AppointmentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch appointments when the screen is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<AppointmentViewModel>(context, listen: false);
+      viewModel.fetchAppointments();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +37,7 @@ class AppointmentScreen extends StatelessWidget {
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text(
-                    'Loading appointments...',
+                    'Loading bed bookings...',
                     style: TextStyle(
                       color: HospitalVendorColorPalette.textSecondary,
                       fontSize: 14,
@@ -56,26 +71,22 @@ class AppointmentScreen extends StatelessWidget {
             );
           }
 
-          // Filter to show only pending and accepted appointments
-          final appointments = viewModel.appointments
-              .where((appointment) => 
-                  appointment.status.toLowerCase() == 'pending' || 
-                  appointment.status.toLowerCase() == 'accepted')
-              .toList();
+          // Remove the status filtering to show all appointments
+          final bookings = viewModel.appointments;
 
-          if (appointments.isEmpty) {
+          if (bookings.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.inbox_outlined,
+                    Icons.bed_outlined,
                     size: 64,
                     color: HospitalVendorColorPalette.textSecondary,
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'No appointments',
+                    'No bed bookings',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
@@ -87,13 +98,18 @@ class AppointmentScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: appointments.length,
-            itemBuilder: (context, index) {
-              final appointment = appointments[index];
-              return AppointmentCard(appointment: appointment, viewModel: viewModel);
+          return RefreshIndicator(
+            onRefresh: () async {
+              await viewModel.fetchAppointments();
             },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return BedBookingCard(booking: booking, viewModel: viewModel);
+              },
+            ),
           );
         },
       ),
@@ -101,19 +117,19 @@ class AppointmentScreen extends StatelessWidget {
   }
 }
 
-class AppointmentCard extends StatelessWidget {
-  final Appointment appointment;
+class BedBookingCard extends StatelessWidget {
+  final BedBooking booking;
   final AppointmentViewModel viewModel;
 
-  const AppointmentCard({
+  const BedBookingCard({
     Key? key,
-    required this.appointment,
+    required this.booking,
     required this.viewModel,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isPending = appointment.status.toLowerCase() == 'pending';
+    final isPending = booking.status.toLowerCase() == 'pending';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -141,7 +157,7 @@ class AppointmentCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      appointment.patientName[0].toUpperCase(),
+                      booking.user.name?[0].toUpperCase() ?? 'U',
                       style: const TextStyle(
                         color: HospitalVendorColorPalette.textInverse,
                         fontWeight: FontWeight.bold,
@@ -156,7 +172,7 @@ class AppointmentCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appointment.patientName,
+                        booking.user.name ?? 'Unknown User',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -164,7 +180,9 @@ class AppointmentCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -176,7 +194,25 @@ class AppointmentCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              appointment.appointmentTime,
+                              '${booking.bookingDate.toString().split(' ')[0]} - ${booking.timeSlot}',
+                              style: TextStyle(
+                                color: HospitalVendorColorPalette.primaryBlue,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              booking.bedType,
                               style: TextStyle(
                                 color: HospitalVendorColorPalette.primaryBlue,
                                 fontSize: 12,
@@ -219,7 +255,7 @@ class AppointmentCard extends StatelessWidget {
                 Icon(Icons.phone, size: 14, color: HospitalVendorColorPalette.textSecondary),
                 const SizedBox(width: 6),
                 Text(
-                  appointment.phoneNumber,
+                  booking.user.phoneNumber,
                   style: TextStyle(
                     color: HospitalVendorColorPalette.textSecondary,
                     fontSize: 12,
@@ -234,65 +270,64 @@ class AppointmentCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    appointment.address,
+                    '${booking.hospital.address}, ${booking.hospital.city}, ${booking.hospital.state}',
                     style: TextStyle(
                       color: HospitalVendorColorPalette.textSecondary,
                       fontSize: 12,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (!appointment.isProcessing)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    onPressed: isPending
-                        ? () => viewModel.acceptAppointment(appointment.id)
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProcessAppointmentScreen(
-                                  appointment: appointment,
-                                ),
-                              ),
-                            );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isPending
-                          ? HospitalVendorColorPalette.successGreen
-                          : HospitalVendorColorPalette.primaryBlue,
-                      foregroundColor: HospitalVendorColorPalette.textInverse,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      isPending ? 'Accept' : 'Process',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              )
-            else
-              const Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '₹${booking.price.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: HospitalVendorColorPalette.primaryBlue,
                   ),
                 ),
-              ),
+                ElevatedButton(
+                  onPressed: isPending
+                      ? () => viewModel.acceptAppointment(booking.bedBookingId!)
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProcessAppointmentScreen(
+                                booking: booking,
+                              ),
+                            ),
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isPending
+                        ? HospitalVendorColorPalette.successGreen
+                        : HospitalVendorColorPalette.primaryBlue,
+                    foregroundColor: HospitalVendorColorPalette.textInverse,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    isPending ? 'Accept' : 'Process',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

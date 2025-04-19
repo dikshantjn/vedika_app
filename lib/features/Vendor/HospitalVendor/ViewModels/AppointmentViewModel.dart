@@ -1,99 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/Appointment.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
+import 'package:dio/dio.dart';
 
 class AppointmentViewModel extends ChangeNotifier {
-  List<Appointment> _appointments = [];
+  List<BedBooking> _appointments = [];
   bool _isLoading = false;
   String? _error;
 
-  List<Appointment> get appointments => _appointments;
+  List<BedBooking> get appointments => _appointments;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  final Dio _dio = Dio();
+  final HospitalVendorService _hospitalService = HospitalVendorService();
+
   Future<void> fetchAppointments() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Sample data
-      _appointments = [
-        Appointment(
-          id: 'APT001',
-          patientName: 'John Doe',
-          phoneNumber: '+91 9876543210',
-          address: '123, Main Street, City',
-          appointmentTime: '10:00 AM, 15 Mar 2024',
-          status: 'pending',
-        ),
-        Appointment(
-          id: 'APT002',
-          patientName: 'Jane Smith',
-          phoneNumber: '+91 9876543211',
-          address: '456, Park Avenue, City',
-          appointmentTime: '11:00 AM, 15 Mar 2024',
-          status: 'accepted',
-        ),
-      ];
+      // TODO: Replace with actual vendor ID from storage or auth
+      String? vendorId = await VendorLoginService().getVendorId();
+      _appointments = await _hospitalService.getHospitalBookingsByVendor(vendorId!);
     } catch (e) {
-      _error = 'Failed to fetch appointments. Please try again.';
-    } finally {
-      _isLoading = false;
+      _error = 'Failed to fetch bookings: $e';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> acceptAppointment(String bookingId) async {
+    try {
+      await _hospitalService.acceptAppointment(bookingId);
+      await fetchAppointments();
+    } catch (e) {
+      _error = 'Failed to accept booking: $e';
       notifyListeners();
     }
   }
 
-  Future<void> acceptAppointment(String appointmentId) async {
+  Future<void> notifyUserPayment(String bookingId) async {
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      _appointments = _appointments.map((appointment) {
-        if (appointment.id == appointmentId) {
-          return appointment.copyWith(
-            status: 'accepted',
-            isProcessing: false,
-          );
-        }
-        return appointment;
-      }).toList();
+      await _hospitalService.notifyUserPayment(bookingId);
+      await fetchAppointments();
     } catch (e) {
-      _error = 'Failed to accept appointment. Please try again.';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> processAppointment(String appointmentId) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      _appointments = _appointments.map((appointment) {
-        if (appointment.id == appointmentId) {
-          return appointment.copyWith(
-            status: 'completed',
-            isProcessing: false,
-          );
-        }
-        return appointment;
-      }).toList();
-    } catch (e) {
-      _error = 'Failed to process appointment. Please try again.';
-    } finally {
-      _isLoading = false;
+      _error = 'Failed to notify user: $e';
       notifyListeners();
     }
   }

@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.45:5000/api";
-  // static const String baseUrl = "http://192.168.1.46:5000/api";
+  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
+  // static const String baseUrl = "http://10.0.2.2:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
 
@@ -121,8 +121,15 @@ class ApiEndpoints {
   static const String BloodBankBookings = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String getCompletedBloodBankBookingsByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank-bookings/user/:userId/completed
   static const String getBloodBankRequestByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank/profile/:vendorId
-  static const String registerHospital = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
-  static const String getHospitalProfile = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
-  static const String updateHospitalProfile = "$baseUrl/hospitals/register"; // e.g. /blood-bank/profile/:vendorId
+  static const String registerHospital = "$baseUrl/hospitals/register";
+  static const String getHospitalProfile = "$baseUrl/hospitals/profile";
+  static const String updateHospitalProfile = "$baseUrl/hospitals/profile";
+  static const String getHospitalProfileById = "$baseUrl/hospitals/profile";
+  static const String getAllHospitals = "$baseUrl/hospitals/getAllHospitals";
+  static const String createBedBooking = "$baseUrl/hospitals/bed-booking";
+  static const String getHospitalBookingsByVendor = "$baseUrl/hospitals/by-vendor";
+  static const String acceptAppointment = "$baseUrl/hospitals/appointment/accept";
+  static const String notifyUserPayment = "$baseUrl/hospitals/appointment/notify-payment";
+  static const String getUserOngoingBookings = "$baseUrl/hospitals/by-user";
 
 }

@@ -37,9 +37,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_mounted) {
-        context.read<HospitalProfileViewModel>().fetchHospitalProfile();
+        _loadProfile();
       }
     });
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      await context.read<HospitalProfileViewModel>().fetchHospitalProfile();
+    } catch (e) {
+      if (_mounted) {
+        _showErrorSnackBar(context, 'Failed to load profile: $e');
+      }
+    }
   }
 
   @override
@@ -69,7 +79,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Consumer<HospitalProfileViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
           if (viewModel.error != null) {
@@ -84,7 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => viewModel.fetchHospitalProfile(),
+                    onPressed: _loadProfile,
                     child: const Text('Retry'),
                   ),
                 ],
@@ -94,7 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final profile = viewModel.hospitalProfile;
           if (profile == null) {
-            return const Center(child: Text('No hospital profile found'));
+            return const Center(
+              child: Text('No hospital profile found'),
+            );
           }
 
           return Stack(
@@ -135,9 +149,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         child: OutlinedButton(
-                          onPressed: () {
-                            viewModel.updateProfile();
-                            _showSuccessSnackBar(context, 'Profile updated successfully');
+                          onPressed: () async {
+                            try {
+                              await viewModel.updateProfile();
+                              if (_mounted) {
+                                _showSuccessSnackBar(context, 'Profile updated successfully');
+                              }
+                            } catch (e) {
+                              if (_mounted) {
+                                _showErrorSnackBar(context, 'Failed to update profile: $e');
+                              }
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -277,7 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              // Status indicator in top-left corner
+              // Status indicator and toggle in top-left corner
               Positioned(
                 top: 16,
                 left: 16,
@@ -315,6 +337,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: profile.isActive ? Colors.green.shade700 : Colors.red.shade700,
                         ),
                       ),
+                      if (!viewModel.isEditing) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => viewModel.toggleActiveStatus(),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.sync,
+                              size: 14,
+                              color: HospitalVendorColorPalette.primaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

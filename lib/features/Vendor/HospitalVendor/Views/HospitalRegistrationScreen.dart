@@ -44,110 +44,79 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
     'Photos',
   ];
 
-  void _showSubmissionDialog(String email, String password) {
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: HospitalVendorColorPalette.successGreen,
-              size: 32,
-            ),
-            const SizedBox(width: 16),
-            const Text(
-              'Registration Submitted',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your hospital registration request has been submitted successfully. Our admin team will review your profile and verify the details.',
-              style: TextStyle(
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: HospitalVendorColorPalette.neutralGrey50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: HospitalVendorColorPalette.borderLight,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Your Login Credentials:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: HospitalVendorColorPalette.successGreen.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 12),
-                  _buildCredentialRow('Email', email),
-                  const SizedBox(height: 8),
-                  _buildCredentialRow('Password', password),
-                ],
-              ),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 48,
+                    color: HospitalVendorColorPalette.successGreen,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Registration Successful!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: HospitalVendorColorPalette.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your hospital registration has been submitted successfully. We will review your application and get back to you soon.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: HospitalVendorColorPalette.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop(); // Go back to previous screen
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: HospitalVendorColorPalette.primaryBlue,
+                        foregroundColor: HospitalVendorColorPalette.textInverse,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Please keep these credentials safe. You will need them to login once your profile is verified.',
-              style: TextStyle(
-                color: HospitalVendorColorPalette.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Close'),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCredentialRow(String label, String value) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: HospitalVendorColorPalette.textSecondary,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -239,10 +208,7 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
       }
       
       if (success && mounted) {
-        _showSubmissionDialog(
-          viewModel.email ?? '',
-          viewModel.password ?? '',
-        );
+        _showSuccessDialog();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

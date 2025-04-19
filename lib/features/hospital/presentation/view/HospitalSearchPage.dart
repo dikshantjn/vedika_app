@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/DraggableHospitalList.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 
 class HospitalSearchPage extends StatefulWidget {
   @override
@@ -15,10 +17,13 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final viewModel = Provider.of<HospitalSearchViewModel>(context, listen: false);
+      await viewModel.ensureLocationEnabled(context);
+      
 
-    /// Call `ensureLocationEnabled` after the widget is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HospitalSearchViewModel>(context, listen: false).ensureLocationEnabled(context);
+        await viewModel.loadUserBookings( context);
+
     });
   }
 
@@ -27,8 +32,6 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
     super.didChangeDependencies();
 
     if (!_isInitialized) {
-      // ❌ Remove this call (it's already in initState)
-      // Provider.of<HospitalSearchViewModel>(context, listen: false).ensureLocationEnabled(context);
       _isInitialized = true;
     }
   }
@@ -95,9 +98,7 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
               DraggableHospitalList(
                 hospitals: viewModel.filteredHospitals,
                 expandedItems: viewModel.expandedItems,
-                onHospitalTap: (index, _, __) {
-                  double lat = viewModel.filteredHospitals[index]["lat"];
-                  double lng = viewModel.filteredHospitals[index]["lng"];
+                onHospitalTap: (index, lat, lng) {
                   viewModel.onHospitalTap(index, lat, lng);
                 },
               ),

@@ -1,30 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
-import 'package:vedika_healthcare/features/hospital/data/repository/HospitalData.dart';
+import 'package:vedika_healthcare/features/hospital/data/service/HospitalService.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:location/location.dart' as loc;
-
+import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/widgets/OngoingBookingBottomSheet.dart';
 
 class HospitalSearchViewModel extends ChangeNotifier {
   GoogleMapController? _mapController;
-  List<Map<String, dynamic>> _hospitals = [];
-  List<Map<String, dynamic>> _filteredHospitals = [];
+  List<HospitalProfile> _hospitals = [];
+  List<HospitalProfile> _filteredHospitals = [];
   List<bool> _expandedItems = [];
   bool _isLoading = true;
   bool _isLoadingLocation = true;
   LatLng? _currentPosition;
   TextEditingController _searchController = TextEditingController();
   Set<Marker> _markers = {};
+  final HospitalService _hospitalService = HospitalService();
+  List<BedBooking> _userBookings = [];
+  bool _isLoadingBookings = false;
+  BedBooking? _selectedBooking;
 
-  List<Map<String, dynamic>> get filteredHospitals => _filteredHospitals;
+  List<HospitalProfile> get filteredHospitals => _filteredHospitals;
   List<bool> get expandedItems => _expandedItems;
   bool get isLoading => _isLoading;
   bool get isLoadingLocation => _isLoadingLocation;
   LatLng? get currentPosition => _currentPosition;
   TextEditingController get searchController => _searchController;
   Set<Marker> get markers => _markers;
+  List<BedBooking> get userBookings => _userBookings;
+  bool get isLoadingBookings => _isLoadingBookings;
+  BedBooking? get selectedBooking => _selectedBooking;
 
   /// **Ensure Location is Enabled and Fetch Hospitals**
   Future<void> ensureLocationEnabled(BuildContext context) async {
@@ -80,33 +90,35 @@ class HospitalSearchViewModel extends ChangeNotifier {
     }
   }
 
-
-
-
   /// **Fetch Hospitals Based on User Location**
   Future<void> loadHospitals(BuildContext context) async {
     print("🔄 loadHospitals started...");
 
-    if (_currentPosition != null) {  // ✅ Avoid duplicate location fetch
-      _hospitals = await HospitalData.getHospitals(context);
-      print("🏥 Retrieved ${_hospitals.length} hospitals from API.");
+    if (_currentPosition != null) {
+      try {
+        _hospitals = await _hospitalService.getAllHospitals();
+        print("🏥 Retrieved ${_hospitals.length} hospitals from API.");
 
-      _filteredHospitals = List.from(_hospitals);
-      _expandedItems = List<bool>.filled(_hospitals.length, false);
+        _filteredHospitals = List.from(_hospitals);
+        _expandedItems = List<bool>.filled(_hospitals.length, false);
 
-      _isLoading = false;
-      _isLoadingLocation = false;
+        _isLoading = false;
+        _isLoadingLocation = false;
 
-      _addMarkers();
-      notifyListeners(); // ✅ Notify UI to update
+        _addMarkers();
+        notifyListeners();
 
-      print("✅ Hospitals loaded successfully.");
+        print("✅ Hospitals loaded successfully.");
+      } catch (e) {
+        print("❌ Error loading hospitals: $e");
+        _isLoading = false;
+        _isLoadingLocation = false;
+        notifyListeners();
+      }
     } else {
       print("❌ Location data is still null.");
     }
   }
-
-
 
   /// **Filter Hospitals Based on Search Query**
   void filterHospitals(String query) {
@@ -114,11 +126,10 @@ class HospitalSearchViewModel extends ChangeNotifier {
       _filteredHospitals = List.from(_hospitals);
     } else {
       _filteredHospitals = _hospitals.where((hospital) {
-        return hospital["name"].toString().toLowerCase().contains(query.toLowerCase()) ||
-            hospital["address"].toString().toLowerCase().contains(query.toLowerCase()) ||
-            (hospital["doctors"] as List<dynamic>)
-                .map((doctor) => doctor.toString().toLowerCase())
-                .any((doctor) => doctor.contains(query.toLowerCase()));
+        return hospital.name.toLowerCase().contains(query.toLowerCase()) ||
+            hospital.address.toLowerCase().contains(query.toLowerCase()) ||
+            hospital.specialityTypes.any((speciality) => 
+                speciality.toLowerCase().contains(query.toLowerCase()));
       }).toList();
     }
     _expandedItems = List.generate(_filteredHospitals.length, (index) => false);
@@ -147,13 +158,18 @@ class HospitalSearchViewModel extends ChangeNotifier {
     print("📍 Adding markers...");
     _markers.clear();
     _markers.addAll(_hospitals.map((hospital) {
+      // Parse location string to get lat and lng
+      final locationParts = hospital.location.split(',');
+      final lat = double.tryParse(locationParts[0]) ?? 0.0;
+      final lng = double.tryParse(locationParts[1]) ?? 0.0;
+
       return Marker(
-        markerId: MarkerId(hospital["id"]),
-        position: LatLng(hospital["lat"], hospital["lng"]),
-        infoWindow: InfoWindow(title: hospital["name"]),
+        markerId: MarkerId(hospital.vendorId ?? hospital.generatedId ?? ''),
+        position: LatLng(lat, lng),
+        infoWindow: InfoWindow(title: hospital.name),
         onTap: () {
-          filterHospitals(hospital["name"]);
-          moveCameraToHospital(hospital["lat"], hospital["lng"]);
+          filterHospitals(hospital.name);
+          moveCameraToHospital(lat, lng);
         },
       );
     }));
@@ -172,12 +188,55 @@ class HospitalSearchViewModel extends ChangeNotifier {
     print("✅ Markers added: ${_markers.length}");
   }
 
-
   /// **Handle Hospital Tap**
   void onHospitalTap(int index, double lat, double lng) {
     if (index >= 0 && index < _filteredHospitals.length) {
       toggleExpansion(index);
       moveCameraToHospital(lat, lng);
     }
+  }
+
+  Future<void> loadUserBookings( BuildContext context) async {
+    try {
+      _isLoadingBookings = true;
+      notifyListeners();
+        String? userId = await StorageService.getUserId();
+      _userBookings = await _hospitalService.getUserOngoingBookings(userId!);
+      
+      // Show booking details if there are any bookings
+      if (_userBookings.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showBookingDetails(context, _userBookings.first);
+        });
+      }
+      
+      _isLoadingBookings = false;
+      notifyListeners();
+    } catch (e) {
+      print("❌ Error loading user bookings: $e");
+      _isLoadingBookings = false;
+      notifyListeners();
+    }
+  }
+
+  void showBookingDetails(BuildContext context, BedBooking booking) {
+    _selectedBooking = booking;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: OngoingBookingBottomSheet(booking: booking),
+      ),
+    );
+  }
+
+  void hideBookingDetails() {
+    _selectedBooking = null;
+    notifyListeners();
   }
 }

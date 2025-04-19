@@ -33,7 +33,10 @@ class HospitalProfile {
   final String state;
   final String city;
   final String pincode;
+  final String location;
   final bool isActive;
+  final Map<String, dynamic>? panCardFile;
+  final List<Map<String, dynamic>> businessDocuments;
 
   HospitalProfile({
     this.vendorId,
@@ -68,7 +71,10 @@ class HospitalProfile {
     required this.state,
     required this.city,
     required this.pincode,
+    required this.location,
     this.isActive = false,
+    this.panCardFile,
+    this.businessDocuments = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -105,7 +111,10 @@ class HospitalProfile {
       'state': state,
       'city': city,
       'pincode': pincode,
+      'location': location,
       'isActive': isActive,
+      'panCardFile': panCardFile,
+      'businessDocuments': businessDocuments,
     };
   }
 
@@ -143,7 +152,10 @@ class HospitalProfile {
       state: json['state'],
       city: json['city'],
       pincode: json['pincode'],
+      location: json['location'],
       isActive: json['isActive'] ?? false,
+      panCardFile: json['panCardFile'],
+      businessDocuments: List<Map<String, dynamic>>.from(json['businessDocuments'] ?? []),
     );
   }
 
@@ -180,7 +192,10 @@ class HospitalProfile {
     String? state,
     String? city,
     String? pincode,
+    String? location,
     bool? isActive,
+    Map<String, dynamic>? panCardFile,
+    List<Map<String, dynamic>>? businessDocuments,
   }) {
     return HospitalProfile(
       vendorId: vendorId ?? this.vendorId,
@@ -215,7 +230,10 @@ class HospitalProfile {
       state: state ?? this.state,
       city: city ?? this.city,
       pincode: pincode ?? this.pincode,
+      location: location ?? this.location,
       isActive: isActive ?? this.isActive,
+      panCardFile: panCardFile ?? this.panCardFile,
+      businessDocuments: businessDocuments ?? this.businessDocuments,
     );
   }
 } 

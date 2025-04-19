@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/AppointmentScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HistoryScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/ProfileScreen.dart';
 import 'dart:math' as math;
+
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 
 class HospitalDashboardScreen extends StatefulWidget {
   const HospitalDashboardScreen({Key? key}) : super(key: key);
@@ -24,62 +27,55 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize dashboard data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<HospitalDashboardViewModel>(context, listen: false);
+      viewModel.fetchDashboardData();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: HospitalVendorColorPalette.backgroundPrimary,
       appBar: AppBar(
-        title: Consumer<HospitalDashboardViewModel>(
-          builder: (context, viewModel, child) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome Back,',
-                  style: TextStyle(
-                    color: HospitalVendorColorPalette.textInverse.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  viewModel.hospitalProfile?.name ?? 'Hospital',
-                  style: TextStyle(
-                    color: HospitalVendorColorPalette.textInverse,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        elevation: 0,
-        backgroundColor: HospitalVendorColorPalette.primaryBlue,
-        centerTitle: false,
-        actions: [
-          Consumer<HospitalDashboardViewModel>(
-            builder: (context, viewModel, child) {
-              return Row(
-                children: [
-                  Text(
-                    viewModel.isActive ? 'Active' : 'Inactive',
-                    style: TextStyle(
-                      color: HospitalVendorColorPalette.textInverse,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: viewModel.isActive,
-                    onChanged: (value) {
-                      viewModel.toggleActiveStatus();
-                    },
-                    activeColor: HospitalVendorColorPalette.successGreen,
-                    activeTrackColor: HospitalVendorColorPalette.successGreen.withOpacity(0.3),
-                  ),
-                ],
-              );
-            },
+        title: Text(
+          _getAppBarTitle(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        backgroundColor: HospitalVendorColorPalette.primaryBlue,
+        actions: [
+          if (_currentIndex == 0)
+            Consumer<HospitalDashboardViewModel>(
+              builder: (context, viewModel, child) {
+                return Row(
+                  children: [
+                    Text(
+                      viewModel.isActive ? 'Active' : 'Inactive',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: viewModel.isActive,
+                      onChanged: (value) {
+                        viewModel.toggleActiveStatus();
+                      },
+                      activeColor: HospitalVendorColorPalette.successGreen,
+                      activeTrackColor: HospitalVendorColorPalette.successGreen.withOpacity(0.3),
+                    ),
+                  ],
+                );
+              },
+            ),
         ],
       ),
       drawer: _buildDrawer(),
@@ -233,9 +229,33 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
           ListTile(
             leading: Icon(Icons.logout, color: HospitalVendorColorPalette.primaryBlue),
             title: const Text('Logout'),
-            onTap: () {
-              // TODO: Implement logout
+            onTap: () async {
+              // Close the drawer first
               Navigator.pop(context);
+              
+              if (context.mounted) {
+                try {
+                  final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+                  await loginViewModel.logout();
+                  
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error during logout. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
             },
           ),
         ],
@@ -290,23 +310,65 @@ class DashboardPage extends StatelessWidget {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTimePeriodSelector(context, viewModel),
-              const SizedBox(height: 24),
-              _buildStatsRow(context, viewModel),
-              const SizedBox(height: 24),
-              _buildAppointmentsSection(context, viewModel),
-              const SizedBox(height: 24),
-              _buildFootfallSection(context, viewModel),
-              const SizedBox(height: 24),
-              _buildDemographicsSection(context, viewModel),
+              _buildHeader(context, viewModel),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildTimePeriodSelector(context, viewModel),
+                    const SizedBox(height: 24),
+                    _buildStatsRow(context, viewModel),
+                    const SizedBox(height: 24),
+                    _buildAppointmentsSection(context, viewModel),
+                    const SizedBox(height: 24),
+                    _buildFootfallSection(context, viewModel),
+                    const SizedBox(height: 24),
+                    _buildDemographicsSection(context, viewModel),
+                  ],
+                ),
+              ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, HospitalDashboardViewModel viewModel) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: HospitalVendorColorPalette.primaryBlue,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome Back,',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                viewModel.hospitalProfile?.name ?? 'Hospital',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
