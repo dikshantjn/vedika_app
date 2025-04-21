@@ -12,6 +12,7 @@ class DashboardViewModel extends ChangeNotifier {
   double rating = 4.7;
   int reviewCount = 32;
   int todayAppointments = 5;
+  int completionRate = 92;
   List<Map<String, dynamic>> analyticsData = [
     {'month': 'Jan', 'patients': 30, 'appointments': 45},
     {'month': 'Feb', 'patients': 50, 'appointments': 60},

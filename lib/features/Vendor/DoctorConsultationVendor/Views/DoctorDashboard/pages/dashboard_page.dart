@@ -271,7 +271,8 @@ class _DashboardPageState extends State<DashboardPage> {
       totalPatients: viewModel.totalPatients,
       totalAppointments: viewModel.totalAppointments,
       rating: viewModel.rating,
-      reviewCount: viewModel.reviewCount,
+      reviewCount: 4,
+      completionRate: viewModel.completionRate,
     );
   }
 

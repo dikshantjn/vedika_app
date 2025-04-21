@@ -1,7 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+
 
 class DoctorClinicService {
   final Logger _logger = Logger(
@@ -14,6 +20,9 @@ class DoctorClinicService {
       printTime: true,
     ),
   );
+
+  final Dio _dio = Dio();
+  final StorageService _storageService = StorageService();
 
   /// Submit a doctor clinic profile to the server
   /// Returns a Future<bool> indicating success or failure
@@ -98,4 +107,4 @@ class DoctorClinicService {
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
-} 
+}

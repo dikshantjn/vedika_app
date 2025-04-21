@@ -133,76 +133,79 @@ class AnalyticsChartWidget extends StatelessWidget {
     maxValue *= 1.1;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: data.map((item) {
         final double patientBarHeight = 
-            (item['patients'] as int) / maxValue * 150;
+            (item['patients'] as int) / maxValue * 130;
         final double appointmentBarHeight = 
-            (item['appointments'] as int) / maxValue * 150;
+            (item['appointments'] as int) / maxValue * 130;
         
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: IntrinsicHeight(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Y-axis label for patients
-                  Flexible(
-                    child: Text(
-                      '${item['patients']}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: DoctorConsultationColorPalette.textSecondary,
-                      ),
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Y-axis label for patients
+                Text(
+                  '${item['patients']}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: DoctorConsultationColorPalette.textSecondary,
                   ),
-                  const SizedBox(height: 2),
-                  // Place both bars side by side instead of one below another
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 2),
+                // Bars container with fixed height to prevent overflow
+                SizedBox(
+                  height: 150,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Patient bar
-                      Container(
-                        height: patientBarHeight,
-                        width: 8,
-                        decoration: BoxDecoration(
-                          color: DoctorConsultationColorPalette.primaryBlue,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(4),
-                            topRight: Radius.circular(4),
+                      // Place both bars side by side
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Patient bar
+                          Container(
+                            height: patientBarHeight,
+                            width: 8,
+                            decoration: BoxDecoration(
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(4),
+                                topRight: Radius.circular(4),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      // Appointment bar
-                      Container(
-                        height: appointmentBarHeight,
-                        width: 8,
-                        decoration: BoxDecoration(
-                          color: DoctorConsultationColorPalette.secondaryTeal,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(4),
-                            topRight: Radius.circular(4),
+                          const SizedBox(width: 2),
+                          // Appointment bar
+                          Container(
+                            height: appointmentBarHeight,
+                            width: 8,
+                            decoration: BoxDecoration(
+                              color: DoctorConsultationColorPalette.secondaryTeal,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(4),
+                                topRight: Radius.circular(4),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  // X-axis label (month)
-                  Flexible(
-                    child: Text(
-                      item['month'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: DoctorConsultationColorPalette.textSecondary,
-                      ),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                // X-axis label (month)
+                Text(
+                  item['month'] as String,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: DoctorConsultationColorPalette.textSecondary,
                   ),
-                ],
-              ),
+                  maxLines: 1,
+                ),
+              ],
             ),
           ),
         );
