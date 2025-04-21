@@ -212,6 +212,130 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'VIEW_BED_BOOKING':
+          if (isAppLaunch) {
+            // First navigate to HospitalDashboardScreen to ensure drawer and bottom nav are available
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorHospitalDashBoard,
+              arguments: {'initialIndex': 1}, // 1 is the index for Appointments tab
+            );
+          } else {
+            // Check if we're already on HospitalDashboardScreen
+            if (ModalRoute.of(context)?.settings.name != AppRoutes.VendorHospitalDashBoard) {
+              // If not, navigate to HospitalDashboardScreen first with appointments tab selected
+              await _navigateWithClearStack(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 1}, // 1 is the index for Appointments tab
+              );
+            } else {
+              // If already on dashboard, navigate to the same screen with updated index
+              await _navigateWithClearStack(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 1}, // 1 is the index for Appointments tab
+              );
+            }
+          }
+          break;
+
+        case 'BED_BOOKING_ACCEPTED':
+          if (isAppLaunch) {
+            // First navigate to home screen
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            // Then navigate to HospitalSearchPage
+            await _navigateWithHistory(
+              context,
+              AppRoutes.hospital,
+            );
+          } else {
+            // If app is already running, navigate to HospitalSearchPage
+            await _navigateWithHistory(
+              context,
+              AppRoutes.hospital,
+            );
+          }
+          break;
+
+        case 'BED_BOOKING_PAYMENT_REQUEST':
+          if (isAppLaunch) {
+            // First navigate to home screen
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            // Then navigate to HospitalSearchPage
+            await _navigateWithHistory(
+              context,
+              AppRoutes.hospital,
+            );
+          } else {
+            // If app is already running, navigate to HospitalSearchPage
+            await _navigateWithHistory(
+              context,
+              AppRoutes.hospital,
+            );
+          }
+          break;
+
+        case 'BED_PAYMENT_COMPLETED':
+          if (isAppLaunch) {
+            // First navigate to home screen
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            // Then navigate to HospitalDashboardScreen with History tab selected
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorHospitalDashBoard,
+              arguments: {'initialIndex': 2}, // 2 is the index for History tab
+            );
+            // Add a route that will be shown when back is pressed
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorHospitalDashBoard,
+              arguments: {'initialIndex': 0}, // 0 is the index for Dashboard tab
+            );
+          } else {
+            // Check if we're already on HospitalDashboardScreen
+            if (ModalRoute.of(context)?.settings.name != AppRoutes.VendorHospitalDashBoard) {
+              // If not, navigate to HospitalDashboardScreen with History tab selected
+              await _navigateWithHistory(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 2}, // 2 is the index for History tab
+              );
+              // Add a route that will be shown when back is pressed
+              await _navigateWithHistory(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 0}, // 0 is the index for Dashboard tab
+              );
+            } else {
+              // If already on dashboard, navigate to the same screen with updated index
+              await _navigateWithHistory(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 2}, // 2 is the index for History tab
+              );
+              // Add a route that will be shown when back is pressed
+              await _navigateWithHistory(
+                context,
+                AppRoutes.VendorHospitalDashBoard,
+                arguments: {'initialIndex': 0}, // 0 is the index for Dashboard tab
+              );
+            }
+          }
+          break;
+
         default:
           print("Unknown notification type: $type");
       }

@@ -4,7 +4,7 @@ import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
-import 'package:vedika_healthcare/features/hospital/data/service/RazorpayService.dart';
+import 'package:vedika_healthcare/features/hospital/data/service/HospitalBookingPaymentService.dart';
 import 'package:vedika_healthcare/features/hospital/data/service/HospitalService.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
@@ -267,7 +267,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<BookAppointmentViewModel>(context);
-    final razorpayService = RazorpayService();
+    final razorpayService = HospitalBookingPaymentService();
     final bedTypes = BedType.getBedTypes();
 
     return Scaffold(
@@ -308,15 +308,25 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       return DropdownMenuItem<BedType>(
                         key: ValueKey(bedType.id),
                         value: bedType,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(bedType.type, style: TextStyle(fontSize: 16)),
-                            Text(
-                              "₹${bedType.price.toStringAsFixed(2)} - ${bedType.description}",
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            ),
-                          ],
+                        child: Container(
+                          constraints: BoxConstraints(maxHeight: 60),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                bedType.type,
+                                style: TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                "₹${bedType.price.toStringAsFixed(2)} - ${bedType.description}",
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),

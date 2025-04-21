@@ -25,13 +25,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: HospitalVendorColorPalette.backgroundPrimary,
-      appBar: AppBar(
-        title: const Text('Bed Booking History'),
-        backgroundColor: HospitalVendorColorPalette.primaryBlue,
-        foregroundColor: HospitalVendorColorPalette.textInverse,
-        elevation: 0,
-        centerTitle: true,
-      ),
       body: Consumer<AppointmentViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.error != null) {
@@ -73,8 +66,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           }
 
-          final bookings = viewModel.appointments;
-          if (bookings.isEmpty) {
+          final completedBookings = viewModel.completedAppointments;
+          if (completedBookings.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -86,7 +79,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'No booking history found',
+                    'No completed bookings found',
                     style: TextStyle(
                       color: HospitalVendorColorPalette.textSecondary,
                       fontSize: 16,
@@ -99,9 +92,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: bookings.length,
+            itemCount: completedBookings.length,
             itemBuilder: (context, index) {
-              final booking = bookings[index];
+              final booking = completedBookings[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
                 elevation: 0,
@@ -172,30 +165,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: booking.paymentStatus == 'completed'
-                                    ? HospitalVendorColorPalette.successGreen.withOpacity(0.1)
-                                    : HospitalVendorColorPalette.warningYellow.withOpacity(0.1),
+                                color: HospitalVendorColorPalette.successGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    booking.paymentStatus == 'completed'
-                                        ? Icons.check_circle
-                                        : Icons.pending,
+                                    Icons.check_circle,
                                     size: 16,
-                                    color: booking.paymentStatus == 'completed'
-                                        ? HospitalVendorColorPalette.successGreen
-                                        : HospitalVendorColorPalette.warningYellow,
+                                    color: HospitalVendorColorPalette.successGreen,
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4),
                                   Text(
-                                    booking.paymentStatus.toUpperCase(),
+                                    'COMPLETED',
                                     style: TextStyle(
-                                      color: booking.paymentStatus == 'completed'
-                                          ? HospitalVendorColorPalette.successGreen
-                                          : HospitalVendorColorPalette.warningYellow,
+                                      color: HospitalVendorColorPalette.successGreen,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),

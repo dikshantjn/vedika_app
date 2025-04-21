@@ -9,7 +9,7 @@ import 'package:vedika_healthcare/features/clinic/presentation/widgets/DoctorSel
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/ClinicInfoCard.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/PatientDetailsForm.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/TimeSlotSelection.dart';
-import 'package:vedika_healthcare/features/hospital/data/service/RazorpayService.dart';
+import 'package:vedika_healthcare/features/hospital/data/service/HospitalBookingPaymentService.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class BookClinicAppointmentPage extends StatelessWidget {
@@ -23,7 +23,7 @@ class BookClinicAppointmentPage extends StatelessWidget {
     final List<Doctor> doctors = clinic.doctors;
     final GlobalKey<FormState> _patientFormKey = GlobalKey<FormState>(); // Form key for validation
 
-    final razorpayService = RazorpayService();
+    // final razorpayService = RazorpayService();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -165,12 +165,12 @@ class BookClinicAppointmentPage extends StatelessWidget {
                   if (!viewModel.isFormComplete()) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please complete all fields")));
                   } else {
-                    razorpayService.openPaymentGateway(
-                      viewModel.selectedDoctor!.fee,
-                      ApiConstants.razorpayApiKey,
-                      'Appointment Fee\nConsultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
-                      'Consultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
-                    );
+                    // razorpayService.openPaymentGateway(
+                    //   viewModel.selectedDoctor!.fee,
+                    //   ApiConstants.razorpayApiKey,
+                    //   'Appointment Fee\nConsultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
+                    //   'Consultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
+                    // );
 
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Appointment Confirmed!")));
                   }

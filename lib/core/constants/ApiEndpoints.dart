@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
+  static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
   // static const String baseUrl = "http://10.0.2.2:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
@@ -131,5 +131,9 @@ class ApiEndpoints {
   static const String acceptAppointment = "$baseUrl/hospitals/appointment/accept";
   static const String notifyUserPayment = "$baseUrl/hospitals/appointment/notify-payment";
   static const String getUserOngoingBookings = "$baseUrl/hospitals/by-user";
+  static const String updatePaymentStatus = "$baseUrl/hospitals/appointment/payment-status";
+  static const String getCompletedBookingsByVendor = "$baseUrl/hospitals/appointment/completed/vendor";
+  static const String getCompletedAppointmentsByUser = "$baseUrl/hospitals/appointment/completed/user";
+  static const String updateBedAvailability = "$baseUrl/hospitals/updateBed";
 
 }

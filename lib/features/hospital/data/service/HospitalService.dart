@@ -217,4 +217,46 @@ class HospitalService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> updatePaymentStatus(String bookingId) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updatePaymentStatus}/$bookingId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print("✅ Update Payment Status Response: ${response.statusCode}, Data: ${response.data}");
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+          'message': 'Payment status updated successfully',
+        };
+      } else {
+        print("❌ Update Payment Status Error: ${response.statusCode} - ${response.data}");
+        return {
+          'success': false,
+          'message': 'Failed to update payment status: ${response.data}',
+        };
+      }
+    } on DioException catch (e) {
+      print("❌ Update Payment Status DioException: ${e.message}");
+      print("❌ Update Payment Status Error Response: ${e.response?.data}");
+      return {
+        'success': false,
+        'message': 'Failed to update payment status: ${e.message}',
+      };
+    } catch (e) {
+      print("❌ Update Payment Status Exception: $e");
+      return {
+        'success': false,
+        'message': 'Failed to update payment status: $e',
+      };
+    }
+  }
 } 

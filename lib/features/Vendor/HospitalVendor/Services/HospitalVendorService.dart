@@ -360,6 +360,79 @@ class HospitalVendorService {
     }
   }
 
+  Future<List<BedBooking>> getCompletedBookingsByVendor(String vendorId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getCompletedBookingsByVendor}/$vendorId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      print("✅ Fetch Completed Bookings Response: ${response.statusCode}, Data: ${response.data}");
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data != null && data.containsKey('bookings')) {
+          final bookings = data['bookings'] as List;
+          return bookings.map((booking) => BedBooking.fromJson(booking)).toList();
+        } else {
+          print("❌ Fetch Error: Completed bookings data is missing");
+          throw Exception("Completed bookings data is missing");
+        }
+      } else {
+        print("❌ Fetch Error: ${response.statusCode} - ${response.data}");
+        throw Exception('Failed to fetch completed bookings: ${response.data}');
+      }
+    } on DioException catch (e) {
+      print("❌ Fetch DioException: ${e.message}");
+      print("❌ Fetch Error Response: ${e.response?.data}");
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      print("❌ Fetch Exception: $e");
+      rethrow;
+    }
+  }
+
+  Future<Response> updateBedAvailability(String hospitalId, int availableBeds) async {
+    try {
+      print("🔹 Updating bed availability for hospital: $hospitalId");
+      print("🔹 New available beds: $availableBeds");
+      
+      final response = await _dio.put(
+        '${ApiEndpoints.updateBedAvailability}/$hospitalId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+        data: {
+          'bedsAvailable': availableBeds,
+        },
+      );
+
+      print("✅ Update Bed Availability Response: ${response.statusCode}, Data: ${response.data}");
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print("❌ Update Error: ${response.statusCode} - ${response.data}");
+        throw Exception('Failed to update bed availability: ${response.data}');
+      }
+
+      return response;
+    } on DioException catch (e) {
+      print("❌ Update DioException: ${e.message}");
+      print("❌ Update Error Response: ${e.response?.data}");
+      _handleDioError(e);
+      rethrow;
+    } catch (e) {
+      print("❌ Update Exception: $e");
+      rethrow;
+    }
+  }
+
   Response _handleDioError(DioException e) {
     if (e.response != null) {
       print("❌ Dio Error Response: ${e.response?.data}");

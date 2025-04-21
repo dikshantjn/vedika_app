@@ -294,6 +294,26 @@ class HospitalDashboardViewModel extends ChangeNotifier {
       print("❌ Error refreshing hospital profile: $e");
     }
   }
+
+  Future<void> updateBedAvailability(String hospitalId, int availableBeds) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await _hospitalService.updateBedAvailability(hospitalId, availableBeds);
+      
+      // Refresh the hospital data to get updated bed availability
+      await fetchDashboardData();
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
 }
 
 class Appointment {

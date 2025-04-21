@@ -7,10 +7,12 @@ import 'package:dio/dio.dart';
 
 class AppointmentViewModel extends ChangeNotifier {
   List<BedBooking> _appointments = [];
+  List<BedBooking> _completedAppointments = [];
   bool _isLoading = false;
   String? _error;
 
   List<BedBooking> get appointments => _appointments;
+  List<BedBooking> get completedAppointments => _completedAppointments;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -23,9 +25,13 @@ class AppointmentViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Replace with actual vendor ID from storage or auth
       String? vendorId = await VendorLoginService().getVendorId();
-      _appointments = await _hospitalService.getHospitalBookingsByVendor(vendorId!);
+      if (vendorId != null) {
+        _appointments = await _hospitalService.getHospitalBookingsByVendor(vendorId);
+        _completedAppointments = await _hospitalService.getCompletedBookingsByVendor(vendorId);
+      } else {
+        _error = 'Vendor ID not found';
+      }
     } catch (e) {
       _error = 'Failed to fetch bookings: $e';
     }

@@ -69,19 +69,28 @@ class HospitalInfoCard extends StatelessWidget {
               children: [
                 Icon(Icons.local_hospital, color: Colors.teal, size: 28),
                 SizedBox(width: 8),
-                Text(hospital.name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text(
+                    hospital.name,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             SizedBox(height: 8),
             // Address
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.location_on, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Flexible(
+                Expanded(
                   child: Text(
                     '${hospital.address}, ${hospital.landmark}\n${hospital.city}, ${hospital.state} - ${hospital.pincode}',
                     style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -92,7 +101,13 @@ class HospitalInfoCard extends StatelessWidget {
               children: [
                 Icon(Icons.phone, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Text("Phone: ${hospital.contactNumber}", style: TextStyle(fontSize: 16)),
+                Expanded(
+                  child: Text(
+                    "Phone: ${hospital.contactNumber}",
+                    style: TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             if (hospital.email.isNotEmpty) ...[
@@ -101,7 +116,13 @@ class HospitalInfoCard extends StatelessWidget {
                 children: [
                   Icon(Icons.email, color: Colors.teal, size: 24),
                   SizedBox(width: 8),
-                  Text("Email: ${hospital.email}", style: TextStyle(fontSize: 16)),
+                  Expanded(
+                    child: Text(
+                      "Email: ${hospital.email}",
+                      style: TextStyle(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -111,20 +132,29 @@ class HospitalInfoCard extends StatelessWidget {
                 children: [
                   Icon(Icons.web, color: Colors.teal, size: 24),
                   SizedBox(width: 8),
-                  Text("Website: ${hospital.website}", style: TextStyle(fontSize: 16)),
+                  Expanded(
+                    child: Text(
+                      "Website: ${hospital.website}",
+                      style: TextStyle(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ],
             SizedBox(height: 8),
             // Specialties
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.medical_services, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Flexible(
+                Expanded(
                   child: Text(
                     "Specialties: ${hospital.specialityTypes.join(', ')}",
                     style: TextStyle(fontSize: 16),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -132,13 +162,16 @@ class HospitalInfoCard extends StatelessWidget {
             SizedBox(height: 8),
             // Services
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.medical_information, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Flexible(
+                Expanded(
                   child: Text(
                     "Services: ${hospital.servicesOffered.join(', ')}",
                     style: TextStyle(fontSize: 16),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -147,6 +180,7 @@ class HospitalInfoCard extends StatelessWidget {
             // Facilities
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 if (hospital.hasLiftAccess)
                   Chip(
@@ -181,9 +215,12 @@ class HospitalInfoCard extends StatelessWidget {
               children: [
                 Icon(Icons.access_time, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Text(
-                  "Working Hours: ${hospital.workingTime} (${hospital.workingDays})",
-                  style: TextStyle(fontSize: 16),
+                Expanded(
+                  child: Text(
+                    "Working Hours: ${hospital.workingTime} (${hospital.workingDays})",
+                    style: TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -193,9 +230,12 @@ class HospitalInfoCard extends StatelessWidget {
               children: [
                 Icon(Icons.bed, color: Colors.teal, size: 24),
                 SizedBox(width: 8),
-                Text(
-                  "Beds Available: ${hospital.bedsAvailable}",
-                  style: TextStyle(fontSize: 16),
+                Expanded(
+                  child: Text(
+                    "Beds Available: ${hospital.bedsAvailable}",
+                    style: TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -203,13 +243,16 @@ class HospitalInfoCard extends StatelessWidget {
               SizedBox(height: 8),
               // Insurance Companies
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.health_and_safety, color: Colors.teal, size: 24),
                   SizedBox(width: 8),
-                  Flexible(
+                  Expanded(
                     child: Text(
                       "Insurance: ${hospital.insuranceCompanies.join(', ')}",
                       style: TextStyle(fontSize: 16),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
