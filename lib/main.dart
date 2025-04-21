@@ -26,6 +26,7 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalProfileViewModel.dart';
@@ -184,6 +185,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ProcessAppointmentViewModel()),
 
         ChangeNotifierProvider(create: (context) => BedBookingOrderViewModel()),
+        ChangeNotifierProvider(create: (context) => DoctorClinicRegistrationViewModel()),
 
 
       ],

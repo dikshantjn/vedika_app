@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRegistrationScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/doctor_clinic_registration_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
 
@@ -258,7 +259,7 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
         registrationScreen = HospitalRegistrationScreen();
         break;
       case "Clinic":
-        registrationScreen = ClinicRegistrationForm();
+        registrationScreen = DoctorClinicRegistrationScreen();
         break;
       case "Medical Store":
         registrationScreen = MedicalStoreRegistrationScreen();

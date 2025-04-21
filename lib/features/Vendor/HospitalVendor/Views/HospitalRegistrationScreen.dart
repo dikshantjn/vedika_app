@@ -240,27 +240,6 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
         elevation: 0,
         backgroundColor: HospitalVendorColorPalette.primaryBlue,
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HospitalDashboardScreen(),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: HospitalVendorColorPalette.textInverse,
-            ),
-            child: const Text(
-              'Go to Dashboard',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
