@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
+  static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
   // static const String baseUrl = "http://10.0.2.2:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 

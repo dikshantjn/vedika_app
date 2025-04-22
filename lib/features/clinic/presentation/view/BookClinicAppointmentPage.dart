@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/DatePickerWidget.dart';
@@ -26,10 +26,13 @@ class BookClinicAppointmentPage extends StatelessWidget {
     // final razorpayService = RazorpayService();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorConsultationColorPalette.backgroundPrimary,
       appBar: AppBar(
-        title: Text("Book Clinic Appointment", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: ColorPalette.primaryColor,
+        title: Text(
+          "Book Clinic Appointment",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: DoctorConsultationColorPalette.primaryBlue,
         centerTitle: true,
         foregroundColor: Colors.white,
       ),
@@ -50,7 +53,14 @@ class BookClinicAppointmentPage extends StatelessWidget {
             ),
             SizedBox(height: 20),
 
-            Text("Select Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              "Select Date",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: DoctorConsultationColorPalette.textPrimary,
+              ),
+            ),
             SizedBox(height: 10),
             DatePickerWidget(
               selectedDate: viewModel.selectedDate,
@@ -68,13 +78,20 @@ class BookClinicAppointmentPage extends StatelessWidget {
                 ),
               ),
 
-            Text("Patient Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              "Patient Details",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: DoctorConsultationColorPalette.textPrimary,
+              ),
+            ),
             SizedBox(height: 10),
 
             // Patient Type Selection (Self / Other)
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: DoctorConsultationColorPalette.backgroundCard,
                 borderRadius: BorderRadius.circular(30),
               ),
               padding: EdgeInsets.all(4),
@@ -86,7 +103,9 @@ class BookClinicAppointmentPage extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: viewModel.selectedPatientType == "Self" ? Colors.teal : Colors.transparent,
+                          color: viewModel.selectedPatientType == "Self"
+                              ? DoctorConsultationColorPalette.primaryBlue
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -96,16 +115,20 @@ class BookClinicAppointmentPage extends StatelessWidget {
                               "Self",
                               style: TextStyle(
                                 fontSize: 16,
-                                color: viewModel.selectedPatientType == "Self" ? Colors.white : Colors.teal,
+                                color: viewModel.selectedPatientType == "Self"
+                                    ? Colors.white
+                                    : DoctorConsultationColorPalette.primaryBlue,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(width: 10), // Added extra space here
+                            SizedBox(width: 10),
                             GestureDetector(
                               onTap: () => _showInfoPopup(context),
                               child: Icon(
                                 Icons.info_outline,
-                                color: viewModel.selectedPatientType == "Self" ? Colors.white : Colors.teal,
+                                color: viewModel.selectedPatientType == "Self"
+                                    ? Colors.white
+                                    : DoctorConsultationColorPalette.primaryBlue,
                                 size: 20,
                               ),
                             ),
@@ -114,14 +137,16 @@ class BookClinicAppointmentPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 8), // Space between "Self" and "Other" options
+                  SizedBox(width: 8),
                   Expanded(
                     child: GestureDetector(
                       onTap: () => viewModel.selectPatientType("Other"),
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: viewModel.selectedPatientType == "Other" ? Colors.teal : Colors.transparent,
+                          color: viewModel.selectedPatientType == "Other"
+                              ? DoctorConsultationColorPalette.primaryBlue
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Center(
@@ -129,7 +154,9 @@ class BookClinicAppointmentPage extends StatelessWidget {
                             "Other",
                             style: TextStyle(
                               fontSize: 16,
-                              color: viewModel.selectedPatientType == "Other" ? Colors.white : Colors.teal,
+                              color: viewModel.selectedPatientType == "Other"
+                                  ? Colors.white
+                                  : DoctorConsultationColorPalette.primaryBlue,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -144,12 +171,26 @@ class BookClinicAppointmentPage extends StatelessWidget {
 
             // Show Patient Details Form if "Other" is selected
             if (viewModel.selectedPatientType == "Other")
-              PatientDetailsForm(formKey: _patientFormKey), // Pass form key
+              PatientDetailsForm(formKey: _patientFormKey),
 
             if (viewModel.selectedDoctor != null) ...[
-              Text("Consultation Fee", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                "Consultation Fee",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
+              ),
               SizedBox(height: 5),
-              Text("₹${viewModel.selectedDoctor!.fee}", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+              Text(
+                "₹${viewModel.selectedDoctor!.fee}",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: DoctorConsultationColorPalette.successGreen,
+                ),
+              ),
               SizedBox(height: 20),
             ],
 
@@ -158,12 +199,22 @@ class BookClinicAppointmentPage extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   if (viewModel.selectedPatientType == "Other" && !_patientFormKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please complete the patient details form")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Please complete the patient details form"),
+                        backgroundColor: DoctorConsultationColorPalette.errorRed,
+                      ),
+                    );
                     return;
                   }
 
                   if (!viewModel.isFormComplete()) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please complete all fields")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Please complete all fields"),
+                        backgroundColor: DoctorConsultationColorPalette.errorRed,
+                      ),
+                    );
                   } else {
                     // razorpayService.openPaymentGateway(
                     //   viewModel.selectedDoctor!.fee,
@@ -172,14 +223,22 @@ class BookClinicAppointmentPage extends StatelessWidget {
                     //   'Consultation appointment at ${clinic.name} with ${viewModel.selectedDoctor!.name}',
                     // );
 
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Appointment Confirmed!")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Appointment Confirmed!"),
+                        backgroundColor: DoctorConsultationColorPalette.successGreen,
+                      ),
+                    );
                   }
                 },
-                child: Text("Confirm Appointment", style: TextStyle(fontSize: 18, color: Colors.white)),
+                child: Text(
+                  "Confirm Appointment",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  backgroundColor: Colors.teal,
+                  backgroundColor: DoctorConsultationColorPalette.primaryBlue,
                 ),
               ),
             ),
@@ -205,15 +264,23 @@ class BookClinicAppointmentPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: Colors.teal, size: 50),
+              Icon(
+                Icons.info_outline,
+                color: DoctorConsultationColorPalette.primaryBlue,
+                size: 50,
+              ),
               SizedBox(height: 10),
               Text(
                 "Information Shared with Doctor",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 10),
-              Divider(color: Colors.grey.shade300),
+              Divider(color: DoctorConsultationColorPalette.borderLight),
               SizedBox(height: 10),
               _buildInfoItem("Full Name"),
               _buildInfoItem("Age & Gender"),
@@ -223,11 +290,14 @@ class BookClinicAppointmentPage extends StatelessWidget {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: DoctorConsultationColorPalette.primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 ),
-                child: Text("Got It", style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: Text(
+                  "Got It",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -236,15 +306,25 @@ class BookClinicAppointmentPage extends StatelessWidget {
     );
   }
 
-// Helper widget for popup items
+  // Helper widget for popup items
   Widget _buildInfoItem(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: Colors.teal, size: 20),
+          Icon(
+            Icons.check_circle,
+            color: DoctorConsultationColorPalette.primaryBlue,
+            size: 20,
+          ),
           SizedBox(width: 10),
-          Text(text, style: TextStyle(fontSize: 16, color: Colors.black87)),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              color: DoctorConsultationColorPalette.textPrimary,
+            ),
+          ),
         ],
       ),
     );

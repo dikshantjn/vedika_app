@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/ClinicSearchViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/DraggableClinicList.dart';
 
@@ -30,7 +31,11 @@ class _ClinicSearchPageState extends State<ClinicSearchPage> {
           Consumer<ClinicSearchViewModel>(
             builder: (context, viewModel, child) {
               if (viewModel.isLoading || viewModel.currentPosition == null) {
-                return Center(child: CircularProgressIndicator());
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: DoctorConsultationColorPalette.primaryBlue,
+                  ),
+                );
               }
               return GoogleMap(
                 initialCameraPosition: CameraPosition(
@@ -56,7 +61,12 @@ class _ClinicSearchPageState extends State<ClinicSearchPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
+                boxShadow: [
+                  BoxShadow(
+                    color: DoctorConsultationColorPalette.shadowLight,
+                    blurRadius: 5,
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -69,7 +79,10 @@ class _ClinicSearchPageState extends State<ClinicSearchPage> {
                             .text,
                       );
                     },
-                    child: Icon(Icons.search, color: Colors.black54),
+                    child: Icon(
+                      Icons.search,
+                      color: DoctorConsultationColorPalette.primaryBlue,
+                    ),
                   ),
                   SizedBox(width: 10),
                   Expanded(
@@ -81,14 +94,43 @@ class _ClinicSearchPageState extends State<ClinicSearchPage> {
                           decoration: InputDecoration(
                             hintText: "Search clinics...",
                             border: InputBorder.none,
-                            hintStyle: TextStyle(color: Colors.black54),
+                            hintStyle: TextStyle(
+                              color: DoctorConsultationColorPalette.textHint,
+                            ),
                           ),
-                          style: TextStyle(color: Colors.black),
+                          style: TextStyle(
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
                         );
                       },
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // Back Button
+          Positioned(
+            top: 40,
+            left: 15,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: DoctorConsultationColorPalette.shadowLight,
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: DoctorConsultationColorPalette.primaryBlue,
+                ),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ),

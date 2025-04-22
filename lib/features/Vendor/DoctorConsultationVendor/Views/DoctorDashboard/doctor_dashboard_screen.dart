@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointment_history_screen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorClinicProfileScreen.dart';
 // import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/appointments_page.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/dashboard_page.dart';
 // import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/history_page.dart';
@@ -25,9 +28,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
   final List<Widget> _pages = [
     const DashboardPage(),
     // Using placeholders for pages that aren't implemented yet
-    const Center(child: Text('Appointments Page - Coming Soon')),
-    const Center(child: Text('History Page - Coming Soon')),
-    const Center(child: Text('Profile Page - Coming Soon')),
+    const ClinicAppointmentsScreen(),
+    const ClinicAppointmentHistoryScreen(),
+    const DoctorClinicProfileScreen(),
   ];
   
   // Titles for app bar
@@ -79,15 +82,6 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
                 children: _pages,
               ),
               bottomNavigationBar: _buildBottomNavigation(),
-              floatingActionButton: _currentIndex == 1 // Show FAB only on Appointments page
-                  ? FloatingActionButton(
-                      onPressed: () {
-                        // TODO: Add new appointment logic
-                      },
-                      backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-                      child: const Icon(Icons.add, color: Colors.white),
-                    )
-                  : null,
             ),
           );
         },

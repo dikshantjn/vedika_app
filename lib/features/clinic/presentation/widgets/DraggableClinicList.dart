@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 
 class DraggableClinicList extends StatelessWidget {
@@ -20,13 +21,13 @@ class DraggableClinicList extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.blueGrey[600], size: 16),
+              Icon(icon, color: DoctorConsultationColorPalette.primaryBlue, size: 16),
               SizedBox(width: 8),
               Text(
                 key,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueGrey[400],
+                  color: DoctorConsultationColorPalette.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -40,7 +41,7 @@ class DraggableClinicList extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.blueGrey[800],
+                color: DoctorConsultationColorPalette.textPrimary,
               ),
             ),
           ),
@@ -53,8 +54,11 @@ class DraggableClinicList extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
+        color: DoctorConsultationColorPalette.backgroundCard,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: DoctorConsultationColorPalette.borderLight,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,14 +68,14 @@ class DraggableClinicList extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.blueGrey[800],
+              color: DoctorConsultationColorPalette.textPrimary,
             ),
           ),
           Text(
             "Fee: ₹${doctor.fee} | Slots: ${doctor.timeSlots.join(", ")}",
             style: TextStyle(
               fontSize: 12,
-              color: Colors.blueGrey[600],
+              color: DoctorConsultationColorPalette.textSecondary,
             ),
           ),
         ],
@@ -91,6 +95,13 @@ class DraggableClinicList extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: DoctorConsultationColorPalette.shadowLight,
+                blurRadius: 8,
+                offset: Offset(0, -3),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -100,7 +111,7 @@ class DraggableClinicList extends StatelessWidget {
                   height: 6,
                   margin: EdgeInsets.only(top: 4, bottom: 6),
                   decoration: BoxDecoration(
-                    color: Colors.grey[400],
+                    color: DoctorConsultationColorPalette.borderMedium,
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -110,7 +121,7 @@ class DraggableClinicList extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey[800],
+                  color: DoctorConsultationColorPalette.textPrimary,
                 ),
               ),
               if (clinics.isEmpty || clinics.length != expandedItems.length)
@@ -119,7 +130,10 @@ class DraggableClinicList extends StatelessWidget {
                     child: Text(
                       "No clinics found nearby or matching your search.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.blueGrey[700]),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: DoctorConsultationColorPalette.textSecondary,
+                      ),
                     ),
                   ),
                 )
@@ -139,8 +153,18 @@ class DraggableClinicList extends StatelessWidget {
                           padding: EdgeInsets.all(16),
                           margin: EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
+                            color: DoctorConsultationColorPalette.backgroundCard,
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: DoctorConsultationColorPalette.borderLight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: DoctorConsultationColorPalette.shadowLight,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,40 +178,47 @@ class DraggableClinicList extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.blueGrey[800],
+                                        color: DoctorConsultationColorPalette.textPrimary,
                                       ),
                                     ),
                                   ),
                                   Icon(
                                     isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                    color: Colors.blueGrey[600],
+                                    color: DoctorConsultationColorPalette.primaryBlue,
                                   ),
                                 ],
                               ),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, color: Colors.blueGrey[600], size: 16),
+                                  Icon(
+                                    Icons.location_on,
+                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       clinic.address,
-                                      style: TextStyle(color: Colors.blueGrey[600], fontSize: 14),
+                                      style: TextStyle(
+                                        color: DoctorConsultationColorPalette.textSecondary,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                               if (isExpanded) ...[
-                                Divider(color: Colors.blueGrey[300]),
+                                Divider(color: DoctorConsultationColorPalette.borderLight),
                                 buildDetailRow(Icons.phone, "Phone:", clinic.contact),
                                 buildDetailRow(Icons.health_and_safety, "Specialties:", clinic.specialties.join(", ")),
-                                Divider(color: Colors.blueGrey[300]),
+                                Divider(color: DoctorConsultationColorPalette.borderLight),
                                 SizedBox(height: 10),
                                 Text(
                                   "Doctors",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blueGrey[800],
+                                    color: DoctorConsultationColorPalette.textPrimary,
                                   ),
                                 ),
                                 Wrap(
@@ -210,7 +241,7 @@ class DraggableClinicList extends StatelessWidget {
                                   icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
                                   label: Text("Book Appointment"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
+                                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
                                     foregroundColor: Colors.white,
                                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                     shape: RoundedRectangleBorder(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Utils/AppointmentAdapter.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/analytics_chart_widget.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/booking_overview_card.dart';
@@ -17,6 +18,15 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<DashboardViewModel>(context, listen: false);
+      viewModel.initialize();
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<DashboardViewModel>(context);
@@ -37,8 +47,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildWelcomeHeader(viewModel),
-                  const SizedBox(height: 20),
-                  _buildTimeFilterSelector(viewModel),
                   const SizedBox(height: 20),
                   _buildBookingsOverview(),
                   const SizedBox(height: 24),
@@ -147,13 +155,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     Icon(
                       Icons.circle,
                       size: 10,
-                      color: viewModel.isOnline 
+                      color: viewModel.isActive 
                           ? DoctorConsultationColorPalette.successGreen
                           : DoctorConsultationColorPalette.errorRed,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      viewModel.isOnline ? 'Online' : 'Offline',
+                      viewModel.isActive ? 'Active' : 'Inactive',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -183,7 +191,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'You have ${viewModel.todayAppointments} new appointments today',
+                    'You have ${viewModel.upcomingAppointments.length} upcoming appointments',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -193,6 +201,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 TextButton(
                   onPressed: () {
                     // Navigate to appointments page
+                    Navigator.pushNamed(context, '/doctor/appointments');
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -220,48 +229,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildTimeFilterSelector(DashboardViewModel viewModel) {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: DoctorConsultationColorPalette.backgroundCard,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: viewModel.timeFilters.map((filter) {
-          final isSelected = filter == viewModel.selectedTimeFilter;
-          return Expanded(
-            child: InkWell(
-              onTap: () {
-                viewModel.setTimeFilter(filter);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? DoctorConsultationColorPalette.primaryBlue
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  filter,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : DoctorConsultationColorPalette.textSecondary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _buildBookingsOverview() {
     return const BookingOverviewCard();
   }
@@ -271,8 +238,8 @@ class _DashboardPageState extends State<DashboardPage> {
       totalPatients: viewModel.totalPatients,
       totalAppointments: viewModel.totalAppointments,
       rating: viewModel.rating,
-      reviewCount: 4,
-      completionRate: viewModel.completionRate,
+      reviewCount: viewModel.reviewCount,
+      completionRate: viewModel.completionRate.toInt(),
     );
   }
 
@@ -285,10 +252,17 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildUpcomingAppointments() {
+    final viewModel = Provider.of<DashboardViewModel>(context);
+    final appointmentDataList = AppointmentAdapter.fromClinicAppointmentList(
+      viewModel.upcomingAppointments,
+    );
+    
     return UpcomingAppointmentsCard(
-      appointments: [],
+      appointments: appointmentDataList,
       onViewDetails: (id) {
         // Handle view details
+        // TODO: Navigate to appointment details screen
+        Navigator.of(context).pushNamed('/appointments/details', arguments: id);
       },
     );
   }

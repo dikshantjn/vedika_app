@@ -10,6 +10,7 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/ProcessBloodBankBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
@@ -21,7 +22,10 @@ import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBlo
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicConsultationTypePage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorConsultationPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
@@ -32,6 +36,7 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/Ca
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
 import 'package:vedika_healthcare/features/notifications/presentation/view/NotificationPage.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
 
 class AppRoutes {
   static const String medicineOrder = "/medicineOrder";
@@ -59,6 +64,10 @@ class AppRoutes {
   static const String healthRecords = "/healthRecords";
   static const String login = "/login";
   static const String logout = "/logout";
+  static const String doctorAppointments = "/doctor/appointments"; // New route for doctor appointments
+  static const String clinicConsultationType = "/clinic/consultationType"; // New route for consultation type selection
+  static const String onlineDoctorConsultation = "/clinic/onlineConsultation"; // New route for online doctor consultation
+  static const String onlineDoctorDetail = "/clinic/onlineConsultation/doctor"; // New route for online doctor detail
 
 
   //Vendor
@@ -90,6 +99,9 @@ class AppRoutes {
       donorRegistration: (context) => DonorRegistrationPage(),
       orderHistory: (context) => OrderHistoryPage(), // Added route for EnableLocationPage
       enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(), // Added route for EnableLocationPage
+      doctorAppointments: (context) => ClinicAppointmentsScreen(), // Route for doctor appointments
+      clinicConsultationType: (context) => ClinicConsultationTypePage(),
+      onlineDoctorConsultation: (context) => OnlineDoctorConsultationPage(),
 
       medicineOrder: (context) => MedicineOrderScreen(), // Added route for EnableLocationPage
       goToCart: (context) => CartScreen(), // Added route for EnableLocationPage
@@ -137,6 +149,12 @@ class AppRoutes {
         final lab = settings.arguments as LabModel;  // Extracting LabModel argument
         return MaterialPageRoute(
           builder: (context) => BookLabTestAppointmentPage(lab: lab),
+        );
+
+      case onlineDoctorDetail:
+        final doctor = settings.arguments as DoctorClinicProfile ;
+        return MaterialPageRoute(
+          builder: (context) => OnlineDoctorDetailPage(doctor: doctor),
         );
 
       default:

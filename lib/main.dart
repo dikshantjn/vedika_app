@@ -26,6 +26,9 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankMainViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/ClinicAppointmentHistoryViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/ClinicAppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalDashboardViewModel.dart';
@@ -42,6 +45,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLo
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/AmbulanceSearchViewModel.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/OnlineDoctorConsultationViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BedBookingOrderViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
@@ -133,6 +137,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LabSearchViewModel()),
         ChangeNotifierProvider(create: (_) => LabTestAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => ClinicSearchViewModel()),
+        ChangeNotifierProvider(create: (_) => AppointmentViewModel()),
         Provider(create: (_) => NotificationRepository()),
         ChangeNotifierProvider(
           create: (context) => NotificationViewModel(
@@ -186,7 +191,10 @@ class MyApp extends StatelessWidget {
 
         ChangeNotifierProvider(create: (context) => BedBookingOrderViewModel()),
         ChangeNotifierProvider(create: (context) => DoctorClinicRegistrationViewModel()),
-
+        ChangeNotifierProvider(create: (context) => DoctorClinicProfileViewModel()),
+        ChangeNotifierProvider(create: (context) => ClinicAppointmentViewModel()),
+        ChangeNotifierProvider(create: (context) => ClinicAppointmentHistoryViewModel()),
+        ChangeNotifierProvider(create: (context) => OnlineDoctorConsultationViewModel()),
 
       ],
       child: Builder(

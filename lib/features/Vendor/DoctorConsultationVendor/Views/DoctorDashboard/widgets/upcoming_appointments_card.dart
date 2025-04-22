@@ -45,6 +45,7 @@ class UpcomingAppointmentsCard extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     // Navigate to all appointments
+                    Navigator.pushNamed(context, '/doctor/appointments');
                   },
                   style: TextButton.styleFrom(
                     foregroundColor: DoctorConsultationColorPalette.primaryBlue,

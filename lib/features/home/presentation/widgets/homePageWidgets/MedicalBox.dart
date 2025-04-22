@@ -9,7 +9,7 @@ class MedicalBoxRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> items = [
       {"title": "Hospital booking", "icon": Icons.local_hospital, "colors": MedicalBoxColors.hospital, "route": "/hospital"},
-      {"title": "Doctor Consultation", "icon": Icons.apartment, "colors": MedicalBoxColors.clinic, "route": "/clinic"},
+      {"title": "Doctor Consultation", "icon": Icons.apartment, "colors": MedicalBoxColors.clinic, "route": "/clinic/consultationType"},
       {"title": "Order Medicine", "icon": Icons.medical_services, "colors": MedicalBoxColors.medicine, "route": "/medicineOrder"},
       {"title": "Lab Test", "icon": Icons.science, "colors": MedicalBoxColors.labTest, "route": "/labTest"},
       {"title": "Blood Bank", "icon": Icons.bloodtype, "colors": MedicalBoxColors.bloodBank, "route": "/bloodbank"},

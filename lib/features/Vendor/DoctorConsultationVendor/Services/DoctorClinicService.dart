@@ -107,4 +107,94 @@ class DoctorClinicService {
   bool _isValidEmail(String email) {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
+  
+  /// Get total number of patients for a doctor
+  Future<int> getTotalPatients(String vendorId) async {
+    try {
+      // In a real implementation, this would be an API call
+      // final response = await _dio.get(
+      //   '${ApiEndpoints.baseUrl}/doctors/$vendorId/patients/count',
+      // );
+      // return response.data['totalPatients'];
+      
+      // For now, return mock data
+      await Future.delayed(const Duration(milliseconds: 500));
+      return 185;
+    } catch (e) {
+      _logger.e('Error fetching total patients: $e');
+      return 0;
+    }
+  }
+  
+  /// Get total number of appointments for a doctor
+  Future<int> getTotalAppointments(String vendorId) async {
+    try {
+      // In a real implementation, this would be an API call
+      // final response = await _dio.get(
+      //   '${ApiEndpoints.baseUrl}/doctors/$vendorId/appointments/count',
+      // );
+      // return response.data['totalAppointments'];
+      
+      // For now, return mock data
+      await Future.delayed(const Duration(milliseconds: 500));
+      return 27;
+    } catch (e) {
+      _logger.e('Error fetching total appointments: $e');
+      return 0;
+    }
+  }
+  
+  /// Get completion rate (percentage of completed appointments)
+  Future<double> getCompletionRate(String vendorId) async {
+    try {
+      // In a real implementation, this would be an API call
+      // final response = await _dio.get(
+      //   '${ApiEndpoints.baseUrl}/doctors/$vendorId/completion-rate',
+      // );
+      // return response.data['completionRate'];
+      
+      // For now, return mock data
+      await Future.delayed(const Duration(milliseconds: 500));
+      return 92.0;
+    } catch (e) {
+      _logger.e('Error fetching completion rate: $e');
+      return 0.0;
+    }
+  }
+  
+  /// Get doctor rating
+  Future<double> getDoctorRating(String vendorId) async {
+    try {
+      // In a real implementation, this would be an API call
+      // final response = await _dio.get(
+      //   '${ApiEndpoints.baseUrl}/doctors/$vendorId/rating',
+      // );
+      // return response.data['rating'];
+      
+      // For now, return mock data
+      await Future.delayed(const Duration(milliseconds: 500));
+      return 4.7;
+    } catch (e) {
+      _logger.e('Error fetching doctor rating: $e');
+      return 0.0;
+    }
+  }
+  
+  /// Get review count
+  Future<int> getReviewCount(String vendorId) async {
+    try {
+      // In a real implementation, this would be an API call
+      // final response = await _dio.get(
+      //   '${ApiEndpoints.baseUrl}/doctors/$vendorId/reviews/count',
+      // );
+      // return response.data['reviewCount'];
+      
+      // For now, return mock data
+      await Future.delayed(const Duration(milliseconds: 500));
+      return 32;
+    } catch (e) {
+      _logger.e('Error fetching review count: $e');
+      return 0;
+    }
+  }
 }
