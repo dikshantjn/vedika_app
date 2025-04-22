@@ -11,6 +11,9 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
   const DoctorDashboardScreen({Key? key}) : super(key: key);
@@ -23,6 +26,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late TabController _tabController;
+  
+  // Services
+  final VendorService _vendorService = VendorService();
+  final VendorLoginService _loginService = VendorLoginService();
   
   // Pages for bottom navigation
   final List<Widget> _pages = [
@@ -62,10 +69,13 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DashboardViewModel()..init(),
-      child: Consumer<DashboardViewModel>(
-        builder: (context, viewModel, _) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()..init()),
+        ChangeNotifierProvider(create: (_) => DoctorClinicProfileViewModel()..loadProfile()),
+      ],
+      child: Consumer2<DashboardViewModel, DoctorClinicProfileViewModel>(
+        builder: (context, dashboardViewModel, profileViewModel, _) {
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle(
               statusBarColor: DoctorConsultationColorPalette.primaryBlue,
@@ -74,7 +84,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
             child: Scaffold(
               key: _scaffoldKey,
               backgroundColor: DoctorConsultationColorPalette.backgroundPrimary,
-              appBar: _buildAppBar(viewModel),
+              appBar: _buildAppBar(dashboardViewModel),
               drawer: const DoctorDrawerMenu(),
               body: TabBarView(
                 controller: _tabController,
@@ -115,9 +125,22 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
-                viewModel.toggleOnlineStatus();
-                _showStatusChangeSnackbar(viewModel.isOnline);
+              onTap: () async {
+                try {
+                  // Toggle status using the ViewModel (which uses VendorService)
+                  await viewModel.toggleOnlineStatus();
+                  
+                  // Show status change notification
+                  _showStatusChangeSnackbar(viewModel.isOnline);
+                } catch (e) {
+                  // Show error if status toggle fails
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error changing status: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               borderRadius: BorderRadius.circular(20),
               child: Padding(

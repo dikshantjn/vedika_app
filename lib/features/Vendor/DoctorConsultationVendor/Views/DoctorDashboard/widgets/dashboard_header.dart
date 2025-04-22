@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
 
 class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
   final String doctorName;
@@ -18,6 +21,11 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
     final titleFontSize = 20 - (progress * 4);
     final subtitleFontSize = 16 - (progress * 4);
     final opacity = 1.0 - progress * 0.7;
+
+    // Get the view models
+    final dashboardViewModel = Provider.of<DashboardViewModel>(context);
+    final profileViewModel = Provider.of<DoctorClinicProfileViewModel>(context);
+    final profile = profileViewModel.profile;
 
     return Container(
       decoration: BoxDecoration(
@@ -55,18 +63,52 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Profile image
-                  Container(
-                    width: 60 - (progress * 20),
-                    height: 60 - (progress * 20),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/doctor_profile.png'),
-                        fit: BoxFit.cover,
+                  // Profile image with status indicator
+                  Stack(
+                    children: [
+                      Container(
+                        width: 60 - (progress * 20),
+                        height: 60 - (progress * 20),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          image: profile != null && profile.profilePicture.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(profile.profilePicture),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: profile == null || profile.profilePicture.isEmpty
+                            ? Center(
+                                child: Text(
+                                  doctorName.isNotEmpty ? doctorName[0].toUpperCase() : 'D',
+                                  style: TextStyle(
+                                    fontSize: 22 - (progress * 7),
+                                    fontWeight: FontWeight.bold,
+                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
-                    ),
+                      // Online/Offline status indicator
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 15,
+                          height: 15,
+                          decoration: BoxDecoration(
+                            color: dashboardViewModel.isOnline
+                                ? DoctorConsultationColorPalette.successGreen
+                                : DoctorConsultationColorPalette.errorRed,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                   
@@ -77,7 +119,10 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          doctorName,
+                          // Use actual doctor name if available
+                          profile != null && profile.doctorName.isNotEmpty
+                              ? '${profile.doctorName}'
+                              : doctorName,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: titleFontSize,
@@ -86,13 +131,39 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '$specialization | $clinicName',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: subtitleFontSize,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                // Use first specialization from profile if available
+                                profile != null && profile.specializations.isNotEmpty
+                                    ? '${profile.specializations.first} | $clinicName'
+                                    : '$specialization | $clinicName',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: subtitleFontSize,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: dashboardViewModel.isOnline
+                                    ? DoctorConsultationColorPalette.successGreen.withOpacity(0.3)
+                                    : DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                dashboardViewModel.isOnline ? 'Online' : 'Offline',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

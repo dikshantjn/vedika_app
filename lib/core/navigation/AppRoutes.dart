@@ -11,6 +11,7 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/doctor_dashboard_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
@@ -122,7 +123,7 @@ class AppRoutes {
 
       // // Vendor Dashboards
       VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
-      // VendorClinicDashBoard: (context) => VendorClinicDashBoardScreen(),
+      VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
       VendorBloodBankDashBoard: (context) => VendorBloodBankMainScreen(),
       // VendorPathologyDashBoard: (context) => VendorPathologyDashBoardScreen(),

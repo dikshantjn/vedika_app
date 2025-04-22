@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicStorageService.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/Vendor.dart';
 
 class DoctorClinicRegistrationViewModel extends ChangeNotifier {
-  // Service instance
+  // Service instances
   final DoctorClinicService _service = DoctorClinicService();
+  final DoctorClinicStorageService _storageService = DoctorClinicStorageService();
 
   DoctorClinicProfile _profile = DoctorClinicProfile(
     doctorName: '',
@@ -17,7 +20,7 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
     confirmPassword: '',
     phoneNumber: '',
     profilePicture: '',
-    medicalLicenseFile: '',
+    medicalLicenseFile: [],
     licenseNumber: '',
     educationalQualifications: [],
     specializations: [],
@@ -47,9 +50,17 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
   String? _error;
   bool _isSubmitSuccess = false;
   final List<Map<String, String>> _timeSlots = [];
+  
+  // Temporary holding for files before upload
   File? _profilePictureFile;
+  String _profilePictureName = '';
+  
   File? _medicalLicenseFile;
-  final List<File> _clinicPhotoFiles = [];
+  String _medicalLicenseName = '';
+  
+  final List<Map<String, dynamic>> _clinicPhotoFiles = [];
+  final List<Map<String, String>> _clinicPhotos = [];
+  
   List<String> _availableCities = [];
   Map<String, String> _validationErrors = {};
 
@@ -60,10 +71,13 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
   bool get isSubmitSuccess => _isSubmitSuccess;
   List<Map<String, String>> get timeSlots => _timeSlots;
   File? get profilePictureFile => _profilePictureFile;
+  String get profilePictureName => _profilePictureName;
   File? get medicalLicenseFile => _medicalLicenseFile;
+  String get medicalLicenseName => _medicalLicenseName;
   List<String> get availableCities => _availableCities;
   List<StateModel> get states => StateCityDataProvider.states;
   Map<String, String> get validationErrors => _validationErrors;
+  List<Map<String, dynamic>> get clinicPhotoFiles => _clinicPhotoFiles;
 
   // Profile setters
   void setDoctorName(String value) {
@@ -101,15 +115,17 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setProfilePicture(File file) {
+  void setProfilePicture(File file, String fileName) {
     _profilePictureFile = file;
-    _profile = _profile.copyWith(profilePicture: file.path);
+    _profilePictureName = fileName;
+    // We'll set the actual URL after uploading to Firebase
     notifyListeners();
   }
 
-  void setMedicalLicenseFile(File file) {
+  void setMedicalLicenseFile(File file, String fileName) {
     _medicalLicenseFile = file;
-    _profile = _profile.copyWith(medicalLicenseFile: file.path);
+    _medicalLicenseName = fileName;
+    // We'll set the actual URL after uploading to Firebase
     _clearValidationError('medicalLicenseFile');
     notifyListeners();
   }
@@ -237,11 +253,11 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addClinicPhoto(File file) {
-    _clinicPhotoFiles.add(file);
-    final updatedPhotos = List<Map<String, String>>.from(_profile.clinicPhotos)
-      ..add({'path': file.path});
-    _profile = _profile.copyWith(clinicPhotos: updatedPhotos);
+  void addClinicPhotoFile(File file, String fileName) {
+    _clinicPhotoFiles.add({
+      'file': file,
+      'name': fileName
+    });
     notifyListeners();
   }
 
@@ -298,6 +314,64 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
     return _validationErrors.isEmpty;
   }
 
+  // Upload files to Firebase Storage and update profile with URLs
+  Future<bool> _uploadFilesToStorage() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Upload profile picture if available
+      if (_profilePictureFile != null) {
+        final String url = await _storageService.uploadFile(
+          _profilePictureFile!,
+          fileType: 'profile_pictures'
+        );
+        _profile = _profile.copyWith(profilePicture: url);
+      }
+
+      // Upload medical license if available
+      if (_medicalLicenseFile != null) {
+        final String url = await _storageService.uploadFile(
+          _medicalLicenseFile!,
+          fileType: 'medical_licenses'
+        );
+        _profile = _profile.copyWith(medicalLicenseFile: [
+          {'name': _medicalLicenseName, 'url': url}
+        ]);
+      }
+
+      // Upload clinic photos if available
+      if (_clinicPhotoFiles.isNotEmpty) {
+        List<Map<String, String>> uploadedPhotos = [];
+        
+        for (var photoData in _clinicPhotoFiles) {
+          final File file = photoData['file'];
+          final String name = photoData['name'];
+          
+          final String url = await _storageService.uploadFile(
+            file,
+            fileType: 'clinic_photos'
+          );
+          
+          uploadedPhotos.add({
+            'url': url,
+            'name': name
+          });
+        }
+        
+        _clinicPhotos.addAll(uploadedPhotos);
+        _profile = _profile.copyWith(clinicPhotos: _clinicPhotos);
+      }
+
+      return true;
+    } catch (e) {
+      print('Error uploading files: $e');
+      _error = 'Failed to upload files: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Submit profile
   Future<bool> submitProfile() async {
     try {
@@ -316,8 +390,25 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
       // Update consultation time slots
       _profile = _profile.copyWith(consultationTimeSlots: _timeSlots);
 
+      // Upload files to Firebase Storage
+      bool filesUploaded = await _uploadFilesToStorage();
+      if (!filesUploaded) {
+        _isLoading = false;
+        _error = 'Failed to upload files, please try again';
+        notifyListeners();
+        return false;
+      }
+
+      // Create Vendor model
+      final vendor = Vendor(
+        vendorRole: 2, // Doctor/Clinic vendor role
+        phoneNumber: _profile.phoneNumber,
+        email: _profile.email,
+        password: _profile.password,
+      );
+
       // Submit the profile using the service
-      final result = await _service.submitDoctorClinicProfile(_profile);
+      final result = await _service.submitDoctorClinicProfile(_profile, vendor);
       
       _isLoading = false;
       _isSubmitSuccess = result;
@@ -347,7 +438,7 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
       confirmPassword: '',
       phoneNumber: '',
       profilePicture: '',
-      medicalLicenseFile: '',
+      medicalLicenseFile: [],
       licenseNumber: '',
       educationalQualifications: [],
       specializations: [],
@@ -374,8 +465,11 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
     );
     _timeSlots.clear();
     _profilePictureFile = null;
+    _profilePictureName = '';
     _medicalLicenseFile = null;
+    _medicalLicenseName = '';
     _clinicPhotoFiles.clear();
+    _clinicPhotos.clear();
     _availableCities = [];
     _error = null;
     _isSubmitSuccess = false;
@@ -393,7 +487,8 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
       
       if (result != null && result.files.isNotEmpty) {
         final file = File(result.files.first.path!);
-        setProfilePicture(file);
+        final fileName = result.files.first.name;
+        setProfilePicture(file, fileName);
       }
     } catch (e) {
       _error = 'Failed to pick profile picture: $e';
@@ -411,10 +506,38 @@ class DoctorClinicRegistrationViewModel extends ChangeNotifier {
       
       if (result != null && result.files.isNotEmpty) {
         final file = File(result.files.first.path!);
-        setMedicalLicenseFile(file);
+        final fileName = result.files.first.name;
+        setMedicalLicenseFile(file, fileName);
       }
     } catch (e) {
       _error = 'Failed to pick medical license: $e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> pickClinicPhotos() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+      );
+      
+      if (result != null && result.files.isNotEmpty) {
+        for (var fileInfo in result.files) {
+          final file = File(fileInfo.path!);
+          final fileName = fileInfo.name;
+          addClinicPhotoFile(file, fileName);
+        }
+      }
+    } catch (e) {
+      _error = 'Failed to pick clinic photos: $e';
+      notifyListeners();
+    }
+  }
+
+  void removeClinicPhotoFile(int index) {
+    if (index >= 0 && index < _clinicPhotoFiles.length) {
+      _clinicPhotoFiles.removeAt(index);
       notifyListeners();
     }
   }

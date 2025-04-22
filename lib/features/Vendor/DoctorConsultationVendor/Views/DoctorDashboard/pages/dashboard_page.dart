@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Utils/AppointmentAdapter.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/analytics_chart_widget.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/booking_overview_card.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/clinic_notification_card.dart';
@@ -30,6 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<DashboardViewModel>(context);
+    final profileViewModel = Provider.of<DoctorClinicProfileViewModel>(context);
     
     return Scaffold(
       backgroundColor: DoctorConsultationColorPalette.backgroundPrimary,
@@ -46,7 +48,7 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWelcomeHeader(viewModel),
+                  _buildWelcomeHeader(viewModel, profileViewModel),
                   const SizedBox(height: 20),
                   _buildBookingsOverview(),
                   const SizedBox(height: 24),
@@ -80,7 +82,9 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildWelcomeHeader(DashboardViewModel viewModel) {
+  Widget _buildWelcomeHeader(DashboardViewModel viewModel, DoctorClinicProfileViewModel profileViewModel) {
+    final profile = profileViewModel.profile;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -109,17 +113,25 @@ class _DashboardPageState extends State<DashboardPage> {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Colors.white,
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-                  backgroundImage: const AssetImage('assets/images/doctor_profile.png'),
-                  onBackgroundImageError: (_, __) {},
-                  child: const Icon(
-                    Icons.person,
-                    size: 24,
-                    color: Colors.grey,
-                  ),
-                ),
+                child: profile != null && profile.profilePicture.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 22,
+                      backgroundImage: NetworkImage(profile.profilePicture),
+                    )
+                  : CircleAvatar(
+                      radius: 22,
+                      backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                      child: Text(
+                        profile != null && profile.doctorName.isNotEmpty 
+                            ? profile.doctorName[0].toUpperCase() 
+                            : 'D',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                      ),
+                    ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -133,9 +145,11 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Dr. John Doe',
-                    style: TextStyle(
+                  Text(
+                    profile != null && profile.doctorName.isNotEmpty
+                        ? '${profile.doctorName}'
+                        : 'Doctor',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

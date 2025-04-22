@@ -8,7 +8,7 @@ class DoctorClinicProfile {
   final String confirmPassword;
   final String phoneNumber;
   final String profilePicture; // URL or base64
-  final String medicalLicenseFile; // now String (URL/base64/path)
+  final List<Map<String, String>> medicalLicenseFile; // Changed to list of maps with name and url
   final String licenseNumber;
   final List<String> educationalQualifications;
   final List<String> specializations;
@@ -77,7 +77,7 @@ class DoctorClinicProfile {
     String? confirmPassword,
     String? phoneNumber,
     String? profilePicture,
-    String? medicalLicenseFile,
+    List<Map<String, String>>? medicalLicenseFile,
     String? licenseNumber,
     List<String>? educationalQualifications,
     List<String>? specializations,
@@ -150,7 +150,11 @@ class DoctorClinicProfile {
       confirmPassword: json['confirmPassword'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       profilePicture: json['profilePicture'] ?? '',
-      medicalLicenseFile: json['medicalLicenseFile'] ?? '',
+      medicalLicenseFile: json['medicalLicenseFile'] is List 
+          ? List<Map<String, String>>.from(json['medicalLicenseFile'] ?? [])
+          : json['medicalLicenseFile'] != null && json['medicalLicenseFile'] != '' 
+              ? [{'name': 'License', 'url': json['medicalLicenseFile']}] 
+              : [],
       licenseNumber: json['licenseNumber'] ?? '',
       educationalQualifications: List<String>.from(json['educationalQualifications'] ?? []),
       specializations: List<String>.from(json['specializations'] ?? []),

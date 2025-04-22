@@ -10,12 +10,13 @@ class DashboardViewModel extends ChangeNotifier {
   final AppointmentService _appointmentService = AppointmentService();
   final DoctorClinicService _doctorClinicService = DoctorClinicService();
   final VendorService _vendorService = VendorService();
+  final VendorLoginService _loginService = VendorLoginService();
   
   bool _isLoading = true;
   String? _errorMessage;
   String? _vendorId;
   bool _isActive = false;
-  bool _isOnline = true;
+  bool _isOnline = false; // Default to offline until we know the status
   String _selectedTimeFilter = 'Today';
   
   // Dashboard data
@@ -59,11 +60,58 @@ class DashboardViewModel extends ChangeNotifier {
   }
   
   void init() {
+    fetchVendorOnlineStatus();
     fetchDashboardData();
   }
   
-  void toggleOnlineStatus() {
-    _isOnline = !_isOnline;
+  // Fetch the vendor's current online status
+  Future<void> fetchVendorOnlineStatus() async {
+    try {
+      // Get vendor ID from storage
+      final vendorId = await _loginService.getVendorId();
+      if (vendorId != null) {
+        _vendorId = vendorId;
+        // Get current online status
+        final status = await _vendorService.getVendorStatus(vendorId);
+        _isOnline = status;
+        _isActive = status; // Keep these in sync
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error fetching vendor online status: $e');
+      _isOnline = false; // Default to offline on error
+      _isActive = false;
+      notifyListeners();
+    }
+  }
+  
+  // Toggle online status through the API
+  Future<void> toggleOnlineStatus() async {
+    try {
+      if (_vendorId == null) {
+        _vendorId = await _loginService.getVendorId();
+        if (_vendorId == null) {
+          throw Exception('Vendor ID not found');
+        }
+      }
+      
+      // Toggle status through the API
+      final newStatus = await _vendorService.toggleVendorStatus(_vendorId!);
+      
+      // Update local state with the returned status
+      _isOnline = newStatus;
+      _isActive = newStatus;
+      notifyListeners();
+    } catch (e) {
+      print('Error toggling online status: $e');
+      // Don't change the status if there was an error
+    }
+  }
+  
+  // Set the online status directly
+  void setOnlineStatus(bool status) {
+    _isOnline = status;
+    _isActive = status;
     notifyListeners();
   }
   
@@ -79,16 +127,21 @@ class DashboardViewModel extends ChangeNotifier {
     _setLoading(true);
     
     try {
-      // Get vendor ID from storage
-      _vendorId = await VendorLoginService().getVendorId();
+      // Get vendor ID from storage if we don't have it yet
       if (_vendorId == null) {
-        _errorMessage = 'Vendor ID not found';
-        _setLoading(false);
-        return;
+        _vendorId = await _loginService.getVendorId();
+        if (_vendorId == null) {
+          _errorMessage = 'Vendor ID not found';
+          _setLoading(false);
+          return;
+        }
       }
       
-      // Get vendor status
-      _isActive = await _vendorService.getVendorStatus(_vendorId!);
+      // Get vendor status if we haven't already
+      if (!_isOnline) {
+        _isActive = await _vendorService.getVendorStatus(_vendorId!);
+        _isOnline = _isActive;
+      }
       
       // Fetch upcoming appointments
       await fetchUpcomingAppointments();

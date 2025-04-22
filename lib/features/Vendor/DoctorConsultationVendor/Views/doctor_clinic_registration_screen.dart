@@ -603,20 +603,86 @@ class _DoctorClinicRegistrationScreenState extends State<DoctorClinicRegistratio
           onFilesSelected: (files) {
             if (files.isNotEmpty) {
               final file = files.first;
-              viewModel.setProfilePicture(file['file'] as File);
+              viewModel.setProfilePicture(file['file'] as File, file['name'] as String);
             }
           },
         ),
+        if (viewModel.profilePictureFile != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: DoctorConsultationColorPalette.successGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: DoctorConsultationColorPalette.successGreen.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: DoctorConsultationColorPalette.successGreen,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Selected: ${viewModel.profilePictureName}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: DoctorConsultationColorPalette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         UploadSectionWidget(
           label: 'Medical License',
           onFilesSelected: (files) {
             if (files.isNotEmpty) {
               final file = files.first;
-              viewModel.setMedicalLicenseFile(file['file'] as File);
+              viewModel.setMedicalLicenseFile(file['file'] as File, file['name'] as String);
             }
           },
         ),
+        if (viewModel.medicalLicenseFile != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: DoctorConsultationColorPalette.successGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: DoctorConsultationColorPalette.successGreen.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: DoctorConsultationColorPalette.successGreen,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Selected: ${viewModel.medicalLicenseName}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: DoctorConsultationColorPalette.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -938,10 +1004,84 @@ class _DoctorClinicRegistrationScreenState extends State<DoctorClinicRegistratio
           label: 'Clinic Photos',
           onFilesSelected: (files) {
             for (var file in files) {
-              viewModel.addClinicPhoto(file['file'] as File);
+              viewModel.addClinicPhotoFile(file['file'] as File, file['name'] as String);
             }
           },
         ),
+        if (viewModel.clinicPhotoFiles.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: DoctorConsultationColorPalette.backgroundCard,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: DoctorConsultationColorPalette.borderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selected Clinic Photos (${viewModel.clinicPhotoFiles.length})',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: DoctorConsultationColorPalette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: viewModel.clinicPhotoFiles.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final photoData = entry.value;
+                    final String fileName = photoData['name'] as String;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: DoctorConsultationColorPalette.secondaryTealLight.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.photo,
+                            size: 16,
+                            color: DoctorConsultationColorPalette.primaryBlue,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              fileName.length > 20 ? '${fileName.substring(0, 17)}...' : fileName,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () => viewModel.removeClinicPhotoFile(index),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: DoctorConsultationColorPalette.errorRed,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

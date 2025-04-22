@@ -1483,12 +1483,16 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
 
   Widget _buildDocumentItem({
     required String label,
-    required String fileUrl,
+    required List<Map<String, String>> fileUrl,
     required IconData icon,
     required bool isEditing,
-    required Function(String) onUpload,
+    required Function(List<Map<String, String>>) onUpload,
     required String fileType,
   }) {
+    // Get first file URL if available
+    final String url = fileUrl.isNotEmpty ? (fileUrl.first['url'] ?? '') : '';
+    final String fileName = fileUrl.isNotEmpty ? (fileUrl.first['name'] ?? 'Uploaded File') : '';
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1533,11 +1537,12 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                   if (result != null && result.files.isNotEmpty) {
                     File file = File(result.files.single.path!);
                     try {
-                      final url = await _storageService.uploadFile(
+                      final newUrl = await _storageService.uploadFile(
                         file,
                         fileType: fileType,
                       );
-                      onUpload(url);
+                      // Create a new list with the file information
+                      onUpload([{'name': result.files.single.name, 'url': newUrl}]);
                       _showSuccessSnackBar(context, 'File uploaded successfully');
                     } catch (e) {
                       _showErrorSnackBar(context, 'Failed to upload file: $e');
@@ -1548,7 +1553,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        if (fileUrl.isNotEmpty)
+        if (url.isNotEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1577,7 +1582,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Uploaded File',
+                        fileName,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -1586,7 +1591,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        fileUrl.split('/').last,
+                        url.split('/').last,
                         style: TextStyle(
                           fontSize: 12,
                           color: DoctorConsultationColorPalette.textSecondary,

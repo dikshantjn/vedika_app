@@ -1,8 +1,8 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
-  // static const String baseUrl = "http://10.0.2.2:5000/api";  // For Android emulator
-  // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
+  // static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
+  // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
+  static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
 
   // 📌 Auth APIs
@@ -20,6 +20,11 @@ class ApiEndpoints {
   static const String loginVendor = '$baseUrl/vendors/login';
   static const String updateMedicalStore = '$baseUrl/vendors/update';
   static const String getVendorProfile = '$baseUrl/vendors/profile';
+
+  // 📌 Clinic APIs
+  static const String registerClinic = '$baseUrl/clinic/register-clinic';
+  static const String getClinicProfile = '$baseUrl/clinic/profile';
+  static const String updateClinicProfile = '$baseUrl/clinic/profile';
 
   // 📌 Medicine Product APIs
   static const String addProduct = '$baseUrl/medicineProduct/add-product';

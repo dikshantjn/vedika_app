@@ -48,55 +48,23 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
       notifyListeners();
 
       // Get vendor ID
-      // final String? vendorId = await _loginService.getVendorId();
-      final String? vendorId = "await _loginService.getVendorId()";
+      final String? vendorId = await _loginService.getVendorId();
 
       if (vendorId == null) {
         throw Exception('Vendor ID not found');
       }
 
-      // In a real app, we would fetch the profile from an API
-      // For now, we'll create a dummy profile with the vendorId
-      _profile = DoctorClinicProfile(
-        vendorId: vendorId,
-        doctorName: 'Dr. John Doe',
-        gender: 'Male',
-        email: 'doctor@example.com',
-        password: '',
-        confirmPassword: '',
-        phoneNumber: '9876543210',
-        profilePicture: '',
-        medicalLicenseFile: '',
-        licenseNumber: 'MED12345',
-        educationalQualifications: ['MBBS', 'MD'],
-        specializations: ['Cardiology', 'General Medicine'],
-        experienceYears: 5,
-        languageProficiency: ['English', 'Hindi'],
-        hasTelemedicineExperience: true,
-        consultationFeesRange: '₹500-1000',
-        consultationTimeSlots: [
-          {'day': 'Monday', 'startTime': '09:00', 'endTime': '17:00'},
-          {'day': 'Tuesday', 'startTime': '09:00', 'endTime': '17:00'},
-        ],
-        consultationDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        consultationTypes: ['Online', 'In-Person'],
-        insurancePartners: ['Apollo', 'Star Health'],
-        address: '123 Medical Center',
-        state: 'Maharashtra',
-        city: 'Mumbai',
-        pincode: '400001',
-        nearbyLandmark: 'Near City Hospital',
-        floor: '3rd Floor',
-        hasLiftAccess: true,
-        hasWheelchairAccess: true,
-        hasParking: true,
-        otherFacilities: ['Waiting Area', 'Pharmacy'],
-        clinicPhotos: [],
-        location: '19.0760,72.8777',
-      );
-
-      // Initialize controllers with profile data
-      _initializeControllers();
+      // Fetch the clinic profile from the API
+      final profile = await _doctorClinicService.getClinicProfile(vendorId);
+      
+      if (profile != null) {
+        _profile = profile;
+        // Initialize controllers with profile data
+        _initializeControllers();
+        _logger.i('✅ Profile loaded successfully');
+      } else {
+        throw Exception('Failed to load clinic profile');
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -230,11 +198,21 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateMedicalLicenseFile(String medicalLicenseFile) {
+  void updateMedicalLicenseFile(List<Map<String, String>> medicalLicenseFile) {
     if (_profile == null) return;
 
     _profile = _profile!.copyWith(medicalLicenseFile: medicalLicenseFile);
     notifyListeners();
+  }
+
+  // Convert time slots to the API expected format
+  List<Map<String, dynamic>> _formatTimeSlots(List<Map<String, String>> timeSlots) {
+    return timeSlots.map((slot) {
+      return {
+        'start': slot['startTime'] ?? '',
+        'end': slot['endTime'] ?? ''
+      };
+    }).toList();
   }
 
   Future<bool> saveChanges() async {
@@ -242,12 +220,37 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // In a real app, we would send the updated profile to an API
-      // For now, we'll just simulate a delay
-      await Future.delayed(const Duration(seconds: 1));
-
       // Update profile from controllers
       _updateProfileFromControllers();
+      
+      if (_profile == null) {
+        throw Exception('Profile is null');
+      }
+      
+      // Get vendor ID
+      final String? vendorId = await _loginService.getVendorId();
+      
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+      
+      // Create a copy of the profile with time slots in the right format for the API
+      // and make sure to preserve the profile picture that might have been updated
+      final updatedProfile = _profile!.copyWith(
+        consultationTimeSlots: _profile!.consultationTimeSlots,
+        profilePicture: _profile!.profilePicture // Ensure profile picture is included
+      );
+      
+      // Update the profile using the API
+      final success = await _doctorClinicService.updateClinicProfile(
+        vendorId, 
+        updatedProfile, 
+        formattedTimeSlots: _formatTimeSlots(updatedProfile.consultationTimeSlots)
+      );
+      
+      if (!success) {
+        throw Exception('Failed to update profile');
+      }
 
       _isLoading = false;
       _isEditing = false;
@@ -280,6 +283,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
       nearbyLandmark: nearbyLandmarkController.text,
       floor: floorController.text,
       location: locationController.text,
+      profilePicture: _profile!.profilePicture // Preserve profile picture during controller update
     );
   }
 

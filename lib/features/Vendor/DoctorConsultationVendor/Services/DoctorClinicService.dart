@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/Vendor.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfileFixed.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 
 
 class DoctorClinicService {
@@ -24,31 +23,80 @@ class DoctorClinicService {
   final Dio _dio = Dio();
   final StorageService _storageService = StorageService();
 
+  // Constructor to initialize Dio with options
+  DoctorClinicService() {
+    _dio.options = BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+  }
+
   /// Submit a doctor clinic profile to the server
   /// Returns a Future<bool> indicating success or failure
-  Future<bool> submitDoctorClinicProfile(DoctorClinicProfile profile) async {
+  Future<bool> submitDoctorClinicProfile(DoctorClinicProfile profile, Vendor vendor) async {
     try {
       // Log the profile data being submitted
       _logger.i('📝 Submitting doctor clinic profile data:');
       final profileJson = _formatJson(profile.toJson());
       _logger.i(profileJson);
-
-      // Simulate API call with a delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // In a real implementation, this would be an API call
-      // final response = await _dio.post(
-      //   ApiEndpoints.submitDoctorProfile,
-      //   data: profile.toJson(),
-      // );
-
-      // Log success
-      _logger.i('✅ Doctor clinic profile submitted successfully!');
       
-      return true;
+      // Prepare the request payload with both vendor and clinic data
+      final Map<String, dynamic> requestData = {
+        'vendor': vendor.toJson(),
+        'clinic': profile.toJson(),
+      };
+      
+      _logger.i('📝 Complete request payload:');
+      _logger.i(_formatJson(requestData));
+
+      // Make the actual API call
+      final response = await _dio.post(
+        ApiEndpoints.registerClinic,
+        data: requestData,
+      );
+      
+      // Check if the response was successful
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _logger.i('✅ Doctor clinic profile submitted successfully!');
+        
+        // Store vendor ID if returned
+        if (response.data != null && response.data['vendor'] != null) {
+          final vendorId = response.data['vendor']['vendorId'];
+          final generatedId = response.data['vendor']['generatedId'];
+
+          
+          _logger.i('✅ Stored vendor ID: $vendorId and generated ID: $generatedId');
+        }
+        
+        return true;
+      } else {
+        _logger.e('❌ Failed to submit profile. Status code: ${response.statusCode}');
+        return false;
+      }
     } catch (e) {
       // Log error
       _logger.e('❌ Error submitting doctor clinic profile: $e');
+      
+      // Provide more specific error messages from the API response if available
+      if (e is DioException) {
+        if (e.response != null) {
+          _logger.e('Response data: ${e.response?.data}');
+          _logger.e('Response status code: ${e.response?.statusCode}');
+        }
+        
+        if (e.type == DioExceptionType.connectionTimeout) {
+          _logger.e('Connection timeout. Please check your internet connection.');
+        } else if (e.type == DioExceptionType.receiveTimeout) {
+          _logger.e('Receive timeout. Server took too long to respond.');
+        } else if (e.type == DioExceptionType.connectionError) {
+          _logger.e('Connection error. Please check your internet connection.');
+        }
+      }
+      
       return false;
     }
   }
@@ -195,6 +243,102 @@ class DoctorClinicService {
     } catch (e) {
       _logger.e('Error fetching review count: $e');
       return 0;
+    }
+  }
+  
+  /// Get clinic profile by vendor ID
+  Future<DoctorClinicProfile?> getClinicProfile(String vendorId) async {
+    try {
+      _logger.i('📝 Fetching clinic profile for vendorId: $vendorId');
+      
+      final response = await _dio.get(
+        '${ApiEndpoints.getClinicProfile}/$vendorId',
+      );
+      
+      if (response.statusCode == 200) {
+        _logger.i('✅ Clinic profile fetched successfully!');
+        
+        // Convert response data to DoctorClinicProfile object
+        if (response.data != null && response.data['clinic'] != null) {
+          final clinicData = response.data['clinic'];
+          return DoctorClinicProfileFixed.fromJson(clinicData);
+        } else if (response.data != null) {
+          // Some APIs might return the clinic data directly without nesting
+          return DoctorClinicProfileFixed.fromJson(response.data);
+        }
+      }
+      
+      _logger.e('❌ Failed to fetch clinic profile. Status code: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      _logger.e('❌ Error fetching clinic profile: $e');
+      
+      if (e is DioException) {
+        if (e.response != null) {
+          _logger.e('Response data: ${e.response?.data}');
+          _logger.e('Response status code: ${e.response?.statusCode}');
+        }
+      }
+      
+      return null;
+    }
+  }
+  
+  /// Update clinic profile
+  Future<bool> updateClinicProfile(
+    String vendorId, 
+    DoctorClinicProfile profile, 
+    {List<Map<String, dynamic>>? formattedTimeSlots}
+  ) async {
+    try {
+      _logger.i('📝 Updating clinic profile for vendorId: $vendorId');
+      final profileJson = _formatJson(profile.toJson());
+      _logger.i(profileJson);
+      
+      // Create a clean version of the profile data for the API
+      final Map<String, dynamic> cleanedData = profile.toJson();
+      
+      // Add formatted time slots if provided
+      if (formattedTimeSlots != null) {
+        cleanedData['formattedTimeSlots'] = formattedTimeSlots;
+      }
+      
+      // Log profile picture to ensure it's included
+      if (profile.profilePicture.isNotEmpty) {
+        _logger.i('📝 Profile picture URL included: ${profile.profilePicture}');
+      }
+      
+      final response = await _dio.put(
+        '${ApiEndpoints.updateClinicProfile}/$vendorId',
+        data: cleanedData,
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _logger.i('✅ Clinic profile updated successfully!');
+        return true;
+      } else {
+        _logger.e('❌ Failed to update clinic profile. Status code: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('❌ Error updating clinic profile: $e');
+      
+      if (e is DioException) {
+        if (e.response != null) {
+          _logger.e('Response data: ${e.response?.data}');
+          _logger.e('Response status code: ${e.response?.statusCode}');
+        }
+        
+        if (e.type == DioExceptionType.connectionTimeout) {
+          _logger.e('Connection timeout. Please check your internet connection.');
+        } else if (e.type == DioExceptionType.receiveTimeout) {
+          _logger.e('Receive timeout. Server took too long to respond.');
+        } else if (e.type == DioExceptionType.connectionError) {
+          _logger.e('Connection error. Please check your internet connection.');
+        }
+      }
+      
+      return false;
     }
   }
 }

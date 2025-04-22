@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 
 class DoctorDrawerMenu extends StatelessWidget {
   const DoctorDrawerMenu({Key? key}) : super(key: key);
@@ -11,7 +16,7 @@ class DoctorDrawerMenu extends StatelessWidget {
       elevation: 0,
       child: Column(
         children: [
-          _buildDrawerHeader(),
+          _buildDrawerHeader(context),
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -70,7 +75,19 @@ class DoctorDrawerMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildDrawerHeader() {
+  Widget _buildDrawerHeader(BuildContext context) {
+    // Get the dashboard view model for online status
+    final dashboardViewModel = Provider.of<DashboardViewModel>(context);
+    
+    // Get the profile view model for doctor information
+    final profileViewModel = Provider.of<DoctorClinicProfileViewModel>(context);
+    final profile = profileViewModel.profile;
+    
+    // If profile is loading or null, show a placeholder
+    if (profileViewModel.isLoading || profile == null) {
+      return _buildLoadingDrawerHeader(dashboardViewModel.isOnline);
+    }
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
@@ -86,76 +103,230 @@ class DoctorDrawerMenu extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.white,
-            child: CircleAvatar(
-              radius: 37,
-              backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-              backgroundImage: const AssetImage('assets/images/doctor_profile.png'),
-              onBackgroundImageError: (_, __) {},
-              child: const Icon(
-                Icons.person,
-                size: 40,
-                color: Colors.grey,
+          // Profile picture with online/offline indicator
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: profile.profilePicture.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 37,
+                      backgroundImage: NetworkImage(profile.profilePicture),
+                    )
+                  : CircleAvatar(
+                      radius: 37,
+                      backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                      child: Text(
+                        profile.doctorName.isNotEmpty ? profile.doctorName[0].toUpperCase() : 'D',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                      ),
+                    ),
               ),
-            ),
+              // Online/Offline indicator
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Container(
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      color: dashboardViewModel.isOnline
+                          ? DoctorConsultationColorPalette.successGreen
+                          : DoctorConsultationColorPalette.errorRed,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Dr. John Doe',
-            style: TextStyle(
+          // Doctor name
+          Text(
+            '${profile.doctorName}',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          Row(
+          // Specializations and education qualifications
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Cardiologist',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+              // Show first specialization if available
+              if (profile.specializations.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    profile.specializations.first,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: DoctorConsultationColorPalette.successGreen,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'MD',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+              // Show first education qualification if available
+              if (profile.educationalQualifications.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: DoctorConsultationColorPalette.successGreen,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    profile.educationalQualifications.first,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
+          // Online/offline status
           Row(
             children: [
               Icon(
                 Icons.circle,
                 size: 10,
-                color: DoctorConsultationColorPalette.successGreen,
+                color: dashboardViewModel.isOnline
+                    ? DoctorConsultationColorPalette.successGreen
+                    : DoctorConsultationColorPalette.errorRed,
               ),
               const SizedBox(width: 4),
-              const Text(
-                'Online',
-                style: TextStyle(
+              Text(
+                dashboardViewModel.isOnline ? 'Online' : 'Offline',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Placeholder header when profile is loading
+  Widget _buildLoadingDrawerHeader(bool isOnline) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            DoctorConsultationColorPalette.primaryBlue,
+            DoctorConsultationColorPalette.primaryBlueDark,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 37,
+                  backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                  child: const Icon(
+                    Icons.person,
+                    size: 40,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Container(
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      color: isOnline
+                          ? DoctorConsultationColorPalette.successGreen
+                          : DoctorConsultationColorPalette.errorRed,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: 150,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 80,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 40,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.circle,
+                size: 10,
+                color: isOnline
+                    ? DoctorConsultationColorPalette.successGreen
+                    : DoctorConsultationColorPalette.errorRed,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isOnline ? 'Online' : 'Offline',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                 ),
@@ -201,7 +372,35 @@ class DoctorDrawerMenu extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       child: InkWell(
-        onTap: () => _showLogoutDialog(context),
+          onTap: () async {
+            // Close the drawer first
+            Navigator.pop(context);
+
+
+            if (context.mounted) {
+              try {
+                final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+                await loginViewModel.logout();
+
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.login,
+                        (route) => false,
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error during logout. Please try again.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -248,65 +447,32 @@ class DoctorDrawerMenu extends StatelessWidget {
       // Simplified approach just for demo purposes
     }
   }
-
+  
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.logout,
-                color: DoctorConsultationColorPalette.errorRed,
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Logout',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Are you sure you want to logout from your account?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: DoctorConsultationColorPalette.textSecondary,
-                ),
-              ),
+          TextButton(
+            onPressed: () {
+              // TODO: Implement logout functionality
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close drawer
+              // Navigate to login screen
+            },
+            child: Text(
+              'Logout',
+              style: TextStyle(color: DoctorConsultationColorPalette.errorRed),
             ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Handle logout
-                Navigator.pop(context);
-                // TODO: Navigate to login screen
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DoctorConsultationColorPalette.errorRed,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 } 
