@@ -372,35 +372,46 @@ class DoctorDrawerMenu extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       child: InkWell(
-          onTap: () async {
-            // Close the drawer first
-            Navigator.pop(context);
-
-
-            if (context.mounted) {
-              try {
-                final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-                await loginViewModel.logout();
-
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.login,
-                        (route) => false,
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error during logout. Please try again.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            }
-          },
+        onTap: () {
+          // Show a loading indicator before closing the drawer
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+          
+          // Get the login view model
+          final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+          
+          // Perform logout
+          loginViewModel.logout().then((_) {
+            // Navigate to login screen
+            Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+              AppRoutes.login,
+              (route) => false,
+            );
+          }).catchError((error) {
+            // If there's an error, pop the loading dialog and show the drawer again
+            Navigator.pop(context); // Pop loading dialog
+            
+            // Show error dialog instead of using ScaffoldMessenger
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Logout Error'),
+                content: Text('Failed to logout: $error'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          });
+        },
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -446,33 +457,5 @@ class DoctorDrawerMenu extends StatelessWidget {
       // TODO: Navigate to the correct page
       // Simplified approach just for demo purposes
     }
-  }
-  
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // TODO: Implement logout functionality
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close drawer
-              // Navigate to login screen
-            },
-            child: Text(
-              'Logout',
-              style: TextStyle(color: DoctorConsultationColorPalette.errorRed),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 } 

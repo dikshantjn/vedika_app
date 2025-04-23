@@ -8,6 +8,14 @@ import 'package:intl/intl.dart';
 class ClinicAppointmentsScreen extends StatefulWidget {
   const ClinicAppointmentsScreen({Key? key}) : super(key: key);
 
+  // Static factory method to create this screen with its provider
+  static Widget withProvider() {
+    return ChangeNotifierProvider<ClinicAppointmentViewModel>(
+      create: (_) => ClinicAppointmentViewModel(),
+      child: const ClinicAppointmentsScreen(),
+    );
+  }
+
   @override
   State<ClinicAppointmentsScreen> createState() => _ClinicAppointmentsScreenState();
 }
@@ -24,8 +32,7 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     // Initialize view model and fetch data immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appointmentViewModel = Provider.of<ClinicAppointmentViewModel>(context, listen: false);
-      print('INITIALIZING VIEW MODEL');
-      appointmentViewModel.initialize();
+      appointmentViewModel.fetchUserClinicAppointments();
     });
   }
 
@@ -101,13 +108,15 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
       ),
       body: Consumer<ClinicAppointmentViewModel>(
         builder: (context, viewModel, _) {
-          if (viewModel.isLoading) {
+          if (viewModel.fetchState == ClinicAppointmentFetchState.loading) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: DoctorConsultationColorPalette.primaryBlue,
+              ),
             );
           }
 
-          if (viewModel.errorMessage != null) {
+          if (viewModel.fetchState == ClinicAppointmentFetchState.error) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -127,10 +136,10 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(viewModel.errorMessage!),
+                  Text(viewModel.errorMessage),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () => viewModel.fetchAppointments(),
+                    onPressed: () => viewModel.fetchUserClinicAppointments(),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
@@ -148,6 +157,14 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
           }
 
           // Filter appointments by online/offline
+          print('[ClinicAppointmentsScreen] Filtering appointments by online/offline status');
+          print('[ClinicAppointmentsScreen] Total appointments before filtering: ${viewModel.appointments.length}');
+          
+          // Log all appointments before filtering
+          for (var appointment in viewModel.appointments) {
+            print('[ClinicAppointmentsScreen] Before filtering - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}');
+          }
+          
           final onlineAppointments = viewModel.appointments
               .where((appointment) => appointment.isOnline)
               .toList();
@@ -157,13 +174,17 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
               .toList();
               
           // Debug information
-          print('APPOINTMENTS IN UI:');
-          print('  - Total: ${viewModel.appointments.length}');
-          print('  - Online: ${onlineAppointments.length}');
-          print('  - Offline: ${offlineAppointments.length}');
+          print('[ClinicAppointmentsScreen] APPOINTMENTS IN UI:');
+          print('[ClinicAppointmentsScreen]   - Total: ${viewModel.appointments.length}');
+          print('[ClinicAppointmentsScreen]   - Online: ${onlineAppointments.length}');
+          print('[ClinicAppointmentsScreen]   - Offline: ${offlineAppointments.length}');
           
-          for (var appointment in viewModel.appointments) {
-            print('  - ID: ${appointment.clinicAppointmentId}, Online: ${appointment.isOnline}');
+          for (var appointment in onlineAppointments) {
+            print('[ClinicAppointmentsScreen]   - Online ID: ${appointment.clinicAppointmentId}, Online: ${appointment.isOnline}');
+          }
+          
+          for (var appointment in offlineAppointments) {
+            print('[ClinicAppointmentsScreen]   - Offline ID: ${appointment.clinicAppointmentId}, Online: ${appointment.isOnline}');
           }
 
           return TabBarView(
@@ -196,6 +217,15 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     List<ClinicAppointment> appointments,
     {required bool isOnline, required ClinicAppointmentViewModel viewModel}
   ) {
+    // Debug logging
+    print('[ClinicAppointmentsScreen] _buildAppointmentsList called with:');
+    print('[ClinicAppointmentsScreen] - isOnline: $isOnline');
+    print('[ClinicAppointmentsScreen] - appointments count: ${appointments.length}');
+    
+    for (var appointment in appointments) {
+      print('[ClinicAppointmentsScreen] - Appointment ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}');
+    }
+    
     if (appointments.isEmpty) {
       return Center(
         child: Column(
@@ -229,7 +259,7 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: () => viewModel.fetchAppointments(),
+      onRefresh: () => viewModel.refreshAppointments(),
       color: DoctorConsultationColorPalette.primaryBlue,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),

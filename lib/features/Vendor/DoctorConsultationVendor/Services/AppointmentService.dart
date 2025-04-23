@@ -8,302 +8,227 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Model
 
 class AppointmentService {
   final Dio _dio = Dio();
+  final VendorLoginService _vendorLoginService = VendorLoginService();
   
-  // Mock data for development and testing
-  List<ClinicAppointment> _mockAppointments = [];
-  
-  AppointmentService() {
-    _initializeMockData();
+  // Get vendor ID from secure storage
+  Future<String?> _getVendorId() async {
+    return await _vendorLoginService.getVendorId();
   }
-  
-  void _initializeMockData() {
-    // Create mock users
-    final user1 = UserModel(
-      userId: 'user123',
-      name: 'John Smith',
-      phoneNumber: '+919876543210',
-      emailId: 'john.smith@example.com',
-      photo: 'https://randomuser.me/api/portraits/men/35.jpg',
-      gender: 'Male',
-      dateOfBirth: DateTime(1985, 5, 12),
-      createdAt: DateTime.now().subtract(const Duration(days: 120)),
-      status: true,
-    );
-    
-    final user2 = UserModel(
-      userId: 'user456',
-      name: 'Sarah Johnson',
-      phoneNumber: '+918765432109',
-      emailId: 'sarah.j@example.com',
-      gender: 'Female',
-      dateOfBirth: DateTime(1992, 8, 24),
-      createdAt: DateTime.now().subtract(const Duration(days: 90)),
-      status: true,
-    );
-    
-    final user3 = UserModel(
-      userId: 'user789',
-      name: 'Rajesh Kumar',
-      phoneNumber: '+917654321098',
-      emailId: 'rajesh.k@example.com',
-      photo: 'https://randomuser.me/api/portraits/men/62.jpg',
-      gender: 'Male',
-      bloodGroup: 'O+',
-      dateOfBirth: DateTime(1978, 3, 15),
-      createdAt: DateTime.now().subtract(const Duration(days: 60)),
-      status: true,
-    );
-    
-    // Create mock appointments
-    final now = DateTime.now();
-    
-    _mockAppointments = [
-      // Online appointments
-      ClinicAppointment(
-        clinicAppointmentId: 'appt1001',
-        userId: user1.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.add(const Duration(days: 2)),
-        time: '10:30',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        userResponseStatus: 'accepted',
-        paidAmount: 800.0,
-        isOnline: true,
-        meetingUrl: 'https://meet.vedika.com/appt1001',
-        user: user1,
-      ),
-      
-      ClinicAppointment(
-        clinicAppointmentId: 'appt1002',
-        userId: user2.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.add(const Duration(days: 1)),
-        time: '14:15',
-        status: 'pending',
-        paymentStatus: 'paid',
-        userResponseStatus: 'pending',
-        paidAmount: 750.0,
-        isOnline: true,
-        user: user2,
-      ),
-      
-      ClinicAppointment(
-        clinicAppointmentId: 'appt1003',
-        userId: user3.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.subtract(const Duration(days: 3)),
-        time: '16:45',
-        status: 'completed',
-        paymentStatus: 'paid',
-        userResponseStatus: 'accepted',
-        paidAmount: 800.0,
-        isOnline: true,
-        user: user3,
-      ),
-      
-      // Offline appointments
-      ClinicAppointment(
-        clinicAppointmentId: 'appt2001',
-        userId: user1.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.add(const Duration(days: 5)),
-        time: '11:00',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        userResponseStatus: 'accepted',
-        paidAmount: 1200.0,
-        isOnline: false,
-        user: user1,
-      ),
-      
-      ClinicAppointment(
-        clinicAppointmentId: 'appt2002',
-        userId: user2.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.subtract(const Duration(days: 2)),
-        time: '09:30',
-        status: 'cancelled',
-        paymentStatus: 'refunded',
-        userResponseStatus: 'declined',
-        paidAmount: 1000.0,
-        isOnline: false,
-        user: user2,
-      ),
-      
-      ClinicAppointment(
-        clinicAppointmentId: 'appt2003',
-        userId: user3.userId,
-        doctorId: 'doc123',
-        vendorId: 'vendor456',
-        date: now.add(const Duration(days: 3)),
-        time: '17:30',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        userResponseStatus: 'accepted',
-        paidAmount: 1200.0,
-        isOnline: false,
-        user: user3,
-      ),
-    ];
 
-    print('MOCK DATA INITIALIZED: ${_mockAppointments.length} appointments created');
-    for (var appointment in _mockAppointments) {
-      print('  - ID: ${appointment.clinicAppointmentId}, Online: ${appointment.isOnline}, Status: ${appointment.status}');
+  /// Fetch pending appointments for a vendor
+  Future<List<ClinicAppointment>> fetchPendingAppointments() async {
+    try {
+      // Get the vendor ID
+      final String? vendorId = await _getVendorId();
+      print('[AppointmentService] Fetching pending appointments for vendorId: $vendorId');
+      
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+      
+      // Make API call to fetch pending appointments
+      final String url = '${ApiEndpoints.getPendingClinicAppointmentsByVendor}/$vendorId/pending';
+      print('[AppointmentService] Making GET request to: $url');
+      
+      final response = await _dio.get(url);
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Extract appointments from 'appointments' field instead of 'data'
+        final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
+        print('[AppointmentService] Raw appointments data: $appointmentsData');
+        
+        final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
+        
+        print('[AppointmentService] Fetched ${appointments.length} pending appointments');
+        print('[AppointmentService] Appointment types breakdown:');
+        int onlineCount = 0;
+        int offlineCount = 0;
+        
+        for (var appointment in appointments) {
+          if (appointment.isOnline) {
+            onlineCount++;
+          } else {
+            offlineCount++;
+          }
+          print('[AppointmentService] - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}, date: ${appointment.date}, time: ${appointment.time}');
+        }
+        
+        print('[AppointmentService] Online appointments: $onlineCount, Offline appointments: $offlineCount');
+        
+        return appointments;
+      } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
+        throw Exception('Failed to fetch pending appointments: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[AppointmentService] Error fetching pending appointments: $e');
+      throw Exception('Failed to fetch pending appointments: $e');
+    }
+  }
+
+  /// Fetch completed appointments for a vendor
+  Future<List<ClinicAppointment>> fetchCompletedAppointments() async {
+    try {
+      // Get the vendor ID
+      final String? vendorId = await _getVendorId();
+      print('[AppointmentService] Fetching completed appointments for vendorId: $vendorId');
+      
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+      
+      // Make API call to fetch completed appointments
+      final String url = '${ApiEndpoints.getCompletedClinicAppointmentsByVendor}/$vendorId/completed';
+      print('[AppointmentService] Making GET request to: $url');
+      
+      final response = await _dio.get(url);
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Extract appointments from 'appointments' field instead of 'data'
+        final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
+        print('[AppointmentService] Raw appointments data: $appointmentsData');
+        
+        final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
+        
+        print('[AppointmentService] Fetched ${appointments.length} completed appointments');
+        print('[AppointmentService] Appointment types breakdown:');
+        int onlineCount = 0;
+        int offlineCount = 0;
+        
+        for (var appointment in appointments) {
+          if (appointment.isOnline) {
+            onlineCount++;
+          } else {
+            offlineCount++;
+          }
+          print('[AppointmentService] - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}, date: ${appointment.date}, time: ${appointment.time}');
+        }
+        
+        print('[AppointmentService] Online appointments: $onlineCount, Offline appointments: $offlineCount');
+        
+        return appointments;
+      } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
+        throw Exception('Failed to fetch completed appointments: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[AppointmentService] Error fetching completed appointments: $e');
+      throw Exception('Failed to fetch completed appointments: $e');
     }
   }
 
   /// Fetch all appointments for a vendor
   Future<List<ClinicAppointment>> fetchAppointments() async {
     try {
-      // For development, return mock data
-      print('FETCHING APPOINTMENTS: returning ${_mockAppointments.length} mock appointments');
-      return Future.delayed(const Duration(milliseconds: 800), () => _mockAppointments);
+      print('[AppointmentService] Fetching all appointments (pending + completed)');
       
-      // Uncomment below for actual API implementation
-      /*
-      // Get the vendor ID from storage
-      final String? vendorId = await VendorLoginService().getVendorId();
-
-      if (vendorId == null) {
-        throw Exception('Vendor ID not found');
-      }
-
-      // Make API call to fetch appointments
-      final response = await _dio.get(
-        '${ApiEndpoints.baseUrl}/appointments/vendor/$vendorId',
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        return data.map((json) => ClinicAppointment.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to fetch appointments: ${response.statusCode}');
-      }
-      */
+      // Get pending and completed appointments
+      final List<ClinicAppointment> pendingAppointments = await fetchPendingAppointments();
+      final List<ClinicAppointment> completedAppointments = await fetchCompletedAppointments();
+      
+      // Combine the lists
+      final List<ClinicAppointment> allAppointments = [...pendingAppointments, ...completedAppointments];
+      
+      print('[AppointmentService] Total appointments fetched: ${allAppointments.length}');
+      print('[AppointmentService] - Pending: ${pendingAppointments.length}');
+      print('[AppointmentService] - Completed: ${completedAppointments.length}');
+      
+      return allAppointments;
     } catch (e) {
-      print('Error fetching appointments: $e');
-      throw Exception('Failed to fetch appointments: $e');
+      print('[AppointmentService] Error fetching all appointments: $e');
+      throw Exception('Failed to fetch all appointments: $e');
     }
   }
 
   /// Update appointment status
   Future<bool> updateAppointmentStatus(String appointmentId, String newStatus) async {
     try {
-      // For development, update mock data
-      final index = _mockAppointments.indexWhere(
-        (appointment) => appointment.clinicAppointmentId == appointmentId
-      );
+      print('[AppointmentService] Updating appointment status: ID=$appointmentId, newStatus=$newStatus');
       
-      if (index != -1) {
-        // Create a new appointment with updated status
-        final updatedAppointment = ClinicAppointment(
-          clinicAppointmentId: _mockAppointments[index].clinicAppointmentId,
-          userId: _mockAppointments[index].userId,
-          doctorId: _mockAppointments[index].doctorId,
-          vendorId: _mockAppointments[index].vendorId,
-          date: _mockAppointments[index].date,
-          time: _mockAppointments[index].time,
-          status: newStatus,
-          paymentStatus: _mockAppointments[index].paymentStatus,
-          adminUpdatedAt: DateTime.now(),
-          userResponseStatus: _mockAppointments[index].userResponseStatus,
-          paidAmount: _mockAppointments[index].paidAmount,
-          isOnline: _mockAppointments[index].isOnline,
-          meetingUrl: _mockAppointments[index].meetingUrl,
-          user: _mockAppointments[index].user,
-          doctor: _mockAppointments[index].doctor,
-        );
-        
-        // Replace the old appointment with the updated one
-        _mockAppointments[index] = updatedAppointment;
-        return true;
-      }
+      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId/status';
+      print('[AppointmentService] Making PUT request to: $url');
       
-      return false;
-      
-      // Uncomment below for actual API implementation
-      /*
       final response = await _dio.put(
-        '${ApiEndpoints.baseUrl}/appointments/$appointmentId/status',
+        url,
         data: {
           'status': newStatus,
         },
       );
 
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
       return response.statusCode == 200;
-      */
     } catch (e) {
-      print('Error updating appointment status: $e');
+      print('[AppointmentService] Error updating appointment status: $e');
       return false;
     }
   }
 
   /// Get upcoming appointments
   Future<List<ClinicAppointment>> getUpcomingAppointments() async {
-    final appointments = await fetchAppointments();
-    final now = DateTime.now();
-    
-    return appointments.where((appointment) {
-      final appointmentDateTime = DateTime(
-        appointment.date.year,
-        appointment.date.month,
-        appointment.date.day,
-        int.parse(appointment.time.split(':')[0]),
-        int.parse(appointment.time.split(':')[1]),
-      );
-      
-      return appointmentDateTime.isAfter(now) && 
-             (appointment.status == 'pending' || appointment.status == 'confirmed');
-    }).toList();
+    print('[AppointmentService] Getting upcoming appointments (alias for fetchPendingAppointments)');
+    return await fetchPendingAppointments();
   }
 
   /// Get completed appointments
   Future<List<ClinicAppointment>> getCompletedAppointments() async {
-    final appointments = await fetchAppointments();
-    return appointments.where((appointment) => 
-      appointment.status == 'completed'
-    ).toList();
+    print('[AppointmentService] Getting completed appointments (alias for fetchCompletedAppointments)');
+    return await fetchCompletedAppointments();
   }
 
   /// Get cancelled appointments
   Future<List<ClinicAppointment>> getCancelledAppointments() async {
-    final appointments = await fetchAppointments();
-    return appointments.where((appointment) => 
-      appointment.status == 'cancelled'
-    ).toList();
+    try {
+      print('[AppointmentService] Getting cancelled appointments');
+      
+      final appointments = await fetchAppointments();
+      final cancelledAppointments = appointments.where((appointment) => 
+        appointment.status.toLowerCase() == 'cancelled'
+      ).toList();
+      
+      print('[AppointmentService] Found ${cancelledAppointments.length} cancelled appointments');
+      
+      return cancelledAppointments;
+    } catch (e) {
+      print('[AppointmentService] Error filtering cancelled appointments: $e');
+      throw Exception('Failed to get cancelled appointments: $e');
+    }
   }
   
   /// Get appointment details
   Future<ClinicAppointment?> getAppointmentDetails(String appointmentId) async {
     try {
-      // For development, return mock data
-      final appointment = _mockAppointments.firstWhere(
-        (appointment) => appointment.clinicAppointmentId == appointmentId,
-        orElse: () => throw Exception('Appointment not found'),
-      );
+      print('[AppointmentService] Getting details for appointment ID: $appointmentId');
       
-      return Future.delayed(const Duration(milliseconds: 500), () => appointment);
+      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId';
+      print('[AppointmentService] Making GET request to: $url');
       
-      // Uncomment below for actual API implementation
-      /*
-      final response = await _dio.get(
-        '${ApiEndpoints.baseUrl}/appointments/$appointmentId',
-      );
+      final response = await _dio.get(url);
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        return ClinicAppointment.fromJson(response.data['data']);
+        // Extract appointment from response
+        final Map<String, dynamic> appointmentData = response.data['appointment'] ?? response.data;
+        print('[AppointmentService] Raw appointment data: $appointmentData');
+        
+        final appointment = ClinicAppointment.fromJson(appointmentData);
+        print('[AppointmentService] Successfully fetched appointment details');
+        return appointment;
       } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
         throw Exception('Failed to fetch appointment details: ${response.statusCode}');
       }
-      */
     } catch (e) {
-      print('Error fetching appointment details: $e');
+      print('[AppointmentService] Error fetching appointment details: $e');
       return null;
     }
   }
@@ -311,54 +236,26 @@ class AppointmentService {
   /// Generate meeting URL for online appointments
   Future<String?> generateMeetingUrl(String appointmentId) async {
     try {
-      // For development, simulate generating and returning a meeting URL
-      final meetingUrl = 'https://meet.vedika.com/${appointmentId}?token=mock_token_${DateTime.now().millisecondsSinceEpoch}';
+      print('[AppointmentService] Generating meeting URL for appointment ID: $appointmentId');
       
-      // Update the mock appointment with the new meeting URL
-      final index = _mockAppointments.indexWhere(
-        (appointment) => appointment.clinicAppointmentId == appointmentId
-      );
+      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId/generate-meeting';
+      print('[AppointmentService] Making POST request to: $url');
       
-      if (index != -1) {
-        // Create a new appointment with the updated meeting URL
-        final updatedAppointment = ClinicAppointment(
-          clinicAppointmentId: _mockAppointments[index].clinicAppointmentId,
-          userId: _mockAppointments[index].userId,
-          doctorId: _mockAppointments[index].doctorId,
-          vendorId: _mockAppointments[index].vendorId,
-          date: _mockAppointments[index].date,
-          time: _mockAppointments[index].time,
-          status: _mockAppointments[index].status,
-          paymentStatus: _mockAppointments[index].paymentStatus,
-          adminUpdatedAt: _mockAppointments[index].adminUpdatedAt,
-          userResponseStatus: _mockAppointments[index].userResponseStatus,
-          paidAmount: _mockAppointments[index].paidAmount,
-          isOnline: _mockAppointments[index].isOnline,
-          meetingUrl: meetingUrl,
-          user: _mockAppointments[index].user,
-          doctor: _mockAppointments[index].doctor,
-        );
-        
-        // Replace the old appointment with the updated one
-        _mockAppointments[index] = updatedAppointment;
-      }
-      
-      return Future.delayed(const Duration(milliseconds: 800), () => meetingUrl);
-      
-      // Uncomment below for actual API implementation
-      /*
-      final response = await _dio.post(
-        '${ApiEndpoints.baseUrl}/appointments/$appointmentId/generate-meeting',
-      );
+      final response = await _dio.post(url);
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        return response.data['meetingUrl'];
+        final meetingUrl = response.data['meetingUrl'];
+        print('[AppointmentService] Successfully generated meeting URL: $meetingUrl');
+        return meetingUrl;
       } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
         throw Exception('Failed to generate meeting URL: ${response.statusCode}');
       }
-      */
     } catch (e) {
-      print('Error generating meeting URL: $e');
+      print('[AppointmentService] Error generating meeting URL: $e');
       return null;
     }
   }

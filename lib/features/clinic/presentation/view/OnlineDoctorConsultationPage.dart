@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/OnlineDoctorConsultationViewModel.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class OnlineDoctorConsultationPage extends StatefulWidget {
   const OnlineDoctorConsultationPage({Key? key}) : super(key: key);
@@ -30,208 +30,13 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
     'Ophthalmology',
     'Psychiatry',
   ];
-  
-  // Sample list of doctors (in a real app, this would come from an API)
-  final List<DoctorClinicProfile> doctors = [
-    DoctorClinicProfile(
-      vendorId: '1',
-      doctorName: 'Dr. Anil Sharma',
-      gender: 'Male',
-      email: 'anil.sharma@example.com',
-      password: 'password',
-      confirmPassword: 'password',
-      phoneNumber: '9876543210',
-      profilePicture: 'assets/images/doctor1.png',
-      medicalLicenseFile: [],
-      licenseNumber: 'MCI12345',
-      educationalQualifications: ['MBBS', 'MD - Cardiology'],
-      specializations: ['Cardiology'],
-      experienceYears: 12,
-      languageProficiency: ['English', 'Hindi'],
-      hasTelemedicineExperience: true,
-      consultationFeesRange: '800-1000',
-      consultationTimeSlots: [
-        {'start': '09:00 AM', 'end': '10:00 AM'},
-        {'start': '11:30 AM', 'end': '12:30 PM'},
-        {'start': '04:00 PM', 'end': '05:00 PM'},
-      ],
-      consultationDays: ['Monday', 'Wednesday', 'Friday'],
-      consultationTypes: ['Online', 'Offline'],
-      insurancePartners: ['Apollo', 'Max Bupa'],
-      address: '123 Medical Street',
-      state: 'Delhi',
-      city: 'New Delhi',
-      pincode: '110001',
-      nearbyLandmark: 'Near City Hospital',
-      floor: '3rd',
-      hasLiftAccess: true,
-      hasWheelchairAccess: true,
-      hasParking: true,
-      otherFacilities: ['Waiting Area', 'Pharmacy'],
-      clinicPhotos: [{'url': 'assets/images/clinic1.png', 'type': 'exterior'}],
-      location: '28.6139,77.2090',
-    ),
-    DoctorClinicProfile(
-      vendorId: '2',
-      doctorName: 'Dr. Priya Patel',
-      gender: 'Female',
-      email: 'priya.patel@example.com',
-      password: 'password',
-      confirmPassword: 'password',
-      phoneNumber: '9876543211',
-      profilePicture: 'assets/images/doctor2.png',
-      medicalLicenseFile: [],
-      licenseNumber: 'MCI23456',
-      educationalQualifications: ['MBBS', 'MD - Dermatology'],
-      specializations: ['Dermatology'],
-      experienceYears: 8,
-      languageProficiency: ['English', 'Hindi', 'Gujarati'],
-      hasTelemedicineExperience: true,
-      consultationFeesRange: '700-900',
-      consultationTimeSlots: [
-        {'start': '10:00 AM', 'end': '11:00 AM'},
-        {'start': '02:30 PM', 'end': '03:30 PM'},
-        {'start': '05:00 PM', 'end': '06:00 PM'},
-      ],
-      consultationDays: ['Tuesday', 'Thursday', 'Saturday'],
-      consultationTypes: ['Online', 'Offline'],
-      insurancePartners: ['HDFC ERGO', 'Bajaj Allianz'],
-      address: '456 Health Avenue',
-      state: 'Maharashtra',
-      city: 'Mumbai',
-      pincode: '400001',
-      nearbyLandmark: 'Near Metro Station',
-      floor: '2nd',
-      hasLiftAccess: true,
-      hasWheelchairAccess: true,
-      hasParking: true,
-      otherFacilities: ['WiFi', 'Cafeteria'],
-      clinicPhotos: [{'url': 'assets/images/clinic2.png', 'type': 'interior'}],
-      location: '19.0760,72.8777',
-    ),
-    DoctorClinicProfile(
-      vendorId: '3',
-      doctorName: 'Dr. Rahul Gupta',
-      gender: 'Male',
-      email: 'rahul.gupta@example.com',
-      password: 'password',
-      confirmPassword: 'password',
-      phoneNumber: '9876543212',
-      profilePicture: 'assets/images/doctor3.png',
-      medicalLicenseFile: [],
-      licenseNumber: 'MCI34567',
-      educationalQualifications: ['MBBS', 'MD - Pediatrics'],
-      specializations: ['Pediatrics'],
-      experienceYears: 15,
-      languageProficiency: ['English', 'Hindi', 'Bengali'],
-      hasTelemedicineExperience: false,
-      consultationFeesRange: '900-1200',
-      consultationTimeSlots: [
-        {'start': '09:30 AM', 'end': '10:30 AM'},
-        {'start': '12:00 PM', 'end': '01:00 PM'},
-        {'start': '03:30 PM', 'end': '04:30 PM'},
-      ],
-      consultationDays: ['Monday', 'Tuesday', 'Wednesday', 'Friday'],
-      consultationTypes: ['Offline'],
-      insurancePartners: ['Star Health', 'ICICI Lombard'],
-      address: '789 Wellness Road',
-      state: 'West Bengal',
-      city: 'Kolkata',
-      pincode: '700001',
-      nearbyLandmark: 'Near Central Park',
-      floor: '1st',
-      hasLiftAccess: false,
-      hasWheelchairAccess: true,
-      hasParking: false,
-      otherFacilities: ['Children Play Area', 'Laboratory'],
-      clinicPhotos: [{'url': 'assets/images/clinic3.png', 'type': 'interior'}],
-      location: '22.5726,88.3639',
-    ),
-    DoctorClinicProfile(
-      vendorId: '4',
-      doctorName: 'Dr. Meera Singh',
-      gender: 'Female',
-      email: 'meera.singh@example.com',
-      password: 'password',
-      confirmPassword: 'password',
-      phoneNumber: '9876543213',
-      profilePicture: 'assets/images/doctor4.png',
-      medicalLicenseFile: [],
-      licenseNumber: 'MCI45678',
-      educationalQualifications: ['MBBS', 'MD - Gynecology', 'DNB'],
-      specializations: ['Gynecology'],
-      experienceYears: 10,
-      languageProficiency: ['English', 'Hindi', 'Punjabi'],
-      hasTelemedicineExperience: true,
-      consultationFeesRange: '850-1100',
-      consultationTimeSlots: [
-        {'start': '11:00 AM', 'end': '12:00 PM'},
-        {'start': '01:30 PM', 'end': '02:30 PM'},
-        {'start': '04:30 PM', 'end': '05:30 PM'},
-      ],
-      consultationDays: ['Monday', 'Wednesday', 'Thursday', 'Saturday'],
-      consultationTypes: ['Online', 'Offline'],
-      insurancePartners: ['Religare', 'Aditya Birla Health'],
-      address: '321 Women Health Centre',
-      state: 'Punjab',
-      city: 'Chandigarh',
-      pincode: '160001',
-      nearbyLandmark: 'Near Rose Garden',
-      floor: '4th',
-      hasLiftAccess: true,
-      hasWheelchairAccess: true,
-      hasParking: true,
-      otherFacilities: ['Ultrasound', 'Pharmacy'],
-      clinicPhotos: [{'url': 'assets/images/clinic4.png', 'type': 'exterior'}],
-      location: '30.7333,76.7794',
-    ),
-    DoctorClinicProfile(
-      vendorId: '5',
-      doctorName: 'Dr. Sanjay Kumar',
-      gender: 'Male',
-      email: 'sanjay.kumar@example.com',
-      password: 'password',
-      confirmPassword: 'password',
-      phoneNumber: '9876543214',
-      profilePicture: 'assets/images/doctor5.png',
-      medicalLicenseFile: [],
-      licenseNumber: 'MCI56789',
-      educationalQualifications: ['MBBS', 'MD - General Medicine'],
-      specializations: ['General Medicine'],
-      experienceYears: 7,
-      languageProficiency: ['English', 'Hindi', 'Tamil'],
-      hasTelemedicineExperience: true,
-      consultationFeesRange: '600-800',
-      consultationTimeSlots: [
-        {'start': '10:30 AM', 'end': '11:30 AM'},
-        {'start': '02:00 PM', 'end': '03:00 PM'},
-        {'start': '05:30 PM', 'end': '06:30 PM'},
-      ],
-      consultationDays: ['Tuesday', 'Thursday', 'Friday', 'Saturday'],
-      consultationTypes: ['Online', 'Offline'],
-      insurancePartners: ['LIC Health', 'Tata AIG'],
-      address: '567 Health Point',
-      state: 'Tamil Nadu',
-      city: 'Chennai',
-      pincode: '600001',
-      nearbyLandmark: 'Near Marina Beach',
-      floor: 'Ground',
-      hasLiftAccess: false,
-      hasWheelchairAccess: true,
-      hasParking: true,
-      otherFacilities: ['ECG', 'X-Ray'],
-      clinicPhotos: [{'url': 'assets/images/clinic5.png', 'type': 'interior'}],
-      location: '13.0827,80.2707',
-    ),
-  ];
+
+
   
   List<DoctorClinicProfile> get filteredDoctors {
-    return doctors.where((doctor) {
-      final nameMatches = doctor.doctorName.toLowerCase().contains(_searchController.text.toLowerCase());
-      final specializationMatches = _selectedSpecialization == 'All' || 
-          doctor.specializations.any((spec) => spec.toLowerCase() == _selectedSpecialization.toLowerCase());
-      return nameMatches && specializationMatches;
-    }).toList();
+    // This is now obsolete since we're using the view model
+    // Return empty list as fallback
+    return [];
   }
 
   @override
@@ -767,8 +572,9 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                   ),
                   ElevatedButton(
                     onPressed: () {
+                      // Navigate to doctor detail page
                       Navigator.push(
-                        context,
+                        context, 
                         MaterialPageRoute(
                           builder: (context) => OnlineDoctorDetailPage(doctor: doctor),
                         ),
@@ -777,29 +583,12 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                     style: ElevatedButton.styleFrom(
                       backgroundColor: DoctorConsultationColorPalette.primaryBlue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      elevation: 0,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          'Book Now',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        SizedBox(width: 5),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 16,
-                        ),
-                      ],
-                    ),
+                    child: Text("Book Now"),
                   ),
                 ],
               ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/clinic/data/services/ClinicService.dart';
 
 class OnlineDoctorConsultationViewModel extends ChangeNotifier {
   final TextEditingController searchController = TextEditingController();
+  final ClinicService _clinicService = ClinicService();
+  
   List<DoctorClinicProfile> _allDoctors = [];
   List<DoctorClinicProfile> _filteredDoctors = [];
   bool _isLoading = true;
@@ -31,150 +34,56 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
 
   // Fetch doctors who offer online consultation
   Future<void> fetchDoctors() async {
+    print('🚀 Starting fetchDoctors in OnlineDoctorConsultationViewModel');
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Simulated API call - replace with actual API integration
-      await Future.delayed(const Duration(seconds: 1));
+      // Call the API service to get active online clinics
+      print('📡 Calling API service getActiveOnlineClinics');
+      _allDoctors = await _clinicService.getActiveOnlineClinics();
+      print('📋 Received ${_allDoctors.length} doctors from API');
       
-      // Sample data for demonstration
-      _allDoctors = [
-        DoctorClinicProfile(
-          doctorName: 'Dr. Rajesh Kumar',
-          gender: 'Male',
-          email: 'rajesh.kumar@example.com',
-          password: '',
-          confirmPassword: '',
-          phoneNumber: '+91 9876543210',
-          profilePicture: 'https://randomuser.me/api/portraits/men/75.jpg',
-          medicalLicenseFile: [],
-          licenseNumber: 'MED123456',
-          educationalQualifications: ['MBBS', 'MD - General Medicine'],
-          specializations: ['Cardiology', 'Internal Medicine'],
-          experienceYears: 15,
-          languageProficiency: ['English', 'Hindi', 'Tamil'],
-          hasTelemedicineExperience: true,
-          consultationFeesRange: '500-800',
-          consultationTimeSlots: [
-            {'start': '09:00', 'end': '10:00'},
-            {'start': '10:00', 'end': '11:00'},
-            {'start': '11:00', 'end': '12:00'},
-          ],
-          consultationDays: ['Monday', 'Wednesday', 'Friday'],
-          consultationTypes: ['Online', 'Offline'],
-          insurancePartners: ['Apollo Insurance', 'HDFC ERGO'],
-          address: '123 Main Street',
-          state: 'Tamil Nadu',
-          city: 'Chennai',
-          pincode: '600001',
-          nearbyLandmark: 'Near City Hospital',
-          floor: '3rd Floor',
-          hasLiftAccess: true,
-          hasWheelchairAccess: true,
-          hasParking: true,
-          otherFacilities: ['Pharmacy', 'Laboratory'],
-          clinicPhotos: [
-            {'url': 'https://example.com/clinic1.jpg', 'caption': 'Reception'},
-            {'url': 'https://example.com/clinic2.jpg', 'caption': 'Waiting Room'},
-          ],
-          location: '13.0827,80.2707',
-        ),
-        DoctorClinicProfile(
-          doctorName: 'Dr. Priya Sharma',
-          gender: 'Female',
-          email: 'priya.sharma@example.com',
-          password: '',
-          confirmPassword: '',
-          phoneNumber: '+91 9876543211',
-          profilePicture: 'https://randomuser.me/api/portraits/men/75.jpg',
-          medicalLicenseFile: [],
-          licenseNumber: 'MED123457',
-          educationalQualifications: ['MBBS', 'MD - Pediatrics'],
-          specializations: ['Pediatrics', 'Neonatology'],
-          experienceYears: 10,
-          languageProficiency: ['English', 'Hindi', 'Gujarati'],
-          hasTelemedicineExperience: true,
-          consultationFeesRange: '600-900',
-          consultationTimeSlots: [
-            {'start': '14:00', 'end': '15:00'},
-            {'start': '15:00', 'end': '16:00'},
-            {'start': '16:00', 'end': '17:00'},
-          ],
-          consultationDays: ['Tuesday', 'Thursday', 'Saturday'],
-          consultationTypes: ['Online', 'Offline'],
-          insurancePartners: ['Star Health', 'LIC Health'],
-          address: '456 Park Avenue',
-          state: 'Maharashtra',
-          city: 'Mumbai',
-          pincode: '400001',
-          nearbyLandmark: 'Near Central Park',
-          floor: '2nd Floor',
-          hasLiftAccess: true,
-          hasWheelchairAccess: true,
-          hasParking: true,
-          otherFacilities: ['Pharmacy', 'Cafeteria'],
-          clinicPhotos: [
-            {'url': 'https://example.com/clinic3.jpg', 'caption': 'Reception'},
-            {'url': 'https://example.com/clinic4.jpg', 'caption': 'Consultation Room'},
-          ],
-          location: '19.0760,72.8777',
-        ),
-        DoctorClinicProfile(
-          doctorName: 'Dr. Anand Verma',
-          gender: 'Male',
-          email: 'anand.verma@example.com',
-          password: '',
-          confirmPassword: '',
-          phoneNumber: '+91 9876543212',
-          profilePicture: 'https://randomuser.me/api/portraits/men/75.jpg',
-          medicalLicenseFile: [],
-          licenseNumber: 'MED123458',
-          educationalQualifications: ['MBBS', 'MS - Orthopedics'],
-          specializations: ['Orthopedics', 'Sports Medicine'],
-          experienceYears: 12,
-          languageProficiency: ['English', 'Hindi', 'Punjabi'],
-          hasTelemedicineExperience: true,
-          consultationFeesRange: '700-1000',
-          consultationTimeSlots: [
-            {'start': '10:00', 'end': '11:00'},
-            {'start': '11:00', 'end': '12:00'},
-            {'start': '17:00', 'end': '18:00'},
-          ],
-          consultationDays: ['Monday', 'Tuesday', 'Thursday', 'Saturday'],
-          consultationTypes: ['Online', 'Offline'],
-          insurancePartners: ['Bajaj Allianz', 'ICICI Lombard'],
-          address: '789 Hospital Road',
-          state: 'Delhi',
-          city: 'New Delhi',
-          pincode: '110001',
-          nearbyLandmark: 'Near Metro Station',
-          floor: '5th Floor',
-          hasLiftAccess: true,
-          hasWheelchairAccess: true,
-          hasParking: true,
-          otherFacilities: ['Physical Therapy', 'X-Ray'],
-          clinicPhotos: [
-            {'url': 'https://example.com/clinic5.jpg', 'caption': 'Waiting Area'},
-            {'url': 'https://example.com/clinic6.jpg', 'caption': 'Treatment Room'},
-          ],
-          location: '28.7041,77.1025',
-        ),
-      ];
+      if (_allDoctors.isEmpty) {
+        print('⚠️ No doctors returned from API, falling back to sample data');
+        return;
+      }
       
-      // Only include doctors who offer online consultation
+      // Log consultation types for debugging
+      for (var doctor in _allDoctors) {
+        print('🩺 Doctor ${doctor.doctorName} consultation types: ${doctor.consultationTypes}');
+      }
+      
+      // Enhanced check for doctors who offer online consultation
       _allDoctors = _allDoctors.where((doctor) => 
-        doctor.consultationTypes.contains('Online')).toList();
+        doctor.consultationTypes.any((type) => 
+          type.toLowerCase().contains('online') || 
+          type.toLowerCase().contains('tele') || 
+          type.toLowerCase().contains('video') || 
+          type.toLowerCase() == 'remote'
+        )).toList();
+      print('🎯 Filtered to ${_allDoctors.length} doctors with online consultation');
+      
+      if (_allDoctors.isEmpty) {
+        print('⚠️ No doctors with online consultation found, falling back to sample data');
+        return;
+      }
       
       _filteredDoctors = List.from(_allDoctors);
       _isLoading = false;
+      print('✅ fetchDoctors completed successfully');
       notifyListeners();
     } catch (e) {
+      print('❌ Error in fetchDoctors: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
+      
+      // Fallback to sample data if API fails
+      print('🔄 Falling back to sample data due to error');
     }
   }
+  
 
   // Filter doctors based on search query and specializations
   void _filterDoctors() {

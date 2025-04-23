@@ -8,6 +8,14 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewM
 class ClinicAppointmentHistoryScreen extends StatefulWidget {
   const ClinicAppointmentHistoryScreen({Key? key}) : super(key: key);
 
+  // Static factory method to create this screen with its provider
+  static Widget withProvider() {
+    return ChangeNotifierProvider<ClinicAppointmentHistoryViewModel>(
+      create: (_) => ClinicAppointmentHistoryViewModel(),
+      child: const ClinicAppointmentHistoryScreen(),
+    );
+  }
+
   @override
   State<ClinicAppointmentHistoryScreen> createState() => _ClinicAppointmentHistoryScreenState();
 }
@@ -43,13 +51,15 @@ class _ClinicAppointmentHistoryScreenState extends State<ClinicAppointmentHistor
               padding: const EdgeInsets.only(top: 16.0),
               child: Consumer<ClinicAppointmentHistoryViewModel>(
                 builder: (context, viewModel, _) {
-                  if (viewModel.isLoading) {
+                  if (viewModel.fetchState == HistoryFetchState.loading) {
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                      ),
                     );
                   }
 
-                  if (viewModel.errorMessage != null) {
+                  if (viewModel.fetchState == HistoryFetchState.error) {
                     return _buildErrorView(context, viewModel);
                   }
 
@@ -115,7 +125,7 @@ class _ClinicAppointmentHistoryScreenState extends State<ClinicAppointmentHistor
           Text(viewModel.errorMessage!),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => viewModel.fetchCompletedAppointments(),
+            onPressed: () => viewModel.refreshAppointments(),
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
@@ -488,7 +498,7 @@ class _ClinicAppointmentHistoryScreenState extends State<ClinicAppointmentHistor
   
   Widget _buildAppointmentsList(ClinicAppointmentHistoryViewModel viewModel) {
     return RefreshIndicator(
-      onRefresh: () => viewModel.fetchCompletedAppointments(),
+      onRefresh: () => viewModel.refreshAppointments(),
       color: DoctorConsultationColorPalette.primaryBlue,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),

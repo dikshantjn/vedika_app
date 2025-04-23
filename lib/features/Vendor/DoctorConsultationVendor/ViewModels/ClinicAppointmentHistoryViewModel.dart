@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 enum HistorySortOrder { newest, oldest, highestPaid, lowestPaid }
 enum HistoryFilter { all, online, inPerson, lastWeek, lastMonth, lastYear }
+enum HistoryFetchState { initial, loading, loaded, error }
 
 class ClinicAppointmentHistoryViewModel extends ChangeNotifier {
   final AppointmentService _appointmentService = AppointmentService();
@@ -15,15 +16,16 @@ class ClinicAppointmentHistoryViewModel extends ChangeNotifier {
   DateTime? _startDate;
   DateTime? _endDate;
   String _searchQuery = '';
-  bool _isLoading = false;
+  HistoryFetchState _fetchState = HistoryFetchState.initial;
   String? _errorMessage;
   HistorySortOrder _sortOrder = HistorySortOrder.newest;
   HistoryFilter _currentFilter = HistoryFilter.all;
   
   // Getters
   List<ClinicAppointment> get appointments => _filteredAppointments;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _fetchState == HistoryFetchState.loading;
   String? get errorMessage => _errorMessage;
+  HistoryFetchState get fetchState => _fetchState;
   HistorySortOrder get sortOrder => _sortOrder;
   HistoryFilter get currentFilter => _currentFilter;
   DateTime? get startDate => _startDate;
@@ -43,18 +45,26 @@ class ClinicAppointmentHistoryViewModel extends ChangeNotifier {
   
   // Fetch completed appointments
   Future<void> fetchCompletedAppointments() async {
-    _setLoading(true);
+    _fetchState = HistoryFetchState.loading;
     _errorMessage = null;
+    notifyListeners();
     
     try {
-      _allCompletedAppointments = await _appointmentService.getCompletedAppointments();
+      _allCompletedAppointments = await _appointmentService.fetchCompletedAppointments();
       _applyFilters();
-      _setLoading(false);
+      _fetchState = HistoryFetchState.loaded;
+      notifyListeners();
     } catch (e) {
-      _setLoading(false);
+      _fetchState = HistoryFetchState.error;
       _errorMessage = 'Failed to load appointment history: ${e.toString()}';
       notifyListeners();
+      print('Error fetching completed appointments: $e');
     }
+  }
+  
+  // Refresh appointment data
+  Future<void> refreshAppointments() async {
+    await fetchCompletedAppointments();
   }
   
   // Apply filters to appointments
@@ -177,11 +187,5 @@ class ClinicAppointmentHistoryViewModel extends ChangeNotifier {
     ).format(totalRevenue);
     
     return 'Total: $totalAppointments appointments • Revenue: $totalRevenueFormatted';
-  }
-  
-  // Helper to set loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
   }
 } 

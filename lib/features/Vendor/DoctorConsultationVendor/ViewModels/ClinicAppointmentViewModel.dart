@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Model
 
 enum AppointmentFilter { upcoming, completed, cancelled, all }
 enum AppointmentSortOrder { newest, oldest }
+enum ClinicAppointmentFetchState { initial, loading, loaded, error }
 
 class ClinicAppointmentViewModel extends ChangeNotifier {
   final AppointmentService _appointmentService = AppointmentService();
@@ -13,7 +14,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   List<ClinicAppointment> _appointments = [];
   List<ClinicAppointment> _filteredAppointments = [];
   
-  bool _isLoading = false;
+  ClinicAppointmentFetchState _fetchState = ClinicAppointmentFetchState.initial;
   String? _errorMessage;
   AppointmentFilter _currentFilter = AppointmentFilter.all; // Changed to show all appointments by default
   AppointmentSortOrder _sortOrder = AppointmentSortOrder.newest;
@@ -22,8 +23,8 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Getters
   List<ClinicAppointment> get appointments => _filteredAppointments;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
+  ClinicAppointmentFetchState get fetchState => _fetchState;
+  String get errorMessage => _errorMessage ?? '';
   AppointmentFilter get currentFilter => _currentFilter;
   AppointmentSortOrder get sortOrder => _sortOrder;
   String get searchQuery => _searchQuery;
@@ -31,78 +32,97 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Initialize view model
   Future<void> initialize() async {
-    await fetchAppointments();
+    print('[ClinicAppointmentViewModel] Initializing...');
+    await fetchUserClinicAppointments();
   }
 
   // Fetch appointments from service
-  Future<void> fetchAppointments() async {
-    _setLoading(true);
+  Future<void> fetchUserClinicAppointments() async {
+    print('[ClinicAppointmentViewModel] fetchUserClinicAppointments() called');
+    _fetchState = ClinicAppointmentFetchState.loading;
     _errorMessage = null;
+    notifyListeners();
     
     try {
       // Use the appointmentService to fetch data
-      _appointments = await _appointmentService.fetchAppointments();
+      print('[ClinicAppointmentViewModel] Calling appointmentService.fetchPendingAppointments()');
+      _appointments = await _appointmentService.fetchPendingAppointments();
       
       // Debug output to verify appointments are loaded
-      print('Loaded ${_appointments.length} appointments');
+      print('[ClinicAppointmentViewModel] Loaded ${_appointments.length} appointments from service');
       for (var appointment in _appointments) {
-        print('  - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}');
+        print('[ClinicAppointmentViewModel] - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}');
       }
       
       _applyFilters();
-      _setLoading(false);
+      _fetchState = ClinicAppointmentFetchState.loaded;
+      notifyListeners();
     } catch (e) {
-      _setLoading(false);
+      print('[ClinicAppointmentViewModel] Error in fetchUserClinicAppointments: $e');
+      _fetchState = ClinicAppointmentFetchState.error;
       _errorMessage = 'Failed to load appointments: ${e.toString()}';
-      print('Error loading appointments: $e');
+      print('[ClinicAppointmentViewModel] Error loading appointments: $e');
       notifyListeners();
     }
   }
 
   // Apply filters to the appointments list
   void _applyFilters() {
+    print('[ClinicAppointmentViewModel] _applyFilters() called');
+    print('[ClinicAppointmentViewModel] Current filter: $_currentFilter');
+    print('[ClinicAppointmentViewModel] Before filtering: ${_appointments.length} appointments');
+    
     var filtered = List<ClinicAppointment>.from(_appointments);
     
     // Apply status filter
     if (_currentFilter != AppointmentFilter.all) {
+      print('[ClinicAppointmentViewModel] Applying status filter: $_currentFilter');
       filtered = filtered.where((appointment) {
-        switch (_currentFilter) {
-          case AppointmentFilter.upcoming:
-            return appointment.status == 'pending' || appointment.status == 'confirmed';
-          case AppointmentFilter.completed:
-            return appointment.status == 'completed';
-          case AppointmentFilter.cancelled:
-            return appointment.status == 'cancelled';
-          default:
-            return true;
-        }
+        final bool shouldInclude = switch (_currentFilter) {
+          AppointmentFilter.upcoming => appointment.status == 'pending' || appointment.status == 'confirmed',
+          AppointmentFilter.completed => appointment.status == 'completed',
+          AppointmentFilter.cancelled => appointment.status == 'cancelled',
+          AppointmentFilter.all => true,
+        };
+        
+        print('[ClinicAppointmentViewModel] - ID: ${appointment.clinicAppointmentId}, status: ${appointment.status}, include: $shouldInclude');
+        return shouldInclude;
       }).toList();
     }
     
     // Apply date filter
     if (_selectedDate != null) {
+      print('[ClinicAppointmentViewModel] Applying date filter: $_selectedDate');
       filtered = filtered.where((appointment) {
-        return appointment.date.year == _selectedDate!.year &&
+        final bool matchesDate = appointment.date.year == _selectedDate!.year &&
                appointment.date.month == _selectedDate!.month &&
                appointment.date.day == _selectedDate!.day;
+               
+        print('[ClinicAppointmentViewModel] - ID: ${appointment.clinicAppointmentId}, date: ${appointment.date}, matches: $matchesDate');
+        return matchesDate;
       }).toList();
     }
     
     // Apply search query
     if (_searchQuery.isNotEmpty) {
+      print('[ClinicAppointmentViewModel] Applying search query: $_searchQuery');
       final query = _searchQuery.toLowerCase();
       filtered = filtered.where((appointment) {
         final patientName = appointment.user?.name?.toLowerCase() ?? '';
         final patientId = appointment.userId.toLowerCase();
         final appointmentId = appointment.clinicAppointmentId.toLowerCase();
         
-        return patientName.contains(query) || 
+        final bool matchesSearch = patientName.contains(query) || 
                patientId.contains(query) || 
                appointmentId.contains(query);
+               
+        print('[ClinicAppointmentViewModel] - ID: ${appointment.clinicAppointmentId}, patient: ${appointment.user?.name}, matches: $matchesSearch');
+        return matchesSearch;
       }).toList();
     }
     
     // Apply sorting
+    print('[ClinicAppointmentViewModel] Applying sorting: $_sortOrder');
     filtered.sort((a, b) {
       final dateA = DateTime(
         a.date.year, 
@@ -127,16 +147,28 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
     
     _filteredAppointments = filtered;
     // Debug output after filtering
-    print('Filtered to ${_filteredAppointments.length} appointments');
+    print('[ClinicAppointmentViewModel] After filtering: ${_filteredAppointments.length} appointments');
+    print('[ClinicAppointmentViewModel] Filtered appointments breakdown:');
+    int onlineCount = 0;
+    int offlineCount = 0;
+    
     for (var appointment in _filteredAppointments) {
-      print('  - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}');
+      if (appointment.isOnline) {
+        onlineCount++;
+      } else {
+        offlineCount++;
+      }
+      print('[ClinicAppointmentViewModel] - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}');
     }
+    
+    print('[ClinicAppointmentViewModel] Online appointments: $onlineCount, Offline appointments: $offlineCount');
     
     notifyListeners();
   }
 
   // Set filter
   void setFilter(AppointmentFilter filter) {
+    print('[ClinicAppointmentViewModel] setFilter() called with: $filter (previous: $_currentFilter)');
     if (_currentFilter != filter) {
       _currentFilter = filter;
       _applyFilters();
@@ -145,6 +177,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Set sort order
   void setSortOrder(AppointmentSortOrder order) {
+    print('[ClinicAppointmentViewModel] setSortOrder() called with: $order (previous: $_sortOrder)');
     if (_sortOrder != order) {
       _sortOrder = order;
       _applyFilters();
@@ -153,72 +186,90 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Set search query
   void setSearchQuery(String query) {
+    print('[ClinicAppointmentViewModel] setSearchQuery() called with: $query');
     _searchQuery = query;
     _applyFilters();
   }
 
   // Set selected date
   void setSelectedDate(DateTime? date) {
+    print('[ClinicAppointmentViewModel] setSelectedDate() called with: $date');
     _selectedDate = date;
     _applyFilters();
   }
 
   // Clear date filter
   void clearDateFilter() {
+    print('[ClinicAppointmentViewModel] clearDateFilter() called');
     _selectedDate = null;
     _applyFilters();
   }
 
   // Update appointment status
-  Future<void> updateAppointmentStatus(String appointmentId, String newStatus) async {
-    _setLoading(true);
+  Future<bool> updateAppointmentStatus(String appointmentId, String newStatus) async {
+    print('[ClinicAppointmentViewModel] updateAppointmentStatus() called with ID: $appointmentId, status: $newStatus');
+    _fetchState = ClinicAppointmentFetchState.loading;
+    notifyListeners();
     
     try {
       // Call API to update appointment status
       final success = await _appointmentService.updateAppointmentStatus(appointmentId, newStatus);
       
       if (success) {
+        print('[ClinicAppointmentViewModel] Status updated successfully, refreshing appointments');
         // Update local state - fetch fresh appointments instead of manual update
-        await fetchAppointments();
+        await fetchUserClinicAppointments();
       } else {
+        print('[ClinicAppointmentViewModel] Failed to update status');
         _errorMessage = 'Failed to update appointment status';
         notifyListeners();
       }
       
-      _setLoading(false);
+      _fetchState = ClinicAppointmentFetchState.loaded;
+      notifyListeners();
+      return success;
     } catch (e) {
-      _setLoading(false);
+      print('[ClinicAppointmentViewModel] Error updating status: $e');
+      _fetchState = ClinicAppointmentFetchState.error;
       _errorMessage = 'Failed to update appointment: ${e.toString()}';
       notifyListeners();
+      return false;
     }
+  }
+  
+  // Cancel an appointment
+  Future<bool> cancelAppointment(String appointmentId) async {
+    print('[ClinicAppointmentViewModel] cancelAppointment() called with ID: $appointmentId');
+    return await updateAppointmentStatus(appointmentId, 'cancelled');
   }
   
   // Generate meeting URL for online appointments
   Future<String?> generateMeetingUrl(String appointmentId) async {
-    _setLoading(true);
-    
+    print('[ClinicAppointmentViewModel] generateMeetingUrl() called with ID: $appointmentId');
     try {
       final meetingUrl = await _appointmentService.generateMeetingUrl(appointmentId);
       
       if (meetingUrl != null) {
+        print('[ClinicAppointmentViewModel] Meeting URL generated successfully: $meetingUrl');
         // Update local state - fetch fresh appointments
-        await fetchAppointments();
+        await fetchUserClinicAppointments();
+      } else {
+        print('[ClinicAppointmentViewModel] Failed to generate meeting URL');
       }
       
-      _setLoading(false);
       return meetingUrl;
     } catch (e) {
-      _setLoading(false);
+      print('[ClinicAppointmentViewModel] Error generating meeting URL: $e');
       _errorMessage = 'Failed to generate meeting URL: ${e.toString()}';
       notifyListeners();
       return null;
     }
   }
 
-  // Helper to set loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
+  // Refresh appointments
+  Future<void> refreshAppointments() async {
+    print('[ClinicAppointmentViewModel] refreshAppointments() called');
+    await fetchUserClinicAppointments();
   }
 }
 

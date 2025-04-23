@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
-import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 
 class DraggableClinicList extends StatelessWidget {
-  final List<Clinic> clinics;
+  final List<DoctorClinicProfile> clinics;
   final List<bool> expandedItems;
   final Function(int, double, double) onClinicTap;
 
@@ -50,9 +51,10 @@ class DraggableClinicList extends StatelessWidget {
     );
   }
 
-  Widget buildDoctorChip(Doctor doctor) {
+  Widget buildSpecializationChip(String specialization) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: EdgeInsets.only(right: 8, bottom: 8),
       decoration: BoxDecoration(
         color: DoctorConsultationColorPalette.backgroundCard,
         borderRadius: BorderRadius.circular(20),
@@ -60,27 +62,30 @@ class DraggableClinicList extends StatelessWidget {
           color: DoctorConsultationColorPalette.borderLight,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "${doctor.name} - ${doctor.specialization}",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: DoctorConsultationColorPalette.textPrimary,
-            ),
-          ),
-          Text(
-            "Fee: ₹${doctor.fee} | Slots: ${doctor.timeSlots.join(", ")}",
-            style: TextStyle(
-              fontSize: 12,
-              color: DoctorConsultationColorPalette.textSecondary,
-            ),
-          ),
-        ],
+      child: Text(
+        specialization,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: DoctorConsultationColorPalette.textPrimary,
+        ),
       ),
     );
+  }
+
+  LatLng _getLatLngFromLocation(String location) {
+    try {
+      final parts = location.split(',');
+      if (parts.length == 2) {
+        final lat = double.parse(parts[0].trim());
+        final lng = double.parse(parts[1].trim());
+        return LatLng(lat, lng);
+      }
+    } catch (e) {
+      print("Error parsing location: $e");
+    }
+    // Default to a fallback location if parsing fails
+    return LatLng(0, 0);
   }
 
   @override
@@ -145,9 +150,12 @@ class DraggableClinicList extends StatelessWidget {
                     itemBuilder: (_, index) {
                       var clinic = clinics[index];
                       bool isExpanded = expandedItems[index];
+                      
+                      // Get location data
+                      final latLng = _getLatLngFromLocation(clinic.location);
 
                       return GestureDetector(
-                        onTap: () => onClinicTap(index, clinic.lat, clinic.lng),
+                        onTap: () => onClinicTap(index, latLng.latitude, latLng.longitude),
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 300),
                           padding: EdgeInsets.all(16),
@@ -174,7 +182,7 @@ class DraggableClinicList extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      clinic.name,
+                                      clinic.doctorName,
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -209,24 +217,25 @@ class DraggableClinicList extends StatelessWidget {
                               ),
                               if (isExpanded) ...[
                                 Divider(color: DoctorConsultationColorPalette.borderLight),
-                                buildDetailRow(Icons.phone, "Phone:", clinic.contact),
-                                buildDetailRow(Icons.health_and_safety, "Specialties:", clinic.specialties.join(", ")),
+                                buildDetailRow(Icons.phone, "Phone:", clinic.phoneNumber),
+                                buildDetailRow(Icons.monetization_on, "Consultation Fee:", "₹${clinic.consultationFeesRange}"),
+                                buildDetailRow(Icons.calendar_today, "Available Days:", clinic.consultationDays.join(", ")),
+                                buildDetailRow(Icons.access_time, "Experience:", "${clinic.experienceYears} years"),
                                 Divider(color: DoctorConsultationColorPalette.borderLight),
                                 SizedBox(height: 10),
                                 Text(
-                                  "Doctors",
+                                  "Specializations",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: DoctorConsultationColorPalette.textPrimary,
                                   ),
                                 ),
+                                SizedBox(height: 8),
                                 Wrap(
-                                  spacing: 8.0,
-                                  runSpacing: 8.0,
-                                  children: clinic.doctors
-                                      .map<Widget>((doctor) => buildDoctorChip(doctor))
-                                      .toList(),
+                                  children: clinic.specializations.map<Widget>(
+                                    (spec) => buildSpecializationChip(spec)
+                                  ).toList(),
                                 ),
                                 SizedBox(height: 12),
                                 ElevatedButton.icon(

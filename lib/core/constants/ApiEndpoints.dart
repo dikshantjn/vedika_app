@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.44:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
@@ -25,6 +25,13 @@ class ApiEndpoints {
   static const String registerClinic = '$baseUrl/clinic/register-clinic';
   static const String getClinicProfile = '$baseUrl/clinic/profile';
   static const String updateClinicProfile = '$baseUrl/clinic/profile';
+  static const String getActiveOfflineClinics = '$baseUrl/clinic/active/offline';
+  static const String getActiveOnlineClinics = '$baseUrl/clinic/active/online';
+  static const String createClinicAppointment = '$baseUrl/clinic-appointments';
+  static const String getClinicAppointmentsByUserId = '$baseUrl/clinic-appointments/user'; // Example: /clinic-appointments/user/:userId
+  static const String getUserClinicAppointments = '$baseUrl/clinic-appointments/user'; // For current user appointments
+  static const String getPendingClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending
+  static const String getCompletedClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/completed
 
   // 📌 Medicine Product APIs
   static const String addProduct = '$baseUrl/medicineProduct/add-product';

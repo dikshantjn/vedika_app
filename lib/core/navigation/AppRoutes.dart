@@ -141,9 +141,9 @@ class AppRoutes {
         );
 
       case bookClinicAppointment:
-        final clinic = settings.arguments as Clinic;
+        final clinic = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
-          builder: (context) => BookClinicAppointmentPage(clinic: clinic),
+          builder: (context) => BookClinicAppointmentPage(doctor: clinic),
         );
 
       case bookLabTestAppointment:

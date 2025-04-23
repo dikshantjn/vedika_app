@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
-import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
-import 'package:vedika_healthcare/features/clinic/data/repositories/ClinicData.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart' as loc;
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/clinic/data/services/ClinicService.dart';
 
 class ClinicSearchViewModel extends ChangeNotifier {
+  final ClinicService _clinicService = ClinicService();
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  List<Clinic> _clinics = [];
+  List<DoctorClinicProfile> _clinics = [];
   bool _isLoading = true;
   bool _isLoadingLocation = true;
   LatLng? _currentPosition;
   List<bool> _expandedItems = [];
   TextEditingController searchController = TextEditingController();
-  List<Clinic> _filteredClinics = [];
+  List<DoctorClinicProfile> _filteredClinics = [];
 
   GoogleMapController? get mapController => _mapController;
   Set<Marker> get markers => _markers;
-  List<Clinic> get clinics => _clinics;
+  List<DoctorClinicProfile> get clinics => _clinics;
   bool get isLoading => _isLoading;
   bool get isLoadingLocation => _isLoadingLocation;
   LatLng? get currentPosition => _currentPosition;
   List<bool> get expandedItems => _expandedItems;
-  List<Clinic> get filteredClinics => _filteredClinics;
+  List<DoctorClinicProfile> get filteredClinics => _filteredClinics;
 
   void onMapCreated(GoogleMapController controller) {
     _mapController = controller;
@@ -86,8 +87,6 @@ class ClinicSearchViewModel extends ChangeNotifier {
     }
   }
 
-
-
   Future<void> loadUserLocation(BuildContext context) async {
     var locationProvider = Provider.of<LocationProvider>(context, listen: false);
     await locationProvider.loadSavedLocation();
@@ -96,36 +95,84 @@ class ClinicSearchViewModel extends ChangeNotifier {
       _currentPosition = LatLng(locationProvider.latitude!, locationProvider.longitude!);
       _isLoading = false;
       _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
-      _fetchNearbyClinics(context);
+      await _fetchNearbyClinics();
       _addUserLocationMarker();
       notifyListeners();
     }
   }
 
-  void _fetchNearbyClinics(BuildContext context) {
+  Future<void> _fetchNearbyClinics() async {
     if (_currentPosition == null) return;
-    var clinicData = ClinicData();
-    _clinics = clinicData.getClinics(context);
-    _filteredClinics = List.from(_clinics);
-    _expandedItems = List<bool>.filled(_clinics.length, false);
-    _setClinicMarkers();
+    
+    print('🚀 Starting _fetchNearbyClinics in ClinicSearchViewModel');
+    print('📍 Current position: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}');
+    
+    try {
+      // Call API to get offline clinics
+      print('📡 Calling API service getActiveOfflineClinics');
+      _clinics = await _clinicService.getActiveOfflineClinics();
+      print('📋 Received ${_clinics.length} clinics from API');
+      
+      if (_clinics.isEmpty) {
+        print('⚠️ No clinics returned from API, falling back to sample data');
+        return;
+      }
+      
+      // Only include doctors who offer offline consultation
+      _clinics = _clinics.where((clinic) => 
+        clinic.consultationTypes.contains('Offline')).toList();
+      print('🎯 Filtered to ${_clinics.length} clinics with offline consultation');
+      
+      if (_clinics.isEmpty) {
+        print('⚠️ No clinics with offline consultation found, falling back to sample data');
+        return;
+      }
+      
+      _filteredClinics = List.from(_clinics);
+      _expandedItems = List<bool>.filled(_clinics.length, false);
+      _setClinicMarkers();
+      print('✅ _fetchNearbyClinics completed successfully');
+    } catch (e) {
+      print('❌ Error in _fetchNearbyClinics: $e');
+      // Fallback to sample data if API fails
+      print('🔄 Falling back to sample data due to error');
+    }
+    
     notifyListeners();
   }
+  
+
 
   void _setClinicMarkers() {
     _markers = _clinics.map((clinic) {
+      final latLng = _getLatLngFromLocation(clinic.location);
       return Marker(
-        markerId: MarkerId(clinic.id),
-        position: LatLng(clinic.lat, clinic.lng),
-        infoWindow: InfoWindow(title: clinic.name),
+        markerId: MarkerId(clinic.vendorId ?? ''),
+        position: latLng,
+        infoWindow: InfoWindow(title: clinic.doctorName),
         onTap: () {
           _filteredClinics = [clinic];
           _expandedItems = [true];
-          _moveCameraToClinic(clinic.lat, clinic.lng);
+          _moveCameraToClinic(latLng.latitude, latLng.longitude);
           notifyListeners();
         },
       );
     }).toSet();
+  }
+  
+  LatLng _getLatLngFromLocation(String location) {
+    try {
+      final parts = location.split(',');
+      if (parts.length == 2) {
+        final lat = double.parse(parts[0].trim());
+        final lng = double.parse(parts[1].trim());
+        return LatLng(lat, lng);
+      }
+    } catch (e) {
+      print("Error parsing location: $e");
+    }
+    // Default to a fallback location if parsing fails
+    return LatLng(0, 0);
   }
 
   void _addUserLocationMarker() {
@@ -151,9 +198,9 @@ class ClinicSearchViewModel extends ChangeNotifier {
       _filteredClinics = List.from(_clinics);
     } else {
       _filteredClinics = _clinics.where((clinic) {
-        return clinic.name.toLowerCase().contains(query.toLowerCase()) ||
+        return clinic.doctorName.toLowerCase().contains(query.toLowerCase()) ||
             clinic.address.toLowerCase().contains(query.toLowerCase()) ||
-            clinic.doctors.any((doctor) => doctor.name.toLowerCase().contains(query.toLowerCase()));
+            clinic.specializations.any((s) => s.toLowerCase().contains(query.toLowerCase()));
       }).toList();
     }
     _expandedItems = List.generate(_filteredClinics.length, (index) => false);
@@ -162,7 +209,6 @@ class ClinicSearchViewModel extends ChangeNotifier {
 
   void toggleClinicExpansion(int index) {
     expandedItems[index] = !expandedItems[index];
-    notifyListeners(); // Notify the UI to update
+    notifyListeners();
   }
-
 }

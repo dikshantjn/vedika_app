@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class DoctorClinicProfile {
   final String? vendorId;
   final String? generatedId;
@@ -140,45 +142,290 @@ class DoctorClinicProfile {
   }
 
   factory DoctorClinicProfile.fromJson(Map<String, dynamic> json) {
-    return DoctorClinicProfile(
-      vendorId: json['vendorId'],
-      generatedId: json['generatedId'],
-      doctorName: json['doctorName'] ?? '',
-      gender: json['gender'] ?? '',
-      email: json['email'] ?? '',
-      password: json['password'] ?? '',
-      confirmPassword: json['confirmPassword'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
-      profilePicture: json['profilePicture'] ?? '',
-      medicalLicenseFile: json['medicalLicenseFile'] is List 
-          ? List<Map<String, String>>.from(json['medicalLicenseFile'] ?? [])
-          : json['medicalLicenseFile'] != null && json['medicalLicenseFile'] != '' 
-              ? [{'name': 'License', 'url': json['medicalLicenseFile']}] 
-              : [],
-      licenseNumber: json['licenseNumber'] ?? '',
-      educationalQualifications: List<String>.from(json['educationalQualifications'] ?? []),
-      specializations: List<String>.from(json['specializations'] ?? []),
-      experienceYears: json['experienceYears'] ?? 0,
-      languageProficiency: List<String>.from(json['languageProficiency'] ?? []),
-      hasTelemedicineExperience: json['hasTelemedicineExperience'] ?? false,
-      consultationFeesRange: json['consultationFeesRange'] ?? '',
-      consultationTimeSlots: List<Map<String, String>>.from(json['consultationTimeSlots'] ?? []),
-      consultationDays: List<String>.from(json['consultationDays'] ?? []),
-      consultationTypes: List<String>.from(json['consultationTypes'] ?? []),
-      insurancePartners: List<String>.from(json['insurancePartners'] ?? []),
-      address: json['address'] ?? '',
-      state: json['state'] ?? '',
-      city: json['city'] ?? '',
-      pincode: json['pincode'] ?? '',
-      nearbyLandmark: json['nearbyLandmark'] ?? '',
-      floor: json['floor'] ?? '',
-      hasLiftAccess: json['hasLiftAccess'] ?? false,
-      hasWheelchairAccess: json['hasWheelchairAccess'] ?? false,
-      hasParking: json['hasParking'] ?? false,
-      otherFacilities: List<String>.from(json['otherFacilities'] ?? []),
-      clinicPhotos: List<Map<String, String>>.from(json['clinicPhotos'] ?? []),
-      location: json['location'] ?? '',
-    );
+    try {
+      print('🏗️ Parsing DoctorClinicProfile from JSON with keys: ${json.keys.toList()}');
+      
+      // Parse medical license files
+      List<Map<String, String>> parseMedicalLicenseFile(dynamic licenses) {
+        if (licenses == null) return [];
+        
+        try {
+          if (licenses is List) {
+            return List<Map<String, String>>.from(licenses.map((license) {
+              if (license is Map) {
+                // Convert all values to strings to ensure type safety
+                return {
+                  'url': license['url']?.toString() ?? '',
+                  'name': license['name']?.toString() ?? 'License',
+                };
+              }
+              return {'url': license.toString(), 'name': 'License'};
+            }));
+          }
+          
+          if (licenses is String) {
+            if (licenses.isNotEmpty) {
+              // Try parsing as JSON string
+              if (licenses.startsWith('[') && licenses.endsWith(']')) {
+                try {
+                  final List<dynamic> parsed = jsonDecode(licenses);
+                  return List<Map<String, String>>.from(parsed.map((license) {
+                    if (license is Map) {
+                      return {
+                        'url': license['url']?.toString() ?? '',
+                        'name': license['name']?.toString() ?? 'License',
+                      };
+                    }
+                    return {'url': license.toString(), 'name': 'License'};
+                  }));
+                } catch (e) {
+                  print('Error parsing medical license as JSON: $e');
+                }
+              }
+              
+              // If it's a single URL
+              return [{'url': licenses, 'name': 'License'}];
+            }
+          }
+        } catch (e) {
+          print('Error parsing medical license files: $e');
+        }
+        
+        return [];
+      }
+      
+      // Handle consultation time slots with special parsing
+      List<Map<String, String>> parseConsultationTimeSlots(dynamic slots) {
+        if (slots == null) return [];
+        
+        if (slots is List) {
+          return List<Map<String, String>>.from(slots.map((slot) {
+            if (slot is Map) {
+              // Check for the new format with day, startTime, endTime
+              if (slot.containsKey('day') && slot.containsKey('startTime') && slot.containsKey('endTime')) {
+                return {
+                  'day': slot['day']?.toString() ?? '',
+                  'startTime': slot['startTime']?.toString() ?? '',
+                  'endTime': slot['endTime']?.toString() ?? '',
+                };
+              }
+              // Old format with start, end
+              return {
+                'start': slot['start']?.toString() ?? '',
+                'end': slot['end']?.toString() ?? '',
+              };
+            }
+            return {'start': '', 'end': ''};
+          }));
+        }
+        
+        // If it's a string, try to parse it
+        if (slots is String) {
+          try {
+            if (slots.isNotEmpty) {
+              // Handle case if it's a JSON string
+              if (slots.startsWith('[') && slots.endsWith(']')) {
+                final List<dynamic> parsed = jsonDecode(slots);
+                return List<Map<String, String>>.from(parsed.map((slot) {
+                  // Check for the new format
+                  if (slot is Map && slot.containsKey('day') && slot.containsKey('startTime') && slot.containsKey('endTime')) {
+                    return {
+                      'day': slot['day']?.toString() ?? '',
+                      'startTime': slot['startTime']?.toString() ?? '',
+                      'endTime': slot['endTime']?.toString() ?? '',
+                    };
+                  }
+                  // Old format
+                  return {
+                    'start': slot['start']?.toString() ?? '',
+                    'end': slot['end']?.toString() ?? '',
+                  };
+                }));
+              }
+              
+              // Split by comma if it's a simple string
+              return slots.split(',').map((slot) => {
+                'start': slot.trim(),
+                'end': (int.tryParse(slot.split(':')[0].trim()) ?? 0 + 1).toString() + ':00',
+              }).toList();
+            }
+          } catch (e) {
+            print('Error parsing consultation time slots: $e');
+          }
+        }
+        return [];
+      }
+      
+      // Handle clinic photos with special parsing
+      List<Map<String, String>> parseClinicPhotos(dynamic photos) {
+        if (photos == null) return [];
+        
+        if (photos is List) {
+          return List<Map<String, String>>.from(photos.map((photo) {
+            if (photo is Map) {
+              return {
+                'url': photo['url']?.toString() ?? '',
+                'caption': photo['caption']?.toString() ?? 'Clinic Photo',
+              };
+            } else if (photo is String) {
+              return {'url': photo, 'caption': 'Clinic Photo'};
+            }
+            return {'url': '', 'caption': ''};
+          }));
+        }
+        
+        // If it's a string, try to parse it
+        if (photos is String) {
+          try {
+            if (photos.isNotEmpty) {
+              // Try parsing as JSON
+              if (photos.startsWith('[') && photos.endsWith(']')) {
+                final List<dynamic> parsed = jsonDecode(photos);
+                return List<Map<String, String>>.from(parsed.map((photo) {
+                  if (photo is Map) {
+                    return {
+                      'url': photo['url']?.toString() ?? '',
+                      'caption': photo['caption']?.toString() ?? 'Clinic Photo',
+                    };
+                  } else if (photo is String) {
+                    return {'url': photo, 'caption': 'Clinic Photo'};
+                  }
+                  return {'url': '', 'caption': ''};
+                }));
+              }
+              
+              // If it's a single URL
+              return [{'url': photos, 'caption': 'Clinic Photo'}];
+            }
+          } catch (e) {
+            print('Error parsing clinic photos: $e');
+          }
+        }
+        return [];
+      }
+      
+      // Handle consultation types with special parsing
+      List<String> parseConsultationTypes(dynamic types) {
+        if (types == null) return ['Offline']; // Default to offline
+        
+        if (types is List) {
+          return List<String>.from(types.map((t) => t.toString()));
+        }
+        
+        if (types is String) {
+          if (types.isNotEmpty) {
+            // Try parsing as JSON
+            if (types.startsWith('[') && types.endsWith(']')) {
+              try {
+                final List<dynamic> parsed = jsonDecode(types);
+                return List<String>.from(parsed.map((t) => t.toString()));
+              } catch (e) {
+                print('Error parsing consultation types as JSON: $e');
+              }
+            }
+            
+            // Split by comma if it's a simple string
+            return types.split(',').map((t) => t.trim()).toList();
+          }
+        }
+        
+        return ['Offline']; // Default to offline
+      }
+      
+      return DoctorClinicProfile(
+        vendorId: json['vendorId']?.toString() ?? json['id']?.toString(),
+        generatedId: json['generatedId']?.toString(),
+        doctorName: json['doctorName']?.toString() ?? json['name']?.toString() ?? 'Unknown Doctor',
+        gender: json['gender']?.toString() ?? 'Not Specified',
+        email: json['email']?.toString() ?? '',
+        password: json['password']?.toString() ?? '',
+        confirmPassword: json['confirmPassword']?.toString() ?? '',
+        phoneNumber: json['phoneNumber']?.toString() ?? json['phone']?.toString() ?? '',
+        profilePicture: json['profilePicture']?.toString() ?? json['photo']?.toString() ?? '',
+        medicalLicenseFile: parseMedicalLicenseFile(json['medicalLicenseFile']),
+        licenseNumber: json['licenseNumber']?.toString() ?? '',
+        educationalQualifications: json['educationalQualifications'] is List 
+            ? List<String>.from(json['educationalQualifications'] ?? [])
+            : json['educationalQualifications']?.toString()?.split(',') ?? [],
+        specializations: json['specializations'] is List 
+            ? List<String>.from(json['specializations'] ?? [])
+            : json['specializations']?.toString()?.split(',') ?? [],
+        experienceYears: json['experienceYears'] is int 
+            ? json['experienceYears'] 
+            : int.tryParse(json['experienceYears']?.toString() ?? '0') ?? 0,
+        languageProficiency: json['languageProficiency'] is List 
+            ? List<String>.from(json['languageProficiency'] ?? [])
+            : json['languageProficiency']?.toString()?.split(',') ?? [],
+        hasTelemedicineExperience: json['hasTelemedicineExperience'] is bool 
+            ? json['hasTelemedicineExperience'] 
+            : json['hasTelemedicineExperience']?.toString()?.toLowerCase() == 'true' || false,
+        consultationFeesRange: json['consultationFeesRange']?.toString() ?? '0',
+        consultationTimeSlots: parseConsultationTimeSlots(json['consultationTimeSlots']),
+        consultationDays: json['consultationDays'] is List 
+            ? List<String>.from(json['consultationDays'] ?? [])
+            : json['consultationDays']?.toString()?.split(',') ?? [],
+        consultationTypes: parseConsultationTypes(json['consultationTypes']),
+        insurancePartners: json['insurancePartners'] is List 
+            ? List<String>.from(json['insurancePartners'] ?? []) 
+            : json['insurancePartners']?.toString()?.split(',') ?? [],
+        address: json['address']?.toString() ?? '',
+        state: json['state']?.toString() ?? '',
+        city: json['city']?.toString() ?? '',
+        pincode: json['pincode']?.toString() ?? '',
+        nearbyLandmark: json['nearbyLandmark']?.toString() ?? '',
+        floor: json['floor']?.toString() ?? '',
+        hasLiftAccess: json['hasLiftAccess'] is bool 
+            ? json['hasLiftAccess'] 
+            : json['hasLiftAccess']?.toString()?.toLowerCase() == 'true' || false,
+        hasWheelchairAccess: json['hasWheelchairAccess'] is bool 
+            ? json['hasWheelchairAccess'] 
+            : json['hasWheelchairAccess']?.toString()?.toLowerCase() == 'true' || false,
+        hasParking: json['hasParking'] is bool 
+            ? json['hasParking'] 
+            : json['hasParking']?.toString()?.toLowerCase() == 'true' || false,
+        otherFacilities: json['otherFacilities'] is List 
+            ? List<String>.from(json['otherFacilities'] ?? [])
+            : json['otherFacilities']?.toString()?.split(',') ?? [],
+        clinicPhotos: parseClinicPhotos(json['clinicPhotos']),
+        location: json['location']?.toString() ?? '',
+      );
+    } catch (e) {
+      print('❌ Error parsing DoctorClinicProfile: $e');
+      // Return a minimal valid object instead of throwing
+      return DoctorClinicProfile(
+        doctorName: 'Error parsing profile',
+        gender: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        phoneNumber: '',
+        profilePicture: '',
+        medicalLicenseFile: [],
+        licenseNumber: '',
+        educationalQualifications: [],
+        specializations: [],
+        experienceYears: 0,
+        languageProficiency: [],
+        hasTelemedicineExperience: false,
+        consultationFeesRange: '',
+        consultationTimeSlots: [],
+        consultationDays: [],
+        consultationTypes: ['Offline'],
+        insurancePartners: [],
+        address: '',
+        state: '',
+        city: '',
+        pincode: '',
+        nearbyLandmark: '',
+        floor: '',
+        hasLiftAccess: false,
+        hasWheelchairAccess: false,
+        hasParking: false,
+        otherFacilities: [],
+        clinicPhotos: [],
+        location: '',
+      );
+    }
   }
 
   Map<String, dynamic> toJson() {
