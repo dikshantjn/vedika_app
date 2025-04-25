@@ -35,6 +35,7 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/Hosp
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/ProcessAppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/viewModels/DiagnosticCenterProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicalStoreVendorUpdateProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
@@ -195,6 +196,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ClinicAppointmentViewModel()),
         ChangeNotifierProvider(create: (context) => ClinicAppointmentHistoryViewModel()),
         ChangeNotifierProvider(create: (context) => OnlineDoctorConsultationViewModel()),
+        ChangeNotifierProvider(create: (context) => DiagnosticCenterProfileViewModel()),
 
       ],
       child: Builder(

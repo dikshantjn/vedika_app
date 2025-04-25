@@ -3,6 +3,7 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/doctor_clinic_registration_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalRegistrationScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/lab_test_registration_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
 
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
@@ -271,7 +272,7 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
         registrationScreen = BloodBankRegistrationScreen();
         break;
       case "Pathology/Diagnostic Center":
-        registrationScreen = PathologyRegistrationForm();
+        registrationScreen = LabTestRegistrationScreen();
         break;
       case "Delivery Partner":
         registrationScreen = DeliveryPartnerRegistrationForm();

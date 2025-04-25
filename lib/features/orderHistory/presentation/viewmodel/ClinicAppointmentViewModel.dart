@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/ClinicAppointmentOrderService.dart';
 
@@ -95,5 +96,13 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   // Refresh appointments data
   Future<void> refreshAppointments() async {
     return fetchUserClinicAppointments();
+  }
+  
+  // Get current user from appointments (if available)
+  UserModel? getCurrentUser() {
+    if (_appointments.isNotEmpty && _appointments.first.user != null) {
+      return _appointments.first.user;
+    }
+    return null;
   }
 } 

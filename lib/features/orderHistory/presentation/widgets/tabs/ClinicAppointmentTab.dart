@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/JitsiMeetService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Utils/MeetingRoutes.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetScreen.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/ErrorState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
@@ -396,11 +399,41 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
   }
 
   void _joinMeeting(String meetingUrl) {
-    // Implementation to join the online meeting
-    // This could open a web view or launch a URL
-    print('Joining meeting: $meetingUrl');
-    // You could add functionality to launch the URL
-    // using url_launcher package or navigate to a WebView
+    // Get the view model
+    final viewModel = Provider.of<ClinicAppointmentViewModel>(context, listen: false);
+    
+    // Get user information
+    final user = viewModel.getCurrentUser();
+    final userName = user?.name ?? "Patient";
+    final userEmail = user?.emailId;
+    final userAvatarUrl = user?.photo;
+    
+    // Extract room name from URL
+    final roomName = meetingUrl.contains('/')
+        ? meetingUrl.split('/').last
+        : meetingUrl;
+    
+    // Navigate to the JitsiMeetScreen
+    navigateToMeeting(
+      context,
+      JitsiMeetScreen(
+        roomName: roomName,
+        userDisplayName: userName,
+        userEmail: userEmail,
+        userAvatarUrl: userAvatarUrl,
+        isDoctor: false,
+        onMeetingClosed: () {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Meeting ended'),
+                backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   void _confirmCancelAppointment(String appointmentId) {

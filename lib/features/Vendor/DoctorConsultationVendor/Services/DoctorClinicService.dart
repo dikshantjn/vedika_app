@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/Vendor.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfileFixed.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:dio/dio.dart';
 
 
@@ -22,6 +23,7 @@ class DoctorClinicService {
 
   final Dio _dio = Dio();
   final StorageService _storageService = StorageService();
+  final VendorLoginService _vendorLoginService = VendorLoginService();
 
   // Constructor to initialize Dio with options
   DoctorClinicService() {
@@ -33,6 +35,11 @@ class DoctorClinicService {
         'Accept': 'application/json',
       },
     );
+  }
+
+  // Get vendor ID from secure storage
+  Future<String?> _getVendorId() async {
+    return await _vendorLoginService.getVendorId();
   }
 
   /// Submit a doctor clinic profile to the server
@@ -339,6 +346,27 @@ class DoctorClinicService {
       }
       
       return false;
+    }
+  }
+
+  // Get the profile of the currently logged in doctor
+  Future<DoctorClinicProfile?> getCurrentDoctorProfile() async {
+    try {
+      _logger.i('📝 Fetching profile for current doctor');
+      
+      // Get vendor ID from storage
+      final String? vendorId = await _getVendorId();
+      
+      if (vendorId == null) {
+        _logger.e('❌ No vendor ID found in storage');
+        return null;
+      }
+      
+      // Get the profile using the vendorId
+      return await getClinicProfile(vendorId);
+    } catch (e) {
+      _logger.e('❌ Error fetching current doctor profile: $e');
+      return null;
     }
   }
 }

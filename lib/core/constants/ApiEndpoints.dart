@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String baseUrl = "http://192.168.1.44:5000/api";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
@@ -28,6 +28,9 @@ class ApiEndpoints {
   static const String getActiveOfflineClinics = '$baseUrl/clinic/active/offline';
   static const String getActiveOnlineClinics = '$baseUrl/clinic/active/online';
   static const String createClinicAppointment = '$baseUrl/clinic-appointments';
+  static const String generateMettingLink = '$baseUrl/clinic-appointments';
+  static const String generateMeetingUrl = '$baseUrl/clinic-appointments/appointments';  // NEW: endpoint for generating meeting URL
+  static const String completeClinicAppointment = '$baseUrl/clinic-appointments/complete';  // NEW: endpoint for marking appointment as completed after meeting ends
   static const String getClinicAppointmentsByUserId = '$baseUrl/clinic-appointments/user'; // Example: /clinic-appointments/user/:userId
   static const String getUserClinicAppointments = '$baseUrl/clinic-appointments/user'; // For current user appointments
   static const String getPendingClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending
@@ -147,5 +150,16 @@ class ApiEndpoints {
   static const String getCompletedBookingsByVendor = "$baseUrl/hospitals/appointment/completed/vendor";
   static const String getCompletedAppointmentsByUser = "$baseUrl/hospitals/appointment/completed/user";
   static const String updateBedAvailability = "$baseUrl/hospitals/updateBed";
+
+  // 📌 Lab Test APIs
+  static const String uploadFile = '$baseUrl/lab-test/upload-file';
+  static const String uploadMultipleFiles = '$baseUrl/lab-test/upload-multiple-files';
+  static const String registerDiagnosticCenter = '$baseUrl/lab-test/register';
+  static const String getDiagnosticCenter = '$baseUrl/lab-test/center';
+  static const String updateDiagnosticCenter = '$baseUrl/lab-test/center';
+  static const String deleteDiagnosticCenter = '$baseUrl/lab-test/center';
+  static const String getAllDiagnosticCenters = '$baseUrl/lab-test/centers';
+  static const String getDiagnosticCentersByCity = '$baseUrl/lab-test/centers/city';
+  static const String getDiagnosticCentersByTestType = '$baseUrl/lab-test/centers/test-type';
 
 }

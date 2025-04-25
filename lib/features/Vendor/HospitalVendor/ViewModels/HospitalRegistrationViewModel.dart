@@ -90,7 +90,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   List<File> _photoFiles = [];
   
   Map<String, dynamic>? panCardFile;
-  List<Map<String, dynamic>> businessDocuments = [];
+  List<Map<String, dynamic>>? businessDocuments;
   
   String get email => emailController.text;
   String get password => passwordController.text;
@@ -257,13 +257,14 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   }
 
   void addBusinessDocument(Map<String, dynamic> document) {
-    businessDocuments.add(document);
+    businessDocuments ??= [];
+    businessDocuments!.add(document);
     notifyListeners();
   }
 
   void removeBusinessDocument(int index) {
-    if (index >= 0 && index < businessDocuments.length) {
-      businessDocuments.removeAt(index);
+    if (businessDocuments != null && index >= 0 && index < businessDocuments!.length) {
+      businessDocuments!.removeAt(index);
       notifyListeners();
     }
   }
@@ -445,11 +446,11 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         }
       }
 
-      if (businessDocuments.isNotEmpty) {
+      if (businessDocuments != null && businessDocuments!.isNotEmpty) {
         try {
-          _logger.i('Uploading ${businessDocuments.length} business documents');
-          for (int i = 0; i < businessDocuments.length; i++) {
-            final doc = businessDocuments[i];
+          _logger.i('Uploading ${businessDocuments!.length} business documents');
+          for (int i = 0; i < businessDocuments!.length; i++) {
+            final doc = businessDocuments![i];
             final file = doc['file'] as File?;
             final fileName = doc['name'] as String?;
 
@@ -475,7 +476,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
               vendorId: tempVendorId,
               fileType: 'business_documents',
             );
-            businessDocuments[i] = {
+            businessDocuments![i] = {
               'name': fileName,
               'url': result['url'],
             };
@@ -483,7 +484,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
           }
         } catch (e) {
           _error = 'Failed to upload business documents: $e';
-          _logger.e('Business documents upload failed - Count: ${businessDocuments.length}', 
+          _logger.e('Business documents upload failed - Count: ${businessDocuments!.length}', 
             error: e, 
             stackTrace: StackTrace.current
           );
@@ -535,7 +536,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         pincode: pincode,
         location: location,
         panCardFile: panCardFile,
-        businessDocuments: businessDocuments,
+        businessDocuments: businessDocuments ?? [],
       );
       _logger.i('Created hospital profile object');
 
@@ -552,7 +553,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         _licenses.clear();
         _photos.clear();
         panCardFile = null;
-        businessDocuments.clear();
+        businessDocuments = null;
       } else {
         _logger.w('Registration failed with status code: ${response.statusCode}');
       }
@@ -659,14 +660,15 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
   void uploadBusinessDocuments(List<Map<String, Object>> files) {
     if (files.isNotEmpty) {
+      businessDocuments ??= [];
       for (var file in files) {
         final fileName = file['name'] as String?;
         final fileObj = file['file'] as File?;
         
         if (fileName != null && fileObj != null) {
           // Add to business documents list with file object
-          if (!businessDocuments.any((e) => e['name'] == fileName)) {
-            businessDocuments.add({
+          if (!businessDocuments!.any((e) => e['name'] == fileName)) {
+            businessDocuments!.add({
               'name': fileName,
               'file': fileObj,
             });

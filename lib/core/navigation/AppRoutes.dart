@@ -14,6 +14,7 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Model
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/doctor_dashboard_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
@@ -126,9 +127,8 @@ class AppRoutes {
       VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
       VendorBloodBankDashBoard: (context) => VendorBloodBankMainScreen(),
-      // VendorPathologyDashBoard: (context) => VendorPathologyDashBoardScreen(),
+      VendorPathologyDashBoard: (context) => LabTestDashboardScreen(),
       // VendorDeliveryPartnerDashBoard: (context) => VendorDeliveryPartnerDashBoardScreen(),
-
     };
   }
 

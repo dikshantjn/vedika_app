@@ -238,7 +238,7 @@ class AppointmentService {
     try {
       print('[AppointmentService] Generating meeting URL for appointment ID: $appointmentId');
       
-      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId/generate-meeting';
+      final String url = '${ApiEndpoints.generateMeetingUrl}/$appointmentId/generate-meeting-url';
       print('[AppointmentService] Making POST request to: $url');
       
       final response = await _dio.post(url);
@@ -257,6 +257,32 @@ class AppointmentService {
     } catch (e) {
       print('[AppointmentService] Error generating meeting URL: $e');
       return null;
+    }
+  }
+
+  /// Mark appointment as completed after a meeting ends
+  Future<bool> completeAppointmentAfterMeeting(String appointmentId) async {
+    try {
+      print('[AppointmentService] Marking appointment as completed after meeting: ID=$appointmentId');
+      
+      final String url = '${ApiEndpoints.completeClinicAppointment}/$appointmentId';
+      print('[AppointmentService] Making PUT request to: $url');
+      
+      final response = await _dio.put(url);
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[AppointmentService] Successfully marked appointment as completed');
+        return true;
+      } else {
+        print('[AppointmentService] Failed to mark appointment as completed: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('[AppointmentService] Error marking appointment as completed: $e');
+      return false;
     }
   }
 } 

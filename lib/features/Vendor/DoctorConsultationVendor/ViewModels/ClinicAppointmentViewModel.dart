@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import '../Models/ClinicAppointment.dart';
 import '../Services/AppointmentService.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/JitsiMeetService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicService.dart';
+import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 enum AppointmentFilter { upcoming, completed, cancelled, all }
 enum AppointmentSortOrder { newest, oldest }
@@ -10,9 +16,12 @@ enum ClinicAppointmentFetchState { initial, loading, loaded, error }
 
 class ClinicAppointmentViewModel extends ChangeNotifier {
   final AppointmentService _appointmentService = AppointmentService();
+  final JitsiMeetService _jitsiMeetService = JitsiMeetService();
+  final DoctorClinicService _doctorClinicService = DoctorClinicService();
   
   List<ClinicAppointment> _appointments = [];
   List<ClinicAppointment> _filteredAppointments = [];
+  DoctorClinicProfile? _doctorProfile;
   
   ClinicAppointmentFetchState _fetchState = ClinicAppointmentFetchState.initial;
   String? _errorMessage;
@@ -29,11 +38,24 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   AppointmentSortOrder get sortOrder => _sortOrder;
   String get searchQuery => _searchQuery;
   DateTime? get selectedDate => _selectedDate;
+  DoctorClinicProfile? get doctorProfile => _doctorProfile;
 
   // Initialize view model
   Future<void> initialize() async {
     print('[ClinicAppointmentViewModel] Initializing...');
+    await fetchDoctorProfile();
     await fetchUserClinicAppointments();
+  }
+
+  // Fetch doctor profile information
+  Future<void> fetchDoctorProfile() async {
+    try {
+      String? vendorId = await VendorLoginService().getVendorId();
+      _doctorProfile = await _doctorClinicService.getCurrentDoctorProfile();
+      notifyListeners();
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Error fetching doctor profile: $e');
+    }
   }
 
   // Fetch appointments from service
@@ -270,6 +292,526 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   Future<void> refreshAppointments() async {
     print('[ClinicAppointmentViewModel] refreshAppointments() called');
     await fetchUserClinicAppointments();
+  }
+
+  // Join a Jitsi meeting using the service
+  Future<bool> joinMeeting({
+    required String appointmentId,
+    required String userDisplayName,
+    String? userEmail,
+    String? userAvatarUrl,
+    bool isDoctor = false,
+  }) async {
+    try {
+      // Find the appointment
+      final appointment = _appointments.firstWhere(
+        (a) => a.clinicAppointmentId == appointmentId,
+        orElse: () => throw Exception('Appointment not found'),
+      );
+      
+      // Generate meeting URL if not already set
+      String? meetingUrl = appointment.meetingUrl;
+      if (meetingUrl == null || meetingUrl.isEmpty) {
+        meetingUrl = await generateMeetingUrl(appointmentId);
+        if (meetingUrl == null) {
+          return false;
+        }
+      }
+      
+      // Extract server URL, room name, and JWT token from meetingUrl
+      String roomName;
+      String? jwtToken;
+      // Default to meet.jit.si if no server URL can be extracted
+      String serverUrl = "https://vpaas-magic-cookie-8162f5c330b748ceb26b57660afbf8db.8x8.vc";
+      
+      debugPrint('Meeting URL: $meetingUrl');
+      
+      // Extract server URL from the meeting URL
+      if (meetingUrl.startsWith('http')) {
+        Uri uri = Uri.parse(meetingUrl);
+        // Get server URL (e.g., https://meet.jit.si)
+        serverUrl = '${uri.scheme}://${uri.host}';
+        debugPrint('Server URL extracted: $serverUrl');
+      }
+      
+      // Extract room name and JWT token from the meeting URL
+      if (meetingUrl.contains('#jwt=')) {
+        // Format: https://meet.jit.si/roomName#jwt=token
+        final parts = meetingUrl.split('#jwt=');
+        
+        // Extract the room name from the first part (URL before the #jwt=)
+        String urlPart = parts[0];
+        roomName = urlPart.contains('/') ? urlPart.split('/').last : urlPart;
+        
+        // Extract the JWT token from the second part
+        jwtToken = parts.length > 1 ? parts[1].trim() : null;
+        
+        debugPrint('Extracted from #jwt format - Room: $roomName, JWT available: ${jwtToken != null}');
+      } else if (meetingUrl.contains('?jwt=')) {
+        // Alternative format: https://meet.jit.si/roomName?jwt=token
+        final parts = meetingUrl.split('?jwt=');
+        
+        // Extract the room name from the first part
+        String urlPart = parts[0];
+        roomName = urlPart.contains('/') ? urlPart.split('/').last : urlPart;
+        
+        // Extract the JWT token from the second part
+        jwtToken = parts.length > 1 ? parts[1].trim() : null;
+        
+        // Remove any additional query parameters if present
+        if (jwtToken != null && jwtToken.contains('&')) {
+          jwtToken = jwtToken.split('&')[0];
+        }
+        
+        debugPrint('Extracted from ?jwt format - Room: $roomName, JWT available: ${jwtToken != null}');
+      } else if (meetingUrl.contains('/')) {
+        // Format: https://meet.jit.si/roomName (no JWT)
+        roomName = meetingUrl.split('/').last;
+        debugPrint('Extracted from URL path - Room: $roomName');
+      } else {
+        // The meetingUrl is just the room name
+        roomName = meetingUrl;
+        debugPrint('Using meetingUrl as room name: $roomName');
+      }
+      
+      // Use appointment ID as a fallback if roomName is empty
+      if (roomName.isEmpty) {
+        roomName = 'vedika-consultation-$appointmentId';
+        debugPrint('Using fallback room name: $roomName');
+      }
+      
+      // Log JWT token status (but not the actual token for security reasons)
+      if (jwtToken != null) {
+        debugPrint('JWT token found. First 8 chars: ${jwtToken.length > 8 ? jwtToken.substring(0, 8) : jwtToken}...');
+      } else {
+        debugPrint('No JWT token found in the meeting URL');
+      }
+      
+      // Join the meeting
+      await _jitsiMeetService.joinMeeting(
+        roomName: roomName,
+        userDisplayName: userDisplayName,
+        userEmail: userEmail,
+        userAvatarUrl: userAvatarUrl,
+        jwtToken: jwtToken,          // Pass the extracted JWT token
+        onConferenceTerminated: () {
+          debugPrint('Conference terminated');
+        },
+        onError: (error) {
+          debugPrint('Error joining meeting: $error');
+        },
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('Error joining meeting: $e');
+      return false;
+    }
+  }
+  
+  // Hang up the current meeting
+  Future<void> hangUpMeeting() async {
+    await _jitsiMeetService.hangUp();
+  }
+  
+  @override
+  void dispose() {
+    // Clean up any Jitsi resources if needed
+    super.dispose();
+  }
+
+  // Get mock appointments for demonstration
+  List<ClinicAppointment> _getMockAppointments() {
+    // Implement mock data here
+    // This is just placeholder implementation
+    return [];
+  }
+
+  // Mark appointment as completed after meeting ends
+  Future<bool> completeAppointmentAfterMeeting(String appointmentId) async {
+    print('[ClinicAppointmentViewModel] completeAppointmentAfterMeeting() called with ID: $appointmentId');
+    
+    try {
+      final success = await _appointmentService.completeAppointmentAfterMeeting(appointmentId);
+      
+      if (success) {
+        print('[ClinicAppointmentViewModel] Appointment marked as completed after meeting, refreshing appointments');
+        // Update local state to reflect the change
+        await fetchUserClinicAppointments();
+      } else {
+        print('[ClinicAppointmentViewModel] Failed to mark appointment as completed');
+        _errorMessage = 'Failed to mark appointment as completed';
+        notifyListeners();
+      }
+      
+      return success;
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Error completing appointment after meeting: $e');
+      _errorMessage = 'Error marking appointment as completed: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  // Extract server URL, room name, and JWT token from meeting URL
+  Map<String, String?> extractMeetingData(String meetingUrl) {
+    String? serverUrl;
+    String? roomName;
+    String? jwtToken;
+
+    try {
+      Uri uri = Uri.parse(meetingUrl);
+      
+      // Extract the server URL
+      serverUrl = '${uri.scheme}://${uri.host}';
+      if (uri.port != 80 && uri.port != 443) {
+        serverUrl += ':${uri.port}';
+      }
+      
+      // Extract room name from path segments
+      if (uri.pathSegments.isNotEmpty) {
+        roomName = uri.pathSegments.last;
+      }
+      
+      // Extract JWT token from query parameters
+      jwtToken = uri.queryParameters['jwt'];
+      
+      debugPrint('Extracted meeting data:');
+      debugPrint('Server URL: $serverUrl');
+      debugPrint('Room name: $roomName');
+      debugPrint('JWT token: ${jwtToken != null ? "Present" : "Not present"}');
+    } catch (e) {
+      debugPrint('Error parsing meeting URL: $e');
+    }
+    
+    return {
+      'serverUrl': serverUrl,
+      'roomName': roomName,
+      'jwtToken': jwtToken,
+    };
+  }
+
+  // Enhanced method to extract meeting data from various URL formats
+  Map<String, String?> extractMeetingDataFromUrl(String meetingUrl) {
+    String? serverUrl = "https://vpaas-magic-cookie-8162f5c330b748ceb26b57660afbf8db.8x8.vc"; // Default server URL
+    String? roomName;
+    String? jwtToken;
+
+    debugPrint('Extracting meeting data from URL: $meetingUrl');
+
+    // Handle URL with @ prefix (sometimes copied from browser)
+    if (meetingUrl.startsWith("@")) {
+      meetingUrl = meetingUrl.substring(1);
+    }
+
+    try {
+      // Try standard URI parsing first
+      if (meetingUrl.startsWith('http')) {
+        Uri uri = Uri.parse(meetingUrl.split('#')[0]); // Remove fragment before parsing
+        
+        // Extract the server URL
+        serverUrl = '${uri.scheme}://${uri.host}';
+        if (uri.port != 80 && uri.port != 443 && uri.port > 0) {
+          serverUrl += ':${uri.port}';
+        }
+        
+        // Special handling for 8x8.vc URLs
+        if (serverUrl.contains("8x8.vc") && !serverUrl.contains("vpaas-magic-cookie")) {
+          serverUrl = "https://vpaas-magic-cookie-8162f5c330b748ceb26b57660afbf8db.8x8.vc";
+        }
+        
+        // Extract JWT token from query parameters
+        jwtToken = uri.queryParameters['jwt'];
+        
+        // Extract room name from path segments
+        if (uri.pathSegments.isNotEmpty) {
+          // Remove any 'vedika/' prefix from the room name
+          roomName = uri.pathSegments.last.replaceAll('vedika/', '');
+        }
+      }
+      
+      // Handle special formats with fragment (#jwt=) that Uri.parse doesn't handle well
+      if (meetingUrl.contains('#jwt=')) {
+        // Format: https://meet.jit.si/roomName#jwt=token
+        final parts = meetingUrl.split('#jwt=');
+        
+        // Extract the room name from the first part (URL before the #jwt=)
+        String urlPart = parts[0];
+        if (urlPart.contains('/')) {
+          // Extract server URL if not already set
+          if (urlPart.startsWith('http')) {
+            Uri baseUri = Uri.parse(urlPart);
+            serverUrl = '${baseUri.scheme}://${baseUri.host}';
+            if (baseUri.port != 80 && baseUri.port != 443 && baseUri.port > 0) {
+              serverUrl += ':${baseUri.port}';
+            }
+            
+            // Special handling for 8x8.vc URLs
+            if (serverUrl.contains("8x8.vc") && !serverUrl.contains("vpaas-magic-cookie")) {
+              serverUrl = "https://vpaas-magic-cookie-8162f5c330b748ceb26b57660afbf8db.8x8.vc";
+            }
+          }
+          
+          // Remove any 'vedika/' prefix from the room name
+          roomName = urlPart.split('/').last.replaceAll('vedika/', '');
+        } else {
+          roomName = urlPart;
+        }
+        
+        // Extract the JWT token from the second part
+        jwtToken = parts.length > 1 ? parts[1].trim() : null;
+        
+        // Make sure token doesn't have any URL fragments or other parameters
+        if (jwtToken != null && jwtToken.contains('#')) {
+          jwtToken = jwtToken.split('#')[0].trim();
+        }
+        
+        debugPrint('Extracted from #jwt format:');
+        debugPrint('- Room: $roomName');
+        debugPrint('- JWT token length: ${jwtToken?.length ?? 0}');
+        if (jwtToken != null && jwtToken.length > 10) {
+          debugPrint('- JWT token first 10 chars: ${jwtToken.substring(0, 10)}...');
+        }
+      } else if (meetingUrl.contains('?jwt=') && jwtToken == null) {
+        // Alternative format: https://meet.jit.si/roomName?jwt=token
+        final parts = meetingUrl.split('?jwt=');
+        
+        // Extract the room name from the first part
+        String urlPart = parts[0];
+        if (urlPart.contains('/')) {
+          // Extract server URL if not already set
+          if (urlPart.startsWith('http')) {
+            Uri baseUri = Uri.parse(urlPart);
+            serverUrl = '${baseUri.scheme}://${baseUri.host}';
+            if (baseUri.port != 80 && baseUri.port != 443 && baseUri.port > 0) {
+              serverUrl += ':${baseUri.port}';
+            }
+            
+            // Special handling for 8x8.vc URLs
+            if (serverUrl.contains("8x8.vc") && !serverUrl.contains("vpaas-magic-cookie")) {
+              serverUrl = "https://vpaas-magic-cookie-8162f5c330b748ceb26b57660afbf8db.8x8.vc";
+            }
+          }
+          
+          // Remove any 'vedika/' prefix from the room name
+          roomName = urlPart.split('/').last.replaceAll('vedika/', '');
+        } else {
+          roomName = urlPart;
+        }
+        
+        // Extract the JWT token from the second part
+        jwtToken = parts.length > 1 ? parts[1].trim() : null;
+        
+        // Remove any additional query parameters if present
+        if (jwtToken != null && jwtToken.contains('&')) {
+          jwtToken = jwtToken.split('&')[0].trim();
+        }
+        
+        debugPrint('Extracted from ?jwt format:');
+        debugPrint('- Room: $roomName');
+        debugPrint('- JWT token length: ${jwtToken?.length ?? 0}');
+        if (jwtToken != null && jwtToken.length > 10) {
+          debugPrint('- JWT token first 10 chars: ${jwtToken.substring(0, 10)}...');
+        }
+      } else if (roomName == null && meetingUrl.contains('/')) {
+        // Format: https://meet.jit.si/roomName (no JWT)
+        // Remove any 'vedika/' prefix from the room name
+        roomName = meetingUrl.split('/').last.replaceAll('vedika/', '');
+        debugPrint('Extracted from URL path - Room: $roomName');
+      } else if (roomName == null) {
+        // The meetingUrl is just the room name
+        roomName = meetingUrl;
+        debugPrint('Using meetingUrl as room name: $roomName');
+      }
+      
+      // Use a fallback if roomName is empty
+      if (roomName == null || roomName.isEmpty) {
+        roomName = 'vedika-consultation-' + DateTime.now().millisecondsSinceEpoch.toString();
+        debugPrint('Using fallback room name: $roomName');
+      }
+      
+      // Final token check and cleanup
+      if (jwtToken != null) {
+        // Remove any whitespace that might cause issues
+        jwtToken = jwtToken.trim();
+        
+        debugPrint('Final JWT token details:');
+        debugPrint('- Length: ${jwtToken.length}');
+        debugPrint('- First 10 chars: ${jwtToken.length > 10 ? jwtToken.substring(0, 10) : jwtToken}...');
+      } else {
+        debugPrint('No JWT token found in the meeting URL');
+      }
+      
+      debugPrint('Final room name to be used: $roomName');
+      debugPrint('JWT token available: ${jwtToken != null}');
+      debugPrint('Server URL: $serverUrl');
+      
+    } catch (e) {
+      debugPrint('Error extracting meeting data: $e');
+      // Use defaults in case of error
+      if (roomName == null) {
+        roomName = 'vedika-consultation-' + DateTime.now().millisecondsSinceEpoch.toString();
+      }
+    }
+    
+    return {
+      'serverUrl': serverUrl,
+      'roomName': roomName,
+      'jwtToken': jwtToken,
+    };
+  }
+
+  Future<void> launchMeetingLink(String meetingUrl, BuildContext context, String userName, bool isDoctor) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: DoctorConsultationColorPalette.primaryBlue,
+            ),
+          );
+        },
+      );
+
+      // Generate new meeting URL
+      final newMeetingUrl = await _appointmentService.generateMeetingUrl(meetingUrl);
+      
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      if (newMeetingUrl == null) {
+        if (context.mounted) {
+          showSnackBar(context, "Failed to generate meeting URL");
+        }
+        return;
+      }
+
+      Map<String, String?> meetingData = extractMeetingDataFromUrl(newMeetingUrl);
+      String? serverUrl = meetingData['serverUrl'];
+      String? roomName = meetingData['roomName'];
+      String? jwtToken = meetingData['jwtToken'];
+
+      if (roomName != null && serverUrl != null) {
+        debugPrint('Launching meeting with:');
+        debugPrint('Server URL: $serverUrl');
+        debugPrint('Room name: $roomName');
+        debugPrint('User display name: $userName');
+        debugPrint('Original meeting URL: $newMeetingUrl');
+        
+        // Show confirmation dialog
+        if (context.mounted) {
+          bool shouldJoin = await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Join Meeting"),
+                content: const Text("Meeting room has been created. Would you like to join now?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("CANCEL"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text("JOIN"),
+                  ),
+                ],
+              );
+            },
+          ) ?? false;
+
+          if (shouldJoin) {
+            // Navigate to Jitsi Meet screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => JitsiMeetScreen(
+                  roomName: roomName,
+                  userDisplayName: userName,
+                  userEmail: isDoctor ? "doctor@vedika.com" : "user@vedika.com",
+                  userAvatarUrl: "",
+                  jwtToken: jwtToken,
+                  isDoctor: isDoctor,
+                  meetingUrl: newMeetingUrl,
+                  onMeetingClosed: () {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Meeting ended'),
+                          backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        if (context.mounted) {
+          showSnackBar(context, "Invalid meeting URL");
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching meeting: $e');
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog if open
+        showSnackBar(context, "Error launching meeting: $e");
+      }
+    }
+  }
+
+  Future<void> launchMeetingWithDebug(String meetingUrl, BuildContext context, String userName, bool isDoctor) async {
+    try {
+      // Present debug option
+      bool useDebug = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Launch Options"),
+            content: Text("How would you like to join the meeting?"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false); // Normal launch
+                },
+                child: Text("Normal"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true); // Debug launch
+                },
+                child: Text("Debug Mode"),
+              ),
+            ],
+          );
+        },
+      ) ?? false;
+
+      if (useDebug) {
+        // Launch using normal method instead of debug since the debug launcher is not available
+        launchMeetingLink(meetingUrl, context, userName, isDoctor);
+      } else {
+        // Normal launch
+        launchMeetingLink(meetingUrl, context, userName, isDoctor);
+      }
+    } catch (e) {
+      debugPrint('Error with meeting launch choice: $e');
+      // Fallback to normal launch
+      launchMeetingLink(meetingUrl, context, userName, isDoctor);
+    }
   }
 }
 
