@@ -8,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Registration/AmbulanceAgencyLocationPicker.dart';
 
 class DiagnosticCenterProfileScreen extends StatefulWidget {
   const DiagnosticCenterProfileScreen({super.key});
@@ -228,25 +229,70 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                               ),
                             ],
                             border: Border.all(color: LabTestColorPalette.primaryBlueLight, width: 3),
-                            image: profile.filesAndImages.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(profile.filesAndImages.first['url'] ?? ''),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
                           ),
-                          child: profile.filesAndImages.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'L',
-                                    style: TextStyle(
-                                      fontSize: 40,
-                                      fontWeight: FontWeight.bold,
+                          child: (profile.centerPhotosUrl != null && profile.centerPhotosUrl.isNotEmpty)
+                              ? ClipOval(
+                                  child: Image.network(
+                                    profile.centerPhotosUrl,
+                                    fit: BoxFit.cover,
+                                    width: 100,
+                                    height: 100,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // If centerPhotosUrl fails, try filesAndImages
+                                      if (profile.filesAndImages.isNotEmpty) {
+                                        return ClipOval(
+                                          child: Image.network(
+                                            profile.filesAndImages.first['url'] ?? '',
+                                            fit: BoxFit.cover,
+                                            width: 100,
+                                            height: 100,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Center(
+                                                child: Icon(
+                                                  Icons.science_outlined,
+                                                  size: 40,
+                                                  color: LabTestColorPalette.primaryBlue,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      }
+                                      return Center(
+                                        child: Icon(
+                                          Icons.science_outlined,
+                                          size: 40,
+                                          color: LabTestColorPalette.primaryBlue,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : profile.filesAndImages.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      profile.filesAndImages.first['url'] ?? '',
+                                      fit: BoxFit.cover,
+                                      width: 100,
+                                      height: 100,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Center(
+                                          child: Icon(
+                                            Icons.science_outlined,
+                                            size: 40,
+                                            color: LabTestColorPalette.primaryBlue,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : Center(
+                                    child: Icon(
+                                      Icons.science_outlined,
+                                      size: 40,
                                       color: LabTestColorPalette.primaryBlue,
                                     ),
                                   ),
-                                )
-                              : null,
                         ),
                         if (viewModel.isEditing)
                           Positioned(
@@ -257,7 +303,7 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                                 _showUploadDialog(
                                   context,
                                   'Profile Photo',
-                                  'filesAndImages',
+                                  'profilePhoto',
                                   isImage: true,
                                 );
                               },
@@ -737,6 +783,45 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             onChanged: (value) => viewModel.updateLocationInfo(floor: value),
             controller: viewModel.floorController,
           ),
+          if (viewModel.isEditing) ...[
+            const SizedBox(height: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.pin_drop, size: 16, color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Precise Location',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AmbulanceAgencyLocationPicker(
+                  initialLocation: profile.location,
+                  onLocationSelected: (location) {
+                    viewModel.updateLocationInfo(location: location);
+                  },
+                ),
+              ],
+            ),
+          ] else if (profile.location.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildLocationMap(profile),
+          ],
+          const SizedBox(height: 16),
           _buildSwitchTile(
             label: 'Parking Available',
             value: profile.parkingAvailable,
@@ -943,12 +1028,44 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
 
   Widget _buildLocationMap(DiagnosticCenter profile) {
     // Parse location coordinates
-    final locationParts = profile.location.split(',');
-    if (locationParts.length != 2) return const SizedBox.shrink();
+    if (profile.location.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Text(
+            'No location coordinates available',
+            style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
+        ),
+      );
+    }
 
-    final lat = double.tryParse(locationParts[0]);
-    final lng = double.tryParse(locationParts[1]);
-    if (lat == null || lng == null) return const SizedBox.shrink();
+    final locationParts = profile.location.split(',');
+    if (locationParts.length != 2) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Text(
+            'Invalid location format: ${profile.location}',
+            style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
+        ),
+      );
+    }
+
+    final lat = double.tryParse(locationParts[0].trim());
+    final lng = double.tryParse(locationParts[1].trim());
+    if (lat == null || lng == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Text(
+            'Invalid coordinates: ${profile.location}',
+            style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+          ),
+        ),
+      );
+    }
 
     return Container(
       height: 200,
@@ -1117,7 +1234,7 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: LabTestColorPalette.primaryBlue, width: 2),
+                          borderSide: BorderSide(color: LabTestColorPalette.primaryBlue),
                         ),
                         prefixIcon: Icon(
                           Icons.label_outline,

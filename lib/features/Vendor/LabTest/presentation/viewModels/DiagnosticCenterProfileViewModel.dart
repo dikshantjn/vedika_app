@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/DiagnosticCenterService.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestService.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestStorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 import 'package:logger/logger.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as path;
-import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/DiagnosticCenterStorageService.dart';
 
 class DiagnosticCenterProfileViewModel extends ChangeNotifier {
-  final DiagnosticCenterService _service = DiagnosticCenterService();
+  final LabTestService _labTestService = LabTestService();
   final VendorLoginService _loginService = VendorLoginService();
   final VendorService _statusService = VendorService();
-  final DiagnosticCenterStorageService _storageService = DiagnosticCenterStorageService();
+  final LabTestStorageService _storageService = LabTestStorageService();
   final Logger _logger = Logger();
 
   DiagnosticCenter? _profile;
@@ -114,21 +114,51 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
 
       // Get vendor ID
       final String? vendorId = await _loginService.getVendorId();
+      
+      _logger.i('Loading profile for vendor ID: $vendorId');
 
       if (vendorId == null) {
         throw Exception('Vendor ID not found');
       }
 
-      // Fetch the profile from the API
-      final profile = await _service.getDiagnosticCenterById(vendorId);
-      
-      if (profile != null) {
-        _profile = profile;
-        _initializeControllers();
-        _initializeStateVariables();
-        _logger.i('✅ Profile loaded successfully');
-      } else {
-        throw Exception('Failed to load profile');
+      // Fetch the profile from the API using the new getLabProfile method
+      try {
+        final profile = await _labTestService.getLabProfile(vendorId);
+        
+        _logger.i('Profile received: ${profile.toJson()}');
+        
+        if (profile != null) {
+          _profile = profile;
+          
+          // Set default values for any null fields
+          if (_profile!.regulatoryComplianceUrl == null) {
+            _profile = _profile!.copyWith(regulatoryComplianceUrl: {});
+          }
+          if (_profile!.qualityAssuranceUrl == null) {
+            _profile = _profile!.copyWith(qualityAssuranceUrl: {});
+          }
+          if (_profile!.testTypes == null) {
+            _profile = _profile!.copyWith(testTypes: []);
+          }
+          if (_profile!.businessDays == null) {
+            _profile = _profile!.copyWith(businessDays: []);
+          }
+          if (_profile!.languagesSpoken == null) {
+            _profile = _profile!.copyWith(languagesSpoken: []);
+          }
+          if (_profile!.filesAndImages == null) {
+            _profile = _profile!.copyWith(filesAndImages: []);
+          }
+          
+          _initializeControllers();
+          _initializeStateVariables();
+          _logger.i('✅ Profile loaded successfully');
+        } else {
+          throw Exception('Received null profile from API');
+        }
+      } catch (e) {
+        _logger.e('Error fetching profile: $e');
+        throw Exception('Failed to fetch profile: $e');
       }
 
       _isLoading = false;
@@ -226,15 +256,25 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
   }) {
     if (_profile == null) return;
 
+    if (address != null) addressController.text = address;
+    if (state != null) stateController.text = state;
+    if (city != null) cityController.text = city;
+    if (pincode != null) pincodeController.text = pincode;
+    if (nearbyLandmark != null) nearbyLandmarkController.text = nearbyLandmark;
+    if (floor != null) floorController.text = floor;
+    if (location != null) locationController.text = location;
+
     _profile = _profile!.copyWith(
-      address: address,
-      state: state,
-      city: city,
-      pincode: pincode,
-      nearbyLandmark: nearbyLandmark,
-      floor: floor,
-      location: location,
+      address: address ?? _profile!.address,
+      state: state ?? _profile!.state,
+      city: city ?? _profile!.city,
+      pincode: pincode ?? _profile!.pincode,
+      nearbyLandmark: nearbyLandmark ?? _profile!.nearbyLandmark,
+      floor: floor ?? _profile!.floor,
+      location: location ?? _profile!.location,
     );
+    
+    _logger.i('Updated location info: ${_profile!.location}');
     notifyListeners();
   }
 
@@ -305,15 +345,18 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
         throw Exception('Profile is null');
       }
       
-      // Get vendor ID
+      // Get vendor ID and ensure it's set in the profile
       final String? vendorId = await _loginService.getVendorId();
       
       if (vendorId == null) {
         throw Exception('Vendor ID not found');
       }
       
-      // Update the profile using the API
-      final success = await _service.updateDiagnosticCenter(vendorId, _profile!);
+      // Set the vendorId in the profile object
+      _profile = _profile!.copyWith(vendorId: vendorId);
+      
+      // Update the profile using the new updateLabProfile API
+      final success = await _labTestService.updateLabProfile(_profile!);
       
       if (!success) {
         throw Exception('Failed to update profile');
@@ -432,12 +475,37 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
           final updatedDocuments = List<Map<String, String>>.from(_filesAndImages);
           updatedDocuments.add(newDocument);
           updateDocuments(filesAndImages: updatedDocuments);
+          
+          // If this is a profile photo, update centerPhotosUrl too
+          if (name.toLowerCase().contains('profile') || name.toLowerCase().contains('avatar')) {
+            updateProfilePhoto(downloadUrl);
+          }
+          break;
+        case 'profilePhoto':
+          // Special case for profile photo upload
+          final updatedDocuments = List<Map<String, String>>.from(_filesAndImages);
+          updatedDocuments.add(newDocument);
+          updateDocuments(filesAndImages: updatedDocuments);
+          
+          // Update centerPhotosUrl with the new profile photo URL
+          updateProfilePhoto(downloadUrl);
           break;
       }
     } catch (e) {
       _logger.e('Error uploading document: $e');
       rethrow;
     }
+  }
+  
+  // Update profile photo URL
+  void updateProfilePhoto(String photoUrl) {
+    if (_profile == null) return;
+    
+    _logger.i('Updating profile photo URL: $photoUrl');
+    
+    // Update centerPhotosUrl with the new profile photo URL
+    _profile = _profile!.copyWith(centerPhotosUrl: photoUrl);
+    notifyListeners();
   }
 
   @override

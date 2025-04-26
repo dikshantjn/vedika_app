@@ -39,6 +39,7 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/me
 import 'package:vedika_healthcare/features/notifications/presentation/view/NotificationPage.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 
 class AppRoutes {
   static const String medicineOrder = "/medicineOrder";
@@ -147,9 +148,9 @@ class AppRoutes {
         );
 
       case bookLabTestAppointment:
-        final lab = settings.arguments as LabModel;  // Extracting LabModel argument
+        final center = settings.arguments as DiagnosticCenter;  // Extracting DiagnosticCenter argument
         return MaterialPageRoute(
-          builder: (context) => BookLabTestAppointmentPage(lab: lab),
+          builder: (context) => BookLabTestAppointmentPage(center: center),
         );
 
       case onlineDoctorDetail:

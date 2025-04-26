@@ -1,8 +1,8 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
+  static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
-  static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
+  // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
 
   // 📌 Auth APIs
@@ -155,11 +155,16 @@ class ApiEndpoints {
   static const String uploadFile = '$baseUrl/lab-test/upload-file';
   static const String uploadMultipleFiles = '$baseUrl/lab-test/upload-multiple-files';
   static const String registerDiagnosticCenter = '$baseUrl/lab-test/register';
-  static const String getDiagnosticCenter = '$baseUrl/lab-test/center';
-  static const String updateDiagnosticCenter = '$baseUrl/lab-test/center';
-  static const String deleteDiagnosticCenter = '$baseUrl/lab-test/center';
-  static const String getAllDiagnosticCenters = '$baseUrl/lab-test/centers';
-  static const String getDiagnosticCentersByCity = '$baseUrl/lab-test/centers/city';
-  static const String getDiagnosticCentersByTestType = '$baseUrl/lab-test/centers/test-type';
+  static const String getAllLabDiagnosticCenters = '$baseUrl/lab-test/all-diagnostic-centers';
+  static const String createLabTestBooking = '$baseUrl/labtest-booking/create';
+  static const String getPendingBookingsByVendorId = '$baseUrl/labtest-booking/bookings/vendor/pending';
+  static const String acceptLabTestBooking = '$baseUrl/labtest-booking/bookings/accept';
+  static const String getAcceptedBookingsByVendorId = '$baseUrl/labtest-booking/bookings/vendor/accepted';
+  static const String getCompletedBookingsByVendorId = '$baseUrl/labtest-booking/bookings/vendor/completed';
+  static const String updateLabTestBookingStatus = '$baseUrl/labtest-booking/bookings/update-status';
+  static const String updateLabTestReportUrls = '$baseUrl/labtest-booking/update-labtest-report-urls';  // NEW: endpoint for updating report URLs
 
+  // New Lab Test Profile APIs
+  static const String getLabProfile = '$baseUrl/lab-test/profile';
+  static const String updateLabProfile = '$baseUrl/lab-test/profile';
 }

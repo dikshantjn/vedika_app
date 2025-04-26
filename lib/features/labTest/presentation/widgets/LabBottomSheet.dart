@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
-import 'package:vedika_healthcare/features/labTest/data/models/LabTestModel.dart'; // Import LabTestModel
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 
 class LabBottomSheet extends StatefulWidget {
   final LabSearchViewModel viewModel;
@@ -45,21 +45,35 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
               Padding(
                 padding: const EdgeInsets.all(10),
                 child: Text(
-                  "Nearby Labs",
+                  "Nearby Diagnostic Centers",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
               ),
 
               Expanded(
                 child: widget.viewModel.labs.isEmpty
-                    ? Center(child: Text("No labs found nearby"))
+                    ? Center(child: Text("No diagnostic centers found nearby"))
                     : ListView.separated(
                   controller: scrollController,
                   itemCount: widget.viewModel.labs.length,
                   separatorBuilder: (_, __) => SizedBox(height: 8), // Spacing between items
                   itemBuilder: (context, index) {
-                    final lab = widget.viewModel.labs[index];
+                    final center = widget.viewModel.labs[index];
                     final isExpanded = expandedStates[index] ?? false;
+                    
+                    // Extract location coordinates if available
+                    double? lat, lng;
+                    try {
+                      if (center.location.isNotEmpty) {
+                        final parts = center.location.split(',');
+                        if (parts.length == 2) {
+                          lat = double.tryParse(parts[0]);
+                          lng = double.tryParse(parts[1]);
+                        }
+                      }
+                    } catch (e) {
+                      // Handle parsing errors silently
+                    }
 
                     return GestureDetector(
                       onTap: () {
@@ -68,8 +82,13 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                           expandedStates[index] = true;
                         });
 
-                        // Move camera to selected lab
-                        widget.viewModel.moveCameraToLab(lab.lat, lab.lng, lab);
+                        // Move camera to selected lab if coordinates available
+                        if (lat != null && lng != null) {
+                          widget.viewModel.moveCameraToLab(lat, lng, center);
+                        } else {
+                          // Just select the lab without moving camera
+                          widget.viewModel.selectLabWithoutMovingCamera(center);
+                        }
                       },
                       child: AnimatedContainer(
                         duration: Duration(milliseconds: 300),
@@ -83,26 +102,28 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Lab Name
+                            // Center Name
                             Text(
-                              lab.name,
+                              center.name,
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                             ),
                             SizedBox(height: 5),
 
                             // Address
                             Text(
-                              lab.address,
+                              "${center.address}, ${center.city}, ${center.state} - ${center.pincode}",
                               style: TextStyle(color: Colors.black54),
                             ),
                             SizedBox(height: 5),
 
-                            // Tags: Home Collection / At Center
+                            // Tags: Sample Collection Method
                             Row(
                               children: [
-                                if (lab.homeCollection) _buildTag("Home Collection", ColorPalette.textColor2),
-                                SizedBox(width: 8),
-                                _buildTag("At Center", ColorPalette.textColor2),
+                                _buildTag(_getSampleCollectionLabel(center.sampleCollectionMethod), ColorPalette.textColor2),
+                                if (center.emergencyHandlingFastTrack) ...[
+                                  SizedBox(width: 8),
+                                  _buildTag("Emergency Fast Track", ColorPalette.accentColor),
+                                ],
                               ],
                             ),
 
@@ -111,12 +132,38 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                               SizedBox(height: 10),
                               Divider(),
 
-                              _buildDetailRow("Operating Hours", lab.operatingHours),
-                              _buildDetailRow("Contact", lab.contact),
-
-                              // Lab Tests
+                              _buildDetailRow("Business Hours", center.businessTimings),
+                              _buildDetailRow("Business Days", center.businessDays.join(", ")),
+                              _buildDetailRow("Contact", center.mainContactNumber),
+                              if (center.emergencyContactNumber.isNotEmpty)
+                                _buildDetailRow("Emergency Contact", center.emergencyContactNumber),
+                              _buildDetailRow("Email", center.email),
+                              if (center.website.isNotEmpty)
+                                _buildDetailRow("Website", center.website),
+                              
+                              // Facilities
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  "Facilities",
+                                  style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                                ),
+                              ),
+                              
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (center.parkingAvailable) _buildFacilityTag("Parking Available"),
+                                  if (center.wheelchairAccess) _buildFacilityTag("Wheelchair Access"),
+                                  if (center.liftAccess) _buildFacilityTag("Lift Access"),
+                                  if (center.ambulanceServiceAvailable) _buildFacilityTag("Ambulance Service"),
+                                ],
+                              ),
+
+                              // Test Types
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 child: Text(
                                   "Available Tests",
                                   style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
@@ -125,7 +172,7 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: lab.tests.map((LabTestModel test) => _buildTestTag(test)).toList(),
+                                children: center.testTypes.map((test) => _buildTestTag(test)).toList(),
                               ),
 
                               SizedBox(height: 10),
@@ -134,7 +181,7 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: ElevatedButton(
-                                  onPressed: () => widget.viewModel.bookLabAppointment(context, lab), // Pass context
+                                  onPressed: () => widget.viewModel.bookLabAppointment(context, center),
                                   style: ElevatedButton.styleFrom(
                                     foregroundColor: Colors.white,
                                     backgroundColor: ColorPalette.buttonColor,
@@ -161,6 +208,19 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
     );
   }
 
+  String _getSampleCollectionLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'at home':
+        return 'Home Collection';
+      case 'at center':
+        return 'At Center';
+      case 'both':
+        return 'Home & Center Collection';
+      default:
+        return method;
+    }
+  }
+
   /// Creates a key-value row for details like Operating Hours & Contact
   Widget _buildDetailRow(String key, String value) {
     return Padding(
@@ -181,7 +241,7 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
     );
   }
 
-  /// Creates rounded tags for Home Collection / At Center
+  /// Creates rounded tags for collection methods, etc.
   Widget _buildTag(String text, Color color) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -194,8 +254,28 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
     );
   }
 
-  /// Creates rounded test tags from LabTestModel
-  Widget _buildTestTag(LabTestModel test) {
+  /// Creates a facility indicator
+  Widget _buildFacilityTag(String facility) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.shade300, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+          SizedBox(width: 4),
+          Text(facility, style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  /// Creates rounded test tags
+  Widget _buildTestTag(String test) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -203,7 +283,7 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: ColorPalette.testBoxBorder, width: 1),
       ),
-      child: Text(test.name, style: TextStyle(color: ColorPalette.testBoxText, fontWeight: FontWeight.w500)), // Use 'name' property
+      child: Text(test, style: TextStyle(color: ColorPalette.testBoxText, fontWeight: FontWeight.w500)),
     );
   }
 

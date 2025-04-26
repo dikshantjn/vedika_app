@@ -10,7 +10,6 @@ class LabTestStorageService {
   final Logger _logger = Logger();
   final Uuid _uuid = Uuid();
 
-  /// Upload a file to Firebase Storage
   /// Returns the download URL as a string
   Future<String> uploadFile(File file, {required String fileType}) async {
     try {
@@ -38,7 +37,6 @@ class LabTestStorageService {
     }
   }
 
-  /// Upload multiple files to Firebase Storage
   /// Returns a list of download URLs
   Future<List<String>> uploadMultipleFiles(List<File> files, {required String fileType}) async {
     try {

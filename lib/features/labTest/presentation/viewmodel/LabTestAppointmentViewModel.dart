@@ -4,26 +4,49 @@ import 'package:image_picker/image_picker.dart';
 import 'package:vedika_healthcare/features/labTest/data/models/LabAppointmentModel.dart';
 import 'package:vedika_healthcare/features/labTest/data/models/LabModel.dart';
 import 'package:vedika_healthcare/features/labTest/data/models/LabTestModel.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
 
 class LabTestAppointmentViewModel extends ChangeNotifier {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  List<LabTestModel> selectedTests = [];
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-  bool isHomeSampleCollection = false;
-  File? prescriptionImage;
-
+  // Selected tests
+  final List<String> _selectedTests = [];
+  List<String> get selectedTests => _selectedTests;
+  
+  // Date selection
+  DateTime? _selectedDate;
+  DateTime? get selectedDate => _selectedDate;
+  
+  // Time selection
+  String? _selectedTime;
+  String? get selectedTime => _selectedTime;
+  
+  // Collection & delivery options
+  bool _homeCollectionRequired = false;
+  bool get homeCollectionRequired => _homeCollectionRequired;
+  
+  bool _reportDeliveryAtHome = false;
+  bool get reportDeliveryAtHome => _reportDeliveryAtHome;
+  
+  // Prescription
+  File? _prescriptionImage;
+  File? get prescriptionImage => _prescriptionImage;
+  
+  // Submission state
+  bool _isSubmitting = false;
+  bool get isSubmitting => _isSubmitting;
+  
   ValueNotifier<String?> dateError = ValueNotifier(null);
   ValueNotifier<String?> timeError = ValueNotifier<String?>(null);
   ValueNotifier<String?> testError = ValueNotifier(null);
 
   // Toggle Test Selection
   void toggleTestSelection(LabTestModel test) {
-    if (selectedTests.contains(test)) {
-      selectedTests.remove(test);
+    if (selectedTests.contains(test.name)) {
+      removeTest(test.name);
     } else {
-      selectedTests.add(test);
+      addTest(test.name);
     }
     testError.value = selectedTests.isEmpty ? "Please select at least one test" : null;
     notifyListeners();
@@ -38,7 +61,7 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (pickedDate != null) {
-      selectedDate = pickedDate;
+      setDate(pickedDate);
       dateError.value = null;
       notifyListeners();
     }
@@ -51,7 +74,7 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
       initialTime: TimeOfDay.now(),
     );
     if (pickedTime != null) {
-      selectedTime = pickedTime;
+      setTime(pickedTime.format(context));
       timeError.value = null;
       notifyListeners();
     }
@@ -59,7 +82,13 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
 
   // Toggle Home Sample Collection
   void toggleHomeSampleCollection(bool value) {
-    isHomeSampleCollection = value;
+    _homeCollectionRequired = value;
+    notifyListeners();
+  }
+
+  // Toggle Report Delivery at Home
+  void toggleReportDeliveryAtHome(bool value) {
+    _reportDeliveryAtHome = value;
     notifyListeners();
   }
 
@@ -67,15 +96,47 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
   Future<void> pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      prescriptionImage = File(pickedFile.path);
+      setPrescriptionImage(File(pickedFile.path));
       notifyListeners();
     }
   }
 
-  // Validate Fields Before Proceeding
-  bool validateFields() {
-    bool isValid = true;
+  // Add test to selection
+  void addTest(String test) {
+    if (!_selectedTests.contains(test)) {
+      _selectedTests.add(test);
+      notifyListeners();
+    }
+  }
+  
+  // Remove test from selection
+  void removeTest(String test) {
+    _selectedTests.remove(test);
+    notifyListeners();
+  }
 
+  // Set date
+  void setDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+  
+  // Set time
+  void setTime(String time) {
+    _selectedTime = time;
+    notifyListeners();
+  }
+  
+  // Set prescription image
+  void setPrescriptionImage(File? image) {
+    _prescriptionImage = image;
+    notifyListeners();
+  }
+  
+  // Validate form
+  bool validateForm() {
+    bool isValid = true;
+    
     testError.value = selectedTests.isEmpty ? "Please select at least one test" : null;
     dateError.value = selectedDate == null ? "Please select a date" : null;
     timeError.value = selectedTime == null ? "Please select a time" : null;
@@ -87,24 +148,60 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
     notifyListeners();
     return isValid;
   }
-
-  // Confirm Appointment
-  void confirmAppointment(BuildContext context, LabModel lab) {
-    if (!validateFields()) return;
-
-    final appointment = LabAppointmentModel(
-      labId: lab.id,
-      labName: lab.name,
-      address: lab.address,
-      contact: lab.contact,
-      selectedTests: selectedTests.map((test) => test.name).toList(),
-      selectedDate: selectedDate!,
-      selectedTime: selectedTime!.format(context),
-      isHomeSampleCollection: isHomeSampleCollection,
-      prescriptionImage: prescriptionImage,
-    );
-
-    Navigator.pushNamed(context, '/labPayment', arguments: appointment);
+  
+  // Reset form
+  void resetForm() {
+    _selectedTests.clear();
+    _selectedDate = null;
+    _selectedTime = null;
+    _homeCollectionRequired = false;
+    _reportDeliveryAtHome = false;
+    _prescriptionImage = null;
+    notifyListeners();
+  }
+  
+  // Submit appointment
+  Future<bool> submitAppointment(DiagnosticCenter center) async {
+    if (!validateForm()) {
+      return false;
+    }
+    
+    _isSubmitting = true;
+    notifyListeners();
+    
+    try {
+      // TODO: Implement the actual API call to book the appointment
+      
+      // For now, simulate a network request
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // Create a booking object
+      final booking = LabTestBooking(
+        vendorId: center.vendorId,
+        selectedTests: _selectedTests,
+        bookingDate: _selectedDate!.toString().split(' ')[0], // Format as YYYY-MM-DD
+        bookingTime: _selectedTime,
+        homeCollectionRequired: _homeCollectionRequired,
+        reportDeliveryAtHome: _reportDeliveryAtHome,
+        prescriptionUrl: _prescriptionImage?.path,
+        diagnosticCenter: center,
+        bookingStatus: 'Pending',
+        paymentStatus: 'Pending',
+      );
+      
+      // Reset form after successful booking
+      resetForm();
+      
+      _isSubmitting = false;
+      notifyListeners();
+      
+      return true;
+    } catch (e) {
+      print('Error booking appointment: $e');
+      _isSubmitting = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   void validateTime() {

@@ -86,11 +86,16 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   List<Map<String, String>> get photos => _photos;
   
   List<File> _certificationFiles = [];
+  List<File> get certificationFiles => _certificationFiles;
+  
   List<File> _licenseFiles = [];
+  List<File> get licenseFiles => _licenseFiles;
+  
   List<File> _photoFiles = [];
+  List<File> get photoFiles => _photoFiles;
   
   Map<String, dynamic>? panCardFile;
-  List<Map<String, dynamic>>? businessDocuments;
+  List<Map<String, dynamic>> businessDocuments = [];
   
   String get email => emailController.text;
   String get password => passwordController.text;
@@ -188,33 +193,63 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   }
   
   void addCertificationFile(File file) {
-    _certificationFiles.add(file);
-    notifyListeners();
+    if (!_certificationFiles.contains(file)) {
+      _certificationFiles.add(file);
+      notifyListeners();
+    }
   }
 
   void addLicenseFile(File file) {
-    _licenseFiles.add(file);
-    notifyListeners();
+    if (!_licenseFiles.contains(file)) {
+      _licenseFiles.add(file);
+      notifyListeners();
+    }
   }
 
   void addPhotoFile(File file) {
-    _photoFiles.add(file);
-    notifyListeners();
+    if (!_photoFiles.contains(file)) {
+      _photoFiles.add(file);
+      notifyListeners();
+    }
   }
 
   void removeCertificationFile(int index) {
-    _certificationFiles.removeAt(index);
-    notifyListeners();
+    if (index >= 0 && index < _certificationFiles.length) {
+      _certificationFiles.removeAt(index);
+      
+      // Also remove from certifications list if present
+      if (index < _certifications.length) {
+        _certifications.removeAt(index);
+      }
+      
+      notifyListeners();
+    }
   }
 
   void removeLicenseFile(int index) {
-    _licenseFiles.removeAt(index);
-    notifyListeners();
+    if (index >= 0 && index < _licenseFiles.length) {
+      _licenseFiles.removeAt(index);
+      
+      // Also remove from licenses list if present
+      if (index < _licenses.length) {
+        _licenses.removeAt(index);
+      }
+      
+      notifyListeners();
+    }
   }
 
   void removePhotoFile(int index) {
-    _photoFiles.removeAt(index);
-    notifyListeners();
+    if (index >= 0 && index < _photoFiles.length) {
+      _photoFiles.removeAt(index);
+      
+      // Also remove from photos list if present
+      if (index < _photos.length) {
+        _photos.removeAt(index);
+      }
+      
+      notifyListeners();
+    }
   }
   
   void setPanCardFile(Map<String, dynamic> file) {
@@ -257,15 +292,44 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
   }
 
   void addBusinessDocument(Map<String, dynamic> document) {
-    businessDocuments ??= [];
-    businessDocuments!.add(document);
-    notifyListeners();
+    // Validate input
+    if (document == null) {
+      _logger.e('addBusinessDocument called with null document data');
+      return;
+    }
+
+    if (document['file'] == null) {
+      _logger.e('Business document file object is null');
+      return;
+    }
+
+    if (document['name'] == null || document['name'].toString().isEmpty) {
+      _logger.e('Business document file name is null or empty');
+      return;
+    }
+
+    // Check if document with same name already exists
+    bool documentExists = businessDocuments.any((doc) => 
+        doc['name'] == document['name'] && 
+        (doc['file'] != null && doc['file'] is File && 
+         (doc['file'] as File).path == (document['file'] as File).path));
+
+    if (!documentExists) {
+      businessDocuments.add(document);
+      _logger.i('Added business document: ${document['name']}');
+      notifyListeners();
+    } else {
+      _logger.i('Document already exists: ${document['name']}');
+    }
   }
 
   void removeBusinessDocument(int index) {
-    if (businessDocuments != null && index >= 0 && index < businessDocuments!.length) {
-      businessDocuments!.removeAt(index);
+    if (index >= 0 && index < businessDocuments.length) {
+      _logger.i('Removing business document: ${businessDocuments[index]['name']}');
+      businessDocuments.removeAt(index);
       notifyListeners();
+    } else {
+      _logger.e('Invalid index for removing business document: $index');
     }
   }
   
@@ -446,11 +510,11 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         }
       }
 
-      if (businessDocuments != null && businessDocuments!.isNotEmpty) {
+      if (businessDocuments.isNotEmpty) {
         try {
-          _logger.i('Uploading ${businessDocuments!.length} business documents');
-          for (int i = 0; i < businessDocuments!.length; i++) {
-            final doc = businessDocuments![i];
+          _logger.i('Uploading ${businessDocuments.length} business documents');
+          for (int i = 0; i < businessDocuments.length; i++) {
+            final doc = businessDocuments[i];
             final file = doc['file'] as File?;
             final fileName = doc['name'] as String?;
 
@@ -476,7 +540,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
               vendorId: tempVendorId,
               fileType: 'business_documents',
             );
-            businessDocuments![i] = {
+            businessDocuments[i] = {
               'name': fileName,
               'url': result['url'],
             };
@@ -484,7 +548,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
           }
         } catch (e) {
           _error = 'Failed to upload business documents: $e';
-          _logger.e('Business documents upload failed - Count: ${businessDocuments!.length}', 
+          _logger.e('Business documents upload failed - Count: ${businessDocuments.length}', 
             error: e, 
             stackTrace: StackTrace.current
           );
@@ -536,7 +600,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         pincode: pincode,
         location: location,
         panCardFile: panCardFile,
-        businessDocuments: businessDocuments ?? [],
+        businessDocuments: businessDocuments,
       );
       _logger.i('Created hospital profile object');
 
@@ -553,7 +617,7 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         _licenses.clear();
         _photos.clear();
         panCardFile = null;
-        businessDocuments = null;
+        businessDocuments.clear();
       } else {
         _logger.w('Registration failed with status code: ${response.statusCode}');
       }
@@ -597,7 +661,15 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  // Add these new methods for file uploads
+  // Add a method to check if documents are already loaded
+  bool hasLoadedDocuments() {
+    return businessDocuments.isNotEmpty || 
+           _certifications.isNotEmpty || 
+           _licenses.isNotEmpty || 
+           panCardFile != null;
+  }
+
+  // Modified to ensure files are preserved
   void uploadCertifications(List<Map<String, Object>> files) {
     if (files.isNotEmpty) {
       for (var file in files) {
@@ -606,15 +678,21 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         
         if (fileName != null && fileObj != null) {
           // Add to certification files list for later upload
-          _certificationFiles.add(fileObj);
+          addCertificationFile(fileObj);
           
           // Add to certifications list with name only (URL will be added after upload)
-          if (!_certifications.any((e) => e['name'] == fileName)) {
+          bool exists = _certifications.any((e) => e['name'] == fileName);
+          if (!exists) {
             _certifications.add({
               'name': fileName,
               'url': '', // URL will be set after upload
             });
+            _logger.i('Added certification: $fileName');
+          } else {
+            _logger.i('Certification already exists: $fileName');
           }
+        } else {
+          _logger.e('Invalid certification file data: $file');
         }
       }
       notifyListeners();
@@ -629,50 +707,51 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         
         if (fileName != null && fileObj != null) {
           // Add to license files list for later upload
-          _licenseFiles.add(fileObj);
+          addLicenseFile(fileObj);
           
           // Add to licenses list with name only (URL will be added after upload)
-          if (!_licenses.any((e) => e['name'] == fileName)) {
+          bool exists = _licenses.any((e) => e['name'] == fileName);
+          if (!exists) {
             _licenses.add({
               'name': fileName,
               'url': '', // URL will be set after upload
             });
+            _logger.i('Added license: $fileName');
+          } else {
+            _logger.i('License already exists: $fileName');
           }
+        } else {
+          _logger.e('Invalid license file data: $file');
         }
       }
       notifyListeners();
     }
   }
 
-  void uploadPanCard(Map<String, Object> file) {
-    final fileName = file['name'] as String?;
-    final fileObj = file['file'] as File?;
-    
-    if (fileName != null && fileObj != null) {
-      // Set PAN card file for later upload
-      panCardFile = {
-        'name': fileName,
-        'file': fileObj,
-      };
-      notifyListeners();
-    }
-  }
-
   void uploadBusinessDocuments(List<Map<String, Object>> files) {
     if (files.isNotEmpty) {
-      businessDocuments ??= [];
       for (var file in files) {
         final fileName = file['name'] as String?;
         final fileObj = file['file'] as File?;
         
         if (fileName != null && fileObj != null) {
           // Add to business documents list with file object
-          if (!businessDocuments!.any((e) => e['name'] == fileName)) {
-            businessDocuments!.add({
+          bool exists = businessDocuments.any((e) => 
+              e['name'] == fileName && 
+              (e['file'] != null && e['file'] is File && 
+              (e['file'] as File).path == fileObj.path));
+              
+          if (!exists) {
+            addBusinessDocument({
               'name': fileName,
               'file': fileObj,
             });
+            _logger.i('Added business document via batch upload: $fileName');
+          } else {
+            _logger.i('Business document already exists: $fileName');
           }
+        } else {
+          _logger.e('Invalid business document file data: $file');
         }
       }
       notifyListeners();

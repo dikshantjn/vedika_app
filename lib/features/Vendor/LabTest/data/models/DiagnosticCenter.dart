@@ -113,42 +113,130 @@ class DiagnosticCenter {
 
   // Add fromJson factory constructor
   factory DiagnosticCenter.fromJson(Map<String, dynamic> json) {
-    return DiagnosticCenter(
-      name: json['name'] ?? '',
-      gstNumber: json['gstNumber'] ?? '',
-      panNumber: json['panNumber'] ?? '',
-      ownerName: json['ownerName'] ?? '',
-      regulatoryComplianceUrl: Map<String, String>.from(json['regulatoryComplianceUrl'] ?? {}),
-      qualityAssuranceUrl: Map<String, String>.from(json['qualityAssuranceUrl'] ?? {}),
-      sampleCollectionMethod: json['sampleCollectionMethod'] ?? '',
-      testTypes: List<String>.from(json['testTypes'] ?? []),
-      businessTimings: json['businessTimings'] ?? '',
-      businessDays: List<String>.from(json['businessDays'] ?? []),
-      homeCollectionGeoLimit: json['homeCollectionGeoLimit'] ?? '',
-      emergencyHandlingFastTrack: json['emergencyHandlingFastTrack'] ?? false,
-      address: json['address'] ?? '',
-      state: json['state'] ?? '',
-      city: json['city'] ?? '',
-      pincode: json['pincode'] ?? '',
-      nearbyLandmark: json['nearbyLandmark'] ?? '',
-      floor: json['floor'] ?? '',
-      parkingAvailable: json['parkingAvailable'] ?? false,
-      wheelchairAccess: json['wheelchairAccess'] ?? false,
-      liftAccess: json['liftAccess'] ?? false,
-      ambulanceServiceAvailable: json['ambulanceServiceAvailable'] ?? false,
-      mainContactNumber: json['mainContactNumber'] ?? '',
-      emergencyContactNumber: json['emergencyContactNumber'] ?? '',
-      email: json['email'] ?? '',
-      website: json['website'] ?? '',
-      languagesSpoken: List<String>.from(json['languagesSpoken'] ?? []),
-      centerPhotosUrl: json['centerPhotosUrl'] ?? '',
-      googleMapsLocationUrl: json['googleMapsLocationUrl'] ?? '',
-      vendorId: json['vendorId'],
-      generatedId: json['generatedId'],
-      password: json['password'] ?? '',
-      filesAndImages: List<Map<String, String>>.from(json['filesAndImages'] ?? []),
-      location: json['location'] ?? '',
-    );
+    try {
+      // Print the entire JSON for debugging
+      print('Parsing DiagnosticCenter from JSON: $json');
+      
+      // Helper function to safely convert to List<String>
+      List<String> safeStringList(dynamic value) {
+        if (value == null) return [];
+        if (value is List) {
+          return value.map((item) => item.toString()).toList();
+        }
+        return [];
+      }
+      
+      // Helper function to safely convert to Map<String, String>
+      Map<String, String> safeStringMap(dynamic value) {
+        if (value == null) return {};
+        if (value is Map) {
+          Map<String, String> result = {};
+          value.forEach((key, val) {
+            result[key.toString()] = val.toString();
+          });
+          return result;
+        }
+        return {};
+      }
+      
+      // Helper function for List<Map<String, String>>
+      List<Map<String, String>> safeMapList(dynamic value) {
+        if (value == null) return [];
+        if (value is List) {
+          return value.map((item) {
+            if (item is Map) {
+              Map<String, String> result = {};
+              item.forEach((key, val) {
+                result[key.toString()] = val.toString();
+              });
+              return result;
+            }
+            return <String, String>{};
+          }).toList();
+        }
+        return [];
+      }
+      
+      final center = DiagnosticCenter(
+        name: json['name']?.toString() ?? '',
+        gstNumber: json['gstNumber']?.toString() ?? '',
+        panNumber: json['panNumber']?.toString() ?? '',
+        ownerName: json['ownerName']?.toString() ?? '',
+        regulatoryComplianceUrl: safeStringMap(json['regulatoryComplianceUrl']),
+        qualityAssuranceUrl: safeStringMap(json['qualityAssuranceUrl']),
+        sampleCollectionMethod: json['sampleCollectionMethod']?.toString() ?? '',
+        testTypes: safeStringList(json['testTypes']),
+        businessTimings: json['businessTimings']?.toString() ?? '',
+        businessDays: safeStringList(json['businessDays']),
+        homeCollectionGeoLimit: json['homeCollectionGeoLimit']?.toString() ?? '',
+        emergencyHandlingFastTrack: json['emergencyHandlingFastTrack'] == true,
+        address: json['address']?.toString() ?? '',
+        state: json['state']?.toString() ?? '',
+        city: json['city']?.toString() ?? '',
+        pincode: json['pincode']?.toString() ?? '',
+        nearbyLandmark: json['nearbyLandmark']?.toString() ?? '',
+        floor: json['floor']?.toString() ?? '',
+        parkingAvailable: json['parkingAvailable'] == true,
+        wheelchairAccess: json['wheelchairAccess'] == true,
+        liftAccess: json['liftAccess'] == true,
+        ambulanceServiceAvailable: json['ambulanceServiceAvailable'] == true,
+        mainContactNumber: json['mainContactNumber']?.toString() ?? '',
+        emergencyContactNumber: json['emergencyContactNumber']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        website: json['website']?.toString() ?? '',
+        languagesSpoken: safeStringList(json['languagesSpoken']),
+        centerPhotosUrl: json['centerPhotosUrl']?.toString() ?? '',
+        googleMapsLocationUrl: json['googleMapsLocationUrl']?.toString() ?? '',
+        vendorId: json['vendorId']?.toString(),
+        generatedId: json['generatedId']?.toString(),
+        password: json['password']?.toString() ?? '',
+        filesAndImages: safeMapList(json['filesAndImages']),
+        location: json['location']?.toString() ?? '',
+      );
+      
+      print('Successfully parsed DiagnosticCenter: ${center.name}');
+      return center;
+    } catch (e, stackTrace) {
+      print('Error parsing DiagnosticCenter: $e');
+      print('Stack trace: $stackTrace');
+      print('Original JSON: $json');
+      
+      // Create a default object rather than crashing
+      return DiagnosticCenter(
+        name: '',
+        gstNumber: '',
+        panNumber: '',
+        ownerName: '',
+        regulatoryComplianceUrl: {},
+        qualityAssuranceUrl: {},
+        sampleCollectionMethod: '',
+        testTypes: [],
+        businessTimings: '',
+        businessDays: [],
+        homeCollectionGeoLimit: '',
+        emergencyHandlingFastTrack: false,
+        address: '',
+        state: '',
+        city: '',
+        pincode: '',
+        nearbyLandmark: '',
+        floor: '',
+        parkingAvailable: false,
+        wheelchairAccess: false,
+        liftAccess: false,
+        ambulanceServiceAvailable: false,
+        mainContactNumber: '',
+        emergencyContactNumber: '',
+        email: '',
+        website: '',
+        languagesSpoken: [],
+        centerPhotosUrl: '',
+        googleMapsLocationUrl: '',
+        password: '',
+        filesAndImages: [],
+        location: '',
+      );
+    }
   }
 
   // Add copyWith method for immutable updates

@@ -5,38 +5,48 @@ import 'package:location/location.dart' as loc;
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/EnableLocationPage.dart';
-import 'package:vedika_healthcare/features/labTest/data/models/LabModel.dart';
-import 'package:vedika_healthcare/features/labTest/data/repositories/LabRepository.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/features/labTest/data/services/LabTestService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:logger/logger.dart';
 
 class LabSearchViewModel extends ChangeNotifier {
+  final _logger = Logger();
+  final LabTestService _labTestService = LabTestService();
+  
   GoogleMapController? _mapController;
   LatLng? _currentPosition;
   Set<Marker> _markers = {};
-  List<LabModel> _labs = [];
-  List<LabModel> _filteredLabs = [];
+  List<DiagnosticCenter> _labCenters = [];
+  List<DiagnosticCenter> _filteredLabCenters = [];
   bool _isLoading = true;
   TextEditingController searchController = TextEditingController();
 
   // Track the selected lab
-  LabModel? _selectedLab;
+  DiagnosticCenter? _selectedLab;
 
   GoogleMapController? get mapController => _mapController;
   Set<Marker> get markers => _markers;
-  List<LabModel> get labs => _selectedLab != null ? [_selectedLab!] : _filteredLabs;
+  List<DiagnosticCenter> get labs => _selectedLab != null ? [_selectedLab!] : _filteredLabCenters;
   bool get isLoading => _isLoading;
   LatLng? get currentPosition => _currentPosition;
-  LabModel? get selectedLab => _selectedLab;
+  DiagnosticCenter? get selectedLab => _selectedLab;
 
   void setMapController(GoogleMapController controller) {
+    _logger.i("Setting MapController in ViewModel");
     _mapController = controller;
-    print("✅ MapController set in ViewModel");
 
     if (_currentPosition != null) {
-      _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
-      print("✅ Camera moved to user location from ViewModel");
+      _logger.i("Moving camera to user location: $_currentPosition");
+      try {
+        _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
+      } catch (e) {
+        _logger.e("Error moving camera: $e");
+      }
+      // Update markers after controller is set
+      _updateMarkers();
     } else {
-      print("🔴 Waiting for location update...");
+      _logger.w("Current position is null in setMapController");
     }
 
     notifyListeners();
@@ -45,6 +55,7 @@ class LabSearchViewModel extends ChangeNotifier {
   Future<void> loadUserLocation(BuildContext context) async {
     try {
       _selectedLab = null; // Reset selected lab when reopening the page
+      _isLoading = true;
       notifyListeners();
 
       var locationProvider = Provider.of<LocationProvider>(context, listen: false);
@@ -54,7 +65,7 @@ class LabSearchViewModel extends ChangeNotifier {
       if (!serviceEnabled) {
         serviceEnabled = await location.requestService();
         if (!serviceEnabled) {
-          print("🔴 Location services disabled. Redirecting to EnableLocationPage.");
+          _logger.w("Location services disabled. Redirecting to EnableLocationPage.");
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "labTest")),
@@ -67,7 +78,7 @@ class LabSearchViewModel extends ChangeNotifier {
       if (permissionGranted == loc.PermissionStatus.denied) {
         permissionGranted = await location.requestPermission();
         if (permissionGranted != loc.PermissionStatus.granted) {
-          print("🔴 Location permission denied. Redirecting to EnableLocationPage.");
+          _logger.w("Location permission denied. Redirecting to EnableLocationPage.");
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "labTest")),
@@ -79,41 +90,112 @@ class LabSearchViewModel extends ChangeNotifier {
       await locationProvider.loadSavedLocation();
       if (locationProvider.latitude != null && locationProvider.longitude != null) {
         _currentPosition = LatLng(locationProvider.latitude!, locationProvider.longitude!);
-        print("✅ User location set: $_currentPosition");
+        _logger.i("User location set: $_currentPosition");
       } else {
-        print("🔴 Failed to get saved location!");
+        _logger.e("Failed to get saved location, using default location");
+        // Use a default location if saved location is not available
+        _currentPosition = LatLng(18.488726, 73.8674683); // Default location
       }
 
+      // Fetch lab centers before attempting to use mapController
+      await _fetchLabCenters();
+      
       _isLoading = false;
       notifyListeners();
-      print("✅ _isLoading set to false");
+      _logger.i("_isLoading set to false");
 
+      // If controller is already initialized, move camera to user's location
       if (_mapController != null && _currentPosition != null) {
-        print("✅ Moving map to user location");
+        _logger.i("Moving map to user location");
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
       } else {
-        print("🔴 MapController is NULL. Waiting for it to be initialized.");
+        _logger.w("MapController is NULL. It will be initialized when the map is created.");
+        // Don't try to use the controller here - it will be set in setMapController method
       }
 
-      _fetchNearbyLabs(); // Fetch all nearby labs after resetting selection
       _addUserLocationMarker();
-    } catch (e) {
-      print("🔴 Error in loadUserLocation(): $e");
+    } catch (e, stackTrace) {
+      _logger.e("Error in loadUserLocation(): $e");
+      _logger.e("Stack trace: $stackTrace");
       _isLoading = false;
       notifyListeners();
     }
   }
 
-
-  void _fetchNearbyLabs() {
-    _labs = LabRepository.getLabs();
-    _filteredLabs = _labs.where((lab) => _calculateDistance(lab.lat, lab.lng) <= 6.0).toList();
-    _updateMarkers();
-    notifyListeners();
+  Future<void> _fetchLabCenters() async {
+    try {
+      _logger.i("Fetching lab centers from API");
+      _labCenters = await _labTestService.getAllDiagnosticCenters();
+      _logger.i("Fetched ${_labCenters.length} lab centers");
+      
+      if (_labCenters.isEmpty) {
+        _logger.w("No lab centers found from API");
+        _filteredLabCenters = [];
+        return;
+      }
+      
+      // Log center details for debugging
+      for (var center in _labCenters) {
+        _logger.i("Lab center: ${center.name}, Location: '${center.location}'");
+      }
+      
+      // Filter labs that are within a reasonable distance (if location data available)
+      if (_currentPosition != null) {
+        _filteredLabCenters = _labCenters.where((center) {
+          // Extract location from the location string (assuming format: "lat,lng")
+          try {
+            if (center.location.isEmpty) {
+              _logger.w("Empty location for center: ${center.name}");
+              // Return true to include centers even with empty location
+              return true;
+            }
+            
+            List<String> coordinates = center.location.split(',');
+            if (coordinates.length != 2) {
+              _logger.w("Invalid location format for center: ${center.name}, location: ${center.location}");
+              return false;
+            }
+            
+            double lat = double.tryParse(coordinates[0].trim()) ?? 0;
+            double lng = double.tryParse(coordinates[1].trim()) ?? 0;
+            
+            if (lat == 0 && lng == 0) {
+              _logger.w("Invalid coordinates for center: ${center.name}, location: ${center.location}");
+              return false;
+            }
+            
+            // Calculate distance and include only those within 50km
+            double distance = _calculateDistanceFromCoordinates(lat, lng);
+            return distance <= 50.0; // Increased from 10km to 50km radius
+          } catch (e) {
+            _logger.e("Error parsing location for center ${center.name}: $e");
+            return false;
+          }
+        }).toList();
+        
+        _logger.i("Filtered to ${_filteredLabCenters.length} lab centers within 50km");
+        
+        // If no centers found within the distance limit, show all centers as fallback
+        if (_filteredLabCenters.isEmpty && _labCenters.isNotEmpty) {
+          _logger.i("No centers found within distance limit, showing all ${_labCenters.length} centers");
+          _filteredLabCenters = _labCenters;
+        }
+      } else {
+        _filteredLabCenters = _labCenters;
+      }
+      
+      _updateMarkers();
+    } catch (e, stackTrace) {
+      _logger.e("Error fetching lab centers: $e");
+      _logger.e("Stack trace: $stackTrace");
+      _filteredLabCenters = [];
+    }
   }
 
-  double _calculateDistance(double lat, double lng) {
-    const double earthRadius = 6371;
+  double _calculateDistanceFromCoordinates(double lat, double lng) {
+    if (_currentPosition == null) return double.infinity;
+    
+    const double earthRadius = 6371; // in kilometers
     double dLat = _degreesToRadians(lat - _currentPosition!.latitude);
     double dLng = _degreesToRadians(lng - _currentPosition!.longitude);
 
@@ -132,22 +214,55 @@ class LabSearchViewModel extends ChangeNotifier {
   }
 
   void _updateMarkers() {
-    _markers.clear();
+    try {
+      _markers.clear();
+      _logger.i("Updating markers for ${_filteredLabCenters.length} centers");
 
-    _filteredLabs.forEach((lab) {
-      _markers.add(
-        Marker(
-          markerId: MarkerId(lab.id),
-          position: LatLng(lab.lat, lab.lng),
-          infoWindow: InfoWindow(title: lab.name),
-          onTap: () {
-            moveCameraToLab(lab.lat, lab.lng, lab);
-          },
-        ),
-      );
-    });
+      for (var center in _filteredLabCenters) {
+        try {
+          if (center.location.isEmpty) {
+            _logger.w("Skipping marker for center with empty location: ${center.name}");
+            continue;
+          }
+          
+          List<String> coordinates = center.location.split(',');
+          if (coordinates.length != 2) {
+            _logger.w("Skipping marker for center with invalid location format: ${center.name}");
+            continue;
+          }
+          
+          double? lat = double.tryParse(coordinates[0].trim());
+          double? lng = double.tryParse(coordinates[1].trim());
+          
+          if (lat == null || lng == null) {
+            _logger.w("Skipping marker for center with invalid coordinates: ${center.name}");
+            continue;
+          }
+          
+          final markerId = MarkerId(center.vendorId ?? center.generatedId ?? center.name);
+          _logger.i("Adding marker for ${center.name} at $lat,$lng");
+          
+          _markers.add(
+            Marker(
+              markerId: markerId,
+              position: LatLng(lat, lng),
+              infoWindow: InfoWindow(title: center.name),
+              onTap: () {
+                moveCameraToLab(lat, lng, center);
+              },
+            ),
+          );
+        } catch (e) {
+          _logger.e("Error creating marker for center ${center.name}: $e");
+        }
+      }
 
-    _addUserLocationMarker();
+      _addUserLocationMarker();
+      notifyListeners();
+    } catch (e, stackTrace) {
+      _logger.e("Error in _updateMarkers: $e");
+      _logger.e("Stack trace: $stackTrace");
+    }
   }
 
   void _addUserLocationMarker() {
@@ -165,35 +280,96 @@ class LabSearchViewModel extends ChangeNotifier {
   }
 
   void filterLabs(String query) {
-    _selectedLab = null; // Reset selected lab to show all matching results
+    try {
+      _logger.i("Filtering labs with query: '$query'");
+      _selectedLab = null; // Reset selected lab to show all matching results
 
-    if (query.isEmpty) {
-      _filteredLabs = _labs.where((lab) => _calculateDistance(lab.lat, lab.lng) <= 6.0).toList();
-    } else {
-      _filteredLabs = _labs.where((lab) {
-        return lab.name.toLowerCase().contains(query.toLowerCase()) ||
-            lab.tests.any((test) => test.name.toLowerCase().contains(query.toLowerCase()));  // Access test name
-      }).toList();
+      if (query.isEmpty) {
+        // If no query, show all labs within distance limit
+        if (_currentPosition != null) {
+          _filteredLabCenters = _labCenters.where((center) {
+            try {
+              if (center.location.isEmpty) {
+                _logger.w("Empty location for center: ${center.name}");
+                // Return true to include centers even with empty location
+                return true;
+              }
+              
+              List<String> coordinates = center.location.split(',');
+              if (coordinates.length != 2) {
+                _logger.w("Invalid location format for center: ${center.name}");
+                return false;
+              }
+              
+              double? lat = double.tryParse(coordinates[0].trim());
+              double? lng = double.tryParse(coordinates[1].trim());
+              
+              if (lat == null || lng == null) {
+                _logger.w("Invalid coordinates for center: ${center.name}");
+                return false;
+              }
+              
+              double distance = _calculateDistanceFromCoordinates(lat, lng);
+              return distance <= 50.0;
+            } catch (e) {
+              _logger.e("Error calculating distance for center ${center.name}: $e");
+              return false;
+            }
+          }).toList();
+        } else {
+          _filteredLabCenters = _labCenters;
+        }
+      } else {
+        // Filter by name or test types containing the query
+        _filteredLabCenters = _labCenters.where((center) {
+          return center.name.toLowerCase().contains(query.toLowerCase()) ||
+              center.testTypes.any((test) => test.toLowerCase().contains(query.toLowerCase()));
+        }).toList();
+      }
+
+      _logger.i("Filtered to ${_filteredLabCenters.length} centers");
+      _updateMarkers();
+      notifyListeners();
+    } catch (e, stackTrace) {
+      _logger.e("Error in filterLabs: $e");
+      _logger.e("Stack trace: $stackTrace");
     }
-
-    notifyListeners();
   }
 
+  void moveCameraToLab(double lat, double lng, DiagnosticCenter lab) {
+    try {
+      _logger.i("Moving camera to lab: ${lab.name} at $lat,$lng");
+      _selectedLab = lab;
+      notifyListeners();
 
+      if (_mapController == null) {
+        _logger.e("MapController is null in moveCameraToLab");
+        return;
+      }
 
-  void moveCameraToLab(double lat, double lng, LabModel lab) {
-    _selectedLab = lab;
-    notifyListeners();
-
-    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 14.0));
+      _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 14.0));
+    } catch (e, stackTrace) {
+      _logger.e("Error in moveCameraToLab: $e");
+      _logger.e("Stack trace: $stackTrace");
+    }
   }
 
-  void bookLabAppointment(BuildContext context, LabModel lab) {
+  void bookLabAppointment(BuildContext context, DiagnosticCenter center) {
     Navigator.pushNamed(
       context,
       AppRoutes.bookLabTestAppointment,
-      arguments: lab, // Pass the selected lab as an argument
+      arguments: center,
     );
   }
 
+  void selectLabWithoutMovingCamera(DiagnosticCenter lab) {
+    try {
+      _logger.i("Selecting lab without moving camera: ${lab.name}");
+      _selectedLab = lab;
+      notifyListeners();
+    } catch (e, stackTrace) {
+      _logger.e("Error in selectLabWithoutMovingCamera: $e");
+      _logger.e("Stack trace: $stackTrace");
+    }
+  }
 }

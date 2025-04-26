@@ -6,6 +6,11 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/d
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/BookingChart.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/viewModels/DiagnosticCenterProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestService.dart';
+import 'package:logger/logger.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DashboardContent extends StatefulWidget {
   const DashboardContent({Key? key}) : super(key: key);
@@ -15,19 +20,165 @@ class DashboardContent extends StatefulWidget {
 }
 
 class _DashboardContentState extends State<DashboardContent> {
-  bool _isActive = true;
+  bool _isActive = false;
+  bool _isLoading = false;
+  bool _isProfileLoading = false;
+  final VendorService _vendorService = VendorService();
+  final VendorLoginService _loginService = VendorLoginService();
+  final LabTestService _labTestService = LabTestService();
+  final Logger _logger = Logger();
+  DiagnosticCenter? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVendorStatus();
+    _loadLabProfile();
+  }
+
+  Future<void> _loadLabProfile() async {
+    try {
+      setState(() {
+        _isProfileLoading = true;
+      });
+      
+      // Get vendor ID
+      final String? vendorId = await _loginService.getVendorId();
+      
+      if (vendorId != null) {
+        // Get lab profile
+        final profile = await _labTestService.getLabProfile(vendorId);
+        
+        if (mounted) {
+        setState(() {
+          _profile = profile;
+          _isProfileLoading = false;
+        });
+        
+        _logger.i('Lab profile loaded successfully: ${_profile?.name}');
+        }
+      } else {
+        if (mounted) {
+        setState(() {
+          _isProfileLoading = false;
+        });
+        }
+        _logger.e('Failed to load lab profile: Vendor ID not found');
+      }
+    } catch (e) {
+      _logger.e('Error loading lab profile: $e');
+      if (mounted) {
+      setState(() {
+        _isProfileLoading = false;
+      });
+      }
+    }
+  }
+
+  Future<void> _loadVendorStatus() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Get vendor ID
+      final String? vendorId = await _loginService.getVendorId();
+      
+      if (vendorId != null) {
+        // Get vendor status
+        final bool status = await _vendorService.getVendorStatus(vendorId);
+        
+        if (mounted) {
+        setState(() {
+          _isActive = status;
+          _isLoading = false;
+        });
+        }
+      } else {
+        if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        }
+      }
+    } catch (e) {
+      print('Error loading vendor status: $e');
+      if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      }
+    }
+  }
+
+  Future<void> _toggleVendorStatus() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Get vendor ID
+      final String? vendorId = await _loginService.getVendorId();
+      
+      if (vendorId != null) {
+        // Toggle vendor status
+        final bool newStatus = await _vendorService.toggleVendorStatus(vendorId);
+        
+        if (mounted) {
+        setState(() {
+          _isActive = newStatus;
+          _isLoading = false;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Status updated to ${_isActive ? 'Active' : 'Inactive'}'),
+            backgroundColor: _isActive ? Colors.green : Colors.red,
+          ),
+        );
+        }
+      } else {
+        if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update status: Vendor ID not found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        }
+      }
+    } catch (e) {
+      print('Error toggling vendor status: $e');
+      if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<DiagnosticCenterProfileViewModel>(context);
-    final profile = viewModel.profile;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoCard(profile),
+          _buildInfoCard(),
           const SizedBox(height: 24),
           _buildStatsCards(),
           const SizedBox(height: 24),
@@ -41,7 +192,7 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
-  Widget _buildInfoCard(DiagnosticCenter? profile) {
+  Widget _buildInfoCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -62,7 +213,9 @@ class _DashboardContentState extends State<DashboardContent> {
           ),
         ],
       ),
-      child: Column(
+      child: _isProfileLoading 
+          ? _buildShimmerEffect()
+          : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -70,25 +223,73 @@ class _DashboardContentState extends State<DashboardContent> {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Colors.white,
-                child: profile?.centerPhotosUrl != null && profile!.centerPhotosUrl.isNotEmpty
+                child: _profile != null && (_profile!.centerPhotosUrl != null && _profile!.centerPhotosUrl.isNotEmpty)
                   ? CircleAvatar(
                       radius: 22,
-                      backgroundImage: NetworkImage(profile.centerPhotosUrl),
-                    )
-                  : CircleAvatar(
-                      radius: 22,
                       backgroundColor: LabTestColorPalette.backgroundCard,
-                      child: Text(
-                        profile?.name.isNotEmpty == true 
-                            ? profile!.name[0].toUpperCase() 
-                            : 'L',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      child: ClipOval(
+                        child: Image.network(
+                          _profile!.centerPhotosUrl,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            // If centerPhotosUrl fails, try filesAndImages
+                            if (_profile?.filesAndImages != null && _profile!.filesAndImages.isNotEmpty) {
+                              return ClipOval(
+                                child: Image.network(
+                                  _profile!.filesAndImages.first['url'] ?? '',
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.science_outlined,
+                                      size: 18,
+                                      color: LabTestColorPalette.primaryBlue,
+                                    );
+                                  },
+                                ),
+                              );
+                            }
+                            return Icon(
+                              Icons.science_outlined,
+                              size: 18,
+                              color: LabTestColorPalette.primaryBlue,
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : _profile != null && _profile!.filesAndImages.isNotEmpty
+                    ? CircleAvatar(
+                        radius: 22,
+                        backgroundColor: LabTestColorPalette.backgroundCard,
+                        child: ClipOval(
+                          child: Image.network(
+                            _profile!.filesAndImages.first['url'] ?? '',
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.science_outlined,
+                                size: 18,
+                                color: LabTestColorPalette.primaryBlue,
+                              );
+                            },
+                          ),
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 22,
+                        backgroundColor: LabTestColorPalette.backgroundCard,
+                        child: Icon(
+                          Icons.science_outlined,
+                          size: 18,
                           color: LabTestColorPalette.primaryBlue,
                         ),
                       ),
-                    ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -104,7 +305,7 @@ class _DashboardContentState extends State<DashboardContent> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      profile?.name ?? 'Lab Center',
+                      _profile?.name ?? 'Lab Center',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -113,7 +314,7 @@ class _DashboardContentState extends State<DashboardContent> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      profile?.address ?? 'Address not set',
+                      _profile?.address ?? 'Address not set',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 12,
@@ -122,29 +323,34 @@ class _DashboardContentState extends State<DashboardContent> {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 10,
-                      color: _isActive 
-                          ? LabTestColorPalette.successGreen
-                          : LabTestColorPalette.errorRed,
-                    ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isActive = !_isActive;
-                        });
-                      },
-                      child: Text(
+              GestureDetector(
+                onTap: _isLoading ? null : _toggleVendorStatus,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      _isLoading 
+                          ? SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: _isActive 
+                                  ? LabTestColorPalette.successGreen
+                                  : LabTestColorPalette.errorRed,
+                            ),
+                      const SizedBox(width: 6),
+                      Text(
                         _isActive ? 'Active' : 'Inactive',
                         style: const TextStyle(
                           color: Colors.white,
@@ -152,8 +358,8 @@ class _DashboardContentState extends State<DashboardContent> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -176,7 +382,7 @@ class _DashboardContentState extends State<DashboardContent> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'You have ${profile?.testTypes.length ?? 0} test types available',
+                    'You have ${_profile?.testTypes.length ?? 0} test types available',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -207,6 +413,85 @@ class _DashboardContentState extends State<DashboardContent> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildShimmerEffect() {
+    return Shimmer.fromColors(
+      baseColor: Colors.white24,
+      highlightColor: Colors.white38,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Avatar placeholder
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text placeholders
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 140,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 100,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Status button placeholder
+              Container(
+                width: 70,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Info box placeholder
+          Container(
+            width: double.infinity,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ],

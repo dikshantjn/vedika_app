@@ -24,15 +24,19 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
   int _currentSection = 0;
   bool _isValidating = false;
 
+  // Use PageStorageKey to preserve widget state
   final List<Widget> _sections = [
-    const BasicInfoSection(),
-    const AddressSection(),
-    const MedicalInfoSection(),
-    const CertificationSection(),
-    const FacilitiesSection(),
-    const LocationSection(),
-    const PhotoSection(),
+    BasicInfoSection(key: PageStorageKey('basic_info')),
+    AddressSection(key: PageStorageKey('address')),
+    MedicalInfoSection(key: PageStorageKey('medical_info')),
+    CertificationSection(key: PageStorageKey('certification')),
+    FacilitiesSection(key: PageStorageKey('facilities')),
+    LocationSection(key: PageStorageKey('location')),
+    PhotoSection(key: PageStorageKey('photos')),
   ];
+
+  // PageStorage bucket to store state
+  final PageStorageBucket _bucket = PageStorageBucket();
 
   final List<String> _sectionTitles = [
     'Basic Information',
@@ -126,7 +130,15 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
         _isValidating = true;
       });
       
-      if (_formKey.currentState!.validate()) {
+      // Some sections may not need validation (like certifications)
+      bool needsValidation = _currentSection != 3; // Skip validation for Certification section
+      
+      if (!needsValidation || _formKey.currentState!.validate()) {
+        // Save form state before navigating
+        if (_formKey.currentState != null) {
+          _formKey.currentState!.save();
+        }
+        
         setState(() {
           _currentSection++;
           _isValidating = false;
@@ -146,6 +158,11 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
 
   void _previousSection() {
     if (_currentSection > 0) {
+      // Save form state before going back
+      if (_formKey.currentState != null) {
+        _formKey.currentState!.save();
+      }
+      
       setState(() {
         _currentSection--;
       });
@@ -159,6 +176,9 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      // Save form state before submitting
+      _formKey.currentState!.save();
+      
       final viewModel = Provider.of<HospitalRegistrationViewModel>(context, listen: false);
       
       // Show loading dialog
@@ -306,24 +326,28 @@ class _HospitalRegistrationScreenState extends State<HospitalRegistrationScreen>
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: HospitalVendorColorPalette.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: HospitalVendorColorPalette.shadowLight,
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: _sections[_currentSection],
+              child: PageStorage(
+                bucket: _bucket,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(24.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: HospitalVendorColorPalette.backgroundSecondary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: HospitalVendorColorPalette.shadowLight,
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      // Just display the current section
+                      child: _sections[_currentSection],
+                    ),
                   ),
                 ),
               ),

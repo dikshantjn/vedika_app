@@ -15,8 +15,6 @@ class _LabSearchPageState extends State<LabSearchPage> {
     super.initState();
     Future.microtask(() {
       final viewModel = Provider.of<LabSearchViewModel>(context, listen: false);
-      print("current position : ${viewModel.currentPosition}");
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         viewModel.loadUserLocation(context);
       });
@@ -41,16 +39,12 @@ class _LabSearchPageState extends State<LabSearchPage> {
                   ),
                   markers: viewModel.markers,
                   onMapCreated: (controller) {
-                    print("✅ MapController assigned");
                     viewModel.setMapController(controller);
 
                     if (viewModel.currentPosition != null) {
                       controller.animateCamera(
                         CameraUpdate.newLatLngZoom(viewModel.currentPosition!, 14),
                       );
-                      print("✅ Camera moved to user location");
-                    } else {
-                      print("🔴 currentPosition is NULL, waiting for update...");
                     }
                   },
                   myLocationEnabled: true,
