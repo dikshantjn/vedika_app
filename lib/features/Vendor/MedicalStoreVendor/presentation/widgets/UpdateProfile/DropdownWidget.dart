@@ -26,7 +26,7 @@ class DropdownWidget extends StatelessWidget {
         value: valueToDisplay,  // Use the safe value for display
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: MedicalStoreVendorColorPalette.textColor),
+          labelStyle: TextStyle(color: MedicalStoreVendorColorPalette.textPrimary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: MedicalStoreVendorColorPalette.secondaryColor),

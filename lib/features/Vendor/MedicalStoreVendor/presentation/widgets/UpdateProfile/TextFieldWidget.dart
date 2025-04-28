@@ -28,7 +28,7 @@ class TextFieldWidget extends StatelessWidget {
         obscureText: isObscure,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: MedicalStoreVendorColorPalette.textColor, fontSize: 16),
+          labelStyle: TextStyle(color: MedicalStoreVendorColorPalette.textPrimary, fontSize: 16),
           contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/LabTestOrder.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomLabTestOrderInfoDialog.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestOrderViewModel.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
 
 class LabTestTab extends StatefulWidget {
   @override
@@ -13,25 +14,78 @@ class _LabTestTabState extends State<LabTestTab> {
   @override
   void initState() {
     super.initState();
+    final userId = "GOrt7AWP82dMYs8tVejjLyvdPyy2";
     Future.microtask(() =>
-        Provider.of<LabTestViewModel>(context, listen: false)
-            .fetchLabTestOrders());
+        Provider.of<LabTestOrderViewModel>(context, listen: false)
+            .fetchCompletedLabTestOrders(userId));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LabTestViewModel>(
+    return Consumer<LabTestOrderViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
-          return Center(child: CircularProgressIndicator());
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text(
+                  "Loading your lab tests...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
-        final orders = viewModel.labTestOrders;
-        if (orders.isEmpty) {
+        final orders = viewModel.orders;
+        if (orders.isEmpty || (viewModel.error != null && viewModel.error!.contains("No completed bookings found"))) {
           return Center(
-            child: Text(
-              "No lab test orders found.",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.science_outlined,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "No lab tests found",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (viewModel.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 50,
+                  color: Colors.red,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "Unable to load lab tests",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -47,72 +101,173 @@ class _LabTestTabState extends State<LabTestTab> {
     );
   }
 
-  Widget _buildOrderItem(BuildContext context, LabTestOrder order) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
+  Widget _buildOrderItem(BuildContext context, LabTestBooking order) {
+    return Card(
+      color: Colors.white,
+      elevation: 2,
       margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  order.orderNumber,
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey[800],
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue.withOpacity(0.1),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.science_outlined,
+                      color: Colors.blue,
+                      size: 24,
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.info_outline, color: Colors.blueGrey, size: 24.0),
-                  onPressed: () {
-                    _showOrderDetails(context, order);
-                  },
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.diagnosticCenter?.name ?? 'Unknown Lab',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueGrey[800],
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${order.bookingDate} at ${order.bookingTime}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                _buildStatusChip(order.bookingStatus ?? 'Unknown'),
               ],
             ),
-            SizedBox(height: 8.0),
+            SizedBox(height: 16),
+            Divider(color: Colors.grey.withOpacity(0.2)),
+            SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Date: ${order.date}',
-                  style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
+                _buildInfoPill(
+                  icon: Icons.science_outlined,
+                  label: (order.selectedTests?.length ?? 0) > 1
+                      ? "${order.selectedTests?.length ?? 0} Tests"
+                      : order.selectedTests?.first ?? "No tests",
+                ),
+                _buildInfoPill(
+                  icon: Icons.location_on_outlined,
+                  label: order.homeCollectionRequired == true ? "Home Collection" : "At Center",
                 ),
                 Text(
-                  'Total: ${order.total}',
-                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.green[700]),
+                  "₹${order.totalAmount?.toStringAsFixed(0) ?? '0'}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.green[700],
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 8.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Lab: ${order.labName}',
-                  style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
+            if (order.reportUrls != null && order.reportUrls!.isNotEmpty) ...[
+              SizedBox(height: 16),
+              Text(
+                'Test Reports',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey[800],
                 ),
-                _buildStatusChip(order.status),
-              ],
-            ),
+              ),
+              SizedBox(height: 8),
+              ...order.reportUrls!.entries.map((entry) => Padding(
+                padding: EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReportViewScreen(
+                              reportUrl: entry.value,
+                              testName: entry.key,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.visibility_outlined, size: 16),
+                      label: Text("View Report"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                        side: BorderSide(color: Colors.blue),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        textStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoPill({required IconData icon, required String label}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: Colors.grey[600],
+          ),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -133,19 +288,30 @@ class _LabTestTabState extends State<LabTestTab> {
         chipColor = Colors.grey;
     }
 
-    return Chip(
-      label: Text(status, style: TextStyle(color: Colors.white, fontSize: 12.0)),
-      backgroundColor: chipColor,
-      shape: StadiumBorder(),
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: chipColor,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 
-  void _showOrderDetails(BuildContext context, LabTestOrder order) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return CustomLabTestOrderInfoDialog(order: order);
-      },
-    );
+  Future<void> _launchUrl(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch report URL')),
+      );
+    }
   }
 }

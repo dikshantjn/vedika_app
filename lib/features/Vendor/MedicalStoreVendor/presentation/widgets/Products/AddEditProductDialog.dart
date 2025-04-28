@@ -53,93 +53,64 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     }
   }
 
-  void _saveProduct() async {
+  Future<void> _saveProduct() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save(); // Ensure all values are saved before use
+      _formKey.currentState!.save();
 
       setState(() {
-        isLoading = true;  // Set loading to true when saving starts
+        isLoading = true;  // Set loading to true when starting the operation
       });
-      final productVM = Provider.of<MedicineProductViewModel>(context, listen: false);
 
-      // Initialize an empty list to store URLs of uploaded files
-      List<String> uploadedUrls = [];
-
-      // Debugging: Check the uploaded files list
-      print("Uploaded files: $uploadedFiles");
-
-      // Iterate over the uploadedFiles list to upload each file
-      for (var fileData in uploadedFiles) {
-        // Extract file and name from the map
-        File file = fileData['file'] as File;
-        String name = (fileData['name'] is String) ? fileData['name'] as String : '';
-
-        // Debugging: Print the file and name
-        print("Uploading file: $name");
-
-        try {
-          // Upload the file with metadata and get the URL
-          String? uploadedUrl = await MedicalStoreFileUploadService()
-              .uploadFileWithMetadata(file, name);
-
-          if (uploadedUrl != null) {
-            uploadedUrls.add(uploadedUrl);
-          } else {
-            print("Failed to upload: $name");
-          }
-        } catch (e) {
-          print("Error uploading file: $e");
-        }
-      }
-
-      // Combine existing URLs with the new uploaded URLs
-      final allProductUrls = [...?productURLs, ...uploadedUrls];
-
-      // Debugging: Check the product URLs before creating the product
-      print("All product URLs: $allProductUrls");
-
+      // Create a new product with the updated data
       final newProduct = MedicineProduct(
         productId: widget.product?.productId ?? const Uuid().v4(),
-        name: name.trim(),
+        name: name,
         price: price,
         discount: discount,
-        manufacturer: manufacturer.trim(),
-        type: type.trim(),
-        packSizeLabel: packSizeLabel.trim(),
-        shortComposition: shortComposition.trim(),
-        productURLs: allProductUrls,  // Include URLs here
+        manufacturer: manufacturer,
+        type: type,
+        packSizeLabel: packSizeLabel,
+        shortComposition: shortComposition,
+        productURLs: productURLs,  // Include URLs here
         quantity: quantity,  // ✅ Ensure quantity is included
       );
 
       // Debugging: Print the new product data before saving
       print("New Product Data: ${newProduct.toJson()}");
 
-      if (widget.product == null) {
-
-        productVM.addProduct(newProduct).then((_) {
-          // After adding the product, fetch the updated list of products
-          productVM.fetchProducts();
+      try {
+        final productVM = Provider.of<MedicineProductViewModel>(context, listen: false);
+        if (widget.product == null) {
+          await productVM.addProduct(newProduct);
+        } else {
+          await productVM.editProduct(widget.product!.productId, newProduct);
+        }
+        
+        // After adding/editing the product, fetch the updated list of products
+        await productVM.fetchProducts();
+        
+        if (mounted) {
           setState(() {
             isLoading = false;  // Set loading to false when the operation is done
           });
-        });
-      } else {
-        productVM.editProduct(widget.product!.productId, newProduct).then((_) {
-          // After editing, fetch the updated list of products
-          productVM.fetchProducts();
+          Navigator.pop(context); // Close the dialog
+        }
+      } catch (e) {
+        if (mounted) {
           setState(() {
             isLoading = false;
           });
-        });
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error saving product: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-
-      Navigator.pop(context); // Close the dialog
     }
   }
-
-
-
-
 
   Widget _buildTextField({
     required String label,
@@ -178,7 +149,6 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
       ),
     );
   }
-
 
   Widget _buildImageGrid() {
     return GridView.builder(
@@ -264,7 +234,6 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     );
   }
 
-
   Future<String> _getImageName(String imagePath, bool isNetwork) async {
     try {
       if (isNetwork) {
@@ -281,7 +250,6 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -295,7 +263,7 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                widget.product == null ? 'Add Product' : 'Edit Product',
+                widget.product == null ? 'Add' : 'Edit',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueAccent),
               ),
               const SizedBox(height: 15),
@@ -325,7 +293,6 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
                       keyboardType: TextInputType.number,
                       isNumeric: true,
                     ),
-
 
                     const SizedBox(height: 15),
                     UploadSectionWidget(
@@ -374,7 +341,7 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
                             style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                           )
                               : const Text(
-                            'Add Product',
+                            'Add',
                             style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                         )

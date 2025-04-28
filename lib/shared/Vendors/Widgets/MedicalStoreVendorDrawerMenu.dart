@@ -88,7 +88,7 @@ class MedicalStoreVendorDrawerMenu extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isLogout ? MedicalStoreVendorColorPalette.errorColor : MedicalStoreVendorColorPalette.textColor,
+          color: isLogout ? MedicalStoreVendorColorPalette.errorColor : MedicalStoreVendorColorPalette.textPrimary,
         ),
       ),
       onTap: () async {

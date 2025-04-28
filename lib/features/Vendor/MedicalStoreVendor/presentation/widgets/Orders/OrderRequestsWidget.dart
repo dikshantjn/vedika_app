@@ -84,10 +84,14 @@ class OrderRequestsWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Customer Name
-              Text(
-                "Customer: ${request.user?.name ?? "Unknown"}",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+              Expanded(
+                child: Text(
+                  "Customer: ${request.user?.name ?? "Unknown"}",
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
 
               // Prescription Status Box
               Container(
@@ -97,6 +101,7 @@ class OrderRequestsWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       _getStatusIcon(request.prescriptionAcceptedStatus),
@@ -137,37 +142,51 @@ class OrderRequestsWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // View Prescription Button
-              OutlinedButton(
-                onPressed: () {
-                  if (request.prescriptionUrl != null && request.prescriptionUrl.isNotEmpty) {
-                    FileOpenHelper.openFile(context, request.prescriptionUrl);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("No prescription file available")),
-                    );
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  side: const BorderSide(color: Colors.blueAccent),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (request.prescriptionUrl != null && request.prescriptionUrl.isNotEmpty) {
+                      FileOpenHelper.openFile(context, request.prescriptionUrl);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("No prescription file available")),
+                      );
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    side: const BorderSide(color: Colors.blueAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    "View Prescription",
+                    style: TextStyle(fontSize: 13, color: Colors.blueAccent),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                child: const Text("View Prescription", style: TextStyle(fontSize: 14, color: Colors.blueAccent)),
               ),
+
+              const SizedBox(width: 8),
 
               // Accept Prescription Button (only if status is "Pending")
               if (request.prescriptionAcceptedStatus == "Pending")
-                OutlinedButton.icon(
-                  onPressed: () => viewModel.acceptPrescription(request.prescriptionId),
-                  icon: const Icon(Icons.check_circle_outline, size: 18, color: Colors.green),
-                  label: const Text("Accept Prescription", style: TextStyle(fontSize: 14, color: Colors.green)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    side: const BorderSide(color: Colors.green),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => viewModel.acceptPrescription(request.prescriptionId),
+                    icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+                    label: const Text(
+                      "Accept",
+                      style: TextStyle(fontSize: 13, color: Colors.green),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      side: const BorderSide(color: Colors.green),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),

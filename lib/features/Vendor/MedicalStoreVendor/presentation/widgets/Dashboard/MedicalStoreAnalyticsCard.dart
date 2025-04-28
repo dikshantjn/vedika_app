@@ -18,40 +18,38 @@ class AnalyticsCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
-        const SizedBox(height: 10),
-        GridView(
+        const SizedBox(height: 16),
+        GridView.count(
           shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5, // Balanced aspect ratio
-          ),
           physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.3,
           children: [
             _buildAnalyticsBox(
               title: "Total Orders",
               value: analytics.totalOrders.toString(),
               icon: Icons.shopping_cart,
-              color: Colors.blue,
+              color: MedicalStoreVendorColorPalette.primaryColor,
             ),
             _buildAnalyticsBox(
               title: "Average Order Value",
               value: "₹${analytics.averageOrderValue}",
               icon: Icons.monetization_on,
-              color: Colors.green,
+              color: MedicalStoreVendorColorPalette.successColor,
             ),
             _buildAnalyticsBox(
               title: "Returns This Week",
               value: analytics.returnsThisWeek.toString(),
               icon: Icons.refresh,
-              color: Colors.red,
+              color: MedicalStoreVendorColorPalette.errorColor,
             ),
             _buildAnalyticsBox(
               title: "Orders Today",
               value: analytics.ordersToday.toString(),
               icon: Icons.today,
-              color: Colors.orange,
+              color: MedicalStoreVendorColorPalette.secondaryColor,
             ),
           ],
         ),
@@ -66,23 +64,29 @@ class AnalyticsCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             "Analytics Overview",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: MedicalStoreVendorColorPalette.secondaryColor,
+              color: MedicalStoreVendorColorPalette.textPrimary,
             ),
           ),
           TextButton(
             onPressed: onViewAll,
             style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              foregroundColor: MedicalStoreVendorColorPalette.primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text(
               "View All",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -98,48 +102,58 @@ class AnalyticsCard extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            spreadRadius: 1,
-            offset: const Offset(0, 2), // Soft shadow effect
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: color, size: 30),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            value,
+            title,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: MedicalStoreVendorColorPalette.textPrimary,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 }
+

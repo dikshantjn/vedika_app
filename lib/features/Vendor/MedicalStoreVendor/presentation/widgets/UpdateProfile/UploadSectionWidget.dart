@@ -89,7 +89,7 @@ class _UploadSectionWidgetState extends State<UploadSectionWidget> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: MedicalStoreVendorColorPalette.textColor,
+              color: MedicalStoreVendorColorPalette.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -118,7 +118,7 @@ class _UploadSectionWidgetState extends State<UploadSectionWidget> {
                       hintText: "Enter file name",
                       hintStyle: TextStyle(
                         fontSize: 14,
-                        color: MedicalStoreVendorColorPalette.textColor.withOpacity(0.7),
+                        color: MedicalStoreVendorColorPalette.textPrimary.withOpacity(0.7),
                       ),
                       border: InputBorder.none,
                     ),

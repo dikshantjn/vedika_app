@@ -22,7 +22,7 @@ class LabTestBooking {
   String? userAddress;
   String? userLocation; // Latitude,Longitude as String
   String? centerLocationUrl;
-  Map<String, String>? reportsUrls;
+  Map<String, String>? reportUrls;
   UserModel? user;
   DiagnosticCenter? diagnosticCenter;
   DateTime? createdAt;
@@ -49,7 +49,7 @@ class LabTestBooking {
     this.userAddress,
     this.userLocation,
     this.centerLocationUrl,
-    this.reportsUrls,
+    this.reportUrls,
     this.user,
     this.diagnosticCenter,
     this.createdAt,
@@ -57,6 +57,9 @@ class LabTestBooking {
   });
 
   factory LabTestBooking.fromJson(Map<String, dynamic> json) {
+    // Debug print for reportUrls
+    print('Raw reportUrls from JSON: ${json['reportUrls']}');
+    
     return LabTestBooking(
       bookingId: json['bookingId'],
       vendorId: json['vendorId'],
@@ -78,8 +81,8 @@ class LabTestBooking {
       userAddress: json['userAddress'],
       userLocation: json['userLocation'],
       centerLocationUrl: json['centerLocationUrl'],
-      reportsUrls: json['reportsUrls'] != null 
-          ? Map<String, String>.from(json['reportsUrls'])
+      reportUrls: json['reportUrls'] != null 
+          ? Map<String, String>.from(json['reportUrls'] as Map)
           : null,
       user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
       diagnosticCenter: json['diagnosticCenter'] != null
@@ -112,7 +115,7 @@ class LabTestBooking {
       'userAddress': userAddress,
       'userLocation': userLocation,
       'centerLocationUrl': centerLocationUrl,
-      'reportsUrls': reportsUrls,
+      'reportUrls': reportUrls,
       'user': user?.toJson(),
       'diagnosticCenter': diagnosticCenter?.toJson(),
       'createdAt': createdAt?.toIso8601String(),

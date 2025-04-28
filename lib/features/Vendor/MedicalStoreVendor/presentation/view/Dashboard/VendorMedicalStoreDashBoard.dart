@@ -28,13 +28,12 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
     });
   }
 
-
   final List<Widget> _pages = [
-    const DashboardContent(), // Dashboard Page
-     MedicineOrderPage(),
-     MedicalProductsProductScreen(),
+    const DashboardContent(),
+    MedicineOrderPage(),
+    MedicalProductsProductScreen(),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
-    MedicalStoreVendorProfileContent(), // Profile Page
+    MedicalStoreVendorProfileContent(),
   ];
 
   final List<Widget> _specialPages = [
@@ -48,20 +47,19 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
       drawer: MedicalStoreVendorDrawerMenu(onItemSelected: _onTabSelected),
       appBar: AppBar(
+        elevation: 0,
         title: _buildAppBarTitle(),
         backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [_buildAppBarActions()],
       ),
-      body: _pages[_currentIndex], // Body content will switch based on the selected page index
+      body: _pages[_currentIndex],
       bottomNavigationBar: MedicalStoreVendorBottomNav(
         currentIndex: _currentIndex,
         onTabSelected: _onTabSelected,
@@ -71,73 +69,92 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
   }
 
   Widget _buildAppBarTitle() {
-    // Change the AppBar title based on the selected page index
+    return Text(
+      _getPageTitle(),
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 18,
+      ),
+    );
+  }
+
+  String _getPageTitle() {
     switch (_currentIndex) {
       case 0:
-        return const Text(
-          "Dashboard",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Dashboard";
       case 1:
-        return const Text(
-          "Orders",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Orders";
       case 2:
-        return const Text(
-          "Products",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Products";
       case 3:
-        return const Text(
-          "Returns",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Returns";
       case 4:
-        return const Text(
-          "Profile",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Profile";
       default:
-        return const Text(
-          "Medical Store",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        );
+        return "Medical Store";
     }
   }
 
   Widget _buildAppBarActions() {
     return Consumer<MedicalStoreVendorDashboardViewModel>(
       builder: (context, viewModel, child) {
-        return Row(
-          children: [
-            Text(
-              viewModel.isActive ? "Online" : "Offline",
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
-            Switch(
-              value: viewModel.isActive, // ✅ This now reflects the correct status
-              activeColor: MedicalStoreVendorColorPalette.secondaryColor,
-              inactiveThumbColor: Colors.grey,
-              onChanged: (value) async {
-                await viewModel.toggleVendorStatus();
-
-                // ✅ Show toast message with different background colors
-                Fluttertoast.showToast(
-                  msg: viewModel.isActive ? "You are now Online" : "You are now Offline",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  backgroundColor: viewModel.isActive ? Colors.green : Colors.black,
-                  textColor: Colors.white,
-                  fontSize: 16.0,
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.white),
-              onPressed: () {},
-            ),
-          ],
+        return Container(
+          margin: const EdgeInsets.only(right: 8),
+          child: Row(
+            children: [
+              // Status Button
+              InkWell(
+                onTap: () => viewModel.setStatus(!viewModel.isActive),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: viewModel.isActive 
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: viewModel.isActive 
+                          ? MedicalStoreVendorColorPalette.successColor
+                          : MedicalStoreVendorColorPalette.errorColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: viewModel.isActive 
+                              ? MedicalStoreVendorColorPalette.successColor
+                              : MedicalStoreVendorColorPalette.errorColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        viewModel.isActive ? "Online" : "Offline",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                color: Colors.white,
+                onPressed: () {},
+              ),
+            ],
+          ),
         );
       },
     );

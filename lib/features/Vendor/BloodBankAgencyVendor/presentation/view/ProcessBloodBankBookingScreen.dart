@@ -698,11 +698,11 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                     ),
                     items: const [
                       DropdownMenuItem(
-                        value: 'pickup',
+                        value: 'SELF_PICKUP',
                         child: Text('Pickup'),
                       ),
                       DropdownMenuItem(
-                        value: 'delivery',
+                        value: 'HOME_DELIVERY',
                         child: Text('Delivery'),
                       ),
                     ],

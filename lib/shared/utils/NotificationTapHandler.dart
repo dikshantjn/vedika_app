@@ -336,6 +336,30 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'LAB_TEST_BOOKING':
+          if (isAppLaunch) {
+            // First navigate to home screen
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            // Then navigate to LabTestDashboardScreen with Bookings tab selected
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorPathologyDashBoard,
+              arguments: {'initialTab': 1}, // 1 is the index for Bookings tab
+            );
+          } else {
+            // If app is already running, navigate to LabTestDashboardScreen with Bookings tab
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorPathologyDashBoard,
+              arguments: {'initialTab': 1}, // 1 is the index for Bookings tab
+            );
+          }
+          break;
+
         default:
           print("Unknown notification type: $type");
       }

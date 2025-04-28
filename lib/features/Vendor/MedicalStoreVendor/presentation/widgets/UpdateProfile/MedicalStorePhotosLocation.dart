@@ -85,7 +85,7 @@ class _MedicalStorePhotosLocationState extends State<MedicalStorePhotosLocation>
                 "Add Precise Location using Google Maps",
                 style: TextStyle(
                   fontSize: 14,
-                  color: MedicalStoreVendorColorPalette.textColor,
+                  color: MedicalStoreVendorColorPalette.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),

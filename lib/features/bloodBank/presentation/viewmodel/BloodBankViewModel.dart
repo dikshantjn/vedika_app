@@ -13,10 +13,12 @@ import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodT
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:location/location.dart';
+import 'package:logger/logger.dart';
 
 class BloodBankViewModel extends ChangeNotifier {
   final BuildContext context;
-  LatLng? _currentPosition; // Make currentPosition nullable
+  final Logger _logger = Logger();
+  LatLng? _currentPosition;
   bool _isLoadingLocation = true;
   bool _isBloodTypeSelected = false;
   List<BloodBankAgency> _bloodBankAgencies = [];
@@ -24,8 +26,11 @@ class BloodBankViewModel extends ChangeNotifier {
   Set<Marker> _markers = {};
   bool _isLoadingAgencies = false;
   String? _errorMessage;
-  String _selectedCity = 'All Cities'; // Default city
-  GoogleMapController? _mapController; // Make map controller nullable
+  String _selectedCity = 'All Cities';
+  GoogleMapController? _mapController;
+  bool _isSidePanelOpen = false;
+  bool _isMapReady = false;
+  bool _isInitialized = false;
 
   // City coordinates mapping
   final Map<String, LatLng> _cityCoordinates = {
@@ -63,21 +68,71 @@ class BloodBankViewModel extends ChangeNotifier {
   final BloodBankAgencyService _agencyService = BloodBankAgencyService();
   final AuthRepository _authRepository = AuthRepository();
 
-  BloodBankViewModel(this.context);
+  BloodBankViewModel(this.context) {
+    debugPrint("BloodBankViewModel constructor called");
+    _initialize();
+  }
 
+  Future<void> _initialize() async {
+    _logger.i("Starting initialization of BloodBankViewModel");
+    try {
+      // First check for existing bookings
+      _logger.d("Checking for existing bookings");
+      await fetchBookingsForVendor();
+      
+      // Then enable location
+      _logger.d("Enabling location services");
+      await ensureLocationEnabled();
+      
+      // Show appropriate UI based on bookings
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) {
+          _logger.e("Context is not mounted, cannot show UI");
+          return;
+        }
+        
+        if (_bookings.isNotEmpty) {
+          _logger.i("Found ${_bookings.length} active bookings, showing details bottom sheet");
+          _showBookingDetailsBottomSheet(_bookings.first);
+        } else {
+          _logger.i("No active bookings found, showing blood type selection dialog");
+          _showBloodTypeSelectionDialog();
+        }
+      });
+      
+      _isInitialized = true;
+      _logger.i("Initialization completed successfully");
+    } catch (e) {
+      _logger.e("Error during initialization", error: e);
+      _errorMessage = "Failed to initialize: ${e.toString()}";
+      notifyListeners();
+    }
+  }
+
+  // Public method to manually trigger the dialog
+  void showBloodTypeDialog() {
+    debugPrint("showBloodTypeDialog called");
+    _showBloodTypeSelectionDialog();
+  }
+
+  // Getters
+  bool get isSidePanelOpen => _isSidePanelOpen;
+  String get selectedCity => _selectedCity;
+  List<String> get cities => _cities;
   LatLng? get currentPosition => _currentPosition;
   bool get isLoadingLocation => _isLoadingLocation;
   List<BloodBankAgency> get bloodBankAgencies => _bloodBankAgencies;
   Set<Marker> get markers => _markers;
   bool get isLoadingAgencies => _isLoadingAgencies;
   String? get errorMessage => _errorMessage;
-
-  // Getter and setter for map controller
   GoogleMapController? get mapController => _mapController;
+  bool get isMapReady => _isMapReady;
 
-  // Getters
-  String get selectedCity => _selectedCity;
-  List<String> get cities => _cities;
+  // Toggle side panel
+  void toggleSidePanel() {
+    _isSidePanelOpen = !_isSidePanelOpen;
+    notifyListeners();
+  }
 
   // Set selected city and update map
   void setSelectedCity(String city) {
@@ -86,31 +141,77 @@ class BloodBankViewModel extends ChangeNotifier {
     _updateMapForSelectedCity();
   }
 
-  // Update map based on selected city
-  Future<void> _updateMapForSelectedCity() async {
-    if (_mapController == null) {
-      debugPrint("Map controller is null, cannot update map");
-      return;
+  // Optimized map controller setter
+  void setMapController(GoogleMapController controller) {
+    if (_mapController != null) {
+      _mapController!.dispose();
     }
+    _mapController = controller;
+    _isMapReady = true;
+    notifyListeners();
+  }
 
-    // Clear existing markers
-    _markers.clear();
-    
-    if (_selectedCity == 'All Cities') {
-      // Show all agencies
-      _addBloodBankAgencyMarkers();
-      return;
-    }
-
-    // Get city coordinates
-    final cityLocation = _cityCoordinates[_selectedCity];
-    if (cityLocation == null) {
-      debugPrint("City coordinates not found for $_selectedCity");
+  // Optimized location check
+  Future<void> ensureLocationEnabled() async {
+    if (_currentPosition != null) {
+      _isLoadingLocation = false;
+      notifyListeners();
       return;
     }
 
     try {
-      // Add city center marker
+      Location location = Location();
+      bool serviceEnabled = await location.serviceEnabled();
+
+      if (!serviceEnabled) {
+        serviceEnabled = await location.requestService();
+        if (!serviceEnabled) {
+          _handleLocationError();
+          return;
+        }
+      }
+
+      PermissionStatus permissionStatus = await location.hasPermission();
+      if (permissionStatus == PermissionStatus.denied) {
+        permissionStatus = await location.requestPermission();
+        if (permissionStatus != PermissionStatus.granted) {
+          _handleLocationError();
+          return;
+        }
+      }
+
+      LocationData userLocation = await location.getLocation();
+      if (userLocation.latitude != null && userLocation.longitude != null) {
+        _isLoadingLocation = false;
+        _currentPosition = LatLng(userLocation.latitude!, userLocation.longitude!);
+        notifyListeners();
+
+        // Fetch agencies after getting location
+        _fetchBloodBankAgencies();
+      } else {
+        _handleLocationError();
+      }
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      _handleLocationError();
+    }
+  }
+
+  // Optimized map update for selected city
+  Future<void> _updateMapForSelectedCity() async {
+    if (_mapController == null || !_isMapReady) return;
+
+    _markers.clear();
+    
+    if (_selectedCity == 'All Cities') {
+      _addBloodBankAgencyMarkers();
+      return;
+    }
+
+    final cityLocation = _cityCoordinates[_selectedCity];
+    if (cityLocation == null) return;
+
+    try {
       _markers.add(
         Marker(
           markerId: MarkerId("city_center"),
@@ -120,12 +221,10 @@ class BloodBankViewModel extends ChangeNotifier {
         ),
       );
 
-      // Filter agencies by city
       final cityAgencies = _bloodBankAgencies.where((agency) => 
         agency.city.toLowerCase() == _selectedCity.toLowerCase()
       ).toList();
       
-      // Add markers for agencies in selected city
       for (var agency in cityAgencies) {
         final locationParts = agency.googleMapsLocation.split(',');
         if (locationParts.length == 2) {
@@ -153,7 +252,6 @@ class BloodBankViewModel extends ChangeNotifier {
         }
       }
 
-      // Animate camera to selected city
       await _mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -169,11 +267,55 @@ class BloodBankViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMapController(GoogleMapController controller) {
-    if (_mapController != null) {
-      _mapController!.dispose();
+  // Optimized blood bank agency markers
+  void _addBloodBankAgencyMarkers() {
+    _markers.clear();
+    
+    if (_currentPosition != null) {
+      _markers.add(
+        Marker(
+          markerId: MarkerId("user_location"),
+          position: _currentPosition!,
+          infoWindow: InfoWindow(title: "Your Location"),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
     }
-    _mapController = controller;
+    
+    for (var agency in _bloodBankAgencies) {
+      final locationParts = agency.googleMapsLocation.split(',');
+      if (locationParts.length == 2) {
+        try {
+          final latitude = double.parse(locationParts[0].trim());
+          final longitude = double.parse(locationParts[1].trim());
+          
+          final location = LatLng(latitude, longitude);
+          
+          bool shouldAddMarker = true;
+          if (_currentPosition != null) {
+            final distance = _calculateDistance(_currentPosition!, location);
+            shouldAddMarker = distance <= 5.0;
+          }
+          
+          if (shouldAddMarker) {
+            _markers.add(
+              Marker(
+                markerId: MarkerId(agency.generatedId ?? agency.vendorId ?? 'agency_${agency.agencyName}'),
+                position: location,
+                infoWindow: InfoWindow(
+                  title: agency.agencyName,
+                  snippet: '${agency.completeAddress}, ${agency.city}',
+                ),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                onTap: () => _showBloodBankAgencyDetails(agency),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint("Error parsing location for agency ${agency.agencyName}: $e");
+        }
+      }
+    }
     notifyListeners();
   }
 
@@ -184,49 +326,6 @@ class BloodBankViewModel extends ChangeNotifier {
       _mapController = null;
     }
     super.dispose();
-  }
-
-  Future<void> ensureLocationEnabled() async {
-    debugPrint("Starting location check...");
-
-    try {
-      Location location = Location();
-      bool serviceEnabled = await location.serviceEnabled();
-
-      if (!serviceEnabled) {
-        serviceEnabled = await location.requestService();
-        if (!serviceEnabled) {
-          _handleLocationError();
-          return;
-        }
-      }
-
-      // Check location permission
-      PermissionStatus permissionStatus = await location.hasPermission();
-      if (permissionStatus == PermissionStatus.denied) {
-        permissionStatus = await location.requestPermission();
-        if (permissionStatus != PermissionStatus.granted) {
-          _handleLocationError();
-          return;
-        }
-      }
-
-      // Get current location
-      LocationData? userLocation = await location.getLocation();
-      if (userLocation.latitude != null && userLocation.longitude != null) {
-        _isLoadingLocation = false;
-        _currentPosition = LatLng(userLocation.latitude!, userLocation.longitude!);
-        notifyListeners();
-
-        // Fetch agencies after getting location
-        await _fetchBloodBankAgencies();
-      } else {
-        _handleLocationError();
-      }
-    } catch (e) {
-      debugPrint("Error getting location: $e");
-      _handleLocationError();
-    }
   }
 
   Future<void> _handleLocationError() async {
@@ -349,62 +448,6 @@ class BloodBankViewModel extends ChangeNotifier {
     return nearestAgency;
   }
 
-  // Add markers for blood bank agencies
-  void _addBloodBankAgencyMarkers() {
-    _markers.clear();
-    
-    // Add user location marker only if currentPosition is available
-    if (_currentPosition != null) {
-      _markers.add(
-        Marker(
-          markerId: MarkerId("user_location"),
-          position: _currentPosition!,
-          infoWindow: InfoWindow(title: "Your Location"),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        ),
-      );
-    }
-    
-    for (var agency in _bloodBankAgencies) {
-      // Parse the Google Maps location string to get latitude and longitude
-      final locationParts = agency.googleMapsLocation.split(',');
-      if (locationParts.length == 2) {
-        try {
-          final latitude = double.parse(locationParts[0].trim());
-          final longitude = double.parse(locationParts[1].trim());
-          
-          final location = LatLng(latitude, longitude);
-          
-          // Only calculate distance if currentPosition is available
-          bool shouldAddMarker = true;
-          if (_currentPosition != null) {
-            final distance = _calculateDistance(_currentPosition!, location);
-            // Only add markers for agencies within 5km if we have user location
-            shouldAddMarker = distance <= 5.0;
-          }
-          
-          if (shouldAddMarker) {
-            _markers.add(
-              Marker(
-                markerId: MarkerId(agency.generatedId ?? agency.vendorId ?? 'agency_${agency.agencyName}'),
-                position: location,
-                infoWindow: InfoWindow(
-                  title: agency.agencyName,
-                  snippet: '${agency.completeAddress}, ${agency.city}',
-                ),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-                onTap: () => _showBloodBankAgencyDetails(agency),
-              ),
-            );
-          }
-        } catch (e) {
-          debugPrint("Error parsing location for agency ${agency.agencyName}: $e");
-        }
-      }
-    }
-    notifyListeners();
-  }
-
   void _showBloodBankAgencyDetails(BloodBankAgency agency) {
     // Parse the Google Maps location string to get latitude and longitude
     final locationParts = agency.googleMapsLocation.split(',');
@@ -477,128 +520,217 @@ class BloodBankViewModel extends ChangeNotifier {
   }
 
   void _showBloodTypeSelectionDialog() {
-    showDialog(
+    debugPrint("_showBloodTypeSelectionDialog started");
+    if (!context.mounted) {
+      debugPrint("Context is not mounted in _showBloodTypeSelectionDialog");
+      return;
+    }
+
+    debugPrint("Showing blood type selection bottom sheet...");
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) => BloodTypeSelectionDialog(
-        selectedBloodTypes: _selectedBloodTypes,
-        onBloodTypesSelected: (List<String> selectedTypes) {
-          _selectedBloodTypes = selectedTypes;
-          _isBloodTypeSelected = true;
-          notifyListeners();
-          _addBloodBankAgencyMarkers();
-        },
-        onRequestConfirm: _attemptToAcceptBloodRequest,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
+      builder: (BuildContext context) {
+        debugPrint("Building BloodTypeSelectionDialog with selected types: $_selectedBloodTypes");
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IntrinsicHeight(
+              child: BloodTypeSelectionDialog(
+                selectedBloodTypes: _selectedBloodTypes,
+                onBloodTypesSelected: (List<String> selectedTypes) {
+                  debugPrint("Blood types selected: $selectedTypes");
+                  _selectedBloodTypes = selectedTypes;
+                  _isBloodTypeSelected = true;
+                  notifyListeners();
+                  _addBloodBankAgencyMarkers();
+                },
+                onRequestConfirm: () {
+                  debugPrint("Request confirmed, attempting to accept blood request");
+                  _attemptToAcceptBloodRequest();
+                },
+              ),
+            ),
+            // Close button outside the bottom sheet
+            Positioned(
+              right: 16,
+              top: -50,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.close, size: 24, color: Colors.black87),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      debugPrint("Bottom sheet closed");
+    });
   }
 
   void _attemptToAcceptBloodRequest() async {
     debugPrint("Attempting to accept blood request...");
 
     if (!_isBloodTypeSelected) {
-      debugPrint("Blood type not selected.");
+      debugPrint("Blood type not selected, showing error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please select blood type(s) first"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     BloodBankAgency? nearestAgency = _getNearestBloodBankAgency();
     if (nearestAgency == null) {
-      debugPrint("No nearest blood bank agency found.");
+      debugPrint("No nearest blood bank agency found, showing error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("No blood bank found nearby"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     debugPrint("Nearest Blood Bank Agency: ${nearestAgency.agencyName}");
 
-    bool requestSent = await _sendRequestToVendor(nearestAgency);
-    debugPrint("Blood request sent: $requestSent");
+    try {
+      bool requestSent = await _sendRequestToVendor(nearestAgency);
+      debugPrint("Blood request sent: $requestSent");
 
-    if (requestSent) {
-      _listenForVendorResponse(nearestAgency);
+      if (requestSent) {
+        // Close the bottom sheet first
+        Navigator.pop(context);
+        
+        // Show success dialog
+        AwesomeDialog(
+          context: context,
+          dialogType: DialogType.success,
+          animType: AnimType.bottomSlide,
+          title: 'Request Sent Successfully',
+          desc: 'Your blood request has been sent. We will notify you once they respond.',
+          btnOkText: "OK",
+          btnOkOnPress: () {
+            _listenForVendorResponse(nearestAgency);
+          },
+          customHeader: Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              margin: const EdgeInsets.only(top: 16),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.green.shade100,
+              ),
+              padding: const EdgeInsets.all(16),
+              child: const Icon(
+                Icons.check_circle_outline,
+                size: 40,
+                color: Colors.green,
+              ),
+            ),
+          ),
+        ).show();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to send request to blood bank"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error sending request: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   Future<bool> _sendRequestToVendor(BloodBankAgency agency) async {
-    await Future.delayed(Duration(seconds: 1));
-    return true;
+    debugPrint("Sending request to vendor: ${agency.agencyName}");
+    try {
+      // TODO: Implement actual API call to send request
+      await Future.delayed(Duration(seconds: 1));
+      return true;
+    } catch (e) {
+      debugPrint("Error in _sendRequestToVendor: $e");
+      return false;
+    }
   }
 
-  // void _showBloodRequestDetailsBottomSheet(BloodBankAgency agency) {
-  //   if (!context.mounted) {
-  //     debugPrint("Context is no longer mounted. Cannot show bottom sheet.");
-  //     return;
-  //   }
-  //
-  //   debugPrint("Showing Blood Request Details Bottom Sheet for ${agency.agencyName}");
-  //
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     enableDrag: false,
-  //     shape: RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-  //     ),
-  //     builder: (context) => Stack(
-  //       clipBehavior: Clip.none,
-  //       children: [
-  //         IntrinsicHeight(
-  //           child: BloodRequestDetailsBottomSheet(
-  //             customerName: "Patient", // You might want to get this from somewhere
-  //             bloodTypes: _selectedBloodTypes,
-  //             units: 1, // You might want to get this from somewhere
-  //             prescriptionUrl: "", // You might want to get this from somewhere
-  //             onCallBloodBank: () {
-  //               // Handle calling the blood bank
-  //               final phoneNumber = agency.phoneNumber;
-  //               if (phoneNumber != null) {
-  //                 launchUrl(Uri.parse('tel:$phoneNumber'));
-  //               }
-  //             },
-  //           ),
-  //         ),
-  //         // Close button outside the bottom sheet
-  //         Positioned(
-  //           right: 16,
-  //           top: -50,
-  //           child: GestureDetector(
-  //             onTap: () => Navigator.pop(context),
-  //             child: Container(
-  //               width: 40,
-  //               height: 40,
-  //               decoration: BoxDecoration(
-  //                 color: Colors.white,
-  //                 shape: BoxShape.circle,
-  //                 boxShadow: [
-  //                   BoxShadow(
-  //                     color: Colors.black.withOpacity(0.2),
-  //                     blurRadius: 6,
-  //                     spreadRadius: 1,
-  //                   ),
-  //                 ],
-  //               ),
-  //               child: Icon(Icons.close, size: 24, color: Colors.black87),
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   void _listenForVendorResponse(BloodBankAgency agency) {
-    debugPrint("Listening for vendor response...");
+    debugPrint("Listening for vendor response from: ${agency.agencyName}");
 
-    // Check vendor response directly without using a timer
     _checkVendorResponse(agency).then((isAccepted) {
       debugPrint("Vendor response received: $isAccepted");
 
-
-        debugPrint("Vendor accepted the request. Showing bottom sheet.");
-        // _showBloodRequestDetailsBottomSheet(agency);
-
+      if (isAccepted) {
+        debugPrint("Vendor accepted the request");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Request accepted by ${agency.agencyName}"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        debugPrint("Vendor rejected the request");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Request rejected by ${agency.agencyName}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }).catchError((error) {
+      debugPrint("Error checking vendor response: $error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${error.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
     });
   }
 
+  Future<bool> _checkVendorResponse(BloodBankAgency agency) async {
+    debugPrint("Checking vendor response from: ${agency.agencyName}");
+    try {
+      // TODO: Implement actual API call to check response
+      await Future.delayed(Duration(seconds: 1));
+      return Random().nextBool();
+    } catch (e) {
+      debugPrint("Error in _checkVendorResponse: $e");
+      return false;
+    }
+  }
+
   Future<void> fetchBookingsForVendor() async {
+    _logger.d("Fetching bookings for vendor");
     String? token = await _authRepository.getToken();
     String? userId = await StorageService.getUserId();
 
@@ -608,18 +740,18 @@ class BloodBankViewModel extends ChangeNotifier {
 
     try {
       _bookings = await _agencyService.getBookings(userId!, token!);
-      debugPrint('Bookings fetched: ${_bookings.length}');
+      _logger.i("Successfully fetched ${_bookings.length} bookings");
       
-      // Filter out completed bookings and show bottom sheet for the first non-completed booking
+      // Filter out completed bookings
       final activeBookings = _bookings.where((booking) => 
         booking.status.toLowerCase() != 'completed'
       ).toList();
       
-      if (activeBookings.isNotEmpty) {
-        _showBookingDetailsBottomSheet(activeBookings.first);
-      }
+      _logger.d("Found ${activeBookings.length} active bookings");
+      
+      // Don't show bottom sheet here, it will be shown in _initialize if needed
     } catch (e) {
-      debugPrint('Error fetching bookings: $e');
+      _logger.e("Error fetching bookings", error: e);
       _bookingError = e.toString();
     } finally {
       _isLoadingBookings = false;
@@ -627,19 +759,12 @@ class BloodBankViewModel extends ChangeNotifier {
     }
   }
 
-
-  Future<bool> _checkVendorResponse(BloodBankAgency agency) async {
-    await Future.delayed(Duration(seconds: 0));
-    return Random().nextBool();
-  }
-
   void _showBookingDetailsBottomSheet(BloodBankBooking booking) {
+    _logger.d("Showing booking details bottom sheet for booking ID: ${booking.bookingId}");
     if (!context.mounted) {
-      debugPrint("Context is no longer mounted. Cannot show bottom sheet.");
+      _logger.e("Context is not mounted, cannot show bottom sheet");
       return;
     }
-
-    debugPrint("Showing Booking Details Bottom Sheet for booking ID: ${booking.bookingId}");
 
     showModalBottomSheet(
       context: context,
@@ -654,17 +779,21 @@ class BloodBankViewModel extends ChangeNotifier {
         children: [
           IntrinsicHeight(
             child: BloodRequestDetailsBottomSheet(
-              booking: booking, // Passing the full booking object
+              booking: booking,
               onCallBloodBank: () {
-                final phoneNumber = booking.agency?.phoneNumber; // Assuming this exists in the UserModel
+                final phoneNumber = booking.agency?.phoneNumber;
                 if (phoneNumber != null && phoneNumber.isNotEmpty) {
                   launchUrl(Uri.parse('tel:$phoneNumber'));
                 } else {
-                  // Handle the case where phone number is null or empty
+                  _logger.w("Phone number not available for booking ${booking.bookingId}");
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Phone number is not available")),
                   );
                 }
+              },
+              onRefresh: () async {
+                _logger.d("Refreshing bookings");
+                await fetchBookingsForVendor();
               },
             ),
           ),

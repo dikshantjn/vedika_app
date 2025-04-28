@@ -674,15 +674,15 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             icon: Icons.science,
             isEditing: viewModel.isEditing,
             options: [
-                        'Blood Tests',
-                        'Urine Tests',
-                        'X-Ray',
-                        'MRI',
-                        'CT Scan',
-                        'Ultrasound',
-                        'ECG',
-                        'Other',
-                      ],
+              'Blood Tests',
+              'Urine Tests',
+              'X-Ray',
+              'MRI',
+              'CT Scan',
+              'Ultrasound',
+              'ECG',
+              'Other',
+            ],
             onChanged: (values) => viewModel.updateBusinessInfo(testTypes: values),
           ),
           _buildInfoTile(
@@ -699,14 +699,14 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             icon: Icons.calendar_today,
             isEditing: viewModel.isEditing,
             options: [
-                        'Monday',
-                        'Tuesday',
-                        'Wednesday',
-                        'Thursday',
-                        'Friday',
-                        'Saturday',
-                        'Sunday',
-                      ],
+              'Monday',
+              'Tuesday',
+              'Wednesday',
+              'Thursday',
+              'Friday',
+              'Saturday',
+              'Sunday',
+            ],
             onChanged: (values) => viewModel.updateBusinessInfo(businessDays: values),
           ),
           _buildInfoTile(
@@ -723,9 +723,9 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             icon: Icons.emergency,
             isEditing: viewModel.isEditing,
             onChanged: (value) => viewModel.updateFacilities(emergencyHandlingFastTrack: value),
-                    ),
-                  ],
-                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -849,9 +849,9 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             icon: Icons.emergency,
             isEditing: viewModel.isEditing,
             onChanged: (value) => viewModel.updateFacilities(ambulanceServiceAvailable: value),
-                    ),
-                  ],
-                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -899,21 +899,21 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
             icon: Icons.language,
             isEditing: viewModel.isEditing,
             options: [
-                        'English',
-                        'Hindi',
-                        'Marathi',
-                        'Gujarati',
-                        'Bengali',
-                        'Tamil',
-                        'Telugu',
-                        'Kannada',
-                        'Malayalam',
-                        'Other',
-                      ],
+              'English',
+              'Hindi',
+              'Marathi',
+              'Gujarati',
+              'Bengali',
+              'Tamil',
+              'Telugu',
+              'Kannada',
+              'Malayalam',
+              'Other',
+            ],
             onChanged: (values) => viewModel.updateFacilities(languagesSpoken: values),
-                    ),
-                  ],
-                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1017,13 +1017,9 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                 }
               },
             ),
-
-          const SizedBox(height: 16),
-
-          _buildLocationMap(profile),
-              ],
-            ),
-          );
+        ],
+      ),
+    );
   }
 
   Widget _buildLocationMap(DiagnosticCenter profile) {
@@ -1653,6 +1649,9 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
     required List<String> items,
     required Function(String?) onChanged,
   }) {
+    // Ensure the value is in the items list
+    final validValue = items.contains(value) ? value : items.first;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -1691,7 +1690,7 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                       child: ButtonTheme(
                         alignedDropdown: true,
                         child: DropdownButton<String>(
-                          value: items.contains(value) ? value : (items.isNotEmpty ? items.first : null),
+                          value: validValue,
                           isExpanded: true,
                           icon: Icon(Icons.arrow_drop_down, color: LabTestColorPalette.primaryBlue),
                           style: const TextStyle(
@@ -1713,8 +1712,8 @@ class _DiagnosticCenterProfileScreenState extends State<DiagnosticCenterProfileS
                                   color: Colors.black87,
                                 ),
                               ),
-          );
-        }).toList(),
+                            );
+                          }).toList(),
                           onChanged: onChanged,
                         ),
                       ),

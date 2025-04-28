@@ -20,10 +20,31 @@ class LabSearchViewModel extends ChangeNotifier {
   List<DiagnosticCenter> _labCenters = [];
   List<DiagnosticCenter> _filteredLabCenters = [];
   bool _isLoading = true;
+  bool _isMapReady = false;
   TextEditingController searchController = TextEditingController();
+  bool _isSidePanelOpen = false;
+  BitmapDescriptor? _labMarkerIcon;
 
   // Track the selected lab
   DiagnosticCenter? _selectedLab;
+
+  // City data
+  Map<String, int> _cityLabCounts = {};
+  String? _selectedCity;
+
+  // City coordinates map
+  final Map<String, LatLng> _cityCoordinates = {
+    'Mumbai': LatLng(19.0760, 72.8777),
+    'Delhi': LatLng(28.6139, 77.2090),
+    'Bangalore': LatLng(12.9716, 77.5946),
+    'Hyderabad': LatLng(17.3850, 78.4867),
+    'Chennai': LatLng(13.0827, 80.2707),
+    'Kolkata': LatLng(22.5726, 88.3639),
+    'Pune': LatLng(18.5204, 73.8567),
+    'Ahmedabad': LatLng(23.0225, 72.5714),
+    'Jaipur': LatLng(26.9124, 75.7873),
+    'Lucknow': LatLng(26.8467, 80.9462),
+  };
 
   GoogleMapController? get mapController => _mapController;
   Set<Marker> get markers => _markers;
@@ -31,10 +52,25 @@ class LabSearchViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   LatLng? get currentPosition => _currentPosition;
   DiagnosticCenter? get selectedLab => _selectedLab;
+  bool get isSidePanelOpen => _isSidePanelOpen;
+  Map<String, int> get cityLabCounts => _cityLabCounts;
+  String? get selectedCity => _selectedCity;
+  bool get isMapReady => _isMapReady;
 
-  void setMapController(GoogleMapController controller) {
+  Future<void> _initializeMarkerIcons() async {
+    _labMarkerIcon = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(48, 48)),
+      'assets/images/lab_marker.png',
+    );
+  }
+
+  void setMapController(GoogleMapController controller) async {
     _logger.i("Setting MapController in ViewModel");
     _mapController = controller;
+    _isMapReady = true;
+
+    // Initialize marker icons
+    await _initializeMarkerIcons();
 
     if (_currentPosition != null) {
       _logger.i("Moving camera to user location: $_currentPosition");
@@ -65,11 +101,10 @@ class LabSearchViewModel extends ChangeNotifier {
       if (!serviceEnabled) {
         serviceEnabled = await location.requestService();
         if (!serviceEnabled) {
-          _logger.w("Location services disabled. Redirecting to EnableLocationPage.");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "labTest")),
-          );
+          _logger.w("Location services disabled. Showing city options.");
+          _isLoading = false;
+          _isSidePanelOpen = true; // Open side panel to show city options
+          notifyListeners();
           return;
         }
       }
@@ -78,11 +113,10 @@ class LabSearchViewModel extends ChangeNotifier {
       if (permissionGranted == loc.PermissionStatus.denied) {
         permissionGranted = await location.requestPermission();
         if (permissionGranted != loc.PermissionStatus.granted) {
-          _logger.w("Location permission denied. Redirecting to EnableLocationPage.");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => EnableLocationPage(fromSource: "labTest")),
-          );
+          _logger.w("Location permission denied. Showing city options.");
+          _isLoading = false;
+          _isSidePanelOpen = true; // Open side panel to show city options
+          notifyListeners();
           return;
         }
       }
@@ -110,7 +144,6 @@ class LabSearchViewModel extends ChangeNotifier {
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 14));
       } else {
         _logger.w("MapController is NULL. It will be initialized when the map is created.");
-        // Don't try to use the controller here - it will be set in setMapController method
       }
 
       _addUserLocationMarker();
@@ -118,6 +151,7 @@ class LabSearchViewModel extends ChangeNotifier {
       _logger.e("Error in loadUserLocation(): $e");
       _logger.e("Stack trace: $stackTrace");
       _isLoading = false;
+      _isSidePanelOpen = true; // Open side panel to show city options on error
       notifyListeners();
     }
   }
@@ -134,10 +168,8 @@ class LabSearchViewModel extends ChangeNotifier {
         return;
       }
       
-      // Log center details for debugging
-      for (var center in _labCenters) {
-        _logger.i("Lab center: ${center.name}, Location: '${center.location}'");
-      }
+      // Update city lab counts
+      _updateCityLabCounts();
       
       // Filter labs that are within a reasonable distance (if location data available)
       if (_currentPosition != null) {
@@ -246,7 +278,11 @@ class LabSearchViewModel extends ChangeNotifier {
             Marker(
               markerId: markerId,
               position: LatLng(lat, lng),
-              infoWindow: InfoWindow(title: center.name),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              infoWindow: InfoWindow(
+                title: center.name,
+                snippet: center.address,
+              ),
               onTap: () {
                 moveCameraToLab(lat, lng, center);
               },
@@ -272,8 +308,8 @@ class LabSearchViewModel extends ChangeNotifier {
       Marker(
         markerId: MarkerId("userLocation"),
         position: _currentPosition!,
-        infoWindow: InfoWindow(title: "Your Location"),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(title: "Your Location"),
       ),
     );
     notifyListeners();
@@ -371,5 +407,49 @@ class LabSearchViewModel extends ChangeNotifier {
       _logger.e("Error in selectLabWithoutMovingCamera: $e");
       _logger.e("Stack trace: $stackTrace");
     }
+  }
+
+  void toggleSidePanel() {
+    _isSidePanelOpen = !_isSidePanelOpen;
+    notifyListeners();
+  }
+
+  void _updateCityLabCounts() {
+    _cityLabCounts.clear();
+    for (var center in _labCenters) {
+      if (center.city.isNotEmpty) {
+        _cityLabCounts[center.city] = (_cityLabCounts[center.city] ?? 0) + 1;
+      }
+    }
+    // Sort cities by lab count in descending order
+    _cityLabCounts = Map.fromEntries(
+      _cityLabCounts.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value))
+    );
+    notifyListeners();
+  }
+
+  void selectCity(String city) {
+    _selectedCity = city;
+    _filterLabsByCity(city);
+    
+    // Move camera to selected city
+    if (_cityCoordinates.containsKey(city) && _mapController != null) {
+      final cityLocation = _cityCoordinates[city]!;
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(cityLocation, 12.0),
+      );
+    }
+    
+    notifyListeners();
+  }
+
+  void _filterLabsByCity(String city) {
+    if (city.isEmpty) {
+      _filteredLabCenters = _labCenters;
+    } else {
+      _filteredLabCenters = _labCenters.where((center) => center.city == city).toList();
+    }
+    _updateMarkers();
   }
 }

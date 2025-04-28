@@ -9,7 +9,12 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/Lab
 import 'package:url_launcher/url_launcher.dart';
 
 class BookingsContent extends StatefulWidget {
-  const BookingsContent({Key? key}) : super(key: key);
+  final int? initialTab;
+  
+  const BookingsContent({
+    Key? key,
+    this.initialTab,
+  }) : super(key: key);
 
   @override
   State<BookingsContent> createState() => _BookingsContentState();
@@ -27,6 +32,11 @@ class _BookingsContentState extends State<BookingsContent> with SingleTickerProv
     // Initialize the ViewModel
     _viewModel = BookingsViewModel();
     _loadData();
+
+    // Set initial tab if provided
+    if (widget.initialTab != null) {
+      _tabController.animateTo(widget.initialTab!);
+    }
   }
   
   Future<void> _loadData() async {
@@ -44,26 +54,26 @@ class _BookingsContentState extends State<BookingsContent> with SingleTickerProv
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Column(
-      children: [
-        Container(
-          color: LabTestColorPalette.backgroundPrimary,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: LabTestColorPalette.primaryBlue,
-            unselectedLabelColor: LabTestColorPalette.textSecondary,
-            indicatorColor: LabTestColorPalette.primaryBlue,
-            indicatorWeight: 3,
-            tabs: const [
+        children: [
+          Container(
+            color: LabTestColorPalette.backgroundPrimary,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: LabTestColorPalette.primaryBlue,
+              unselectedLabelColor: LabTestColorPalette.textSecondary,
+              indicatorColor: LabTestColorPalette.primaryBlue,
+              indicatorWeight: 3,
+              tabs: const [
                 Tab(text: 'Upcoming'),
-              Tab(text: 'Today'),
-              Tab(text: 'Past'),
-            ],
+                Tab(text: 'Today'),
+                Tab(text: 'Past'),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: const [
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
                 BookingListView(type: 'upcoming'),
                 BookingListView(type: 'today'),
                 BookingListView(type: 'past'),
@@ -98,35 +108,8 @@ class BookingListView extends StatelessWidget {
 
         // Check if there is a global error message
         if (viewModel.errorMessage != null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 60,
-                  color: LabTestColorPalette.errorRed.withOpacity(0.7),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Text(
-                    viewModel.errorMessage!,
-                    style: const TextStyle(color: LabTestColorPalette.errorRed),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => viewModel.fetchBookings(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: LabTestColorPalette.primaryBlue,
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
+          // For any error, show the empty state with appropriate message
+          return _buildEmptyState(type);
         }
 
         final List<LabTestBooking> bookings;
@@ -145,27 +128,7 @@ class BookingListView extends StatelessWidget {
         }
 
         if (bookings.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.event_busy_outlined,
-                  size: 60,
-                  color: LabTestColorPalette.textSecondary.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _getEmptyMessage(type),
-                  style: TextStyle(
-                    color: LabTestColorPalette.textSecondary,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState(type);
         }
 
         return RefreshIndicator(
@@ -191,7 +154,7 @@ class BookingListView extends StatelessWidget {
   String _getEmptyMessage(String type) {
     switch (type) {
       case 'upcoming':
-        return 'No pending bookings.\nBookings awaiting your acceptance will appear here.';
+        return 'No pending bookings found.\nNew booking requests will appear here.';
       case 'today':
         return 'No bookings for today.\nAccepted bookings that need to be processed will appear here.';
       case 'past':
@@ -199,6 +162,71 @@ class BookingListView extends StatelessWidget {
       default:
         return 'No bookings found';
     }
+  }
+
+  Widget _buildEmptyState(String type) {
+    IconData icon;
+    Color iconColor;
+    String message = _getEmptyMessage(type);
+
+    switch (type) {
+      case 'upcoming':
+        icon = Icons.event_busy_outlined;
+        iconColor = Colors.orange.withOpacity(0.5);
+        break;
+      case 'today':
+        icon = Icons.today_outlined;
+        iconColor = Colors.blue.withOpacity(0.5);
+        break;
+      case 'past':
+        icon = Icons.history_outlined;
+        iconColor = Colors.green.withOpacity(0.5);
+        break;
+      default:
+        icon = Icons.event_busy_outlined;
+        iconColor = Colors.grey.withOpacity(0.5);
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 60,
+              color: iconColor,
+            ),
+          ),
+          SizedBox(height: 24),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 16,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16),
+          if (type == 'upcoming')
+            Text(
+              'You will be notified when new bookings arrive',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -543,6 +571,9 @@ class BookingCard extends StatelessWidget {
   }
 
   void _showDetailBottomSheet(BuildContext context) {
+    // Debug print for the entire booking
+    print('Booking Report URLs: ${booking.reportUrls}');
+    
     // Capture the current context that has access to the BookingsViewModel provider
     final viewModel = Provider.of<BookingsViewModel>(context, listen: false);
     
@@ -634,7 +665,18 @@ class BookingCard extends StatelessWidget {
                       title: "Tests",
                       icon: Icons.science_outlined,
                       children: [
-                        ...(booking.selectedTests ?? []).map((test) => _buildDetailRow("", test)).toList(),
+                        if (booking.selectedTests?.isNotEmpty ?? false)
+                          ...(booking.selectedTests ?? []).map((test) => 
+                            _buildTestRow(test, booking.reportUrls)
+                          ).toList()
+                        else
+                          const Text(
+                            "No tests selected",
+                            style: TextStyle(
+                              color: LabTestColorPalette.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -879,9 +921,60 @@ class BookingCard extends StatelessWidget {
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestRow(String testName, Map<String, String>? reportUrls) {
+    // Debug prints
+    print('Test Name: $testName');
+    print('Report URLs: $reportUrls');
+    
+    // Check if reportUrls exists and contains the test name
+    final reportUrl = reportUrls?[testName];
+    print('Report URL for $testName: $reportUrl');
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              testName,
+              style: const TextStyle(
+                fontSize: 14,
+                color: LabTestColorPalette.textPrimary,
+              ),
+            ),
+          ),
+          if (reportUrl != null && reportUrl.isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: () => _openPrescription(reportUrl),
+              icon: const Icon(Icons.visibility_outlined, size: 16),
+              label: const Text("View Report"),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: LabTestColorPalette.primaryBlue,
+                side: BorderSide(color: LabTestColorPalette.primaryBlue),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          else
+            const Text(
+              "Report not available",
+              style: TextStyle(
+                fontSize: 12,
+                color: LabTestColorPalette.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+        ],
       ),
     );
   }

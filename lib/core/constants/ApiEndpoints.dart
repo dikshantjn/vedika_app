@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
+  static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
 
@@ -163,6 +163,7 @@ class ApiEndpoints {
   static const String getCompletedBookingsByVendorId = '$baseUrl/labtest-booking/bookings/vendor/completed';
   static const String updateLabTestBookingStatus = '$baseUrl/labtest-booking/bookings/update-status';
   static const String updateLabTestReportUrls = '$baseUrl/labtest-booking/update-labtest-report-urls';  // NEW: endpoint for updating report URLs
+  static const String getCompletedLabTestBookingsByUserId = '$baseUrl/labtest-booking/bookings/user/completed'; // NEW: endpoint for getting completed lab test bookings by user ID
 
   // New Lab Test Profile APIs
   static const String getLabProfile = '$baseUrl/lab-test/profile';

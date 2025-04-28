@@ -1,16 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool isServiceOnline = true;
   final VendorLoginService _loginService = VendorLoginService();
   final VendorService _vendorService = VendorService();
+  final MedicalStoreVendorService _medicalStoreService = MedicalStoreVendorService();
+
+  // Store Information
+  String? _storeName;
+  String? _storeAddress;
+  String? _storePhone;
+  VendorMedicalStoreProfile? _storeProfile;
+
+  // Getters for store information
+  String? get storeName => _storeProfile?.name ?? _storeName;
+  String? get storeAddress => _storeProfile?.address ?? _storeAddress;
+  String? get storePhone => _storeProfile?.contactNumber ?? _storePhone;
 
   // ✅ List to hold fetched orders and return requests
   List<MedicineOrderModel> orders = [];
@@ -29,9 +45,29 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   // ✅ Loading and Active Status
   bool _isLoading = false;
   bool _isActive = false; // Default inactive
+  String _status = "Offline"; // New status field
 
   bool get isLoading => _isLoading;
   bool get isActive => _isActive;
+  String get status => _status;
+
+  // ✅ Fetch Store Information
+  Future<void> fetchStoreInformation() async {
+    try {
+      String? token = await _loginService.getVendorToken();
+      if (token != null) {
+        _storeProfile = await _medicalStoreService.fetchVendorProfile(token);
+        if (_storeProfile != null) {
+          _storeName = _storeProfile!.name;
+          _storeAddress = _storeProfile!.address;
+          _storePhone = _storeProfile!.contactNumber;
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error fetching store information: $e");
+    }
+  }
 
   // ✅ Fetch Vendor's Initial Active Status
   Future<void> fetchVendorStatus() async {
@@ -50,7 +86,6 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
-
 
   // ✅ Toggle Vendor Status (Activate/Deactivate)
   Future<void> toggleVendorStatus() async {
@@ -80,6 +115,9 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   Future<void> fetchOrdersAndRequests() async {
     try {
       String? vendorId = await _loginService.getVendorId();
+
+      // Fetch store information
+      await fetchStoreInformation();
 
       // Fetch orders
       orders = await _orderService.getOrders(vendorId!);
@@ -148,5 +186,74 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   int _getWeekOfYear(DateTime date) {
     int dayOfYear = int.parse(DateFormat("D").format(date));
     return ((dayOfYear - 1) / 7).floor() + 1;
+  }
+
+  // ✅ Set Vendor Status
+  Future<void> setStatus(bool isOnline) async {
+    String? vendorId = await _loginService.getVendorId();
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (isOnline) {
+        _status = "Online";
+        _isActive = true;
+      } else {
+        _status = "Offline";
+        _isActive = false;
+      }
+      
+      // Update status in the backend
+      await _vendorService.toggleVendorStatus(vendorId!);
+      
+      // Show toast message
+      Fluttertoast.showToast(
+        msg: "You are now $_status",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: _status == "Online" 
+            ? MedicalStoreVendorColorPalette.successColor
+            : MedicalStoreVendorColorPalette.errorColor,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      print("Error setting vendor status: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // ✅ Set Busy Status
+  Future<void> setBusyStatus() async {
+    String? vendorId = await _loginService.getVendorId();
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _status = "Busy";
+      _isActive = false;
+      
+      // Update status in the backend
+      await _vendorService.toggleVendorStatus(vendorId!);
+      
+      // Show toast message
+      Fluttertoast.showToast(
+        msg: "You are now Busy",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: MedicalStoreVendorColorPalette.warningColor,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      print("Error setting busy status: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 }

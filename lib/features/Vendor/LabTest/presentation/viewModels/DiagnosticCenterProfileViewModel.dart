@@ -197,17 +197,17 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
     if (_profile == null) return;
 
     _sampleCollectionMethod = _profile!.sampleCollectionMethod;
-    _testTypes = List.from(_profile!.testTypes);
-    _businessDays = List.from(_profile!.businessDays);
-    _languagesSpoken = List.from(_profile!.languagesSpoken);
+    _testTypes = List<String>.from(_profile!.testTypes ?? []);
+    _businessDays = List<String>.from(_profile!.businessDays ?? []);
+    _languagesSpoken = List<String>.from(_profile!.languagesSpoken ?? []);
     _emergencyHandlingFastTrack = _profile!.emergencyHandlingFastTrack;
     _parkingAvailable = _profile!.parkingAvailable;
     _wheelchairAccess = _profile!.wheelchairAccess;
     _liftAccess = _profile!.liftAccess;
     _ambulanceServiceAvailable = _profile!.ambulanceServiceAvailable;
-    _regulatoryComplianceUrl = Map.from(_profile!.regulatoryComplianceUrl);
-    _qualityAssuranceUrl = Map.from(_profile!.qualityAssuranceUrl);
-    _filesAndImages = List.from(_profile!.filesAndImages);
+    _regulatoryComplianceUrl = Map<String, String>.from(_profile!.regulatoryComplianceUrl ?? {});
+    _qualityAssuranceUrl = Map<String, String>.from(_profile!.qualityAssuranceUrl ?? {});
+    _filesAndImages = List<Map<String, String>>.from(_profile!.filesAndImages ?? []);
   }
 
   // Update methods for different profile sections
@@ -287,12 +287,28 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
   }) {
     if (_profile == null) return;
 
+    if (sampleCollectionMethod != null) {
+      _sampleCollectionMethod = sampleCollectionMethod;
+    }
+    if (testTypes != null) {
+      _testTypes = testTypes;
+    }
+    if (businessDays != null) {
+      _businessDays = businessDays;
+    }
+    if (businessTimings != null) {
+      businessTimingsController.text = businessTimings;
+    }
+    if (homeCollectionGeoLimit != null) {
+      homeCollectionGeoLimitController.text = homeCollectionGeoLimit;
+    }
+
     _profile = _profile!.copyWith(
-      businessTimings: businessTimings,
-      homeCollectionGeoLimit: homeCollectionGeoLimit,
-      sampleCollectionMethod: sampleCollectionMethod,
-      testTypes: testTypes,
-      businessDays: businessDays,
+      businessTimings: businessTimings ?? _profile!.businessTimings,
+      homeCollectionGeoLimit: homeCollectionGeoLimit ?? _profile!.homeCollectionGeoLimit,
+      sampleCollectionMethod: _sampleCollectionMethod,
+      testTypes: _testTypes,
+      businessDays: _businessDays,
     );
     notifyListeners();
   }
@@ -307,13 +323,32 @@ class DiagnosticCenterProfileViewModel extends ChangeNotifier {
   }) {
     if (_profile == null) return;
 
+    if (parkingAvailable != null) {
+      _parkingAvailable = parkingAvailable;
+    }
+    if (wheelchairAccess != null) {
+      _wheelchairAccess = wheelchairAccess;
+    }
+    if (liftAccess != null) {
+      _liftAccess = liftAccess;
+    }
+    if (ambulanceServiceAvailable != null) {
+      _ambulanceServiceAvailable = ambulanceServiceAvailable;
+    }
+    if (emergencyHandlingFastTrack != null) {
+      _emergencyHandlingFastTrack = emergencyHandlingFastTrack;
+    }
+    if (languagesSpoken != null) {
+      _languagesSpoken = languagesSpoken;
+    }
+
     _profile = _profile!.copyWith(
-      parkingAvailable: parkingAvailable,
-      wheelchairAccess: wheelchairAccess,
-      liftAccess: liftAccess,
-      ambulanceServiceAvailable: ambulanceServiceAvailable,
-      emergencyHandlingFastTrack: emergencyHandlingFastTrack,
-      languagesSpoken: languagesSpoken,
+      parkingAvailable: _parkingAvailable,
+      wheelchairAccess: _wheelchairAccess,
+      liftAccess: _liftAccess,
+      ambulanceServiceAvailable: _ambulanceServiceAvailable,
+      emergencyHandlingFastTrack: _emergencyHandlingFastTrack,
+      languagesSpoken: _languagesSpoken,
     );
     notifyListeners();
   }

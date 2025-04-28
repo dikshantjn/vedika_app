@@ -12,7 +12,12 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/d
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/DashboardDrawer.dart';
 
 class LabTestDashboardScreen extends StatefulWidget {
-  const LabTestDashboardScreen({super.key});
+  final int? initialTab;
+  
+  const LabTestDashboardScreen({
+    super.key,
+    this.initialTab,
+  });
 
   @override
   State<LabTestDashboardScreen> createState() => _LabTestDashboardScreenState();
@@ -29,6 +34,15 @@ class _LabTestDashboardScreenState extends State<LabTestDashboardScreen> {
     const InsightsContent(),
     const DiagnosticCenterProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Set initial tab if provided
+    if (widget.initialTab != null) {
+      _currentIndex = widget.initialTab!;
+    }
+  }
 
   String _getAppBarTitle() {
     if (_showNotifications) return 'Notifications';

@@ -50,6 +50,7 @@ import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/Ambu
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/OnlineDoctorConsultationViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BedBookingOrderViewModel.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestOrderViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
@@ -66,7 +67,6 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmod
 import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
 import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestViewModel.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
@@ -128,7 +128,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => BookAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()),
-        ChangeNotifierProvider(create: (_) => LabTestViewModel()),
         ChangeNotifierProvider(create: (_) => BloodBankOrderViewModel()),
         ChangeNotifierProvider(create: (_) => BannerViewModel()),
         ChangeNotifierProvider(create: (_) => HealthDaysViewModel()),
@@ -199,6 +198,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => OnlineDoctorConsultationViewModel()),
         ChangeNotifierProvider(create: (context) => DiagnosticCenterProfileViewModel()),
         ChangeNotifierProvider(create: (context) => BookingsViewModel()),
+        ChangeNotifierProvider(create: (context) => LabTestOrderViewModel()),
 
       ],
       child: Builder(
