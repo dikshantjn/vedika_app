@@ -994,7 +994,7 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                        viewModel.selectedTime != null;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -1005,47 +1005,81 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: isFormValid && !_isSubmitting 
-          ? () => _submitAppointment(context, viewModel) 
-          : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorPalette.primaryColor,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey.shade300,
-          disabledForegroundColor: Colors.grey.shade500,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
-        child: _isSubmitting
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
-              ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                isFormValid
-                    ? const Icon(Icons.check_circle)
-                    : Icon(Icons.info_outline, color: Colors.grey.shade500),
-                const SizedBox(width: 12),
-                Text(
-                  'Book Appointment',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+      child: Row(
+        children: [
+          if (viewModel.selectedTests.isNotEmpty)
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total Amount',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '₹${viewModel.totalAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: ColorPalette.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: ElevatedButton(
+              onPressed: isFormValid && !_isSubmitting 
+                ? () => _submitAppointment(context, viewModel) 
+                : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorPalette.primaryColor,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                disabledForegroundColor: Colors.grey.shade500,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      isFormValid
+                          ? const Icon(Icons.check_circle, size: 16)
+                          : Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Book Appointment',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

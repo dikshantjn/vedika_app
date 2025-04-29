@@ -32,6 +32,7 @@ class _BloodBankMapScreenState extends State<BloodBankMapScreen> {
           return Scaffold(
             key: _scaffoldKey,
             appBar: AppBar(
+              foregroundColor: Colors.white,
               elevation: 0,
               centerTitle: true,
               backgroundColor: ColorPalette.primaryColor,

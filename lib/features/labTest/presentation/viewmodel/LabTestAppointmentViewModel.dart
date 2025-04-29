@@ -37,6 +37,25 @@ class LabTestAppointmentViewModel extends ChangeNotifier {
   bool _isSubmitting = false;
   bool get isSubmitting => _isSubmitting;
   
+  // Total amount calculation
+  double get totalAmount {
+    double basePrice = 0.0;
+    for (var test in _selectedTests) {
+      // In a real app, you would get the price of each test from the backend
+      basePrice += 500.0; // Assuming each test costs ₹500
+    }
+    
+    // Home collection fee
+    double reportDeliveryFees = _reportDeliveryAtHome ? 50.0 : 0.0;
+    
+    // Apply standard discount and GST
+    double discount = basePrice * 0.05; // 5% discount
+    double gst = (basePrice - discount + reportDeliveryFees) * 0.18; // 18% GST
+    
+    // Calculate total amount
+    return basePrice - discount + reportDeliveryFees + gst;
+  }
+
   ValueNotifier<String?> dateError = ValueNotifier(null);
   ValueNotifier<String?> timeError = ValueNotifier<String?>(null);
   ValueNotifier<String?> testError = ValueNotifier(null);

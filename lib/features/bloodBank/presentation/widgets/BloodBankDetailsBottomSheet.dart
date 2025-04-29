@@ -132,34 +132,7 @@ class BloodBankDetailsBottomSheet extends StatelessWidget {
                 ],
                 
                 SizedBox(height: 16),
-                
-                // Get Directions button
-                ElevatedButton(
-                  onPressed: () => onGetDirections(location),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ColorPalette.primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.directions, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Get Directions',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+
               ],
             ),
           ),

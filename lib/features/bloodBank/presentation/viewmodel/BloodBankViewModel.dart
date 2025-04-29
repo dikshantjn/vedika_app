@@ -633,7 +633,7 @@ class BloodBankViewModel extends ChangeNotifier {
           desc: 'Your blood request has been sent. We will notify you once they respond.',
           btnOkText: "OK",
           btnOkOnPress: () {
-            _listenForVendorResponse(nearestAgency);
+            // _listenForVendorResponse(nearestAgency);
           },
           customHeader: Align(
             alignment: Alignment.topCenter,

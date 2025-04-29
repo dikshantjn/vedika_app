@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
-class CategoryGrid extends StatelessWidget {
+class CategoryGrid extends StatefulWidget {
+  @override
+  State<CategoryGrid> createState() => _CategoryGridState();
+}
+
+class _CategoryGridState extends State<CategoryGrid> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolling = false;
+
   // List of categories
   final List<String> categories = [
     "Medicine",
@@ -45,70 +53,205 @@ class CategoryGrid extends StatelessWidget {
   final String categoryImage = "assets/category/category.png";
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey.shade100, // Background color
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.grey.shade50,
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              "Popular Categories",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.category,
+                        color: Colors.teal,
+                        size: 20,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      "Popular Categories",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () => _showMoreCategoriesSheet(context),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    backgroundColor: Colors.teal.withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "View All",
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward,
+                        color: Colors.teal,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+
+          Container(
+            height: 120,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (scrollNotification) {
+                if (scrollNotification is ScrollStartNotification) {
+                  setState(() {
+                    _isScrolling = true;
+                  });
+                } else if (scrollNotification is ScrollEndNotification) {
+                  setState(() {
+                    _isScrolling = false;
+                  });
+                }
+                return true;
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 90,
+                    margin: EdgeInsets.only(right: 16),
+                    child: _buildCategoryItem(categories[index]),
+                  );
+                },
               ),
             ),
           ),
-          SizedBox(
-            height: 300, // Adjusted height for larger boxes
-            child: GridView.builder(
-              physics: NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              itemCount: 8 + 1, // Show first 8 categories + "More Categories" button
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                childAspectRatio: 1,
-                crossAxisSpacing: 6,
-                mainAxisSpacing: 6,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryItem(String categoryName) {
+    // Define a map of colors for different categories
+    final Map<String, Color> categoryColors = {
+      "Medicine": Color(0xFFE3F2FD),
+      "Tests": Color(0xFFE8F5E9),
+      "Health Products": Color(0xFFFFF3E0),
+      "Fitness": Color(0xFFF3E5F5),
+      "Skin Care": Color(0xFFFCE4EC),
+      "Baby Care": Color(0xFFE0F7FA),
+      "Ayurveda": Color(0xFFE8F5E9),
+      "Diabetes": Color(0xFFFFEBEE),
+      "Pain Relief": Color(0xFFE3F2FD),
+      "Dental Care": Color(0xFFE0F7FA),
+      "Hair Care": Color(0xFFF3E5F5),
+      "Women's Care": Color(0xFFFCE4EC),
+      "Supplements": Color(0xFFFFF3E0),
+      "Vitamins": Color(0xFFE8F5E9),
+      "Allergy Care": Color(0xFFE3F2FD),
+      "Mental Wellness": Color(0xFFF3E5F5),
+    };
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: categoryColors[categoryName] ?? Color(0xFFE3F2FD),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (categoryColors[categoryName] ?? Color(0xFFE3F2FD)).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Image.asset(
+                categoryIcons[categoryName] ?? categoryImage,
+                fit: BoxFit.contain,
               ),
-              itemBuilder: (context, index) {
-                if (index < 8) {
-                  return Column(
-                    children: [
-                      _buildCategoryBox(categories[index]), // Pass the category name
-                      SizedBox(height: 4),
-                      Flexible(
-                        child: Text(
-                          categories[index],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return GestureDetector(
-                    onTap: () => _showMoreCategoriesSheet(context),
-                    child: Column(
-                      children: [
-                        _buildMoreCategoriesBox(categories.length - 8),
-                        SizedBox(height: 4),
-                        Text(
-                          "More Categories",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              },
+            ),
+          ),
+          SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(
+              categoryName,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],
@@ -119,131 +262,73 @@ class CategoryGrid extends StatelessWidget {
   void _showMoreCategoriesSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Makes bottom sheet full-screen if needed
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      backgroundColor: Colors.grey.shade100,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Stack(
-          clipBehavior: Clip.none, // Allows the close button to be outside the modal
-          children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              height: 400, // Adjust height as needed
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "More Categories",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 12),
-                  Expanded(
-                    child: _buildMoreCategoriesGrid(),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: -50, // Moves the button above the bottom sheet
-              right: 16, // Aligns it to the right
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context), // Close bottom sheet
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 6,
-                        spreadRadius: 1,
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20.0),
+                      child: Text(
+                        "All Categories",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Icon(Icons.close, size: 24, color: Colors.black54),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.black54),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // GridView for more categories inside the bottom sheet
-  Widget _buildMoreCategoriesGrid() {
-    return GridView.builder(
-      physics: BouncingScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 1,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: categories.length - 8, // Show remaining categories
-      itemBuilder: (context, index) {
-        return Column(
-          children: [
-            _buildCategoryBox(categories[index + 8]), // Pass the category name
-            SizedBox(height: 4),
-            Flexible(
-              child: Text(
-                categories[index + 8], // Display remaining categories
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  child: GridView.builder(
+                    physics: BouncingScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      return _buildCategoryItem(categories[index]);
+                    },
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildCategoryBox(String categoryName) {
-    // Get the image path for the category
-    String imagePath = categoryIcons[categoryName] ?? categoryImage;
-
-    return Container(
-      height: 60, // Box size
-      width: 60,
-      decoration: BoxDecoration(
-        color: ColorPalette.categoryColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(6.0),
-        child: Image.asset(
-          imagePath,
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMoreCategoriesBox(int moreCount) {
-    return Container(
-      height: 60,
-      width: 60,
-      decoration: BoxDecoration(
-        color: Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          "+$moreCount",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.orange.shade700,
-          ),
-        ),
-      ),
     );
   }
 }

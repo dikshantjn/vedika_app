@@ -11,6 +11,9 @@ class BookAppointmentViewModel extends ChangeNotifier {
   String selectedPatientType = "Self";
   String? selectedDoctorId;
 
+  // Getter for total available beds
+  int get totalAvailableBeds => hospital?.bedsAvailable ?? 0;
+
   // Method to update selected hospital
   void selectHospital(HospitalProfile hospital) {
     this.hospital = hospital;

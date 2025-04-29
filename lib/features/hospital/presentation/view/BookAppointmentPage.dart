@@ -28,15 +28,33 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   final HospitalService _hospitalService = HospitalService();
   bool _isBookingPending = false;
   String? _bookingStatus;
+  final ScrollController _scrollController = ScrollController();
+  bool _showAppBarTitle = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize hospital in viewModel after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<BookAppointmentViewModel>(context, listen: false);
       viewModel.selectHospital(widget.hospital);
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final showTitle = _scrollController.hasClients && _scrollController.offset > 120;
+    if (showTitle != _showAppBarTitle) {
+      setState(() {
+        _showAppBarTitle = showTitle;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _showInfoPopup(BuildContext context) {
@@ -55,7 +73,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: Colors.teal, size: 50),
+              Icon(Icons.info_outline, color: ColorPalette.primaryColor, size: 50),
               SizedBox(height: 10),
               Text(
                 "Information Shared with Hospital",
@@ -73,7 +91,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: ColorPalette.primaryColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 ),
@@ -91,7 +109,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: Colors.teal, size: 20),
+          Icon(Icons.check_circle, color: ColorPalette.primaryColor, size: 20),
           SizedBox(width: 10),
           Text(text, style: TextStyle(fontSize: 16, color: Colors.black87)),
         ],
@@ -124,7 +142,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
       String? userId = await StorageService.getUserId();
       final result = await _hospitalService.createBedBooking(
         vendorId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
-        userId: userId!, // TODO: Replace with actual user ID
+        userId: userId!,
         hospitalId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
         bedType: viewModel.selectedBedType!.type,
         price: viewModel.selectedBedType!.price,
@@ -237,10 +255,10 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.pop(context); // Go back to previous screen
+                      Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: ColorPalette.primaryColor,
                       padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -272,29 +290,485 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text("Book Bed", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: ColorPalette.primaryColor,
-        centerTitle: true,
-        foregroundColor: Colors.white,
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: _buildBody(context, viewModel, bedTypes, razorpayService),
+          ),
+        ],
       ),
-      drawer: DrawerMenu(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+    );
+  }
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 200.0,
+      floating: false,
+      pinned: true,
+      backgroundColor: ColorPalette.primaryColor,
+      title: AnimatedOpacity(
+        opacity: _showAppBarTitle ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: const Text(
+          'Bed Booking',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      centerTitle: true,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                ColorPalette.primaryColor,
+                Color.fromARGB(255, 34, 87, 122),
+                Color.fromARGB(255, 27, 67, 95),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -50,
+                bottom: -50,
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Icon(
+                    Icons.local_hospital,
+                    size: 200,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, bottom: 20, right: 20),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: _buildHospitalHeaderInfo(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      leading: IconButton(
+        icon: Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        IconButton(
+          icon: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.favorite_border, color: Colors.white),
+          ),
+          onPressed: () {},
+        ),
+        IconButton(
+          icon: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.share, color: Colors.white),
+          ),
+          onPressed: () {},
+        ),
+        SizedBox(width: 8),
+      ],
+    );
+  }
+
+  Widget _buildHospitalHeaderInfo() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: Colors.white,
+          child: CircleAvatar(
+            radius: 37,
+            backgroundColor: ColorPalette.primaryColor.withOpacity(0.1),
+            child: Icon(
+              Icons.local_hospital,
+              size: 40,
+              color: ColorPalette.primaryColor,
+            ),
+          ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.hospital.name,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4,
+                      color: Colors.black.withOpacity(0.3),
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                widget.hospital.address,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "4.8",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "${widget.hospital.city}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(BuildContext context, BookAppointmentViewModel viewModel, List<BedType> bedTypes, HospitalBookingPaymentService razorpayService) {
+    return Container(
+      padding: EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildQuickInfoCards(),
+          _buildHospitalInfo(),
+          _buildBookingSection(context, viewModel, bedTypes, razorpayService),
+          SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickInfoCards() {
+    final viewModel = Provider.of<BookAppointmentViewModel>(context);
+    return Container(
+      height: 100,
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          _buildInfoCard(
+            icon: Icons.bed,
+            title: "Available Beds",
+            value: "${viewModel.totalAvailableBeds}",
+            color: ColorPalette.primaryColor,
+          ),
+          SizedBox(width: 16),
+          _buildInfoCard(
+            icon: Icons.medical_services,
+            title: "Services",
+            value: "${widget.hospital.servicesOffered.length}",
+            color: ColorPalette.primaryColor.withOpacity(0.8),
+          ),
+          SizedBox(width: 16),
+          _buildInfoCard(
+            icon: Icons.location_on,
+            title: "Location",
+            value: widget.hospital.city,
+            color: ColorPalette.primaryColor.withOpacity(0.6),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Hospital Info Card
-            HospitalInfoCard(hospital: widget.hospital),
-            SizedBox(height: 20),
+            Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+            SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // Bed Type Selection
-            Text("Select Bed Type", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+  Widget _buildHospitalInfo() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.info,
+                  color: ColorPalette.primaryColor,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                "About Hospital",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Text(
+            "Welcome to ${widget.hospital.name}, a leading healthcare facility in ${widget.hospital.city}. We provide comprehensive medical services with state-of-the-art facilities and experienced medical professionals.",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.5,
+            ),
+          ),
+            SizedBox(height: 20),
+          _buildInfoRow(Icons.location_on, "Address", "${widget.hospital.address}, ${widget.hospital.city}"),
+          _buildInfoRow(Icons.phone, "Contact", widget.hospital.contactNumber),
+          _buildInfoRow(Icons.email, "Email", widget.hospital.email),
+          _buildInfoRow(Icons.person, "Owner", widget.hospital.ownerName),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: ColorPalette.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: ColorPalette.primaryColor,
+              size: 18,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingSection(BuildContext context, BookAppointmentViewModel viewModel, List<BedType> bedTypes, HospitalBookingPaymentService razorpayService) {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
             Container(
+                padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
-                borderRadius: BorderRadius.circular(4),
+                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.calendar_today,
+                  color: ColorPalette.primaryColor,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                "Book Bed",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Text(
+            "Select Bed Type",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
               ),
               child: DropdownButtonHideUnderline(
                 child: ButtonTheme(
@@ -340,33 +814,49 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
             SizedBox(height: 20),
-
-            // Appointment Date Picker
-            Text("Select Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+          Text(
+            "Select Date",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 8),
             DatePickerWidget(
               selectedDate: viewModel.selectedDate,
               onDatePicked: viewModel.selectDate,
             ),
             SizedBox(height: 20),
-
-            // Time Slot Selection
-            if (viewModel.selectedDate != null)
-              Container(
-                margin: EdgeInsets.only(bottom: 20),
-                child: TimeSlotSelection(
+          if (viewModel.selectedDate != null) ...[
+            Text(
+              "Select Time Slot",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 8),
+            TimeSlotSelection(
                   timeSlots: ["Morning", "Afternoon", "Evening", "Night"],
                   selectedTimeSlot: viewModel.selectedTimeSlot,
                   onTimeSlotSelected: viewModel.selectTimeSlot,
                 ),
-              ),
-
-            // Patient Details Selection
-            Text("Patient Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+          ],
+          SizedBox(height: 20),
+          Text(
+            "Patient Details",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+              color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(30),
               ),
               padding: EdgeInsets.all(4),
@@ -378,7 +868,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: viewModel.selectedPatientType == "Self" ? Colors.teal : Colors.transparent,
+                        color: viewModel.selectedPatientType == "Self" 
+                            ? ColorPalette.primaryColor 
+                            : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -388,7 +880,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                               "Self",
                               style: TextStyle(
                                 fontSize: 16,
-                                color: viewModel.selectedPatientType == "Self" ? Colors.white : Colors.teal,
+                              color: viewModel.selectedPatientType == "Self" 
+                                  ? Colors.white 
+                                  : ColorPalette.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -397,7 +891,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                               onTap: () => _showInfoPopup(context),
                               child: Icon(
                                 Icons.info_outline,
-                                color: viewModel.selectedPatientType == "Self" ? Colors.white : Colors.teal,
+                              color: viewModel.selectedPatientType == "Self" 
+                                  ? Colors.white 
+                                  : ColorPalette.primaryColor,
                                 size: 20,
                               ),
                             ),
@@ -413,7 +909,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: viewModel.selectedPatientType == "Other" ? Colors.teal : Colors.transparent,
+                        color: viewModel.selectedPatientType == "Other" 
+                            ? ColorPalette.primaryColor 
+                            : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Center(
@@ -421,7 +919,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                             "Other",
                             style: TextStyle(
                               fontSize: 16,
-                              color: viewModel.selectedPatientType == "Other" ? Colors.white : Colors.teal,
+                            color: viewModel.selectedPatientType == "Other" 
+                                ? Colors.white 
+                                : ColorPalette.primaryColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -433,23 +933,41 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
             SizedBox(height: 10),
-
-            // Show Patient Details Form if "Other" is selected
             if (viewModel.selectedPatientType == "Other")
               PatientDetailsForm(formKey: _patientFormKey),
-
-            // Price Display
             if (viewModel.selectedBedType != null) ...[
-              Text("Bed Price", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 5),
+            SizedBox(height: 20),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Total Amount",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
               Text(
                 "₹${viewModel.selectedBedType!.price.toStringAsFixed(2)}",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                ],
               ),
+              ),
+          ],
               SizedBox(height: 20),
-            ],
-
-            // Confirm Button or Make Payment Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -457,7 +975,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     ? null
                     : () {
                         if (_bookingStatus == 'accepted') {
-                          // Trigger Razorpay payment gateway
                           razorpayService.openPaymentGateway(
                             viewModel.selectedBedType!.price.toInt(),
                             ApiConstants.razorpayApiKey,
@@ -468,23 +985,51 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                           _handleBookingConfirmation(context);
                         }
                       },
-                child: Text(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorPalette.primaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isBookingPending)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  else
+                    Icon(
+                      _bookingStatus == 'accepted' 
+                          ? Icons.payment 
+                          : Icons.check_circle,
+                      size: 20,
+                    ),
+                  SizedBox(width: 12),
+                  Text(
                   _isBookingPending
                       ? "Processing..."
                       : _bookingStatus == 'accepted'
                           ? "Make Payment"
                           : "Confirm Booking",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  backgroundColor: Colors.teal,
-                ),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
+            ),
+          ),
+        ],
       ),
     );
   }

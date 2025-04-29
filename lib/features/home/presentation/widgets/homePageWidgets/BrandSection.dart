@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HealthConcernColorPalette.dart';
+import 'dart:async';
 
-class BrandSection extends StatelessWidget {
+class BrandSection extends StatefulWidget {
+  @override
+  State<BrandSection> createState() => _BrandSectionState();
+}
+
+class _BrandSectionState extends State<BrandSection> {
   final List<Map<String, String>> brands = [
     {"name": "Cipla", "logo": "assets/brands/Cipla Icon.png"},
     {"name": "Sun Pharma", "logo": "assets/brands/SunPharma Icon.png"},
@@ -17,89 +23,160 @@ class BrandSection extends StatelessWidget {
     {"name": "Natco Pharma", "logo": "assets/brands/Natco Icon.png"},
   ];
 
+  final ScrollController _scrollController = ScrollController();
+  Timer? _autoScrollTimer;
+  bool _isScrolling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (!_isScrolling && _scrollController.hasClients) {
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        final currentScroll = _scrollController.offset;
+        final nextScroll = currentScroll + 200.0;
+        
+        if (nextScroll >= maxScroll) {
+          _scrollController.animateTo(
+            0,
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          _scrollController.animateTo(
+            nextScroll,
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoScrollTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: HealthConcernColorPalette.lightMint, // Light mint background
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            HealthConcernColorPalette.lightMint,
+            Colors.white,
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(
-            "Search by Brands",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 10),
-
-          // Grid of Brands (4 columns, 3 rows)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(), // Disable grid scrolling
-            itemCount: 12, // Only show first 12 brands
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4, // 4 items per row
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1, // Keep items square
-            ),
-            itemBuilder: (context, index) {
-              return Column(
-                children: [
-                  // Circular Brand Logo
-                  CircleAvatar(
-                    radius: 30, // Adjust size
-                    backgroundColor: Colors.grey.shade200, // Light background
-                    child: Padding(
-                      padding: const EdgeInsets.all(10), // Padding inside circle
-                      child: Image.asset(
-                        brands[index]["logo"]!,
-                        fit: BoxFit.contain,
-                      ),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
                     ),
-                  ),
-                  SizedBox(height: 5),
-
-                  // Brand Name
-                  Text(
-                    brands[index]["name"]!,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis, // Prevent overflow
-                  ),
-                ],
-              );
-            },
+                  ],
+                ),
+                child: Icon(
+                  Icons.medical_services,
+                  color: Colors.teal,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                "Trusted Brands",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
+          SizedBox(height: 20),
 
-          SizedBox(height: 15),
-
-          // See All Button (Full width, grey background, border)
           Container(
-            width: double.infinity, // Full width
-            height: 36, // Reduce height
-            decoration: BoxDecoration(
-              color: HealthConcernColorPalette.lightMint, // Background color
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.black), // Border
-            ),
-            child: TextButton(
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero, // Remove extra padding
-                minimumSize: Size(0, 36), // Set minimum height
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Reduce tap area padding
-              ),
-              onPressed: () {
-                // Implement navigation to all brands page
+            height: 120,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (scrollNotification) {
+                if (scrollNotification is ScrollStartNotification) {
+                  _isScrolling = true;
+                } else if (scrollNotification is ScrollEndNotification) {
+                  _isScrolling = false;
+                }
+                return true;
               },
-              child: Text(
-                "See All Brands",
-                style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                itemCount: brands.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 90,
+                    margin: EdgeInsets.only(right: 16),
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 70,
+                          width: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Image.asset(
+                              brands[index]["logo"]!,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          brands[index]["name"]!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
-
         ],
       ),
     );
