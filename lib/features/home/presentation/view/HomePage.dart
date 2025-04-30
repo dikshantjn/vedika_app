@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               controller: _scrollController,
               slivers: [
                 SliverAppBar(
-                  expandedHeight: 160.0,
+                  expandedHeight: 140.0,
                   floating: false,
                   pinned: false,
                   elevation: 0,
@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       MedicalBoxRow(),
-                      SizedBox(height: 10),
+                      SizedBox(height: 8),
                       BannerSlider(),
                       HealthConcernSection(),
                       CategoryGrid(),
@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       color: Colors.white,
       child: Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 10),
+          SizedBox(height: MediaQuery.of(context).padding.top + 8),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -231,7 +231,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ],
             ),
           ),
-          SizedBox(height: 15),
+          SizedBox(height: 12),
           if (!_isCollapsed)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -349,6 +349,32 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     ),
                   ),
               ],
+            ),
+          ),
+          Container(
+            width: 40,
+            height: 40,
+            margin: EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: ColorPalette.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  // TODO: Implement camera/lens functionality
+                },
+                child: Tooltip(
+                  message: 'Scan product or prescription',
+                  child: Icon(
+                    Icons.camera_alt_outlined,
+                    color: ColorPalette.primaryColor,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

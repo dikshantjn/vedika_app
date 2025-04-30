@@ -20,15 +20,15 @@ class BloodBankBookingViewModel extends ChangeNotifier {
   // Filtered getters
   List<BloodBankBooking> get confirmedBookings => 
       _bookings.where((booking) => 
-        booking.status.toLowerCase() != 'cancelled' && 
-        booking.status.toLowerCase() != 'completed'
+        booking.status.toUpperCase() != 'CANCELLED' && 
+        booking.status.toUpperCase() != 'COMPLETED'
       ).toList();
   
   List<BloodBankBooking> get completedBookings =>
-      _bookings.where((booking) => booking.status.toLowerCase() == 'completed').toList();
+      _bookings.where((booking) => booking.status.toUpperCase() == 'COMPLETED').toList();
   
   List<BloodBankBooking> get cancelledBookings =>
-      _bookings.where((booking) => booking.status.toLowerCase() == 'cancelled').toList();
+      _bookings.where((booking) => booking.status.toUpperCase() == 'CANCELLED').toList();
 
   // Statistics getters
   double get totalRevenue =>
@@ -128,7 +128,7 @@ class BloodBankBookingViewModel extends ChangeNotifier {
         throw Exception('Vendor token not found');
       }
 
-      if (status.toLowerCase() == 'completed') {
+      if (status.toUpperCase() == 'COMPLETED') {
         // Use the new endpoint for completed status
         await _service.markBookingAsCompleted(bookingId, vendorToken);
       } else {

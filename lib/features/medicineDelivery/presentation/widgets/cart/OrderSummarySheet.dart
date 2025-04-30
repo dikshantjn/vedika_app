@@ -33,8 +33,13 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   @override
   void initState() {
     super.initState();
-    widget.cartViewModel.setOnPaymentSuccess(_handlePaymentSuccess); // Add this line
-    widget.cartViewModel.setAddressId(widget.addressId);
+    widget.cartViewModel.setOnPaymentSuccess(_handlePaymentSuccess);
+    
+    // Use addPostFrameCallback to set address ID after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.cartViewModel.setAddressId(widget.addressId);
+    });
+    
     _fetchNearbyDeliveryPartners();
     _setupKeyboardListeners();
   }

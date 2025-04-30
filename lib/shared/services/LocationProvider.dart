@@ -1,30 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class LocationProvider with ChangeNotifier {
   double? latitude;
   double? longitude;
   bool isLocationLoaded = false;
+  bool isInitialized = false;
 
   LocationProvider() {
     print("Initializing LocationProvider...");
-    initializeLocation();
   }
 
   /// **Initialize Location**
   Future<void> initializeLocation() async {
-    if (!await isLocationServiceEnabled()) {
-      print("⚠️ Location services are disabled.");
-      return;
-    }
+    if (isInitialized) return;
+    
+    try {
+      // First check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print("⚠️ Location services are disabled.");
+        isInitialized = true;
+        return;
+      }
 
-    if (!await requestLocationPermission()) {
-      print("⚠️ Location permission not granted.");
-      return;
-    }
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print("⚠️ Location permission denied.");
+          isInitialized = true;
+          return;
+        }
+      }
 
-    await loadSavedLocation(); // Now gets fresh location instead of saved data
+      if (permission == LocationPermission.deniedForever) {
+        print("⚠️ Location permission permanently denied.");
+        isInitialized = true;
+        return;
+      }
+
+      // Get the location
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 5),
+        );
+        
+        latitude = position.latitude;
+        longitude = position.longitude;
+        isLocationLoaded = true;
+        notifyListeners();
+        print("✅ Location initialized: ($latitude, $longitude)");
+      } catch (e) {
+        print("⚠️ Error getting current position: $e");
+        // Try to get last known position as fallback
+        Position? lastPosition = await Geolocator.getLastKnownPosition();
+        if (lastPosition != null) {
+          latitude = lastPosition.latitude;
+          longitude = lastPosition.longitude;
+          isLocationLoaded = true;
+          notifyListeners();
+          print("✅ Using last known position: ($latitude, $longitude)");
+        }
+      }
+    } catch (e) {
+      print("❌ Error initializing location: $e");
+    } finally {
+      isInitialized = true;
+    }
   }
 
   /// **Check if Location Services are Enabled**
@@ -67,7 +114,10 @@ class LocationProvider with ChangeNotifier {
       Position? position = await Geolocator.getLastKnownPosition();
       if (position == null) {
         print("⚠️ No last known location. Fetching new location...");
-        position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 5),
+        );
       }
 
       if (position != null) {
@@ -84,9 +134,9 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
-  /// **Get Fresh Location Instead of Saved One**
+  /// **Load Saved Location**
   Future<void> loadSavedLocation() async {
-    print("🔄 Fetching fresh location instead of saved location...");
+    print("🔄 Loading saved location...");
     await fetchLocation();
   }
 

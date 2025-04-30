@@ -77,7 +77,7 @@ class BookAppointmentViewModel extends ChangeNotifier {
     // Convert UserModel to User
     final userData = User(
       userId: userId,
-      name: selectedPatientType == "Self" ? hospital!.ownerName : null,
+      name: selectedPatientType == "Self" ? "Self" : null,
       phoneNumber: hospital!.contactNumber,
       emailId: hospital!.email,
       gender: null,

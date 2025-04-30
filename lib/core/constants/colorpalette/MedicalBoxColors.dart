@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
-
 class MedicalBoxColors {
-  static const List<Color> medicine = [Color(0xFFADE8F4), Color(0xFF48CAE4), Color(0xFF0096C7)]; // Fresh blue tones
-  static const List<Color> labTest = [Color(0xFFFFD6E0), Color(0xFFFF8FAB), Color(0xFFE63946)]; // Soft to deep pink-red
-  static const List<Color> bloodBank = [Color(0xFFFFE5D9), Color(0xFFFF9B85), Color(0xFFD62828)]; // Warm red-orange shades
-  static const List<Color> clinic = [Color(0xFFD4F8E8), Color(0xFF85E89D), Color(0xFF008000)]; // Soothing green hues
-  static const List<Color> hospital = [Color(0xFFEDE7F6), Color(0xFFB39DDB), Color(0xFF673AB7)]; // Elegant purple blend
-  static const List<Color> ambulance = [Color(0xFFE4DCC1), Color(0xFF3890BC), Color(0xFFB76EF9)]; // White, gray & emergency red
+  // Modern, professional healthcare color palette with lighter solid colors
+  static const Color medicine = Color(0xFFE3F2FD); // Light blue
+  static const Color labTest = Color(0xFFF3E5F5); // Light purple
+  static const Color bloodBank = Color(0xFFFBE9E7); // Light coral
+  static const Color clinic = Color(0xFFE8F5E9); // Light mint
+  static const Color hospital = Color(0xFFE0F7FA); // Light teal
+  static const Color ambulance = Color(0xFFFCE4EC); // Light rose
+
+  // Text colors for each service
+  static const Color medicineText = Color(0xFF1976D2); // Deep blue
+  static const Color labTestText = Color(0xFF7B1FA2); // Deep purple
+  static const Color bloodBankText = Color(0xFFD84315); // Deep coral
+  static const Color clinicText = Color(0xFF2E7D32); // Deep mint
+  static const Color hospitalText = Color(0xFF00838F); // Deep teal
+  static const Color ambulanceText = Color(0xFFC2185B); // Deep rose
 }

@@ -72,7 +72,7 @@ class _BrandSectionState extends State<BrandSection> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            HealthConcernColorPalette.lightMint,
+            HealthConcernColorPalette.primaryMint,
             Colors.white,
           ],
         ),

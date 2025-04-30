@@ -70,19 +70,31 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          "Choose Delivery Address",
-          style: GoogleFonts.openSans(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Text(
+            "Choose Delivery Address",
+            style: GoogleFonts.openSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         TextButton.icon(
           onPressed: () => _navigateToAddNewAddress(viewModel),
-          icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor),
+          icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor, size: 20),
           label: Text(
             "Add New",
-            style: TextStyle(color: ColorPalette.primaryColor, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: ColorPalette.primaryColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
       ],

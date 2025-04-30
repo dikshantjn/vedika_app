@@ -27,51 +27,48 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
   bool _initializing = false;
   bool _permissionGranted = false;
   final VendorLoginService _loginService = VendorLoginService();
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkAndRequestPermission();
+    _initializeApp();
   }
 
   @override
   void dispose() {
+    _timeoutTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _permissionGranted && !_initializing) {
+    if (state == AppLifecycleState.resumed && !_initializing) {
       _initializeApp();
     }
   }
 
-  Future<void> _checkAndRequestPermission() async {
-    var status = await Permission.location.status;
-    if (!status.isGranted) {
-      var result = await Permission.location.request();
-      if (!result.isGranted) {
-        return; // User denied, you can show dialog here
-      }
-    }
-    _permissionGranted = true;
-    _initializeApp();
-  }
-
   Future<void> _initializeApp() async {
-    if (_initializing) return; // Avoid multiple calls
+    if (_initializing) return;
     _initializing = true;
 
     try {
+      _timeoutTimer = Timer(const Duration(seconds: 10), () {
+        if (_initializing) {
+          _initializing = false;
+          _navigateToLogin();
+        }
+      });
+
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
       ));
 
       locationProvider = LocationProvider();
-      await locationProvider.loadSavedLocation();
+      await locationProvider.initializeLocation();
       await getWifiIpAddress();
 
       emergencyService = EmergencyService(locationProvider);
@@ -81,7 +78,6 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
       final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
 
-      // Fetch Orders and Cart Items for the current user
       await cartViewModel.fetchOrdersAndCartItems();
 
       await Future.wait([
@@ -89,32 +85,34 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         vendorAuthViewModel.checkLoginStatus(),
       ]);
 
-      await Future.delayed(const Duration(seconds: 1));
-
       if (!mounted) return;
 
-      // Navigate based on the user role (vendor or regular user)
       if (authViewModel.isLoggedIn) {
-        // Regular user is logged in
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
         );
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
         int? role = await _loginService.getVendorRole();
-        print("Role from Splash screeen $role");
-        // Vendor is logged in, navigate to vendor dashboard based on the role
-        await vendorAuthViewModel.navigateToDashboard(context,role);
+        await vendorAuthViewModel.navigateToDashboard(context, role);
       } else {
-        // User is not logged in
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => UserLoginScreen()),
-        );
+        _navigateToLogin();
       }
     } catch (e) {
-      print("❌ Error: $e");
+      print("❌ Error during initialization: $e");
+      _navigateToLogin();
+    } finally {
+      _timeoutTimer?.cancel();
+      _initializing = false;
     }
+  }
+
+  void _navigateToLogin() {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => UserLoginScreen()),
+    );
   }
 
   @override
@@ -125,55 +123,160 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [ColorPalette.primaryColor, const Color(0xFF99D98C)],
+            colors: [
+              Color(0xFF1A73E8), // Professional blue
+              Color(0xFF34A853), // Healthcare green
+            ],
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        child: Stack(
             children: [
-              Lottie.asset(
-                'assets/animations/uploadPrescription.json',
-                height: 150,
+            // Background pattern
+            Positioned.fill(
+              child: CustomPaint(
+                painter: HealthcarePatternPainter(),
               ),
-              const SizedBox(height: 20),
-              TweenAnimationBuilder(
-                tween: Tween<double>(begin: 0, end: 1),
-                duration: const Duration(seconds: 2),
-                builder: (context, double opacity, child) {
-                  return Opacity(
-                    opacity: opacity,
-                    child: child,
-                  );
-                },
-                child: const Column(
-                  children: [
-                    Text(
-                      'Vedika - Healthcare App',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+            ),
+            // Main content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo animation
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Lottie.asset(
+                'assets/animations/uploadPrescription.json',
+                        width: 80,
+                        height: 80,
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Your trusted health partner',
+              ),
+                  const SizedBox(height: 30),
+                  // App name with animation
+              TweenAnimationBuilder(
+                tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(seconds: 1),
+                    builder: (context, double value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                    child: child,
+                        ),
+                  );
+                },
+                    child: Column(
+                  children: [
+                        const Text(
+                          'Vedika Health Care',
+                      style: TextStyle(
+                            fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                            letterSpacing: 1.2,
+                      ),
+                    ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Connecting You to Better Health',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white70,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(color: Colors.white),
+                  const SizedBox(height: 40),
+                  // Loading indicator
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
+                    ),
+                  ),
             ],
           ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+// Custom painter for healthcare-themed background pattern
+class HealthcarePatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    // Draw cross pattern
+    for (var i = 0.0; i < size.width; i += 40) {
+      for (var j = 0.0; j < size.height; j += 40) {
+        // Vertical line
+        canvas.drawLine(
+          Offset(i, j),
+          Offset(i, j + 20),
+          paint,
+        );
+        // Horizontal line
+        canvas.drawLine(
+          Offset(i, j),
+          Offset(i + 20, j),
+          paint,
+        );
+      }
+    }
+
+    // Draw wave pattern
+    final wavePaint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (var i = 0.0; i < size.height; i += 100) {
+      final path = Path();
+      path.moveTo(0, i);
+      
+      for (var j = 0.0; j < size.width; j += 50) {
+        path.quadraticBezierTo(
+          j + 25,
+          i + 20,
+          j + 50,
+          i,
+        );
+      }
+      
+      canvas.drawPath(path, wavePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 

@@ -172,60 +172,65 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> with SingleTi
                           Expanded(
                             child: Center(
                               child: isLocationEnabled
-                                  ? Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ChooseFileWidget(
-                                          pickPrescription: viewModel.pickPrescription,
-                                        ),
-                                        const SizedBox(height: 30),
-                                        // Track Order Button
-                                        Container(
-                                          width: double.infinity,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                ColorPalette.primaryColor,
-                                                ColorPalette.primaryColor.withOpacity(0.8),
-                                              ],
+                                  ? SingleChildScrollView(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 20),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ChooseFileWidget(
+                                              pickPrescription: viewModel.pickPrescription,
                                             ),
-                                            borderRadius: BorderRadius.circular(25),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: ColorPalette.primaryColor.withOpacity(0.3),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => TrackOrderScreen(),
+                                            const SizedBox(height: 30),
+                                            // Track Order Button
+                                            Container(
+                                              width: double.infinity,
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    ColorPalette.primaryColor,
+                                                    ColorPalette.primaryColor.withOpacity(0.8),
+                                                  ],
+                                                ),
+                                                borderRadius: BorderRadius.circular(25),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: ColorPalette.primaryColor.withOpacity(0.3),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 4),
                                                   ),
-                                                );
-                                              },
-                                              borderRadius: BorderRadius.circular(25),
-                                              child: const Center(
-                                                child: Text(
-                                                  "Track Order",
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 0.5,
+                                                ],
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) => TrackOrderScreen(),
+                                                      ),
+                                                    );
+                                                  },
+                                                  borderRadius: BorderRadius.circular(25),
+                                                  child: const Center(
+                                                    child: Text(
+                                                      "Track Order",
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     )
                                   : EnableLocationWidget(
                                       enableLocation: viewModel.enableLocation,

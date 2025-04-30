@@ -5,11 +5,13 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBoo
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestService.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class BookingsViewModel extends ChangeNotifier {
   final LabTestService _labTestService = LabTestService();
   final Logger _logger = Logger();
-  
+  final VendorLoginService _loginService = VendorLoginService();
+
   List<LabTestBooking> _upcomingBookings = [];
   List<LabTestBooking> _todayBookings = [];
   List<LabTestBooking> _pastBookings = [];
@@ -49,7 +51,7 @@ class BookingsViewModel extends ChangeNotifier {
     _pastErrorMessage = null;
     
     // Get current vendor ID
-    final String? vendorId = "9bfc4631-d3ae-4e18-bd2b-be959e994ec2"; // TODO: Replace with actual vendor ID from auth
+    String? vendorId = await _loginService.getVendorId();
     
     if (vendorId == null || vendorId.isEmpty) {
       _errorMessage = "Vendor ID is not available";

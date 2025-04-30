@@ -191,6 +191,27 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'BLOOD_BANK_BOOKING_PAYMENT_RQUIRED':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBank,
+              arguments: {'initialTab': 2}, // 2 is the index for Bookings tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.bloodBank,
+              arguments: {'initialTab': 2}, // 2 is the index for Bookings tab
+            );
+          }
+          break;
+
         case 'BLOOD_PAYMENT_COMPLETED':
           if (isAppLaunch) {
             await _navigateWithClearStack(

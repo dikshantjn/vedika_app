@@ -534,7 +534,7 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
             
             const SizedBox(height: 20),
             _buildSectionHeader('Select Tests', Icons.science),
-            if (viewModel.selectedTests.isEmpty)
+            if (viewModel.selectedTests.isEmpty && _isSubmitting)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

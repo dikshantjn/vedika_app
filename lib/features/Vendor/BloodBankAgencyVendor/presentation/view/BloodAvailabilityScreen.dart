@@ -264,6 +264,7 @@ class BloodTypeCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -337,12 +338,16 @@ class BloodTypeCard extends StatelessWidget {
                   ],
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit, size: 18),
                       onPressed: onEdit,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       iconSize: 18,
                       color: Colors.blue,
                     ),
@@ -351,7 +356,10 @@ class BloodTypeCard extends StatelessWidget {
                       icon: const Icon(Icons.delete, size: 18),
                       onPressed: onDelete,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       iconSize: 18,
                       color: Colors.red,
                     ),
@@ -449,109 +457,112 @@ class _BloodTypeDialogState extends State<BloodTypeDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isEdit ? Icons.edit : Icons.add,
-                color: theme.primaryColor,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isEdit ? 'Edit Blood Type' : 'Add Blood Type',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: bloodTypeController,
-              decoration: InputDecoration(
-                labelText: 'Blood Type',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                prefixIcon: const Icon(Icons.bloodtype),
-              ),
-              enabled: !_isLoading,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: unitsController,
-              decoration: InputDecoration(
-                labelText: 'Units Available',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                child: Icon(
+                  isEdit ? Icons.edit : Icons.add,
+                  color: theme.primaryColor,
+                  size: 32,
                 ),
-                prefixIcon: const Icon(Icons.inventory_2),
               ),
-              keyboardType: TextInputType.number,
-              enabled: !_isLoading,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SwitchListTile(
-                title: const Text('Available'),
-                value: isAvailable,
-                onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
-                activeColor: theme.primaryColor,
-              ),
-            ),
-            if (viewModel.error != null) ...[
               const SizedBox(height: 16),
               Text(
-                viewModel.error!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                isEdit ? 'Edit Blood Type' : 'Add Blood Type',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: bloodTypeController,
+                decoration: InputDecoration(
+                  labelText: 'Blood Type',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(isEdit ? 'Update' : 'Add'),
+                  prefixIcon: const Icon(Icons.bloodtype),
+                ),
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: unitsController,
+                decoration: InputDecoration(
+                  labelText: 'Units Available',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.inventory_2),
+                ),
+                keyboardType: TextInputType.number,
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SwitchListTile(
+                  title: const Text('Available'),
+                  value: isAvailable,
+                  onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
+                  activeColor: theme.primaryColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ),
+              if (viewModel.error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  viewModel.error!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(isEdit ? 'Update' : 'Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -648,109 +659,112 @@ class _EditBloodTypeDialogState extends State<EditBloodTypeDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.edit,
-                color: theme.primaryColor,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Edit Blood Type',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: bloodTypeController,
-              decoration: InputDecoration(
-                labelText: 'Blood Type',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                prefixIcon: const Icon(Icons.bloodtype),
-              ),
-              enabled: !_isLoading,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: unitsController,
-              decoration: InputDecoration(
-                labelText: 'Units Available',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                child: Icon(
+                  Icons.edit,
+                  color: theme.primaryColor,
+                  size: 32,
                 ),
-                prefixIcon: const Icon(Icons.inventory_2),
               ),
-              keyboardType: TextInputType.number,
-              enabled: !_isLoading,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SwitchListTile(
-                title: const Text('Available'),
-                value: isAvailable,
-                onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
-                activeColor: theme.primaryColor,
-              ),
-            ),
-            if (viewModel.error != null) ...[
               const SizedBox(height: 16),
-              Text(
-                viewModel.error!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+              const Text(
+                'Edit Blood Type',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSave,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: bloodTypeController,
+                decoration: InputDecoration(
+                  labelText: 'Blood Type',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Update'),
+                  prefixIcon: const Icon(Icons.bloodtype),
+                ),
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: unitsController,
+                decoration: InputDecoration(
+                  labelText: 'Units Available',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.inventory_2),
+                ),
+                keyboardType: TextInputType.number,
+                enabled: !_isLoading,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SwitchListTile(
+                  title: const Text('Available'),
+                  value: isAvailable,
+                  onChanged: _isLoading ? null : (value) => setState(() => isAvailable = value),
+                  activeColor: theme.primaryColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ),
+              if (viewModel.error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  viewModel.error!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: _isLoading ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Update'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

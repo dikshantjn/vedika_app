@@ -309,42 +309,51 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            side: const BorderSide(color: Colors.red), // Red border
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: const BorderSide(color: Colors.red),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(fontSize: 14, color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: _saveProduct,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            elevation: 4,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _saveProduct,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 4,
+                            ),
+                            icon: isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.add, size: 16, color: Colors.white),
+                            label: isLoading
+                                ? const Text(
+                                    'Saving...',
+                                    style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                                  )
+                                : const Text(
+                                    'Add',
+                                    style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
                           ),
-                          icon: isLoading
-                              ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            strokeWidth: 2,
-                          )
-                              : const Icon(Icons.add, size: 20, color: Colors.white),
-                          label: isLoading
-                              ? const Text(
-                            'Saving...',
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                          )
-                              : const Text(
-                            'Add',
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        )
+                        ),
                       ],
                     )
                   ],

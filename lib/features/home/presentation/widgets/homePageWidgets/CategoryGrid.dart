@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/CategoryViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
 
 class CategoryGrid extends StatefulWidget {
   @override
@@ -10,52 +12,21 @@ class _CategoryGridState extends State<CategoryGrid> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolling = false;
 
-  // List of categories
-  final List<String> categories = [
-    "Medicine",
-    "Tests",
-    "Health Products",
-    "Fitness",
-    "Skin Care",
-    "Baby Care",
-    "Ayurveda",
-    "Diabetes",
-    "Pain Relief",
-    "Dental Care",
-    "Hair Care",
-    "Women's Care",
-    "Supplements",
-    "Vitamins",
-    "Allergy Care",
-    "Mental Wellness",
-  ];
-
-  // Map to associate category names with their image paths
-  final Map<String, String> categoryIcons = {
-    "Medicine": "assets/category/Medicine Icon.png",
-    "Tests": "assets/category/Tests Icon.png",
-    "Health Products": "assets/category/Health Products Icon.png",
-    "Fitness": "assets/category/Fitness Icon.png",
-    "Skin Care": "assets/category/Skin Care Icon.png",
-    "Baby Care": "assets/category/Baby Care Icon.png",
-    "Ayurveda": "assets/category/Ayurveda Icon.png",
-    "Diabetes": "assets/category/Diabetes Icon.png",
-    "Pain Relief": "assets/category/PainRelief Icon.png",
-    "Dental Care": "assets/category/Dental Care Icon.png",
-    "Hair Care": "assets/category/Hair Care Icon.png",
-    "Women's Care": "assets/category/Women Care Icon.png",
-    "Supplements": "assets/category/Supplements Icon.png",
-    "Vitamins": "assets/category/Vitamins Icon.png",
-    "Allergy Care": "assets/category/Allergy Icon.png",
-    "Mental Wellness": "assets/category/Mental Wellness Icon.png",
-  };
-
-  final String categoryImage = "assets/category/category.png";
-
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _navigateToProductList(BuildContext context, String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductListScreen(
+          category: category,
+        ),
+      ),
+    );
   }
 
   @override
@@ -71,7 +42,7 @@ class _CategoryGridState extends State<CategoryGrid> {
           ],
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.only(top: 8, bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,7 +74,7 @@ class _CategoryGridState extends State<CategoryGrid> {
                     ),
                     SizedBox(width: 12),
                     Text(
-                      "Popular Categories",
+                      "Product Categories",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -161,16 +132,24 @@ class _CategoryGridState extends State<CategoryGrid> {
                 }
                 return true;
               },
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: 90,
-                    margin: EdgeInsets.only(right: 16),
-                    child: _buildCategoryItem(categories[index]),
+              child: Consumer<CategoryViewModel>(
+                builder: (context, categoryViewModel, child) {
+                  return ListView.builder(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: categoryViewModel.getAllCategories().length,
+                    itemBuilder: (context, index) {
+                      final category = categoryViewModel.getCategory(index);
+                      return GestureDetector(
+                        onTap: () => _navigateToProductList(context, category['name']),
+                        child: Container(
+                          width: 90,
+                          margin: EdgeInsets.only(right: 16),
+                          child: _buildCategoryItem(category),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -181,27 +160,7 @@ class _CategoryGridState extends State<CategoryGrid> {
     );
   }
 
-  Widget _buildCategoryItem(String categoryName) {
-    // Define a map of colors for different categories
-    final Map<String, Color> categoryColors = {
-      "Medicine": Color(0xFFE3F2FD),
-      "Tests": Color(0xFFE8F5E9),
-      "Health Products": Color(0xFFFFF3E0),
-      "Fitness": Color(0xFFF3E5F5),
-      "Skin Care": Color(0xFFFCE4EC),
-      "Baby Care": Color(0xFFE0F7FA),
-      "Ayurveda": Color(0xFFE8F5E9),
-      "Diabetes": Color(0xFFFFEBEE),
-      "Pain Relief": Color(0xFFE3F2FD),
-      "Dental Care": Color(0xFFE0F7FA),
-      "Hair Care": Color(0xFFF3E5F5),
-      "Women's Care": Color(0xFFFCE4EC),
-      "Supplements": Color(0xFFFFF3E0),
-      "Vitamins": Color(0xFFE8F5E9),
-      "Allergy Care": Color(0xFFE3F2FD),
-      "Mental Wellness": Color(0xFFF3E5F5),
-    };
-
+  Widget _buildCategoryItem(Map<String, dynamic> category) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -221,11 +180,11 @@ class _CategoryGridState extends State<CategoryGrid> {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              color: categoryColors[categoryName] ?? Color(0xFFE3F2FD),
+              color: category['color'],
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (categoryColors[categoryName] ?? Color(0xFFE3F2FD)).withOpacity(0.3),
+                  color: (category['color'] as Color).withOpacity(0.3),
                   blurRadius: 8,
                   offset: Offset(0, 2),
                 ),
@@ -233,9 +192,10 @@ class _CategoryGridState extends State<CategoryGrid> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(10.0),
-              child: Image.asset(
-                categoryIcons[categoryName] ?? categoryImage,
-                fit: BoxFit.contain,
+              child: Icon(
+                category['icon'],
+                color: Colors.teal,
+                size: 24,
               ),
             ),
           ),
@@ -243,7 +203,7 @@ class _CategoryGridState extends State<CategoryGrid> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              categoryName,
+              category['name'],
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -308,21 +268,32 @@ class _CategoryGridState extends State<CategoryGrid> {
                 ),
               ),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  child: GridView.builder(
-                    physics: BouncingScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 0.85,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      return _buildCategoryItem(categories[index]);
-                    },
-                  ),
+                child: Consumer<CategoryViewModel>(
+                  builder: (context, categoryViewModel, child) {
+                    return Container(
+                      padding: EdgeInsets.all(20),
+                      child: GridView.builder(
+                        physics: BouncingScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: categoryViewModel.getAllCategories().length,
+                        itemBuilder: (context, index) {
+                          final category = categoryViewModel.getCategory(index);
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context); // Close bottom sheet
+                              _navigateToProductList(context, category['name']);
+                            },
+                            child: _buildCategoryItem(category),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

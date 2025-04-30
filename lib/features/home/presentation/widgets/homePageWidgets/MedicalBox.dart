@@ -8,32 +8,77 @@ class MedicalBoxRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> items = [
-      {"title": "Hospital booking", "icon": Icons.local_hospital, "colors": MedicalBoxColors.hospital, "route": "/hospital"},
-      {"title": "Doctor Consultation", "icon": Icons.apartment, "colors": MedicalBoxColors.clinic, "route": "/clinic/consultationType"},
-      {"title": "Order Medicine", "icon": Icons.medical_services, "colors": MedicalBoxColors.medicine, "route": "/medicineOrder"},
-      {"title": "Lab Test", "icon": Icons.science, "colors": MedicalBoxColors.labTest, "route": "/labTest"},
-      {"title": "Blood Bank", "icon": Icons.bloodtype, "colors": MedicalBoxColors.bloodBank, "route": "/bloodbank"},
-      {"title": "Ambulance", "icon": Icons.local_taxi, "colors": MedicalBoxColors.ambulance, "route": "/ambulance"},
+      {
+        "title": "Hospital",
+        "subtitle": "Book",
+        "icon": Icons.local_hospital_rounded,
+        "bgColor": MedicalBoxColors.hospital,
+        "textColor": MedicalBoxColors.hospitalText,
+        "route": "/hospital"
+      },
+      {
+        "title": "Doctor",
+        "subtitle": "Consult",
+        "icon": Icons.medical_services_rounded,
+        "bgColor": MedicalBoxColors.clinic,
+        "textColor": MedicalBoxColors.clinicText,
+        "route": "/clinic/consultationType"
+      },
+      {
+        "title": "Medicine",
+        "subtitle": "Order",
+        "icon": Icons.medication_rounded,
+        "bgColor": MedicalBoxColors.medicine,
+        "textColor": MedicalBoxColors.medicineText,
+        "route": "/medicineOrder"
+      },
+      {
+        "title": "Lab Test",
+        "subtitle": "Book",
+        "icon": Icons.science_rounded,
+        "bgColor": MedicalBoxColors.labTest,
+        "textColor": MedicalBoxColors.labTestText,
+        "route": "/labTest"
+      },
+      {
+        "title": "Blood",
+        "subtitle": "Order",
+        "icon": Icons.bloodtype_rounded,
+        "bgColor": MedicalBoxColors.bloodBank,
+        "textColor": MedicalBoxColors.bloodBankText,
+        "route": "/bloodbank"
+      },
+      {
+        "title": "Ambulance",
+        "subtitle": "Emergency",
+        "icon": Icons.emergency_rounded,
+        "bgColor": MedicalBoxColors.ambulance,
+        "textColor": MedicalBoxColors.ambulanceText,
+        "route": "/ambulance"
+      },
     ];
 
-    return SizedBox(
-      height: 80, // Adjust height to fit icons & text properly
-      child: SingleChildScrollView(
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: items.map((item) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              child: _buildMedicalBox(
-                context: context,
-                title: item["title"],
-                icon: item["icon"],
-                colors: item["colors"],
-                route: item["route"],
-              ),
-            );
-          }).toList(),
-        ),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _buildMedicalBox(
+              context: context,
+              title: item["title"],
+              subtitle: item["subtitle"],
+              icon: item["icon"],
+              bgColor: item["bgColor"],
+              textColor: item["textColor"],
+              route: item["route"],
+            ),
+          );
+        },
       ),
     );
   }
@@ -41,50 +86,71 @@ class MedicalBoxRow extends StatelessWidget {
   Widget _buildMedicalBox({
     required BuildContext context,
     required String title,
+    required String subtitle,
     required IconData icon,
-    required List<Color> colors,
+    required Color bgColor,
+    required Color textColor,
     required String route,
   }) {
-    return GestureDetector(
-      onTap: () {
-        if (route == "/bloodbank") {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => BloodBankMapScreen()),
-          );
-        } else {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      child: Container(
-        width: 70, // Slightly wider for better spacing
-        height: 70,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (route == "/bloodbank") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => BloodBankMapScreen()),
+            );
+          } else {
+            Navigator.pushNamed(context, route);
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 85,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 24,
+                  color: textColor,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: textColor.withOpacity(0.8),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 24, color: Colors.white), // Increased size
-            const SizedBox(height: 4),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ],
+          ),
         ),
       ),
     );

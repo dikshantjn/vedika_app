@@ -223,19 +223,21 @@ class TrackingOrderCard extends StatelessWidget {
           children: cartItems.map((item) => _buildOrderItem(item)).toList(),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total Amount:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(
-              '₹${totalAmount.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
-            ),
-          ],
-        ),
+        if (viewModel.orders.first.paymentStatus == 'PAID') ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Amount:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Text(
+                '₹${totalAmount.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

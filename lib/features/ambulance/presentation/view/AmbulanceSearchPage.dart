@@ -49,30 +49,33 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
         drawer: DrawerMenu(),
         body: Consumer<AmbulanceSearchViewModel>(
           builder: (context, viewModel, child) {
-            return Column(
+            return Stack(
               children: [
-                Expanded(
-                  flex: 4,
-                  child: GoogleMap(
-                    onMapCreated: (GoogleMapController controller) {
-                      _mapController = controller;
-                      viewModel.mapController = controller; // Assign controller to ViewModel
-                      viewModel.getUserLocation();
-                    },
-                    initialCameraPosition: CameraPosition(
-                      target: viewModel.currentPosition ?? LatLng(20.5937, 78.9629),
-                      zoom: 14,
-                    ),
-                    markers: viewModel.markers,
-                    myLocationEnabled: viewModel.isLocationEnabled,
-                    compassEnabled: true,
-                    zoomControlsEnabled: true,
+                // Map takes full screen
+                GoogleMap(
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                    viewModel.mapController = controller;
+                    viewModel.getUserLocation();
+                  },
+                  initialCameraPosition: CameraPosition(
+                    target: viewModel.currentPosition ?? LatLng(20.5937, 78.9629),
+                    zoom: 14,
                   ),
+                  markers: viewModel.markers,
+                  myLocationEnabled: viewModel.isLocationEnabled,
+                  compassEnabled: true,
+                  zoomControlsEnabled: true,
                 ),
-                viewModel.ambulanceBookings.isNotEmpty
-                    ? _buildOngoingBookingBottomSheet(viewModel)
-                    : _buildBottomSection(viewModel),
-
+                // Bottom section overlays the map
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: viewModel.ambulanceBookings.isNotEmpty
+                      ? _buildOngoingBookingBottomSheet(viewModel)
+                      : _buildBottomSection(viewModel),
+                ),
               ],
             );
           },
