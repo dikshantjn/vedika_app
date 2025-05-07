@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserMedicalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/MedicalProfileTab/MedicalProfileTab.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileTab.dart';
-
+import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -18,7 +19,7 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Two tabs for Personal and Medical Profile
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -33,49 +34,164 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
     final medialViewModel = context.watch<UserMedicalProfileViewModel>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
+      drawer: DrawerMenu(),
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(110.0), // Custom height for AppBar
-        child: AppBar(
-          title: Padding(
-            padding: const EdgeInsets.only(top: 16.0), // Position the title down
-            child: Text(
-              'Profile',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+        preferredSize: Size.fromHeight(140.0),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                ColorPalette.primaryColor,
+                ColorPalette.primaryColor.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ),
-          foregroundColor: Colors.white,
-          backgroundColor: ColorPalette.primaryColor,
-          centerTitle: true,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [ColorPalette.primaryColor, Colors.teal.shade300],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ),
-          bottom: TabBar(
-            controller: _tabController,
-            indicatorColor: Colors.white, // Active tab indicator color
-            labelColor: Colors.white, // Text color for active tab
-            unselectedLabelColor: Colors.white70, // Text color for inactive tab
-            labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // Tab text style
-            tabs: [
-              Tab(text: 'Personal Profile'),
-              Tab(text: 'Medical Profile'),
             ],
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'My Profile',
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.settings_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white,
+                          Colors.white.withOpacity(0.95),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    indicatorColor: Colors.transparent,
+                    labelColor: ColorPalette.primaryColor,
+                    unselectedLabelColor: Colors.white,
+                    labelStyle: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                    unselectedLabelStyle: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                    ),
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person_outline, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Personal'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.medical_services_outlined, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Medical'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0), // Padding for body content
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         child: TabBarView(
           controller: _tabController,
           children: [
-            PersonalProfileTab(viewModel: personalViewModel), // Personal Profile Tab
-            MedicalProfileTab(viewModel: medialViewModel), // Medical Profile Tab
+            PersonalProfileTab(viewModel: personalViewModel),
+            MedicalProfileTab(viewModel: medialViewModel),
           ],
         ),
       ),

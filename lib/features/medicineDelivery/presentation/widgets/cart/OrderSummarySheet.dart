@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for keyboard handling
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
@@ -159,10 +160,17 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
       ),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: IntrinsicHeight(
           child: Column(
@@ -187,10 +195,14 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
             width: 200,
             height: 200,
           ),
-          const SizedBox(height: 8),
-          const Text(
+          const SizedBox(height: 16),
+          Text(
             'Finding Delivery Partner...',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -203,8 +215,14 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
     // If cart is empty, show message
     if (cartItems.isEmpty) {
-      return const Center(
-        child: Text("No orders found."),
+      return Center(
+        child: Text(
+          "No orders found.",
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            color: Colors.grey[600],
+          ),
+        ),
       );
     }
 
@@ -215,48 +233,144 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Order Summary',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        const Divider(),
-
-        // 🛒 **Display Grouped Orders**
-        ...ordersGrouped.entries.map((entry) {
-          String orderId = entry.key;
-          List<CartModel> items = entry.value;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Order ID: $orderId',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Order Summary',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 6),
-              ...items.map((item) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: _priceRow('${item.name} (x${item.quantity})', item.price * item.quantity),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: ColorPalette.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${cartItems.length} Items',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: ColorPalette.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: [
+              ...ordersGrouped.entries.map((entry) {
+                String orderId = entry.key;
+                List<CartModel> items = entry.value;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.receipt_long, color: ColorPalette.primaryColor, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Order #${orderId.length > 12 ? '${orderId.substring(0, 8)}...' : orderId}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...items.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.name,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    'x${item.quantity}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    '₹${(item.price * item.quantity).toStringAsFixed(2)}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                    if (entry.key != ordersGrouped.keys.last)
+                      Divider(height: 1, color: Colors.grey[200]),
+                  ],
                 );
               }).toList(),
-              const Divider(),
             ],
-          );
-        }).toList(),
-
+          ),
+        ),
+        const SizedBox(height: 20),
         _buildCouponSection(),
         if (cartViewModel.isCouponApplied) _discountBox(),
-
-        // 💰 **Price Breakdown**
-        _priceRow('Subtotal', cartViewModel.subtotal),
-        _priceRow('Delivery Charge', cartViewModel.deliveryCharge),
-        _priceRow('Platform Fee', cartViewModel.total - cartViewModel.subtotal - cartViewModel.deliveryCharge + cartViewModel.discount), // Ensure accurate fee display
-        _priceRow('Total', cartViewModel.total, isBold: true),
-
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: [
+              _priceRow('Subtotal', cartViewModel.subtotal),
+              const SizedBox(height: 8),
+              _priceRow('Delivery Charge', cartViewModel.deliveryCharge),
+              const SizedBox(height: 8),
+              _priceRow('Platform Fee', cartViewModel.total - cartViewModel.subtotal - cartViewModel.deliveryCharge + cartViewModel.discount),
+              const Divider(height: 24),
+              _priceRow('Total Amount', cartViewModel.total, isBold: true),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
         _buildPayNowButton(),
       ],
     );
@@ -265,66 +379,119 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
 
   Widget _priceRow(String label, double amount, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(
-            '₹${amount.toStringAsFixed(2)}',
-            style: TextStyle(fontSize: 16, fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: isBold ? Colors.black : Colors.black87),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            color: isBold ? Colors.black87 : Colors.grey[600],
           ),
-        ],
-      ),
+        ),
+        Text(
+          '₹${amount.toStringAsFixed(2)}',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            color: isBold ? ColorPalette.primaryColor : Colors.black87,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCouponSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _couponController,
-              focusNode: _couponFocusNode,
-              decoration: InputDecoration(
-                hintText: 'Enter Coupon Code',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8), // Smaller border radius
-                  borderSide: const BorderSide(color: Colors.grey), // Outlined border
+          Row(
+            children: [
+              Icon(Icons.local_offer_outlined, color: ColorPalette.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Apply Coupon',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.blue), // Highlight when focused
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                errorText: _couponError.isNotEmpty ? _couponError : null, // Shows error in TextField
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: _isCouponApplied ? null : _applyCoupon,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: ColorPalette.primaryColor), // Outlined border
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Smaller border radius
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjust padding
-            ),
-            child: const Text(
-              'Apply',
-              style: TextStyle(
-                color: ColorPalette.primaryColor,
-                fontWeight: FontWeight.bold,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _couponController,
+                  focusNode: _couponFocusNode,
+                  decoration: InputDecoration(
+                    hintText: 'Enter coupon code',
+                    hintStyle: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    errorText: _couponError.isNotEmpty ? _couponError : null,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ColorPalette.primaryColor,
+                      ColorPalette.primaryColor.withOpacity(0.8),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _isCouponApplied ? null : _applyCoupon,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Text(
+                        'Apply',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -334,44 +501,95 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
 
   Widget _discountBox() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green, width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green),
-                const SizedBox(width: 8),
-                const Text('Discount Applied!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green[300]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check_circle, color: Colors.green[700], size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Discount Applied!',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+          Text(
+            '- ₹${_discount.toStringAsFixed(2)}',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.green[700],
             ),
-            Text('- ₹${_discount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPayNowButton() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _payNow,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorPalette.primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 4,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor,
+            ColorPalette.primaryColor.withOpacity(0.8),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        child: const Text('Pay Now', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _payNow,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Pay Now',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

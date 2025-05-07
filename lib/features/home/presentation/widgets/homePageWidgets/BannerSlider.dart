@@ -7,8 +7,8 @@ import 'package:vedika_healthcare/features/home/data/models/HealthDay.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/DiscountPage.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/HealthDaysPage.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/OfferPage.dart';
-import 'package:vedika_healthcare/features/home/presentation/viewmodal/HealthDaysViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/viewmodal/homePageViewModal/BannerViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/HealthDaysViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/homePageViewModal/BannerViewModel.dart';
 
 class BannerSlider extends StatelessWidget {
   const BannerSlider({Key? key}) : super(key: key);

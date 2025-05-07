@@ -9,8 +9,10 @@ import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 
 class MedicineOrderScreen extends StatefulWidget {
+  const MedicineOrderScreen({Key? key}) : super(key: key);
+
   @override
-  _MedicineOrderScreenState createState() => _MedicineOrderScreenState();
+  State<MedicineOrderScreen> createState() => _MedicineOrderScreenState();
 }
 
 class _MedicineOrderScreenState extends State<MedicineOrderScreen> with SingleTickerProviderStateMixin {
@@ -58,10 +60,10 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MedicineOrderViewModel(context),
-      child: Consumer<LocationProvider>(
-        builder: (context, locationProvider, child) {
+    return ChangeNotifierProvider<PrescriptionUploadViewModel>(
+      create: (_) => PrescriptionUploadViewModel(context),
+      child: Consumer<PrescriptionUploadViewModel>(
+        builder: (context, viewModel, child) {
           return Scaffold(
             appBar: AppBar(
               elevation: 0,
@@ -97,8 +99,8 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> with SingleTi
                   ],
                 ),
               ),
-              child: Consumer<MedicineOrderViewModel>(
-                builder: (context, viewModel, child) {
+              child: Consumer<LocationProvider>(
+                builder: (context, locationProvider, child) {
                   return FadeTransition(
                     opacity: _fadeAnimation,
                     child: Padding(

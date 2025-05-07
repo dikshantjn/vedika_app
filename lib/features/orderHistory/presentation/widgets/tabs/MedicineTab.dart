@@ -186,7 +186,7 @@ class _MedicineTabState extends State<MedicineTab> {
       builder: (context) {
         return CustomOrderInfoDialog(
           orderNumber: order.orderId,
-          imageUrls: order.orderItems.map((item) => item.productId).toList(),
+          imageUrls: order.orderItems.map((item) => item.productId ?? '').toList(),
           date: order.createdAt.toString(),
           status: order.orderStatus,
           total: order.totalAmount.toString(),

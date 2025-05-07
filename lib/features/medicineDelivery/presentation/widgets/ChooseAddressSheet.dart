@@ -23,7 +23,6 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
   @override
   void initState() {
     super.initState();
-    // Load addresses when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAddresses();
     });
@@ -46,18 +45,25 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
       builder: (context, viewModel, child) {
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildHeader(viewModel),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
               showAddressList ? _buildAddressList(viewModel) : _buildSelectedAddress(viewModel),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
               _buildConfirmButton(viewModel),
             ],
           ),
@@ -72,29 +78,37 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
       children: [
         Expanded(
           child: Text(
-            "Choose Delivery Address",
-            style: GoogleFonts.openSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            "Choose Address",
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        TextButton.icon(
-          onPressed: () => _navigateToAddNewAddress(viewModel),
-          icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor, size: 20),
-          label: Text(
-            "Add New",
-            style: TextStyle(
-              color: ColorPalette.primaryColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+        const SizedBox(width: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: ColorPalette.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          child: TextButton.icon(
+            onPressed: () => _navigateToAddNewAddress(viewModel),
+            icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor, size: 20),
+            label: Text(
+              "Add New",
+              style: GoogleFonts.poppins(
+                color: ColorPalette.primaryColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
         ),
       ],
@@ -107,36 +121,87 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
     }
 
     final selectedAddress = viewModel.addresses.firstWhere(
-          (address) => address.addressId == selectedAddressId,
+      (address) => address.addressId == selectedAddressId,
       orElse: () => viewModel.addresses.first,
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.location_on, color: ColorPalette.primaryColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              "${selectedAddress.houseStreet}, ${selectedAddress.city}, ${selectedAddress.state}",
-              style: GoogleFonts.openSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.primaryColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          TextButton(
-            onPressed: () => setState(() => showAddressList = true),
-            child: Text(
-              "Change",
-              style: TextStyle(color: ColorPalette.primaryColor, fontWeight: FontWeight.w600),
-            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _getAddressType(selectedAddress),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => setState(() => showAddressList = true),
+                child: Text(
+                  "Change",
+                  style: GoogleFonts.poppins(
+                    color: ColorPalette.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedAddress.houseStreet,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.zipCode}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -146,52 +211,96 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
   Widget _buildAddressList(AddNewAddressViewModel viewModel) {
     return Column(
       children: viewModel.addresses.map((address) {
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedAddressId = address.addressId;
-              showAddressList = false;
-            });
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 5),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: selectedAddressId == address.addressId
-                  ? ColorPalette.primaryColor.withOpacity(0.1)
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: selectedAddressId == address.addressId
-                    ? ColorPalette.primaryColor
-                    : Colors.grey.shade300,
-              ),
+        final isSelected = selectedAddressId == address.addressId;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? ColorPalette.primaryColor.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? ColorPalette.primaryColor : Colors.grey.shade200,
             ),
-            child: Row(
-              children: [
-                Radio(
-                  value: address.addressId,
-                  groupValue: selectedAddressId,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedAddressId = value as String?;
-                      showAddressList = false;
-                    });
-                  },
-                  activeColor: ColorPalette.primaryColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                setState(() {
+                  selectedAddressId = address.addressId;
+                  showAddressList = false;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: ColorPalette.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _getAddressType(address),
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: ColorPalette.primaryColor,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline, color: Colors.red[400], size: 20),
+                          onPressed: () => _deleteAddress(viewModel, address.addressId!),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                address.houseStreet,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${address.city}, ${address.state} - ${address.zipCode}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "${address.houseStreet}, ${address.city}, ${address.state}",
-                    style: GoogleFonts.openSans(fontSize: 16),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteAddress(viewModel, address.addressId!),
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -202,40 +311,102 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
   Widget _buildConfirmButton(AddNewAddressViewModel viewModel) {
     bool hasAddresses = viewModel.addresses.isNotEmpty;
 
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: hasAddresses && selectedAddressId != null
-            ? () {
-          Navigator.pop(context, selectedAddressId); // Pass selectedAddressId when confirming
-        }
-            : () => _navigateToAddNewAddress(viewModel),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorPalette.primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor,
+            ColorPalette.primaryColor.withOpacity(0.8),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        child: Text(
-          hasAddresses
-              ? (selectedAddressId != null ? "Confirm Address" : "Select Address")
-              : "Add New Address",
-          style: const TextStyle(fontSize: 16, color: Colors.white),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: hasAddresses && selectedAddressId != null
+              ? () {
+                  Navigator.pop(context, selectedAddressId);
+                }
+              : () => _navigateToAddNewAddress(viewModel),
+          child: Center(
+            child: Text(
+              hasAddresses
+                  ? (selectedAddressId != null ? "Confirm Address" : "Select Address")
+                  : "Add New Address",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-
   Widget _buildNoAddressView(AddNewAddressViewModel viewModel) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.location_off, size: 50, color: Colors.grey),
-        const SizedBox(height: 10),
-        const Text("No address added click to Add new",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: ColorPalette.primaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.location_off,
+              size: 40,
+              color: ColorPalette.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No Address Added",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Add a new address to continue",
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _getAddressType(DeliveryAddressModel address) {
+    // You can customize this based on your address type logic
+    if (address.houseStreet.toLowerCase().contains('home')) {
+      return 'Home';
+    } else if (address.houseStreet.toLowerCase().contains('work')) {
+      return 'Work';
+    } else {
+      return 'Other';
+    }
   }
 
   Future<void> _navigateToAddNewAddress(AddNewAddressViewModel viewModel) async {
@@ -258,7 +429,6 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
       );
 
       if (success) {
-        // Reload addresses after adding new one
         await viewModel.getAllAddresses();
         if (viewModel.addresses.isNotEmpty) {
           setState(() {
@@ -281,7 +451,6 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
         fontSize: 16.0,
       );
 
-      // Reload addresses after deletion
       await viewModel.getAllAddresses();
       if (viewModel.addresses.isNotEmpty) {
         setState(() {

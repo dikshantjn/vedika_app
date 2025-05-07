@@ -17,7 +17,12 @@ class OrderRequestsWidget extends StatelessWidget {
       );
     }
 
-    if (viewModel.prescriptionRequests.isEmpty) {
+    // Filter only pending requests
+    final pendingRequests = viewModel.prescriptionRequests
+        .where((request) => request.prescriptionAcceptedStatus == "Pending")
+        .toList();
+
+    if (pendingRequests.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 30),
         child: Center(
@@ -27,7 +32,7 @@ class OrderRequestsWidget extends StatelessWidget {
               Icon(Icons.inbox_rounded, size: 60, color: Colors.grey.shade400),
               const SizedBox(height: 10),
               Text(
-                "No prescription requests found",
+                "No pending prescription requests",
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
             ],
@@ -42,17 +47,17 @@ class OrderRequestsWidget extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.all(12.0),
           child: Text(
-            "Prescription Requests",
+            "Pending Prescription Requests",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
         ),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: viewModel.prescriptionRequests.length,
+          itemCount: pendingRequests.length,
           padding: const EdgeInsets.only(bottom: 12),
           itemBuilder: (context, index) {
-            final request = viewModel.prescriptionRequests[index];
+            final request = pendingRequests[index];
             return _buildRequestCard(context, request);
           },
         ),
@@ -199,7 +204,7 @@ class OrderRequestsWidget extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case "Accepted":
+      case "PrescriptionVerified":
         return Colors.green;
       case "Verified":
         return Colors.blue;
@@ -212,7 +217,7 @@ class OrderRequestsWidget extends StatelessWidget {
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case "Accepted":
+      case "PrescriptionVerified":
         return Icons.check_circle_outline;
       case "Verified":
         return Icons.verified;

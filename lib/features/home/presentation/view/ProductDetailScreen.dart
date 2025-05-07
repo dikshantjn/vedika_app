@@ -4,6 +4,8 @@ import 'package:vedika_healthcare/features/home/data/models/Product.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -582,8 +584,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  // TODO: Implement add to cart functionality
+                onTap: () async {
+                  try {
+                    final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+                    await cartViewModel.addProductToCart(widget.product);
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text("Product added to cart"),
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(Icons.error_outline, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text("Failed to add product to cart"),
+                            ],
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    }
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(

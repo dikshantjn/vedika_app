@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
-import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/EditPersonalProfileDialog.dart';
+import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/EditPersonalProfileScreen.dart';
 
 class PersonalProfileEdit extends StatelessWidget {
   final UserPersonalProfileViewModel viewModel;

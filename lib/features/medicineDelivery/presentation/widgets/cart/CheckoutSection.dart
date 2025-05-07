@@ -13,18 +13,18 @@ class CheckoutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, -2),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: Offset(0, -4),
             ),
           ],
         ),
@@ -34,20 +34,60 @@ class CheckoutSection extends StatelessWidget {
   }
 
   Widget _buildCheckoutButton(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      child: ElevatedButton(
-
-        onPressed: () => _showChooseAddressBottomSheet(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ColorPalette.primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          elevation: 4,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor,
+            ColorPalette.primaryColor.withOpacity(0.8),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-        child: const Text(
-          'Proceed to Checkout',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _showChooseAddressBottomSheet(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Proceed to Checkout',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -59,7 +99,7 @@ class CheckoutSection extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return ChooseAddressSheet(
@@ -79,7 +119,7 @@ class CheckoutSection extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return OrderSummarySheet(cartViewModel: cartViewModel, addressId: addressId);

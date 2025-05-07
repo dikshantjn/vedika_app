@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileBody.dart';
-import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileEdit.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileHeader.dart';
 
 class PersonalProfileTab extends StatefulWidget {
@@ -14,37 +14,41 @@ class PersonalProfileTab extends StatefulWidget {
 }
 
 class _PersonalProfileTabState extends State<PersonalProfileTab> {
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    widget.viewModel.fetchUserProfile(); // Ensure fetchUserProfile is called on init
+    // Fetch profile data when the tab is initialized
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await widget.viewModel.fetchUserProfile();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
-        ListView(
-          padding: EdgeInsets.all(16),
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PersonalProfileHeader(viewModel: widget.viewModel),
-                SizedBox(height: 16),
-                PersonalProfileBody(viewModel: widget.viewModel),
-              ],
-            ),
-          ],
-        ),
-        Positioned(
-          bottom: 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: PersonalProfileEdit(viewModel: widget.viewModel),
-          ),
-        ),
+        PersonalProfileHeader(viewModel: widget.viewModel),
+        const SizedBox(height: 16),
+        PersonalProfileBody(viewModel: widget.viewModel),
       ],
     );
   }

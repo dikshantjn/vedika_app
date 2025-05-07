@@ -3,12 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class TrackOrderViewModel extends ChangeNotifier {
   final TrackOrderService _service = TrackOrderService(); // Service instance
@@ -18,17 +22,239 @@ class TrackOrderViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   IOWebSocketChannel? _channel; // WebSocket channel
+  String? _lastStatusUpdate; // Add this to track the last status update
 
   List<MedicineOrderModel> get orders => _orders;
   Map<String, List<CartModel>> get orderItems => _orderItems;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get lastStatusUpdate => _lastStatusUpdate; // Add getter for last status update
 
   List<AmbulanceBooking> _ambulanceBookings = [];
   List<AmbulanceBooking> get ambulanceBookings => _ambulanceBookings;
 
   List<BloodBankBooking> _bloodBankBookings = [];
   List<BloodBankBooking> get bloodBankBookings => _bloodBankBookings;
+
+  IO.Socket? _socket;
+
+  void initSocketConnection() async {
+    print("initSocketConnection started executing");
+    try {
+      String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        debugPrint("❌ User ID not found for socket registration");
+        return;
+      }
+
+      // Fetch orders first
+      await fetchOrdersAndCartItems();
+      debugPrint("📦 Initial orders fetched: ${_orders.length} orders");
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'userId': userId},
+      });
+
+      // Set up event listeners before connecting
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected');
+        _socket!.emit('register', userId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        Future.delayed(Duration(seconds: 2), () {
+          if (_socket != null && !_socket!.connected) {
+            debugPrint('🔄 Attempting to reconnect...');
+            _socket!.connect();
+          }
+        });
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        Future.delayed(Duration(seconds: 2), () {
+          if (_socket != null && !_socket!.connected) {
+            debugPrint('🔄 Attempting to reconnect after disconnect...');
+            _socket!.connect();
+          }
+        });
+      });
+
+      // Single event listener for all order status updates
+      _socket!.on('orderStatusUpdated', (data) async {
+        debugPrint('📦 Order status update received: $data');
+        // Refresh orders before handling the update
+        await fetchOrdersAndCartItems();
+        _handleOrderStatusUpdate(data);
+      });
+
+      // Add ping/pong handlers to keep connection alive
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      
+      debugPrint('🔄 Attempting to connect socket...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      Future.delayed(Duration(seconds: 2), () {
+        if (_socket != null && !_socket!.connected) {
+          debugPrint('🔄 Attempting to reconnect after error...');
+          _socket!.connect();
+        }
+      });
+    }
+  }
+
+  // Handle order status updates
+  void _handleOrderStatusUpdate(dynamic data) {
+    try {
+      debugPrint('📦 Processing order status update: $data');
+      debugPrint('📦 Data type: ${data.runtimeType}');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
+      debugPrint('📦 Parsed data: $orderData');
+      
+      // Get orderId and status from the data
+      final orderId = orderData['orderId'];
+      final prescriptionId = orderData['prescriptionId'];
+      // Check for both 'status' and 'newStatus' fields
+      final status = orderData['newStatus'] ?? orderData['status'];
+      
+      debugPrint('📦 Raw orderId: $orderId (${orderId.runtimeType})');
+      debugPrint('📦 Raw status: $status (${status.runtimeType})');
+      
+      if ((orderId != null || prescriptionId != null) && status != null) {
+        // Find and update the order in the orders list
+        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+        if (orderIndex != -1) {
+          debugPrint('📦 Found order at index: $orderIndex');
+          
+          // Update the order status
+          _orders[orderIndex] = _orders[orderIndex].copyWith(
+            orderStatus: status,
+            updatedAt: DateTime.now(),
+          );
+          
+          // Store the status update message
+          _lastStatusUpdate = _getStatusMessage(status, isPrescription: false);
+          
+          // Notify listeners about the update
+          notifyListeners();
+          
+          debugPrint('✅ Order $orderId status updated to: $status');
+        } else if (prescriptionId != null) {
+          // Handle prescription status update
+          _lastStatusUpdate = _getStatusMessage(status, isPrescription: true);
+          notifyListeners();
+          debugPrint('✅ Prescription $prescriptionId status updated to: $status');
+        } else {
+          debugPrint('❌ Order not found with ID: $orderId');
+          debugPrint('📦 Available order IDs: ${_orders.map((o) => o.orderId).join(', ')}');
+          
+          // If order not found, refresh orders and try again
+          fetchOrdersAndCartItems().then((_) {
+            final retryIndex = _orders.indexWhere((order) => order.orderId == orderId);
+            if (retryIndex != -1) {
+              _orders[retryIndex] = _orders[retryIndex].copyWith(
+                orderStatus: status,
+                updatedAt: DateTime.now(),
+              );
+              _lastStatusUpdate = _getStatusMessage(status, isPrescription: false);
+              notifyListeners();
+              debugPrint('✅ Order $orderId status updated after refresh');
+            }
+          });
+        }
+      } else {
+        debugPrint('❌ Missing orderId/prescriptionId or status in data: $orderData');
+        debugPrint('❌ orderId is null: ${orderId == null}');
+        debugPrint('❌ prescriptionId is null: ${prescriptionId == null}');
+        debugPrint('❌ status is null: ${status == null}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling order status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  // Helper method to get user-friendly status messages
+  String _getStatusMessage(String status, {bool isPrescription = false}) {
+    if (isPrescription) {
+      // Handle prescription status messages
+      switch (status) {
+        case 'Pending':
+          return 'Prescription Sent';
+        case 'PrescriptionVerified':
+          return 'Prescription Verified';
+        default:
+          return status;
+      }
+    } else {
+      // Handle order status messages
+      switch (status) {
+        case 'Pending':
+          return 'Prescription Sent';
+        case 'Accepted':
+          return 'Order Confirmed';
+        case 'AddedItemsInCart':
+          return 'Items Added';
+        case 'PaymentConfirmed':
+          return 'Order Placed';
+        case 'ReadyForPickup':
+          return 'Order Placed';
+        case 'OutForDelivery':
+          return 'Out for Delivery';
+        case 'Delivered':
+          return 'Delivered';
+        default:
+          return status;
+      }
+    }
+  }
+
+  // Helper method to get step index for timeline
+  int _getCurrentStepIndex(String orderStatus) {
+    Map<String, int> statusStepMapping = {
+      "Pending": 0,
+      "Accepted": 1,  // This will be handled differently for prescription vs order
+      "AddedItemsInCart": 2,
+      "PaymentConfirmed": 3,
+      "ReadyForPickup": 3,  // Same step as PaymentConfirmed
+      "OutForDelivery": 4,
+      "Delivered": 5,
+    };
+    return statusStepMapping[orderStatus] ?? 0;
+  }
+
+  // Clear the last status update
+  void clearLastStatusUpdate() {
+    _lastStatusUpdate = null;
+    notifyListeners();
+  }
 
   /// **✅ Fetch Orders and Cart Items**
   Future<void> fetchOrdersAndCartItems() async {
@@ -151,6 +377,10 @@ class TrackOrderViewModel extends ChangeNotifier {
   /// **Dispose WebSocket when not needed**
   @override
   void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
     _channel?.sink.close();
     super.dispose();
   }

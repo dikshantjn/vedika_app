@@ -22,6 +22,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
+      viewModel.initSocketConnection(); // 👈 Call this to connect socket
       viewModel.fetchOrdersAndCartItems();
       viewModel.fetchActiveAmbulanceBookings();
       viewModel.fetchBloodBankBookings();
@@ -30,6 +31,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
   Future<void> _refreshData() async {
     final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
+    viewModel.initSocketConnection(); // 👈 Call this to connect socket
     await viewModel.fetchOrdersAndCartItems();
     await viewModel.fetchActiveAmbulanceBookings();
     await viewModel.fetchBloodBankBookings();

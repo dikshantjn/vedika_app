@@ -49,17 +49,35 @@ class MedicineOrderViewModel extends ChangeNotifier {
   String get orderStatus => _orderStatus;
   bool isOrderAccepted = false;
 
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  // Helper method to safely notify listeners
+  void _safeNotifyListeners() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
   void _setProcessingOrder(bool value) {
+    if (_disposed) return;
     _isProcessingOrder = value;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// **🔹 Fetch Prescription Requests**
   Future<void> fetchPrescriptionRequests() async {
+    if (_disposed) return;
+    
     String? vendorId = await _loginService.getVendorId();
 
     _isLoadingPrescriptions = true;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       _prescriptionRequests = await _prescriptionService.fetchPrescriptionRequests(vendorId);
@@ -67,14 +85,18 @@ class MedicineOrderViewModel extends ChangeNotifier {
       debugPrint("Error fetching prescription requests: $e");
       _prescriptionRequests = [];
     } finally {
-      _isLoadingPrescriptions = false;
-      notifyListeners();
+      if (!_disposed) {
+        _isLoadingPrescriptions = false;
+        _safeNotifyListeners();
+      }
     }
   }
 
   Future<void> fetchOrders() async {
+    if (_disposed) return;
+    
     _isLoadingOrders = true;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       String? vendorId = await _loginService.getVendorId();
@@ -83,24 +105,25 @@ class MedicineOrderViewModel extends ChangeNotifier {
       debugPrint("Error fetching orders: $e");
       _orders = [];
     } finally {
-      _isLoadingOrders = false;
-      notifyListeners();
+      if (!_disposed) {
+        _isLoadingOrders = false;
+        _safeNotifyListeners();
+      }
     }
   }
 
   /// **🔹 Accept Prescription**
-  /// **🔹 Accept Prescription**
   Future<void> acceptPrescription(String prescriptionId) async {
+    if (_disposed) return;
+    
     _setProcessingOrder(true);
     try {
       String? vendorId = await _loginService.getVendorId();
       if (vendorId?.isEmpty ?? true) throw Exception("Vendor ID not found.");
 
-      // First, accept the prescription
       bool success = await _prescriptionService.acceptPrescription(prescriptionId, vendorId!);
 
       if (success) {
-        // ✅ Now, update the prescription status to "PrescriptionVerified"
         bool statusUpdated = await _orderService.updatePrescriptionStatus(prescriptionId);
 
         if (statusUpdated) {
@@ -109,13 +132,16 @@ class MedicineOrderViewModel extends ChangeNotifier {
           print("❌ Failed to update prescription status.");
         }
 
-        // Refresh the entire order list
-        await fetchOrders();
+        if (!_disposed) {
+          await fetchOrders();
+        }
       }
     } catch (e) {
       debugPrint("Error accepting prescription: $e");
     } finally {
-      _setProcessingOrder(false);
+      if (!_disposed) {
+        _setProcessingOrder(false);
+      }
     }
   }
 
@@ -133,9 +159,11 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   /// **🔹 Search Medicines**
   Future<void> searchMedicines(String query) async {
+    if (_disposed) return;
+    
     if (query.isEmpty) {
       _medicineSuggestions = [];
-      notifyListeners();
+      _safeNotifyListeners();
       return;
     }
 
@@ -147,23 +175,29 @@ class MedicineOrderViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint("Error searching medicines: $e");
     } finally {
-      notifyListeners();
+      if (!_disposed) {
+        _safeNotifyListeners();
+      }
     }
   }
 
   /// **🔹 Clear Medicine Search Results**
   void clearSearchResults() {
+    if (_disposed) return;
     _medicineSuggestions = [];
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void clearCarts() {
+    if (_disposed) return;
     _cart = [];
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// **🔹 Add Medicine to Temporary Cart**
   void addMedicineToLocalCart(MedicineProduct medicine, int quantity, String orderId, BuildContext context) {
+    if (_disposed) return;
+    
     if (quantity <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("❌ Quantity should be greater than zero")));
       return;
@@ -185,7 +219,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ ${medicine.name} added to cart")));
     }
 
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// **🔹 Add Cart Items to Database**
@@ -285,33 +319,32 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   Future<void> acceptOrder(String orderId) async {
+    if (_disposed) return;
+    
     String? vendorId = await _loginService.getVendorId();
 
     try {
-      // Show loading indicator and reset previous messages
       isAccepting = true;
       acceptMessage = "";
-      isOrderAccepted = false; // Reset the order accepted status before processing
-      notifyListeners();
+      isOrderAccepted = false;
+      _safeNotifyListeners();
 
-      // Call the service to accept the order
       bool result = await _orderService.acceptOrder(orderId, vendorId!);
 
       if (result) {
-        // Mark the order as accepted and update the message
         isOrderAccepted = true;
         acceptMessage = "Order Accepted Successfully";
       } else {
         acceptMessage = "Failed to Accept Order";
       }
     } catch (e) {
-      // Handle error and update the message
       acceptMessage = "Something went wrong";
       print("Error in ViewModel accepting order: $e");
     } finally {
-      // Hide loading indicator and notify listeners to update the UI
-      isAccepting = false;
-      notifyListeners();
+      if (!_disposed) {
+        isAccepting = false;
+        _safeNotifyListeners();
+      }
     }
   }
 
@@ -330,13 +363,14 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   // Add this method in your MedicineOrderViewModel class
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
+    if (_disposed) return;
+    
     try {
-      // Call the service to update the order status
       bool result = await _orderService.updateOrderStatus(orderId, newStatus);
 
       if (result) {
-        _orderStatus = newStatus;  // Update local status if successful
-        notifyListeners();  // Notify listeners to update the UI
+        _orderStatus = newStatus;
+        _safeNotifyListeners();
       } else {
         throw Exception("Failed to update status");
       }

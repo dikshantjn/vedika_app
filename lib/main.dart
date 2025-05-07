@@ -58,8 +58,8 @@ import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/Us
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/ClinicSearchViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/viewmodal/HealthDaysViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/viewmodal/homePageViewModal/BannerViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/HealthDaysViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/homePageViewModal/BannerViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/BookAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';

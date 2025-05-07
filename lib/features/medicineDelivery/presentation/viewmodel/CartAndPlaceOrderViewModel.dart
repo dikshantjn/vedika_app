@@ -8,6 +8,8 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineProduct.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/MedicineOrderDeliveryRazorPayService.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
+import 'package:vedika_healthcare/features/home/data/models/Product.dart';
+import 'package:uuid/uuid.dart';
 
 class CartAndPlaceOrderViewModel extends ChangeNotifier {
   final UserCartService _cartService;
@@ -64,7 +66,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   Future<void> fetchOrdersAndCartItems() async {
     _isLoading = true;
-    notifyListeners(); // Notify UI to show loading
+    notifyListeners();
 
     String? userId = await StorageService.getUserId();
     print("userId fetched while booting $userId");
@@ -75,20 +77,28 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     }
 
     try {
+      // Store existing product items
+      final productItems = _cartItems.where((item) => item.isProduct).toList();
+      
+      // Fetch medicine orders
       _orders = await _cartService.fetchOrdersByUserId(userId);
       _cartItems.clear(); // Clear existing cart items
 
+      // Add medicine items to cart
       for (var order in _orders) {
         List<CartModel> cartItems = await fetchCartItemsByOrderId(order.orderId);
         _cartItems.addAll(cartItems);
       }
 
+      // Add back product items
+      _cartItems.addAll(productItems);
+      
       _calculateSubtotal(_cartItems);
     } catch (e) {
       debugPrint("❌ Error fetching orders and cart items: $e");
     } finally {
       _isLoading = false;
-      notifyListeners(); // Notify UI to stop loading
+      notifyListeners();
     }
   }
   // **🔹 Fetch and Store Cart Items by Order ID**
@@ -348,5 +358,29 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   void dispose() {
     _razorPayService.clear();
     super.dispose();
+  }
+
+  // Add product to cart
+  Future<void> addProductToCart(Product product) async {
+    try {
+      final cartId = const Uuid().v4();
+      final orderId = const Uuid().v4();
+      
+      final cartItem = CartModel.fromProduct(
+        product,
+        cartId: cartId,
+        orderId: orderId,
+      );
+
+      _cartItems.add(cartItem);
+      calculateTotal();
+      notifyListeners();
+
+      // TODO: Implement API call to save cart item
+      // await _cartRepository.addToCart(cartItem);
+    } catch (e) {
+      debugPrint('Error adding product to cart: $e');
+      rethrow;
+    }
   }
 }

@@ -19,11 +19,12 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/PrescriptionUploadLoadingDialog.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
-class MedicineOrderViewModel extends ChangeNotifier {
+class PrescriptionUploadViewModel extends ChangeNotifier {
   final MedicineOrderService _medicineOrderService;
   final PrescriptionService _prescriptionService = PrescriptionService();
+  Timer? _statusCheckTimer; // Add timer variable
 
-  MedicineOrderViewModel(BuildContext context)
+  PrescriptionUploadViewModel(BuildContext context)
       : _medicineOrderService = MedicineOrderService(context);
 
   File? _prescription;
@@ -36,6 +37,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   bool _isItemsAddedToCart = false; // Added for Items Added to Cart status
   List<MedicalStore> _nearbyStores = []; // Store fetched medical stores
   bool _isRequestBeingProcessed = false; // New property for request processing status
+  bool _disposed = false;
 
   File? get prescription => _prescription;
   bool get isUploading => _isUploading;
@@ -49,12 +51,28 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   bool get isRequestBeingProcessed => _isRequestBeingProcessed;
 
+  @override
+  void dispose() {
+    _disposed = true;
+    _statusCheckTimer?.cancel(); // Cancel timer when disposing
+    super.dispose();
+  }
+
+  // Helper method to safely notify listeners
+  void _safeNotifyListeners() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
   // File picker for prescription upload
   Future<void> pickPrescription(BuildContext context) async {
+    if (_disposed) return;
+    
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null) {
       _prescription = File(result.files.single.path!);
-      notifyListeners();
+      _safeNotifyListeners();
 
       print('pickPrescription: Prescription file selected, path: ${_prescription?.path}');
 
@@ -64,12 +82,14 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   Future<void> uploadPrescription(BuildContext context) async {
+    if (_disposed) return;
+    
     String? userId = await StorageService.getUserId();
     if (_prescription == null) return;
 
     _isUploading = true;
     _uploadStatus = 'Uploading prescription...';
-    notifyListeners();
+    _safeNotifyListeners();
 
     LoadingDialog.show(context, "Uploading prescription...");
 
@@ -81,13 +101,13 @@ class MedicineOrderViewModel extends ChangeNotifier {
     if (prescriptionUrl == null) {
       _uploadStatus = 'Failed to upload prescription';
       _isUploading = false;
-      notifyListeners();
+      _safeNotifyListeners();
       LoadingDialog.hide(context);
       return;
     }
 
     _uploadStatus = 'Fetching user location...';
-    notifyListeners();
+    _safeNotifyListeners();
 
     LocationProvider locationProvider = Provider.of<LocationProvider>(context, listen: false);
     await locationProvider.fetchLocation();
@@ -98,13 +118,13 @@ class MedicineOrderViewModel extends ChangeNotifier {
     if (latitude == null || longitude == null) {
       _uploadStatus = 'Failed to get user location';
       _isUploading = false;
-      notifyListeners();
+      _safeNotifyListeners();
       LoadingDialog.hide(context);
       return;
     }
 
     _uploadStatus = 'Sending prescription to nearby medical stores...';
-    notifyListeners();
+    _safeNotifyListeners();
 
     var response = await _prescriptionService.uploadPrescription(
       prescriptionUrl: prescriptionUrl,
@@ -116,7 +136,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
     if (response['success']) {
       _uploadStatus = 'Prescription uploaded successfully!';
       _isRequestBeingProcessed = true;
-      notifyListeners();
+      _safeNotifyListeners();
 
       // Show BeforeVerificationWidget
       LoadingDialog.update(
@@ -124,6 +144,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
         BeforeVerificationWidget(
           initialTime: 300, // 5-minute countdown
           onTimeExpired: () {
+            if (_disposed) return;
             // When time runs out, show FindMoreMedicalShopsWidget
             LoadingDialog.update(
               context,
@@ -131,7 +152,6 @@ class MedicineOrderViewModel extends ChangeNotifier {
                 onFindMore: () {
                   print("Finding more shops");
                   Navigator.pop(context); // Close dialog
-                  // uploadPrescription(context); // Retry finding stores
                 },
                 onCancel: () {
                   Navigator.pop(context); // Close the dialog
@@ -141,11 +161,22 @@ class MedicineOrderViewModel extends ChangeNotifier {
           },
         ),
       );
-      // **Start polling for prescription acceptance**
-      Timer.periodic(const Duration(seconds: 5), (timer) async {
+
+      // Cancel any existing timer
+      _statusCheckTimer?.cancel();
+      
+      // Start polling for prescription acceptance
+      _statusCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+        if (_disposed) {
+          timer.cancel();
+          return;
+        }
         bool isAccepted = await checkPrescriptionStatus(context);
         print("isAccepted $isAccepted");
-        if (isAccepted) timer.cancel(); // Stop polling when accepted
+        if (isAccepted) {
+          timer.cancel();
+          _statusCheckTimer = null;
+        }
       });
 
     } else {
@@ -154,11 +185,13 @@ class MedicineOrderViewModel extends ChangeNotifier {
     }
 
     _isUploading = false;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
 
   Future<bool> enableLocation(BuildContext context) async {
+    if (_disposed) return false;
+    
     print('enableLocation: Started');
     Location location = Location();
 
@@ -196,6 +229,8 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   /// Checks if the prescription has been accepted
   Future<bool> checkPrescriptionStatus(BuildContext context) async {
+    if (_disposed) return false;
+    
     String? userId = await StorageService.getUserId();
     if (userId == null) return false;
 
@@ -205,27 +240,29 @@ class MedicineOrderViewModel extends ChangeNotifier {
     if (acceptedByVendorId != null) {
       // 🔹 Fetch Vendor Details
       VendorMedicalStoreProfile? vendor =
-      await MedicalStoreVendorService().fetchVendorById(acceptedByVendorId);
+          await MedicalStoreVendorService().fetchVendorById(acceptedByVendorId);
 
       if (vendor != null) {
         String vendorName = vendor.name; // Extract vendor name
         print("Vendor Name: $vendorName");
 
-        _isRequestAccepted = true;
-        _isPrescriptionVerified = vendorName;
-        notifyListeners();
+        if (!_disposed) {
+          _isRequestAccepted = true;
+          _isPrescriptionVerified = vendorName;
+          _safeNotifyListeners();
 
-        // **Show AfterVerificationWidget**
-        LoadingDialog.update(
-          context,
-          AfterVerificationWidget(
-            medicalStoreName: vendorName,
-            onTrackOrder: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pushNamed(context, AppRoutes.trackOrderScreen); // Navigate to tracking screen
-            },
-          ),
-        );
+          // **Show AfterVerificationWidget**
+          LoadingDialog.update(
+            context,
+            AfterVerificationWidget(
+              medicalStoreName: vendorName,
+              onTrackOrder: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pushNamed(context, AppRoutes.trackOrderScreen); // Navigate to tracking screen
+              },
+            ),
+          );
+        }
 
         return true; // Stop polling
       } else {
