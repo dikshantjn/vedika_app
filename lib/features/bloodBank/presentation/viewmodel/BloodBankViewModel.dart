@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,6 +15,8 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/mod
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 
 class BloodBankViewModel extends ChangeNotifier {
   final BuildContext context;
@@ -31,6 +34,8 @@ class BloodBankViewModel extends ChangeNotifier {
   bool _isSidePanelOpen = false;
   bool _isMapReady = false;
   bool _isInitialized = false;
+  bool _isBottomSheetShowing = false;
+  AwesomeDialog? _successDialog;
 
   // City coordinates mapping
   final Map<String, LatLng> _cityCoordinates = {
@@ -68,9 +73,15 @@ class BloodBankViewModel extends ChangeNotifier {
   final BloodBankAgencyService _agencyService = BloodBankAgencyService();
   final AuthRepository _authRepository = AuthRepository();
 
+  IO.Socket? _socket;
+
+  // Add getter for bookings
+  List<BloodBankBooking> get bookings => _bookings;
+
   BloodBankViewModel(this.context) {
     debugPrint("BloodBankViewModel constructor called");
     _initialize();
+    _initSocketConnection();
   }
 
   Future<void> _initialize() async {
@@ -106,6 +117,191 @@ class BloodBankViewModel extends ChangeNotifier {
       _logger.e("Error during initialization", error: e);
       _errorMessage = "Failed to initialize: ${e.toString()}";
       notifyListeners();
+    }
+  }
+
+  void _initSocketConnection() async {
+    debugPrint("Initializing socket connection for BloodBankViewModel");
+    try {
+      String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        debugPrint("❌ User ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'userId': userId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for BloodBankViewModel');
+        _socket!.emit('register', userId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        Future.delayed(Duration(seconds: 2), () {
+          if (_socket != null && !_socket!.connected) {
+            debugPrint('🔄 Attempting to reconnect...');
+            _socket!.connect();
+          }
+        });
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        Future.delayed(Duration(seconds: 2), () {
+          if (_socket != null && !_socket!.connected) {
+            debugPrint('🔄 Attempting to reconnect after disconnect...');
+            _socket!.connect();
+          }
+        });
+      });
+
+      // Add blood bank booking status update listener
+      _socket!.on('bloodBankBookingUpdated', (data) async {
+        debugPrint('🩸 Blood bank booking update received: $data');
+        await _handleBloodBankStatusUpdate(data);
+      });
+
+      // Add ping/pong handlers to keep connection alive
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      
+      debugPrint('🔄 Attempting to connect socket for BloodBankViewModel...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      Future.delayed(Duration(seconds: 2), () {
+        if (_socket != null && !_socket!.connected) {
+          debugPrint('🔄 Attempting to reconnect after error...');
+          _socket!.connect();
+        }
+      });
+    }
+  }
+
+  // Handle blood bank booking status updates
+  Future<void> _handleBloodBankStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('🩸 Processing blood bank status update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🩸 Parsed data: $bookingData');
+      
+      final requestId = bookingData['requestId'];
+      final status = bookingData['status'];
+      final totalAmount = bookingData['totalAmount'];
+      
+      if (requestId != null && status != null) {
+        debugPrint('🩸 Looking for booking with requestId: $requestId');
+        debugPrint('🩸 Current bookings: ${_bookings.map((b) => '${b.requestId} - ${b.status}').join(', ')}');
+        
+        // Find and update the booking in the list
+        final bookingIndex = _bookings.indexWhere((booking) => booking.requestId == requestId);
+        
+        if (bookingIndex != -1) {
+          debugPrint('🩸 Found booking at index: $bookingIndex');
+          
+          // Convert totalAmount to double if it exists
+          double? parsedTotalAmount;
+          if (totalAmount != null) {
+            if (totalAmount is String) {
+              parsedTotalAmount = double.tryParse(totalAmount);
+            } else if (totalAmount is num) {
+              parsedTotalAmount = totalAmount.toDouble();
+            }
+            debugPrint('🩸 Parsed total amount: $parsedTotalAmount');
+          }
+          
+          // Normalize the status to match the frontend's expected format
+          String normalizedStatus = status;
+          
+          // Handle all possible status values
+          switch (status.toLowerCase()) {
+            case 'confirmed':
+              normalizedStatus = 'CONFIRMED';
+              break;
+            case 'completed':
+              normalizedStatus = 'COMPLETED';
+              break;
+            case 'paymentcompleted':
+              normalizedStatus = 'PaymentCompleted';
+              break;
+            case 'waitingforpayment':
+              normalizedStatus = 'WaitingForPayment';
+              break;
+            case 'waitingforpickup':
+              normalizedStatus = 'WaitingForPickup';
+              break;
+            default:
+              normalizedStatus = status;
+          }
+          
+          // Create a new booking object with updated status
+          final updatedBooking = _bookings[bookingIndex].copyWith(
+            status: normalizedStatus,
+            totalAmount: parsedTotalAmount ?? _bookings[bookingIndex].totalAmount,
+          );
+          
+          // Update the booking in the list
+          _bookings[bookingIndex] = updatedBooking;
+          
+          // Notify listeners immediately
+          notifyListeners();
+          
+          debugPrint('✅ Blood bank booking $requestId status updated to: $normalizedStatus');
+          if (parsedTotalAmount != null) {
+            debugPrint('✅ Total amount updated to: $parsedTotalAmount');
+          }
+          
+          // If the status is COMPLETED, refresh the bookings list
+          if (normalizedStatus == 'COMPLETED') {
+            await fetchBookingsForVendor();
+          }
+          
+          // If bottom sheet is showing, update it
+          if (_isBottomSheetShowing) {
+            _showBookingDetailsBottomSheet(updatedBooking);
+          }
+        } else {
+          debugPrint('❌ Blood bank booking not found with requestId: $requestId');
+          
+          // If booking not found, refresh bookings
+          await fetchBookingsForVendor();
+        }
+      } else {
+        debugPrint('❌ Missing requestId or status in data: $bookingData');
+        debugPrint('❌ requestId is null: ${requestId == null}');
+        debugPrint('❌ status is null: ${status == null}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling blood bank status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
     }
   }
 
@@ -321,6 +517,10 @@ class BloodBankViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
     if (_mapController != null) {
       _mapController!.dispose();
       _mapController = null;
@@ -625,33 +825,7 @@ class BloodBankViewModel extends ChangeNotifier {
         Navigator.pop(context);
         
         // Show success dialog
-        AwesomeDialog(
-          context: context,
-          dialogType: DialogType.success,
-          animType: AnimType.bottomSlide,
-          title: 'Request Sent Successfully',
-          desc: 'Your blood request has been sent. We will notify you once they respond.',
-          btnOkText: "OK",
-          btnOkOnPress: () {
-            // _listenForVendorResponse(nearestAgency);
-          },
-          customHeader: Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              margin: const EdgeInsets.only(top: 16),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.green.shade100,
-              ),
-              padding: const EdgeInsets.all(16),
-              child: const Icon(
-                Icons.check_circle_outline,
-                size: 40,
-                color: Colors.green,
-              ),
-            ),
-          ),
-        ).show();
+        _showSuccessDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -683,50 +857,128 @@ class BloodBankViewModel extends ChangeNotifier {
     }
   }
 
-  void _listenForVendorResponse(BloodBankAgency agency) {
-    debugPrint("Listening for vendor response from: ${agency.agencyName}");
-
-    _checkVendorResponse(agency).then((isAccepted) {
-      debugPrint("Vendor response received: $isAccepted");
-
-      if (isAccepted) {
-        debugPrint("Vendor accepted the request");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Request accepted by ${agency.agencyName}"),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        debugPrint("Vendor rejected the request");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Request rejected by ${agency.agencyName}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }).catchError((error) {
-      debugPrint("Error checking vendor response: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: ${error.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    });
+  void _closeSuccessDialog() {
+    if (_successDialog != null) {
+      _successDialog!.dismiss();
+      _successDialog = null;
+    }
   }
 
-  Future<bool> _checkVendorResponse(BloodBankAgency agency) async {
-    debugPrint("Checking vendor response from: ${agency.agencyName}");
-    try {
-      // TODO: Implement actual API call to check response
-      await Future.delayed(Duration(seconds: 1));
-      return Random().nextBool();
-    } catch (e) {
-      debugPrint("Error in _checkVendorResponse: $e");
-      return false;
+  void _showSuccessDialog() {
+    _successDialog = AwesomeDialog(
+      context: context,
+      dialogType: DialogType.success,
+      animType: AnimType.bottomSlide,
+      title: 'Request Sent Successfully',
+      desc: 'Your blood request has been sent. We will notify you once they respond.',
+      btnOkText: "OK",
+      btnOkOnPress: () {
+        _closeSuccessDialog();
+      },
+      customHeader: Align(
+        alignment: Alignment.topCenter,
+        child: Container(
+          margin: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.green.shade100,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: const Icon(
+            Icons.check_circle_outline,
+            size: 40,
+            color: Colors.green,
+          ),
+        ),
+      ),
+    )..show();
+  }
+
+  void _showBookingDetailsBottomSheet(BloodBankBooking booking) {
+    _logger.d("Showing booking details bottom sheet for booking ID: ${booking.bookingId}");
+    if (!context.mounted) {
+      _logger.e("Context is not mounted, cannot show bottom sheet");
+      return;
     }
+
+    // Check if bottom sheet is already showing
+    if (_isBottomSheetShowing) {
+      _logger.d("Bottom sheet is already showing, skipping");
+      return;
+    }
+
+    // Close success dialog if it's showing
+    _closeSuccessDialog();
+
+    _isBottomSheetShowing = true;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: false,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IntrinsicHeight(
+              child: BloodRequestDetailsBottomSheet(
+                booking: booking,
+                onCallBloodBank: () {
+                  final phoneNumber = booking.agency?.phoneNumber;
+                  if (phoneNumber != null && phoneNumber.isNotEmpty) {
+                    launchUrl(Uri.parse('tel:$phoneNumber'));
+                  } else {
+                    _logger.w("Phone number not available for booking ${booking.bookingId}");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Phone number is not available")),
+                    );
+                  }
+                },
+                onRefresh: () async {
+                  _logger.d("Refreshing bookings");
+                  await fetchBookingsForVendor();
+                },
+                onClose: () {
+                  _isBottomSheetShowing = false;
+                },
+              ),
+            ),
+            Positioned(
+              right: 16,
+              top: -50,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _isBottomSheetShowing = false;
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.close, size: 24, color: Colors.black87),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) {
+      _isBottomSheetShowing = false;
+    });
   }
 
   Future<void> fetchBookingsForVendor() async {
@@ -749,7 +1001,13 @@ class BloodBankViewModel extends ChangeNotifier {
       
       _logger.d("Found ${activeBookings.length} active bookings");
       
-      // Don't show bottom sheet here, it will be shown in _initialize if needed
+      // Notify listeners after updating the bookings
+      notifyListeners();
+
+      // Only show bottom sheet if there are no active bookings being displayed
+      if (activeBookings.isNotEmpty && !_isBottomSheetShowing) {
+        _showBookingDetailsBottomSheet(activeBookings.first);
+      }
     } catch (e) {
       _logger.e("Error fetching bookings", error: e);
       _bookingError = e.toString();
@@ -757,71 +1015,5 @@ class BloodBankViewModel extends ChangeNotifier {
       _isLoadingBookings = false;
       notifyListeners();
     }
-  }
-
-  void _showBookingDetailsBottomSheet(BloodBankBooking booking) {
-    _logger.d("Showing booking details bottom sheet for booking ID: ${booking.bookingId}");
-    if (!context.mounted) {
-      _logger.e("Context is not mounted, cannot show bottom sheet");
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      enableDrag: false,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Stack(
-        clipBehavior: Clip.none,
-        children: [
-          IntrinsicHeight(
-            child: BloodRequestDetailsBottomSheet(
-              booking: booking,
-              onCallBloodBank: () {
-                final phoneNumber = booking.agency?.phoneNumber;
-                if (phoneNumber != null && phoneNumber.isNotEmpty) {
-                  launchUrl(Uri.parse('tel:$phoneNumber'));
-                } else {
-                  _logger.w("Phone number not available for booking ${booking.bookingId}");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Phone number is not available")),
-                  );
-                }
-              },
-              onRefresh: () async {
-                _logger.d("Refreshing bookings");
-                await fetchBookingsForVendor();
-              },
-            ),
-          ),
-          Positioned(
-            right: 16,
-            top: -50,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.close, size: 24, color: Colors.black87),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

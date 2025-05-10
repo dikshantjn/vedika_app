@@ -3,10 +3,14 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLo
 import '../../data/model/BloodBankRequest.dart';
 import '../../data/services/BloodBankRequestService.dart';
 import '../../../../../core/auth/data/models/UserModel.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'dart:convert';
 
 class BloodBankRequestViewModel extends ChangeNotifier {
   final BloodBankRequestService _service = BloodBankRequestService();
   final VendorLoginService _loginService = VendorLoginService(); // Vendor Login Service
+  IO.Socket? _socket;
 
   List<BloodBankRequest> _requests = [];
   bool _isLoading = false;
@@ -26,6 +30,104 @@ class BloodBankRequestViewModel extends ChangeNotifier {
   
   List<BloodBankRequest> get acceptedRequests =>
       _requests.where((request) => request.status == 'accepted').toList();
+
+  BloodBankRequestViewModel() {
+    _initSocketConnection();
+  }
+
+  void _initSocketConnection() async {
+    String? vendorId = await _loginService.getVendorId();
+    if (vendorId == null) return;
+
+    _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+      'transports': ['websocket', 'polling'],
+      'autoConnect': true,
+      'reconnection': true,
+      'reconnectionAttempts': 10,
+      'reconnectionDelay': 1000,
+      'reconnectionDelayMax': 5000,
+      'timeout': 20000,
+      'forceNew': true,
+      'upgrade': true,
+      'rememberUpgrade': true,
+      'path': '/socket.io/',
+      'query': {'vendorId': vendorId},
+    });
+
+    _socket!.onConnect((_) {
+      debugPrint('✅ Socket connected for BloodBankRequestViewModel');
+      _socket!.emit('registerVendor', vendorId);
+    });
+
+    _socket!.onConnectError((data) {
+      debugPrint('❌ Socket connection error: $data');
+    });
+
+    _socket!.onError((data) {
+      debugPrint('❌ Socket error: $data');
+    });
+
+    _socket!.onDisconnect((_) {
+      debugPrint('❌ Socket disconnected');
+    });
+
+    // Listen for vendor blood bank updates
+    _socket!.on('vendorBloodBankUpdate', (data) {
+      debugPrint('🩸 Received vendor blood bank update: $data');
+      _handleVendorBloodBankUpdate(data);
+    });
+
+    _socket!.connect();
+  }
+
+  void _handleVendorBloodBankUpdate(dynamic data) async {
+    debugPrint('🩸 Processing vendor blood bank update: $data');
+    try {
+      // Parse the data if it's a string
+      Map<String, dynamic> requestData = data is String ? json.decode(data) : data;
+      debugPrint('🩸 Parsed data: $requestData');
+
+      // Check if this is a new request
+      if (requestData['data'] != null && requestData['data'] is List) {
+        // This is a new request, refresh the list
+        await loadRequests();
+        return;
+      }
+
+      final requestId = requestData['requestId'];
+      final status = requestData['status'];
+
+      if (requestId != null && status != null) {
+        // Check if request already exists
+        final existingIndex = _requests.indexWhere((r) => r.requestId == requestId);
+        
+        if (existingIndex == -1) {
+          // If it's a new request, refresh the list
+          await loadRequests();
+        } else {
+          // If it's an existing request, update it
+          _requests[existingIndex] = _requests[existingIndex].copyWith(
+            status: status,
+          );
+          notifyListeners();
+        }
+      } else {
+        // If we can't parse the data properly, do a full refresh
+        await loadRequests();
+      }
+    } catch (e) {
+      debugPrint('❌ Error handling blood bank update: $e');
+      // If there's an error, refresh the list to ensure we have the latest data
+      await loadRequests();
+    }
+  }
+
+  @override
+  void dispose() {
+    _socket?.disconnect();
+    _socket?.dispose();
+    super.dispose();
+  }
 
   Future<void> loadRequests() async {
     String? token = await _loginService.getVendorToken();

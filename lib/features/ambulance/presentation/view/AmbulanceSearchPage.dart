@@ -20,6 +20,7 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   late AnimationController _animationController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -72,9 +73,11 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: viewModel.ambulanceBookings.isNotEmpty
-                      ? _buildOngoingBookingBottomSheet(viewModel)
-                      : _buildBottomSection(viewModel),
+                  child: _isLoading 
+                    ? _buildLoadingBottomSheet()
+                    : viewModel.ambulanceBookings.isNotEmpty
+                        ? _buildOngoingBookingBottomSheet(viewModel)
+                        : _buildBottomSection(viewModel),
                 ),
               ],
             );
@@ -121,7 +124,49 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: viewModel.callNearestAmbulance,
+                onPressed: _isLoading ? null : () async {
+                  // Prevent multiple calls by checking loading state
+                  if (_isLoading) return;
+                  
+                  // Show loading state in bottom sheet
+                  setState(() {
+                    _isLoading = true;
+                  });
+
+                  try {
+                    // Call ambulance
+                    bool success = await viewModel.callNearestAmbulance();
+
+                    if (success) {
+                      // Show success message
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Ambulance booking successful!"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } else {
+                      // Show error message
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Failed to book ambulance. Please try again."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  } finally {
+                    // Reset loading state regardless of success/failure
+                    if (context.mounted) {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    }
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -139,6 +184,43 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     );
   }
 
+  Widget _buildLoadingBottomSheet() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black26, blurRadius: 4, spreadRadius: 2),
+        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      padding: EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            "Finding nearest ambulance...",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Please wait while we locate the nearest available ambulance",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildOngoingBookingBottomSheet(AmbulanceSearchViewModel viewModel) {
     final razorpayService = AmbulanceBookingRazorPayService();
@@ -149,6 +231,96 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
 
     final isPaymentCompleted = booking.status == "paymentCompleted";
     final isWaitingForPayment = booking.status == "WaitingForPayment";
+    final isCompleted = booking.status == "Completed";
+
+    // If booking is completed, show completion message
+    if (isCompleted) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Add close button at the top
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.grey[600]),
+                onPressed: () {
+                  viewModel.clearBookings();
+                },
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: Colors.green,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              "Service Completed",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Your ambulance service has been completed successfully. Thank you for choosing our service.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    viewModel.clearBookings();
+                  },
+                  icon: Icon(Icons.close),
+                  label: Text("Close"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[400]!),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Add any additional action here if needed
+                    viewModel.clearBookings();
+                  },
+                  icon: Icon(Icons.star_outline),
+                  label: Text("Rate Service"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     final hasPaymentInfo = booking.totalAmount != null &&
         booking.totalDistance != null &&
@@ -159,12 +331,18 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
         ? DateFormat("dd MMMM yyyy hh:mm a").format(booking.timestamp)
         : "N/A";
 
+    // Check if both pickup and drop locations are available
+    final hasValidLocations = booking.pickupLocation != null && 
+                            booking.pickupLocation!.isNotEmpty && 
+                            booking.dropLocation != null && 
+                            booking.dropLocation!.isNotEmpty;
+
     return RefreshIndicator(
       onRefresh: () async {
         await viewModel.fetchActiveAmbulanceBookings();
       },
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(), // Required for RefreshIndicator
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -177,6 +355,16 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Add close button at the top
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey[600]),
+                  onPressed: () {
+                    viewModel.clearBookings();
+                  },
+                ),
+              ),
               Center(
                 child: Column(
                   children: [
@@ -205,8 +393,11 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
               ),
               SizedBox(height: 16),
 
-              _buildHorizontalPickupDropTimeline(booking),
-              SizedBox(height: 10),
+              // Only show location timeline if both locations are available
+              if (hasValidLocations) ...[
+                _buildHorizontalPickupDropTimeline(booking),
+                SizedBox(height: 10),
+              ],
 
               Row(
                 children: [
@@ -279,7 +470,7 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
                         phoneNumber: "USER_PHONE_NUMBER",
                         key: ApiConstants.razorpayApiKey,
                         onPaymentSuccess: () async {
-                          await viewModel.fetchActiveAmbulanceBookings(); // ✅ Re-fetch after payment
+                          await viewModel.fetchActiveAmbulanceBookings();
                         },
                       );
                     },
@@ -327,8 +518,7 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     );
   }
 
-
-// Receipt row helper
+  // Receipt row helper
   Widget _buildReceiptRow(String label, String value, {bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -415,24 +605,27 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     );
   }
 
-
-
   // Adjust the timeline builder to ensure "Payment Completed" stays visible
   Widget _buildTimeline(List<String> steps, int currentStepIndex) {
     final scrollController = ScrollController();
-    final animatedStepIndex = ValueNotifier<int>(-1);
+    final animatedStepIndex = ValueNotifier<int>(currentStepIndex);  // Initialize with current step
 
-    Future<void> animateSteps() async {
-      for (int step = 0; step <= currentStepIndex; step++) {
-        await Future.delayed(const Duration(milliseconds: 400));
-        animatedStepIndex.value = step;
+    // Update the animated index when currentStepIndex changes
+    void updateAnimatedIndex() {
+      if (animatedStepIndex.value != currentStepIndex) {
+        animatedStepIndex.value = currentStepIndex;
         if (scrollController.hasClients) {
-          scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          scrollController.animateTo(
+            currentStepIndex * 80.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut
+          );
         }
       }
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => animateSteps());
+    // Call updateAnimatedIndex when the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) => updateAnimatedIndex());
 
     return SizedBox(
       height: 80,
@@ -478,9 +671,9 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
                       steps[index],
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey)
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey)
                       ),
                     ),
                   ),

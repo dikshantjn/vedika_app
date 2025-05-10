@@ -47,42 +47,26 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
     _paymentService.onPaymentCancelled = _handlePaymentCancelled;
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    setState(() {
-      _isPaymentProcessing = false;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Successful! Appointment Booked"),
-        backgroundColor: DoctorConsultationColorPalette.successGreen,
-      ),
-    );
-    
-    _showAppointmentConfirmedDialog();
+  void _handlePaymentSuccess(Map<String, dynamic> response) {
+    print('Payment successful: ${response['transactionId']}');
+    // Handle successful payment
+    // You can show a success message or navigate to a success page
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) {
-    setState(() {
-      _isPaymentProcessing = false;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Failed: ${response.message}"),
-        backgroundColor: DoctorConsultationColorPalette.errorRed,
-      ),
-    );
+  void _handlePaymentError(String error) {
+    print('Payment failed: $error');
+    // Handle payment error
+    // You can show an error message to the user
   }
 
-  void _handlePaymentCancelled(PaymentFailureResponse response) {
+  void _handlePaymentCancelled(String reason) {
     setState(() {
       _isPaymentProcessing = false;
     });
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment Cancelled"),
+        content: Text("Payment Cancelled: $reason"),
         backgroundColor: DoctorConsultationColorPalette.warningYellow,
       ),
     );

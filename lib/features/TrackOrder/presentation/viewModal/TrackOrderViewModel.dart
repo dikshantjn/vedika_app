@@ -108,6 +108,19 @@ class TrackOrderViewModel extends ChangeNotifier {
         _handleOrderStatusUpdate(data);
       });
 
+      // Add ambulance booking status update listener
+      _socket!.on('ambulanceBookingUpdated', (data) async {
+        debugPrint('🚑 Ambulance booking update received: $data');
+        await _handleAmbulanceStatusUpdate(data);
+      });
+      debugPrint('🩸 trying to open socket for bloodBankBookingUpdated:');
+
+      // Add blood bank booking status update listener
+      _socket!.on('bloodBankBookingUpdated', (data) async {
+        debugPrint('🩸 Blood bank booking update received: $data');
+        await _handleBloodBankStatusUpdate(data);
+      });
+
       // Add ping/pong handlers to keep connection alive
       _socket!.on('ping', (_) {
         _socket!.emit('pong');
@@ -197,6 +210,94 @@ class TrackOrderViewModel extends ChangeNotifier {
       }
     } catch (e, stackTrace) {
       debugPrint('❌ Error handling order status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  // Handle ambulance booking status updates
+  Future<void> _handleAmbulanceStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('🚑 Processing ambulance status update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🚑 Parsed data: $bookingData');
+      
+      final requestId = bookingData['requestId'];
+      final status = bookingData['status'];
+      
+      if (requestId != null && status != null) {
+        // Find and update the booking in the list
+        final bookingIndex = _ambulanceBookings.indexWhere((booking) => booking.requestId == requestId);
+        
+        if (bookingIndex != -1) {
+          debugPrint('🚑 Found booking at index: $bookingIndex');
+          
+          // Update the booking status
+          _ambulanceBookings[bookingIndex] = _ambulanceBookings[bookingIndex].copyWith(
+            status: status,
+          );
+          
+          // Notify listeners about the update
+          notifyListeners();
+          
+          debugPrint('✅ Ambulance booking $requestId status updated to: $status');
+        } else {
+          debugPrint('❌ Ambulance booking not found with ID: $requestId');
+          
+          // If booking not found, refresh bookings
+          await fetchActiveAmbulanceBookings();
+        }
+      } else {
+        debugPrint('❌ Missing requestId or status in data: $bookingData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling ambulance status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  // Handle blood bank booking status updates
+  Future<void> _handleBloodBankStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('🩸 Processing blood bank status update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🩸 Parsed data: $bookingData');
+      
+      final requestId = bookingData['requestId'];
+      final status = bookingData['status'];
+      
+      if (requestId != null && status != null) {
+        // Find and update the booking in the list
+        final bookingIndex = _bloodBankBookings.indexWhere((booking) => booking.bookingId == requestId);
+        
+        if (bookingIndex != -1) {
+          debugPrint('🩸 Found booking at index: $bookingIndex');
+          
+          // Update the booking status
+          _bloodBankBookings[bookingIndex] = _bloodBankBookings[bookingIndex].copyWith(
+            status: status,
+          );
+          
+          // Notify listeners about the update
+          notifyListeners();
+          
+          debugPrint('✅ Blood bank booking $requestId status updated to: $status');
+        } else {
+          debugPrint('❌ Blood bank booking not found with ID: $requestId');
+          
+          // If booking not found, refresh bookings
+          await fetchBloodBankBookings();
+        }
+      } else {
+        debugPrint('❌ Missing requestId or status in data: $bookingData');
+        debugPrint('❌ requestId is null: ${requestId == null}');
+        debugPrint('❌ status is null: ${status == null}');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling blood bank status update: $e');
       debugPrint('❌ Stack trace: $stackTrace');
     }
   }

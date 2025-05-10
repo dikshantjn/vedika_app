@@ -35,29 +35,93 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Consumer<AmbulanceBookingRequestViewModel>(
           builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
-              return Center(child: CircularProgressIndicator());
+            if (viewModel.isLoading && viewModel.bookingRequests.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading bookings...',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
 
             if (viewModel.errorMessage.isNotEmpty) {
-              return Center(child: Text(viewModel.errorMessage));
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      viewModel.errorMessage,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _onRefresh,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
             }
 
             final bookingRequests = viewModel.bookingRequests;
 
             if (bookingRequests.isEmpty) {
-              return Center(child: Text("No pending bookings."));
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.airport_shuttle_outlined,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No pending bookings',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
 
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: ListView.builder(
-                itemCount: bookingRequests.length,
-                itemBuilder: (context, index) {
-                  final booking = bookingRequests[index];
-                  return _buildBookingRequestCard(booking);
-                },
-              ),
+            return Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: ListView.builder(
+                    itemCount: bookingRequests.length,
+                    itemBuilder: (context, index) {
+                      final booking = bookingRequests[index];
+                      return _buildBookingRequestCard(booking);
+                    },
+                  ),
+                ),
+                if (viewModel.isLoading)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade200),
+                    ),
+                  ),
+              ],
             );
           },
         ),

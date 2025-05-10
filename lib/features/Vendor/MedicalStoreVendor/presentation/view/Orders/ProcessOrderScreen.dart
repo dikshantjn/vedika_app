@@ -10,32 +10,34 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 
 class ProcessOrderScreen extends StatefulWidget {
   final String prescriptionUrl;
-  final String orderId;
   final String customerName;
   final String orderDate;
+  final String orderId;
 
   const ProcessOrderScreen({
     Key? key,
     required this.prescriptionUrl,
-    required this.orderId,
     required this.customerName,
     required this.orderDate,
+    required this.orderId,
   }) : super(key: key);
 
   @override
   _ProcessOrderScreenState createState() => _ProcessOrderScreenState();
 }
 
-class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
+class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   MedicineProduct? selectedMedicine;
   final ScrollController _scrollController = ScrollController();
   bool _showOrderDetails = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
@@ -49,6 +51,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
@@ -60,23 +63,19 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
     double currentOffset = _scrollController.offset;
 
     if (currentOffset > _previousOffset && _showOrderDetails) {
-      // Scrolling Down - Hide the Order Details
       setState(() => _showOrderDetails = false);
     } else if (currentOffset < _previousOffset && !_showOrderDetails) {
-      // Scrolling Up - Show the Order Details
       setState(() => _showOrderDetails = true);
     }
 
-    _previousOffset = currentOffset; // Store the last offset value
+    _previousOffset = currentOffset;
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
-      resizeToAvoidBottomInset: false, // Prevent UI shifting due to keyboard
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -110,32 +109,36 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                         customerName: widget.customerName,
                         orderDate: widget.orderDate,
                         prescriptionUrl: widget.prescriptionUrl,
+                        onOrderConfirmed: () {
+                          if (mounted) {
+                            final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+                            viewModel.fetchOrders();
+                          }
+                        },
                       )
                     else
-                    // Show Button When Order Details Are Hidden
-                    // Show Button When Order Details Are Hidden
                       Align(
-                        alignment: Alignment.centerRight, // Align to right
+                        alignment: Alignment.centerRight,
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 10, right: 16), // Add right padding
+                          padding: const EdgeInsets.only(top: 10, right: 16),
                           child: OutlinedButton.icon(
                             onPressed: () {
                               setState(() {
-                                _showOrderDetails = true; // Show Order Details Again
+                                _showOrderDetails = true;
                               });
                             },
-                            icon: const Icon(Icons.visibility, color: Colors.blue, size: 18), // Small icon
+                            icon: const Icon(Icons.visibility, color: Colors.blue, size: 18),
                             label: const Text(
                               "Show Details",
-                              style: TextStyle(color: Colors.blue, fontSize: 14), // Smaller text
+                              style: TextStyle(color: Colors.blue, fontSize: 14),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.blue, width: 1), // Thin border
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Small padding
-                              minimumSize: const Size(10, 10), // Reduce minimum size
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Compact button size
+                              side: const BorderSide(color: Colors.blue, width: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: const Size(10, 10),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6), // Small rounded corners
+                                borderRadius: BorderRadius.circular(6),
                               ),
                             ),
                           ),
@@ -145,25 +148,72 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                 ),
               ),
 
-              // Expanded Scrollable Content
+              // Tab Bar below Order Details
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: MedicalStoreVendorColorPalette.primaryColor,
+                  labelColor: MedicalStoreVendorColorPalette.primaryColor,
+                  unselectedLabelColor: Colors.grey,
+                  tabs: const [
+                    Tab(text: "New Cart Items"),
+                    Tab(text: "Past Cart Items"),
+                  ],
+                ),
+              ),
+
+              // Tab View for Cart Items
               Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: // Expandable Sections
-                  Column(
-                    children: [
-                      // Expandable Section: Already Added to Cart
-                      ExpansionTile(
-                        initiallyExpanded: viewModel.fetchedCartItems.isNotEmpty,
-                        title: Text(
-                          "Already Added to Cart",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        children: [
-                          if (viewModel.fetchedCartItems.isNotEmpty)
-                            FetchedCartItemsWidget(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // New Cart Items Tab
+                    SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: viewModel.cart.isEmpty
+                          ? _emptyCartWidget()
+                          : Column(
+                              children: viewModel.cart.map((cartItem) {
+                                return SelectedMedicineWidget(
+                                  cartItem: cartItem,
+                                  onQuantityChanged: (newQuantity) {
+                                    setState(() {
+                                      int index = viewModel.cart.indexWhere(
+                                          (item) => item.productId == cartItem.productId);
+                                      if (index != -1) {
+                                        viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
+                                      }
+                                    });
+                                  },
+                                  onDelete: () {
+                                    setState(() {
+                                      viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
+                                    });
+                                  },
+                                  quantityController: _quantityController,
+                                );
+                              }).toList(),
+                            ),
+                    ),
+
+                    // Past Cart Items Tab
+                    SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: viewModel.fetchedCartItems.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: Text(
+                                  "No items have been added to the cart yet.",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          : FetchedCartItemsWidget(
                               fetchedCartItems: viewModel.fetchedCartItems,
                               onDelete: (cartId) async {
                                 bool isDeleted = await viewModel.deleteCartItem(cartId);
@@ -192,64 +242,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                                 }
                               },
                             ),
-                          if (viewModel.fetchedCartItems.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: Text(
-                                  "No items have been added to the cart yet.",
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-
-                      // Expandable Section: New Items to Add
-                      ExpansionTile(
-                        initiallyExpanded: viewModel.cart.isNotEmpty,
-                        title: Text(
-                          "New Items to Add",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        children: [
-                          if (viewModel.cart.isNotEmpty)
-                            Column(
-                              children: viewModel.cart.map((cartItem) {
-                                return SelectedMedicineWidget(
-                                  cartItem: cartItem,
-                                  onQuantityChanged: (newQuantity) {
-                                    setState(() {
-                                      int index = viewModel.cart.indexWhere(
-                                              (item) => item.productId == cartItem.productId);
-                                      if (index != -1) {
-                                        viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
-                                      }
-                                    });
-                                  },
-                                  onDelete: () {
-                                    setState(() {
-                                      viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
-                                    });
-                                  },
-                                  quantityController: _quantityController,
-                                );
-                              }).toList(),
-                            ),
-                          if (viewModel.cart.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: Text(
-                                  "No new medicines selected yet.",
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -295,7 +289,6 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                   return;
                 }
 
-                // ✅ Ensure orderId is passed
                 final resultMessage = await viewModel.addToCartDB(widget.orderId);
 
                 if (!mounted) return;
@@ -311,8 +304,8 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
                 );
 
                 if (resultMessage.startsWith("✅")) {
-                  await viewModel.fetchCartItems(widget.orderId); // ✅ Fetch cart items after update
-                  viewModel.clearCarts(); // ✅ Optionally clear the cart
+                  await viewModel.fetchCartItems(widget.orderId);
+                  viewModel.clearCarts();
                 }
               },
               child: const Text(
@@ -329,7 +322,6 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> {
     );
   }
 
-  // 🔹 Widget to show empty cart message
   Widget _emptyCartWidget() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),

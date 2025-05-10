@@ -15,10 +15,10 @@ class BloodBankBooking {
   final double deliveryFees;
   final double gst;
   final double discount;
-  final double totalAmount;
+  double totalAmount;
   final String deliveryType;
-  final String paymentStatus;
-   String status; // confirmed, completed, cancelled
+  String paymentStatus;
+  String status;
   final DateTime createdAt;
   final DateTime? scheduledDate;
   final String? notes;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
@@ -10,6 +12,7 @@ import 'package:vedika_healthcare/features/medicineDelivery/data/services/Medici
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
 import 'package:vedika_healthcare/features/home/data/models/Product.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:convert';
 
 class CartAndPlaceOrderViewModel extends ChangeNotifier {
   final UserCartService _cartService;
@@ -20,7 +23,10 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   bool _isCouponApplied = false;
   double _platformFee = 10.0;
   bool _isLoading = false;
-  String _addressId = ''; // Initialize with an empty string
+  String _addressId = '';
+  int _totalItemCount = 0; // Add this field to store the count
+  IO.Socket? _socket;
+  bool mounted = true;
 
   double get subtotal => _subtotal;
   double get deliveryCharge => _deliveryCharge;
@@ -29,22 +35,23 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   bool get isCouponApplied => _isCouponApplied;
   bool get isLoading => _isLoading;
   String get addressId => _addressId;
+  int get totalItemCount => _totalItemCount; // Return stored count
 
   // 🛒 **Global Lists to Store Data**
-  List<CartModel> _cartItems = []; // Add this list to store cart items
-  List<MedicineOrderModel> _orders = []; // Store Orders
-  Map<String, List<MedicineProduct>> _productDetails = {}; // Store Products per Cart ID
+  List<CartModel> _cartItems = [];
+  List<MedicineOrderModel> _orders = [];
+  Map<String, List<MedicineProduct>> _productDetails = {};
 
   // **Getters to Access Data Globally**
   List<MedicineOrderModel> get orders => _orders;
   List<CartModel> get cartItems => _cartItems;
   Map<String, List<MedicineProduct>> get productDetails => _productDetails;
 
-
   CartAndPlaceOrderViewModel(this._cartService) {
     _razorPayService.onPaymentSuccess = _handlePaymentSuccess;
     _razorPayService.onPaymentError = _handlePaymentFailure;
-    _razorPayService.onPaymentCancelled = _handlePaymentFailure; // Treat cancellation as a failure
+    _razorPayService.onPaymentCancelled = _handlePaymentFailure;
+    initSocketConnection();
   }
 
   Function(String paymentId)? _onPaymentSuccess;
@@ -55,7 +62,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   final MedicineOrderDeliveryRazorPayService _razorPayService =
   MedicineOrderDeliveryRazorPayService();
-
 
   void setAddressId(String addressId) {
     if (_addressId != addressId) {
@@ -82,7 +88,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       
       // Fetch medicine orders
       _orders = await _cartService.fetchOrdersByUserId(userId);
-      _cartItems.clear(); // Clear existing cart items
+      _cartItems.clear();
 
       // Add medicine items to cart
       for (var order in _orders) {
@@ -93,6 +99,9 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // Add back product items
       _cartItems.addAll(productItems);
       
+      // Update total item count once
+      _totalItemCount = _cartItems.length;
+      
       _calculateSubtotal(_cartItems);
     } catch (e) {
       debugPrint("❌ Error fetching orders and cart items: $e");
@@ -101,6 +110,13 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Update total item count when cart items change
+  void _updateTotalItemCount() {
+    _totalItemCount = _cartItems.length; // Count unique items only
+    notifyListeners();
+  }
+
   // **🔹 Fetch and Store Cart Items by Order ID**
   Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
@@ -128,7 +144,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     }
   }
 
-
   // **🔹 Get Products for a Specific Cart ID**
   List<MedicineProduct> getProductDetails(String cartId) {
     return _productDetails[cartId] ?? [];
@@ -137,12 +152,29 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // **🔹 Remove Item from Cart and Update State**
   Future<void> removeFromCart(String cartId) async {
     try {
+      debugPrint('🗑️ Removing item from cart: $cartId');
+      
+      // First remove from backend
       await _cartService.deleteCartItem(cartId);
+      
+      // Then remove from local state
       _cartItems.removeWhere((item) => item.cartId == cartId);
+      
+      // Update totals and count
       _calculateSubtotal(_cartItems);
-      notifyListeners(); // ✅ Update UI
+      _updateTotalItemCount();
+      
+      // Notify listeners to update UI
+      notifyListeners();
+      
+      debugPrint('✅ Item removed successfully. Remaining items: ${_cartItems.length}');
     } catch (e) {
       debugPrint("❌ Error removing item from cart: $e");
+      // Even if there's an error, try to remove from local state
+      _cartItems.removeWhere((item) => item.cartId == cartId);
+      _calculateSubtotal(_cartItems);
+      _updateTotalItemCount();
+      notifyListeners();
     }
   }
 
@@ -179,7 +211,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       debugPrint("❌ Invalid coupon code");
     }
   }
-
 
   // **🔹 Remove Coupon**
   void removeCoupon() {
@@ -221,12 +252,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       _total = newTotal;
       notifyListeners();
     }
-  }
-
-  // Getter for the total item count (just the number of cart items)
-  int get totalItemCount {
-    print("_cartItems ${_cartItems.length}");
-    return _cartItems.length; // Simply count the number of items in the cart
   }
 
   void setDiscount(double discount) {
@@ -344,8 +369,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   // **Handle Payment Failure (including Cancellation)**
   void _handlePaymentFailure(PaymentFailureResponse response) {
     debugPrint("❌ Payment Failed: ${response.code}");
@@ -354,8 +377,155 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for cart updates...");
+    try {
+      String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        debugPrint("❌ User ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'userId': userId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for cart updates');
+        _socket!.emit('register', userId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Add event listener for cart updates
+      _socket!.on('UserCart', (data) async {
+        debugPrint('🛒 Cart update received: $data');
+        await _handleCartUpdate(data);
+      });
+
+      // Add event listener for medicine order updates
+      _socket!.on('MedicineOrderUpdate', (data) async {
+        debugPrint('💊 Medicine order update received: $data');
+        await _handleMedicineOrderUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for cart updates...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleCartUpdate(dynamic data) async {
+    try {
+      debugPrint('🛒 Processing cart update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> cartData = data is String ? json.decode(data) : data;
+      debugPrint('🛒 Parsed data: $cartData');
+      
+      final orderId = cartData['orderId'];
+      final newCartItems = cartData['cartItems'];
+      final totalItems = cartData['totalItems'];
+      
+      if (orderId != null && newCartItems != null) {
+        // Convert new items to CartModel objects
+        List<CartModel> parsedNewItems = (newCartItems as List).map((item) => CartModel.fromJson(item)).toList();
+        
+        // Replace the entire cart items list with the new items
+        // This ensures we have the exact state from the backend
+        _cartItems = parsedNewItems;
+        
+        // Update total item count based on unique items
+        _totalItemCount = _cartItems.length;
+        
+        // Recalculate totals
+        _calculateSubtotal(_cartItems);
+        
+        // Notify listeners to update UI
+        if (mounted) {
+          notifyListeners();
+        }
+        
+        debugPrint('✅ Cart updated successfully. Total items: $_totalItemCount');
+        debugPrint('🛒 Current cart items: ${_cartItems.length}');
+      } else {
+        debugPrint('❌ Missing orderId or cartItems in data: $cartData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling cart update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _handleMedicineOrderUpdate(dynamic data) async {
+    try {
+      debugPrint('💊 Processing medicine order update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
+      debugPrint('💊 Parsed data: $orderData');
+      
+      // Refresh cart data
+      await fetchOrdersAndCartItems();
+      
+      debugPrint('✅ Cart refreshed after medicine order update');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling medicine order update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
   @override
   void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
     _razorPayService.clear();
     super.dispose();
   }
@@ -373,6 +543,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       );
 
       _cartItems.add(cartItem);
+      _updateTotalItemCount(); // Update count when item is added
       calculateTotal();
       notifyListeners();
 

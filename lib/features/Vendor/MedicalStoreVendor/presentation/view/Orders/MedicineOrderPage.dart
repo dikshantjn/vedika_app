@@ -12,13 +12,15 @@ class MedicineOrderPage extends StatefulWidget {
   _MedicineOrderPageState createState() => _MedicineOrderPageState();
 }
 
-class _MedicineOrderPageState extends State<MedicineOrderPage> {
+class _MedicineOrderPageState extends State<MedicineOrderPage> with SingleTickerProviderStateMixin {
   late MedicineOrderViewModel viewModel;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchAllData();
     });
@@ -29,91 +31,143 @@ class _MedicineOrderPageState extends State<MedicineOrderPage> {
     await viewModel.fetchOrders();
   }
 
+  // Public method to refresh data
+  Future<void> refreshData() async {
+    await _fetchAllData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
-      body: Consumer<MedicineOrderViewModel>(
-        builder: (context, viewModel, child) {
-          final isLoadingAll = viewModel.isLoadingRequests || viewModel.isLoadingOrders;
-          final hasRequests = viewModel.prescriptionRequests.isNotEmpty;
-          final hasOrders = viewModel.orders.isNotEmpty;
-
-          if (isLoadingAll) {
-            // Show centered loader
-            return Center(
-              child: CircularProgressIndicator(
-                color: MedicalStoreVendorColorPalette.primaryColor,
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            color: MedicalStoreVendorColorPalette.primaryColor,
-            backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
-            onRefresh: _fetchAllData,
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+      body: Column(
+        children: [
+          // Custom Tab Bar
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: MedicalStoreVendorColorPalette.primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: MedicalStoreVendorColorPalette.primaryColor,
+              indicatorWeight: 3,
+              tabs: const [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Prescription Requests Section
-                      if (viewModel.isLoadingRequests && !isLoadingAll)
-                        const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (hasRequests)
-                        OrderRequestsWidget(viewModel: viewModel),
-
-                      // Divider only if both sections have content
-                      if (hasRequests && hasOrders)
-                        const Divider(),
-
-                      // Orders Section
-                      if (viewModel.isLoadingOrders && !isLoadingAll)
-                        const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else if (hasOrders)
-                        OrdersWidget(viewModel: viewModel),
-
-                      // Empty state
-                      if (!hasRequests && !hasOrders)
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.7,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.inbox_rounded,
-                                  size: 80,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  "No prescription requests or orders found",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
+                      Icon(Icons.description_outlined),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          "Requests",
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          "Orders",
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+
+          // Tab Content
+          Expanded(
+            child: Consumer<MedicineOrderViewModel>(
+              builder: (context, viewModel, child) {
+                final isLoadingAll = viewModel.isLoadingRequests || viewModel.isLoadingOrders;
+
+                if (isLoadingAll) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Prescription Requests Tab
+                    RefreshIndicator(
+                      color: MedicalStoreVendorColorPalette.primaryColor,
+                      backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+                      onRefresh: () async {
+                        await viewModel.fetchPrescriptionRequests();
+                      },
+                      child: viewModel.prescriptionRequests.isEmpty
+                          ? _buildEmptyState("No prescription requests found")
+                          : SingleChildScrollView(
+                              child: OrderRequestsWidget(
+                                viewModel: viewModel,
+                                onRequestAccepted: refreshData,
+                              ),
+                            ),
+                    ),
+
+                    // Orders Tab
+                    RefreshIndicator(
+                      color: MedicalStoreVendorColorPalette.primaryColor,
+                      backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+                      onRefresh: () async {
+                        await viewModel.fetchOrders();
+                      },
+                      child: viewModel.orders.isEmpty
+                          ? _buildEmptyState("No orders found")
+                          : SingleChildScrollView(
+                              child: OrdersWidget(viewModel: viewModel),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inbox_rounded,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

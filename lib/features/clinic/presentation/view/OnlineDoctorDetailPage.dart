@@ -34,42 +34,45 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
     _paymentService.onPaymentCancelled = _handlePaymentCancelled;
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+  void _handlePaymentSuccess(Map<String, dynamic> response) {
     setState(() {
       _isPaymentProcessing = false;
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment Successful! Appointment Booked"),
-        backgroundColor: DoctorConsultationColorPalette.successGreen,
-      ),
-    );
+    print('Payment successful: ${response['transactionId']}');
     
+    // Show success dialog
     _showAppointmentConfirmedDialog();
+    
+    // Navigate to order history after a delay
+    Future.delayed(Duration(seconds: 2), () {
+      Navigator.pushNamed(context, AppRoutes.orderHistory);
+    });
   }
 
-  void _handlePaymentError(PaymentFailureResponse response) {
+  void _handlePaymentError(String error) {
     setState(() {
       _isPaymentProcessing = false;
     });
     
+    print('Payment failed: $error');
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment Failed: ${response.message}"),
+        content: Text("Payment failed: $error"),
         backgroundColor: DoctorConsultationColorPalette.errorRed,
       ),
     );
   }
 
-  void _handlePaymentCancelled(PaymentFailureResponse response) {
+  void _handlePaymentCancelled(String reason) {
     setState(() {
       _isPaymentProcessing = false;
     });
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment Cancelled"),
+        content: Text("Payment Cancelled: $reason"),
         backgroundColor: DoctorConsultationColorPalette.warningYellow,
       ),
     );
@@ -862,35 +865,58 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
     );
   }
 
-  void _processPayment() {
-    // Extract fee amount as double
-    final feeString = widget.doctor.consultationFeesRange.split('-')[0];
-    final double amount = double.tryParse(feeString) ?? 500.0;
-    
-    // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
-    final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
-    
+  void _processPayment() async {
+    if (_selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please select a time slot"),
+          backgroundColor: DoctorConsultationColorPalette.warningYellow,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isPaymentProcessing = true;
+    });
+
     try {
-      _paymentService.openPaymentGateway(
+      // Extract fee amount as double
+      final feeString = widget.doctor.consultationFeesRange.split('-')[0];
+      final double amount = double.tryParse(feeString) ?? 500.0;
+      
+      // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
+      final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
+
+      // Initialize SDK with correct parameters
+      await _paymentService.initializePhonePe();
+      
+      // Process payment
+      await _paymentService.openPaymentGateway(
         doctorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
-        isOnline: true, // This is an online appointment
+        isOnline: true,
         date: _selectedDate,
         time: time,
         amount: amount,
         vendorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
+        patientPhone: "", // Add patient phone if available
+        patientEmail: "", // Add patient email if available
         onPaymentSuccess: _handlePaymentSuccess,
         onPaymentError: _handlePaymentError,
         onPaymentCancelled: _handlePaymentCancelled,
+        onRefreshData: () {
+          setState(() {});
+        },
       );
     } catch (e) {
-      print('❌ Error opening payment gateway: $e');
+      print('❌ Error processing payment: $e');
       setState(() {
         _isPaymentProcessing = false;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error opening payment gateway: $e"),
+          content: Text("Error processing payment: $e"),
           backgroundColor: DoctorConsultationColorPalette.errorRed,
         ),
       );

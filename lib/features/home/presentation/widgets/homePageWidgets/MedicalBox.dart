@@ -9,6 +9,30 @@ class MedicalBoxRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> items = [
       {
+        "title": "Ambulance",
+        "subtitle": "Emergency",
+        "icon": Icons.emergency_rounded,
+        "bgColor": MedicalBoxColors.ambulance,
+        "textColor": MedicalBoxColors.ambulanceText,
+        "route": "/ambulance"
+      },
+      {
+        "title": "Blood",
+        "subtitle": "Order",
+        "icon": Icons.bloodtype_rounded,
+        "bgColor": MedicalBoxColors.bloodBank,
+        "textColor": MedicalBoxColors.bloodBankText,
+        "route": "/bloodbank"
+      },
+      {
+        "title": "Medicine",
+        "subtitle": "Order",
+        "icon": Icons.medication_rounded,
+        "bgColor": MedicalBoxColors.medicine,
+        "textColor": MedicalBoxColors.medicineText,
+        "route": "/medicineOrder"
+      },
+      {
         "title": "Hospital",
         "subtitle": "Book",
         "icon": Icons.local_hospital_rounded,
@@ -25,36 +49,12 @@ class MedicalBoxRow extends StatelessWidget {
         "route": "/clinic/consultationType"
       },
       {
-        "title": "Medicine",
-        "subtitle": "Order",
-        "icon": Icons.medication_rounded,
-        "bgColor": MedicalBoxColors.medicine,
-        "textColor": MedicalBoxColors.medicineText,
-        "route": "/medicineOrder"
-      },
-      {
         "title": "Lab Test",
         "subtitle": "Book",
         "icon": Icons.science_rounded,
         "bgColor": MedicalBoxColors.labTest,
         "textColor": MedicalBoxColors.labTestText,
         "route": "/labTest"
-      },
-      {
-        "title": "Blood",
-        "subtitle": "Order",
-        "icon": Icons.bloodtype_rounded,
-        "bgColor": MedicalBoxColors.bloodBank,
-        "textColor": MedicalBoxColors.bloodBankText,
-        "route": "/bloodbank"
-      },
-      {
-        "title": "Ambulance",
-        "subtitle": "Emergency",
-        "icon": Icons.emergency_rounded,
-        "bgColor": MedicalBoxColors.ambulance,
-        "textColor": MedicalBoxColors.ambulanceText,
-        "route": "/ambulance"
       },
     ];
 

@@ -190,7 +190,7 @@ class OrdersWidget extends StatelessWidget {
     String? prescriptionUrl = await viewModel.fetchPrescriptionUrl(prescriptionId);
 
     if (prescriptionUrl != null && prescriptionUrl.isNotEmpty) {
-      Navigator.push(
+      final bool? orderConfirmed = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (context) => ProcessOrderScreen(
@@ -201,6 +201,11 @@ class OrdersWidget extends StatelessWidget {
           ),
         ),
       );
+
+      // If order was confirmed, refresh the orders list
+      if (orderConfirmed == true) {
+        await viewModel.fetchOrders();
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Prescription not found!")),

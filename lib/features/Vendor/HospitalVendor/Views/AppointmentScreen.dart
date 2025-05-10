@@ -107,7 +107,11 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
               itemCount: bookings.length,
               itemBuilder: (context, index) {
                 final booking = bookings[index];
-                return BedBookingCard(booking: booking, viewModel: viewModel);
+                return BedBookingCard(
+                  key: ValueKey(booking.bedBookingId), // Add key for proper widget updates
+                  booking: booking,
+                  viewModel: viewModel,
+                );
               },
             ),
           );
@@ -130,6 +134,8 @@ class BedBookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPending = booking.status.toLowerCase() == 'pending';
+    final isWaitingForPayment = booking.status == 'WaitingForPayment';
+    final isCompleted = booking.status == 'completed';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -233,15 +239,19 @@ class BedBookingCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isPending 
                         ? HospitalVendorColorPalette.warningYellow.withOpacity(0.1)
-                        : HospitalVendorColorPalette.successGreen.withOpacity(0.1),
+                        : isWaitingForPayment
+                            ? HospitalVendorColorPalette.primaryBlue.withOpacity(0.1)
+                            : HospitalVendorColorPalette.successGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    isPending ? 'PENDING' : 'ACCEPTED',
+                    booking.status.toUpperCase(),
                     style: TextStyle(
                       color: isPending 
                           ? HospitalVendorColorPalette.warningYellow
-                          : HospitalVendorColorPalette.successGreen,
+                          : isWaitingForPayment
+                              ? HospitalVendorColorPalette.primaryBlue
+                              : HospitalVendorColorPalette.successGreen,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -293,39 +303,49 @@ class BedBookingCard extends StatelessWidget {
                     color: HospitalVendorColorPalette.primaryBlue,
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: isPending
-                      ? () => viewModel.acceptAppointment(booking.bedBookingId!)
-                      : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProcessAppointmentScreen(
-                                booking: booking,
-                              ),
-                            ),
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isPending
-                        ? HospitalVendorColorPalette.successGreen
-                        : HospitalVendorColorPalette.primaryBlue,
-                    foregroundColor: HospitalVendorColorPalette.textInverse,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                if (!isCompleted) ...[
+                  ElevatedButton(
+                    onPressed: isPending
+                        ? () => viewModel.acceptAppointment(booking.bedBookingId!)
+                        : isWaitingForPayment
+                            ? () => viewModel.notifyUserPayment(booking.bedBookingId!)
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProcessAppointmentScreen(
+                                      booking: booking,
+                                    ),
+                                  ),
+                                );
+                              },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isPending
+                          ? HospitalVendorColorPalette.successGreen
+                          : isWaitingForPayment
+                              ? HospitalVendorColorPalette.warningYellow
+                              : HospitalVendorColorPalette.primaryBlue,
+                      foregroundColor: HospitalVendorColorPalette.textInverse,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: Text(
+                      isPending 
+                          ? 'Accept' 
+                          : isWaitingForPayment
+                              ? 'Notify Payment'
+                              : 'Process',
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
-                  child: Text(
-                    isPending ? 'Accept' : 'Process',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
+                ],
               ],
             ),
           ],

@@ -1333,6 +1333,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  phonepe_payment_sdk:
+    dependency: "direct main"
+    description:
+      name: phonepe_payment_sdk
+      sha256: "33f541e788e41173ce853752d60e94635543f47a82d1e6dfbe2512cff4f3b666"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   platform:
     dependency: transitive
     description:

@@ -2,13 +2,17 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logger/web.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceBookingService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
+import 'dart:convert';
 
 class AmbulanceBookingRequestViewModel extends ChangeNotifier {
   final AmbulanceBookingService _bookingService = AmbulanceBookingService();
   final VendorLoginService _loginService = VendorLoginService();
+  IO.Socket? _socket;
 
   List<AmbulanceBooking> bookingRequests = [];
   bool isLoading = false;
@@ -19,6 +23,99 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
   // 👇 For toast status
   bool _isAccepted = false;
   bool get isAccepted => _isAccepted;
+
+  AmbulanceBookingRequestViewModel() {
+    initSocketConnection();
+  }
+
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for ambulance bookings...");
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        debugPrint("❌ Vendor ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'vendorId': vendorId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for ambulance bookings');
+        _socket!.emit('registerVendor', vendorId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Add event listener for vendorAmbulanceBookingUpdated
+      _socket!.on('vendorAmbulanceBookingUpdated', (data) async {
+        debugPrint('🔄 Ambulance booking update received: $data');
+        await _handleAmbulanceBookingUpdate(data);
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for ambulance bookings...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleAmbulanceBookingUpdate(dynamic data) async {
+    try {
+      debugPrint('🚑 Processing ambulance booking update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🚑 Parsed data: $bookingData');
+      
+      // Refresh the bookings list when any update is received
+      await fetchPendingBookings();
+      debugPrint('✅ Refreshed bookings after update');
+      
+    } catch (e) {
+      debugPrint('❌ Error handling ambulance booking update: $e');
+    }
+  }
 
   // ----------------------------
   // 👇 Service Details Fields
@@ -127,7 +224,7 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> addOrUpdateServiceDetails(String requestId, BuildContext context) async {
+  Future<bool> addOrUpdateServiceDetails(String requestId) async {
     final pickup = pickupLocationController.text;
     final drop = dropLocationController.text;
     final distance = double.tryParse(totalDistanceController.text) ?? 0.0;
@@ -150,33 +247,10 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
         vehicleType: vehicleType,
         totalAmount: totalAmount,
       );
-
-      final snackBar = SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: 'Success!',
-          message: 'Service details updated successfully!',
-          contentType: ContentType.success,
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
+      return true;
     } catch (e, stackTrace) {
       _logger.e("Failed to update service details", error: e, stackTrace: stackTrace);
-
-      final snackBar = SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: 'Error!',
-          message: 'Failed to update service details',
-          contentType: ContentType.failure,
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      return false;
     }
   }
 
@@ -215,6 +289,10 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
     pickupLocationController.dispose();
     dropLocationController.dispose();
     totalDistanceController.dispose();

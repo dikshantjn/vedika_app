@@ -157,7 +157,10 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            BloodBankBookingTrackingCard(bookings: viewModel.bloodBankBookings),
+            BloodBankBookingTrackingCard(
+              bookings: viewModel.bloodBankBookings,
+              onRefreshData: () => viewModel.fetchBloodBankBookings(),
+            ),
             const SizedBox(height: 20),
           ],
           if (viewModel.ambulanceBookings.isNotEmpty) ...[

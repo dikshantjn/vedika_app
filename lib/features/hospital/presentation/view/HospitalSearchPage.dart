@@ -20,10 +20,7 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final viewModel = Provider.of<HospitalSearchViewModel>(context, listen: false);
       await viewModel.ensureLocationEnabled(context);
-      
-
-        await viewModel.loadUserBookings( context);
-
+      await viewModel.loadInitialBookings(context);
     });
   }
 

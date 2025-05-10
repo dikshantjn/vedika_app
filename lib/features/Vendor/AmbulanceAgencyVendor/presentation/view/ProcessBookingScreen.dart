@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/BookingRequest/ServiceDetailsCard.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/BookingRequest/ServiceDetailsDialog.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ProcessBookingScreen extends StatefulWidget {
   final String requestId;
@@ -142,13 +143,7 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                       vehicleType: booking.vehicleType,
                     );
 
-                    showDialog(
-                      context: context,
-                      builder: (_) => ServiceDetailsDialog(
-                        viewModel: viewModel,
-                        requestId: widget.requestId,
-                      ),
-                    );
+                    _showServiceDetailsDialog();
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.cyan, width: 1.5),
@@ -165,6 +160,17 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showServiceDetailsDialog() async {
+    final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
+    await showDialog(
+      context: context,
+      builder: (context) => ServiceDetailsDialog(
+        viewModel: viewModel,
+        requestId: widget.requestId,
       ),
     );
   }

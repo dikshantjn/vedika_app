@@ -37,6 +37,17 @@ class _BookingsContentState extends State<BookingsContent> with SingleTickerProv
     if (widget.initialTab != null) {
       _tabController.animateTo(widget.initialTab!);
     }
+
+    // Add listener for booking updates
+    _viewModel.addListener(_onBookingUpdated);
+  }
+
+  void _onBookingUpdated() {
+    if (mounted) {
+      setState(() {
+        // The UI will automatically refresh when the ViewModel notifies listeners
+      });
+    }
   }
   
   Future<void> _loadData() async {
@@ -45,6 +56,7 @@ class _BookingsContentState extends State<BookingsContent> with SingleTickerProv
 
   @override
   void dispose() {
+    _viewModel.removeListener(_onBookingUpdated);
     _tabController.dispose();
     super.dispose();
   }

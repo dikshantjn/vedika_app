@@ -26,7 +26,29 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
   final TextEditingController _deliveryTypeController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Listen to changes in the booking status
+    context.read<BloodBankBookingViewModel>().addListener(_onBookingUpdated);
+  }
+
+  void _onBookingUpdated() {
+    if (mounted) {
+      setState(() {
+        // Update the local booking with the latest data from ViewModel
+        final updatedBooking = context.read<BloodBankBookingViewModel>().getBookingById(widget.booking.bookingId!);
+        if (updatedBooking != null) {
+          widget.booking.status = updatedBooking.status;
+          widget.booking.paymentStatus = updatedBooking.paymentStatus;
+          widget.booking.totalAmount = updatedBooking.totalAmount;
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    context.read<BloodBankBookingViewModel>().removeListener(_onBookingUpdated);
     _notesController.dispose();
     _totalAmountController.dispose();
     _discountController.dispose();
@@ -840,6 +862,47 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
   }
 
   Widget _buildNotifyPaymentButton() {
+    // Don't show the button if payment is completed
+    if (widget.booking.status.toLowerCase() == 'paymentcompleted' ||
+        widget.booking.paymentStatus?.toLowerCase() == 'paid') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Payment Completed',
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Amount: ₹${widget.booking.totalAmount?.toStringAsFixed(2) ?? '0.00'}',
+              style: TextStyle(
+                color: Colors.green.shade700,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SizedBox(
       width: double.infinity,
       height: 56,

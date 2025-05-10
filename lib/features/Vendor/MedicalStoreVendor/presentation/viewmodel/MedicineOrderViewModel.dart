@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
@@ -10,6 +12,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/servic
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/PrescriptionRequestService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'dart:convert';
 
 class MedicineOrderViewModel extends ChangeNotifier {
   final PrescriptionRequestService _prescriptionService = PrescriptionRequestService();
@@ -17,6 +20,8 @@ class MedicineOrderViewModel extends ChangeNotifier {
   final MedicineProductService _medicineService = MedicineProductService();
   final VendorLoginService _loginService = VendorLoginService();
   final OrderCartService _cartService = OrderCartService();
+  IO.Socket? _socket;
+  bool mounted = true;
 
   List<MedicineOrderModel> _orders = [];
   List<PrescriptionRequestModel> _prescriptionRequests = [];
@@ -34,7 +39,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isProcessingOrder => _isProcessingOrder;
-  List<CartModel> _fetchedCartItems = []; // Separate list for fetched cart items
+  List<CartModel> _fetchedCartItems = [];
 
   List<CartModel> get fetchedCartItems => _fetchedCartItems;
 
@@ -44,16 +49,131 @@ class MedicineOrderViewModel extends ChangeNotifier {
   bool isAccepting = false;
   String acceptMessage = "";
 
-
-  String _orderStatus = "Loading...";  // Default status
+  String _orderStatus = "Loading...";
   String get orderStatus => _orderStatus;
   bool isOrderAccepted = false;
 
   bool _disposed = false;
 
+  MedicineOrderViewModel() {
+    initSocketConnection();
+  }
+
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for medicine orders...");
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        debugPrint("❌ Vendor ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'vendorId': vendorId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for medicine orders');
+        _socket!.emit('registerVendor', vendorId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Add event listener for MedicineOrderUpdate
+      _socket!.on('MedicineOrderUpdate', (data) async {
+        debugPrint('🔄 Medicine order update received: $data');
+        await _handleMedicineOrderUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for medicine orders...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleMedicineOrderUpdate(dynamic data) async {
+    try {
+      debugPrint('💊 Processing medicine order update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
+      debugPrint('💊 Parsed data: $orderData');
+      
+      final prescriptionId = orderData['prescriptionId'];
+      final userId = orderData['userId'];
+      final distance = orderData['distance'];
+      
+      if (prescriptionId != null) {
+        debugPrint('✅ New medicine order update received, refreshing data...');
+        
+        // Refresh both orders and prescription requests
+        await Future.wait([
+          fetchOrders(),
+          fetchPrescriptionRequests(),
+        ]);
+        
+        debugPrint('✅ Refreshed orders and prescription requests after update');
+      } else {
+        debugPrint('❌ Missing prescriptionId in data: $orderData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling medicine order update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
   @override
   void dispose() {
     _disposed = true;
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
     super.dispose();
   }
 
@@ -144,8 +264,6 @@ class MedicineOrderViewModel extends ChangeNotifier {
       }
     }
   }
-
-
 
   /// **🔹 Fetch Prescription URL**
   Future<String?> fetchPrescriptionUrl(String prescriptionId) async {
@@ -243,8 +361,6 @@ class MedicineOrderViewModel extends ChangeNotifier {
       return "❌ Error adding to cart DB: $e";
     }
   }
-
-
 
   /// **🔹 Fetch Cart Items**
   Future<void> fetchCart() async {
@@ -378,5 +494,4 @@ class MedicineOrderViewModel extends ChangeNotifier {
       debugPrint("Error updating order status: $e");
     }
   }
-
 }

@@ -7,6 +7,7 @@ class OrderDetailsWidget extends StatefulWidget {
   final String customerName;
   final String orderDate;
   final String prescriptionUrl;
+  final VoidCallback onOrderConfirmed;
 
   const OrderDetailsWidget({
     Key? key,
@@ -14,6 +15,7 @@ class OrderDetailsWidget extends StatefulWidget {
     required this.customerName,
     required this.orderDate,
     required this.prescriptionUrl,
+    required this.onOrderConfirmed,
   }) : super(key: key);
 
   @override
@@ -21,19 +23,32 @@ class OrderDetailsWidget extends StatefulWidget {
 }
 
 class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
+  String? _currentStatus;
+
   @override
   void initState() {
     super.initState();
     // Fetch order status when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
-      viewModel.fetchOrderStatus(widget.orderId);
+      viewModel.fetchOrderStatus(widget.orderId).then((_) {
+        if (mounted) {
+          setState(() {
+            _currentStatus = viewModel.orderStatus;
+          });
+        }
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MedicineOrderViewModel>(context);
+
+    // Update local status if viewModel status changes
+    if (_currentStatus != viewModel.orderStatus) {
+      _currentStatus = viewModel.orderStatus;
+    }
 
     return Container(
       width: double.infinity,
@@ -87,14 +102,27 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
               PopupMenuButton<String>(
                 icon: Icon(Icons.more_vert, color: Colors.grey[700]),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onSelected: (value) {
-                  // Handle menu item selection
-                  if (value == "Ready to Pickup") {
-                    viewModel.updateOrderStatus(widget.orderId, "ReadyForPickup");
-                  } else if (value == "Out for Delivery") {
-                    viewModel.updateOrderStatus(widget.orderId, "OutForDelivery");
-                  } else if (value == "Delivered") {
-                    viewModel.updateOrderStatus(widget.orderId, "Delivered");
+                onSelected: (value) async {
+                  String newStatus = "";
+                  switch (value) {
+                    case "Ready to Pickup":
+                      newStatus = "ReadyForPickup";
+                      break;
+                    case "Out for Delivery":
+                      newStatus = "OutForDelivery";
+                      break;
+                    case "Delivered":
+                      newStatus = "Delivered";
+                      break;
+                  }
+                  
+                  if (newStatus.isNotEmpty) {
+                    await viewModel.updateOrderStatus(widget.orderId, newStatus);
+                    if (mounted) {
+                      setState(() {
+                        _currentStatus = newStatus;
+                      });
+                    }
                   }
                 },
                 itemBuilder: (BuildContext context) => [
@@ -150,9 +178,9 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     ),
                   ),
                 ],
-                offset: Offset(0, 8),  // Slightly adjust the dropdown position
-                color: Colors.white,   // White background for the dropdown
-                elevation: 5,          // Add elevation for a subtle shadow effect
+                offset: const Offset(0, 8),
+                color: Colors.white,
+                elevation: 5,
               )
             ],
           ),
@@ -166,13 +194,27 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Show Status or Accept Order button based on order status
-              if (viewModel.orderStatus == "PrescriptionVerified")
+              if (_currentStatus == "PrescriptionVerified" || _currentStatus == "Pending")
                 OutlinedButton(
                   onPressed: () async {
                     await viewModel.acceptOrder(widget.orderId);
                     if (context.mounted) {
+                      if (viewModel.isOrderAccepted) {
+                        setState(() {
+                          _currentStatus = "Accepted";
+                        });
+                        // Refresh the order status to ensure consistency
+                        await viewModel.fetchOrderStatus(widget.orderId);
+                        // Call the callback to refresh orders list without navigating back
+                        widget.onOrderConfirmed();
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(viewModel.acceptMessage)),
+                        SnackBar(
+                          content: Text(viewModel.acceptMessage),
+                          backgroundColor: viewModel.isOrderAccepted 
+                              ? Colors.green 
+                              : Colors.red,
+                        ),
                       );
                     }
                   },
@@ -185,21 +227,21 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   ),
                   child: viewModel.isAccepting
                       ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.green,
-                    ),
-                  )
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.green,
+                          ),
+                        )
                       : const Text(
-                    "Confirm Order",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                          "Confirm Order",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 )
               else
                 Container(
@@ -210,7 +252,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     border: Border.all(color: Colors.green.withOpacity(0.3)),
                   ),
                   child: Text(
-                    viewModel.orderStatus == "Accepted" ? "Order Confirmed" : viewModel.orderStatus,
+                    _currentStatus == "Accepted" ? "Order Confirmed" : _currentStatus ?? "Loading...",
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.green,
@@ -218,7 +260,6 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     ),
                   ),
                 ),
-
 
               // 🔍 View Prescription Button (always at the right side)
               OutlinedButton(

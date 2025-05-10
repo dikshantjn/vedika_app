@@ -3,14 +3,26 @@ import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/utils/FileOpenHelper.dart';
 
-class OrderRequestsWidget extends StatelessWidget {
+class OrderRequestsWidget extends StatefulWidget {
   final MedicineOrderViewModel viewModel;
+  final Future<void> Function() onRequestAccepted;
 
-  const OrderRequestsWidget({Key? key, required this.viewModel}) : super(key: key);
+  const OrderRequestsWidget({
+    Key? key, 
+    required this.viewModel,
+    required this.onRequestAccepted,
+  }) : super(key: key);
+
+  @override
+  State<OrderRequestsWidget> createState() => _OrderRequestsWidgetState();
+}
+
+class _OrderRequestsWidgetState extends State<OrderRequestsWidget> {
+  String? _processingRequestId;
 
   @override
   Widget build(BuildContext context) {
-    if (viewModel.isLoading) {
+    if (widget.viewModel.isLoading) {
       return const Padding(
         padding: EdgeInsets.all(20.0),
         child: Center(child: CircularProgressIndicator()),
@@ -18,7 +30,7 @@ class OrderRequestsWidget extends StatelessWidget {
     }
 
     // Filter only pending requests
-    final pendingRequests = viewModel.prescriptionRequests
+    final pendingRequests = widget.viewModel.prescriptionRequests
         .where((request) => request.prescriptionAcceptedStatus == "Pending")
         .toList();
 
@@ -66,6 +78,8 @@ class OrderRequestsWidget extends StatelessWidget {
   }
 
   Widget _buildRequestCard(BuildContext context, request) {
+    final bool isProcessing = _processingRequestId == request.prescriptionId;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: const EdgeInsets.all(14),
@@ -179,16 +193,48 @@ class OrderRequestsWidget extends StatelessWidget {
               if (request.prescriptionAcceptedStatus == "Pending")
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => viewModel.acceptPrescription(request.prescriptionId),
-                    icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
-                    label: const Text(
-                      "Accept",
-                      style: TextStyle(fontSize: 13, color: Colors.green),
+                    onPressed: isProcessing ? null : () async {
+                      setState(() {
+                        _processingRequestId = request.prescriptionId;
+                      });
+                      
+                      try {
+                        // Accept the prescription
+                        await widget.viewModel.acceptPrescription(request.prescriptionId);
+                        
+                        // Refresh the parent page using the callback
+                        await widget.onRequestAccepted();
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _processingRequestId = null;
+                          });
+                        }
+                      }
+                    },
+                    icon: isProcessing 
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+                    label: Text(
+                      isProcessing ? "Accepting..." : "Accept",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isProcessing ? Colors.grey : Colors.green,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      side: const BorderSide(color: Colors.green),
+                      side: BorderSide(
+                        color: isProcessing ? Colors.grey : Colors.green,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

@@ -6,11 +6,16 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestS
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'dart:convert';
 
 class BookingsViewModel extends ChangeNotifier {
   final LabTestService _labTestService = LabTestService();
   final Logger _logger = Logger();
   final VendorLoginService _loginService = VendorLoginService();
+  IO.Socket? _socket;
+  bool mounted = true;
 
   List<LabTestBooking> _upcomingBookings = [];
   List<LabTestBooking> _todayBookings = [];
@@ -34,6 +39,126 @@ class BookingsViewModel extends ChangeNotifier {
   String? get upcomingErrorMessage => _upcomingErrorMessage;
   String? get todayErrorMessage => _todayErrorMessage;
   String? get pastErrorMessage => _pastErrorMessage;
+
+  BookingsViewModel() {
+    initSocketConnection();
+  }
+
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for lab test bookings...");
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        debugPrint("❌ Vendor ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'vendorId': vendorId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for lab test bookings');
+        _socket!.emit('registerVendor', vendorId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Add event listener for LabBookingUpdate
+      _socket!.on('LabBookingUpdate', (data) async {
+        debugPrint('🔄 Lab booking update received: $data');
+        await _handleLabBookingUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for lab test bookings...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleLabBookingUpdate(dynamic data) async {
+    try {
+      debugPrint('🧪 Processing lab booking update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🧪 Parsed data: $bookingData');
+      
+      final bookingId = bookingData['bookingId'];
+      final paymentStatus = bookingData['paymentStatus'];
+      
+      if (bookingId != null) {
+        // If payment is completed, refresh the bookings list
+        if (paymentStatus == 'Paid') {
+          debugPrint('✅ Payment completed, refreshing bookings...');
+          await fetchBookings();
+        } else {
+          // For other status updates, also refresh to keep the list updated
+          await fetchBookings();
+        }
+        debugPrint('✅ Refreshed bookings after update');
+      } else {
+        debugPrint('❌ Missing bookingId in data: $bookingData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling lab booking update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
+    super.dispose();
+  }
 
   // Initialize and fetch data
   Future<void> init() async {

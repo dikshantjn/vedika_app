@@ -91,13 +91,16 @@ class _BloodBankRequestScreenState extends State<BloodBankRequestScreen> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: pendingRequests.length,
-            itemBuilder: (context, index) {
-              final request = pendingRequests[index];
-              return RequestCard(request: request);
-            },
+          return RefreshIndicator(
+            onRefresh: () => viewModel.loadRequests(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: pendingRequests.length,
+              itemBuilder: (context, index) {
+                final request = pendingRequests[index];
+                return RequestCard(request: request);
+              },
+            ),
           );
         },
       ),

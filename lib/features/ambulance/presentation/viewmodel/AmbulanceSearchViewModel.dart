@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:convert';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,14 +7,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:logger/web.dart';
 import 'package:provider/provider.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/AmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/services/EmergiencyAmbulanceService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulanceDetailsBottomSheet.dart';
-import 'package:vedika_healthcare/features/ambulance/presentation/widgets/AmbulancePaymentDialog.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class AmbulanceSearchViewModel extends ChangeNotifier {
@@ -26,8 +28,8 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   bool _isDialogShowing = false;
   EmergiencyAmbulanceService _service = EmergiencyAmbulanceService();
   final TrackOrderService _trackOrderService = TrackOrderService(); // Service instance
-
   final logger = Logger();
+  IO.Socket? _socket;
 
   var isLoading = false.obs;
   var availableAgencies = <AmbulanceAgency>[].obs;
@@ -43,8 +45,181 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   bool _isLoading = false;
   final BuildContext context;
 
+  bool _isBookingInProgress = false;  // Add this flag at class level
+
   AmbulanceSearchViewModel(this.context) {
     _checkLocationEnabled();
+    initSocketConnection();
+  }
+
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for ambulance bookings...");
+    try {
+      String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        debugPrint("❌ User ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'userId': userId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for ambulance bookings');
+        _socket!.emit('register', userId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      
+
+      // Add new event listener for ambulanceBookingUpdated
+      _socket!.on('ambulanceBookingUpdated', (data) async {
+        debugPrint('🔄 Ambulance booking update received: $data');
+        await _handleAmbulanceStatusUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for ambulance bookings...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleAmbulanceStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('🚑 Processing ambulance status update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> bookingData = data is String ? json.decode(data) : data;
+      debugPrint('🚑 Parsed data: $bookingData');
+      
+      final requestId = bookingData['requestId'];
+      final status = bookingData['status'];
+      final totalAmount = bookingData['totalAmount'];
+      final vehicleType = bookingData['vehicleType'];
+      
+      if (requestId != null && status != null) {
+        // Find and update the booking in the list
+        final bookingIndex = _ambulanceBookings.indexWhere((booking) => booking.requestId == requestId);
+        
+        if (bookingIndex != -1) {
+          debugPrint('🚑 Found booking at index: $bookingIndex');
+          
+          // Convert totalAmount to double if it exists
+          double? parsedTotalAmount;
+          if (totalAmount != null) {
+            if (totalAmount is String) {
+              parsedTotalAmount = double.tryParse(totalAmount);
+            } else if (totalAmount is num) {
+              parsedTotalAmount = totalAmount.toDouble();
+            }
+            debugPrint('🚑 Parsed total amount: $parsedTotalAmount');
+          }
+          
+          // Update the booking with all received data
+          _ambulanceBookings[bookingIndex] = _ambulanceBookings[bookingIndex].copyWith(
+            status: status,
+            totalAmount: parsedTotalAmount ?? _ambulanceBookings[bookingIndex].totalAmount,
+            vehicleType: vehicleType ?? _ambulanceBookings[bookingIndex].vehicleType,
+          );
+          
+          // If status is WaitingForPayment, refresh the bookings to get latest data
+          if (status == "WaitingForPayment") {
+            debugPrint('🔄 Refreshing bookings for WaitingForPayment status');
+            // First update the current booking
+            notifyListeners();
+            
+            // Then fetch fresh data
+            await fetchActiveAmbulanceBookings();
+            
+            // Force another UI update after fetching
+            if (mounted) {
+              notifyListeners();
+            }
+          } else {
+            // For other status updates, just notify listeners
+            if (mounted) {
+              notifyListeners();
+            }
+          }
+          
+          debugPrint('✅ Booking $requestId status updated to: $status');
+        } else {
+          debugPrint('❌ Booking not found with ID: $requestId');
+          
+          // If booking not found, refresh bookings
+          await fetchActiveAmbulanceBookings();
+          if (mounted) {
+            notifyListeners();
+          }
+        }
+      } else {
+        debugPrint('❌ Missing requestId or status in data: $bookingData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling ambulance status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      // Even if there's an error, try to refresh the data
+      await fetchActiveAmbulanceBookings();
+      if (mounted) {
+        notifyListeners();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _checkLocationEnabled() async {
@@ -77,8 +252,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       if (!_isDialogShowing) _showLocationDialog();
     }
   }
-
-
 
   Future<void> initialize() async {
     await getUserLocation();
@@ -125,9 +298,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
-
   void _showLocationDialog() {
     if (_isDialogShowing) return;
 
@@ -166,7 +336,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       ),
     ).show();
   }
-
 
   void _addAmbulanceMarkers() {
     markers.clear();
@@ -245,11 +414,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       }
     }
 
-    if (nearestAmbulance != null) {
-      _createBookingWithNearestAmbulance(nearestAmbulance);
-    }
-
-    return nearestAmbulance;
+    return nearestAmbulance;  // Just return the nearest ambulance without creating booking
   }
 
   Future<void> _createBookingWithNearestAmbulance(AmbulanceAgency ambulance) async {
@@ -279,7 +444,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     }
   }
 
-
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const R = 6371;
     double dLat = (lat2 - lat1) * pi / 180;
@@ -290,27 +454,27 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     return R * c;
   }
 
-  void callNearestAmbulance() async {
+  Future<bool> callNearestAmbulance() async {
     if (currentPosition == null) {
       _showLocationDialog();
-      return;
+      return false;
     }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+    // Prevent duplicate bookings
+    if (_isBookingInProgress) {
+      return false;
+    }
 
     try {
+      _isBookingInProgress = true;  // Set flag before starting booking process
+
       AmbulanceAgency? nearestAmbulance = _findNearestAmbulance();
-      Navigator.pop(context);
 
       if (nearestAmbulance == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("No ambulance available nearby.")),
         );
-        return;
+        return false;
       }
 
       bool accepted = await AmbulanceService().triggerAmbulanceEmergency(nearestAmbulance.contactNumber);
@@ -326,18 +490,25 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
           ambulanceLng,
         );
 
-        // Show confirmation message directly (without payment dialog)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Payment Successful! Booking Confirmed.")),
-        );
+        // Create booking with the nearest ambulance
+        await _createBookingWithNearestAmbulance(nearestAmbulance);
+        
+        // Fetch the latest bookings to update the UI
+        await fetchActiveAmbulanceBookings();
+        
+        // Ensure state is updated
+        notifyListeners();
+
+        return true;
       }
+      return false;
     } catch (e) {
-      Navigator.pop(context);
       print("Error: $e");
+      return false;
+    } finally {
+      _isBookingInProgress = false;  // Reset flag after booking process completes
     }
   }
-
-
 
   Future<void> fetchAvailableAgencies() async {
     try {
@@ -404,7 +575,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     }
   }
 
-
   List<String> getSteps(String status) {
     List<String> steps = [
       "Booking Requested",
@@ -439,5 +609,10 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   // You can also expose a refresh method
   void refreshAgencies() {
     fetchAvailableAgencies();
+  }
+
+  void clearBookings() {
+    _ambulanceBookings = [];
+    notifyListeners();
   }
 }

@@ -29,6 +29,9 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
   final ScrollController _timelineScrollController = ScrollController();
   bool _isRefreshing = false;
   final _razorpayService = HospitalBookingPaymentService();
+  late BedBooking _currentBooking;
+  bool _showPaymentSuccess = false;
+  bool _isProcessingPayment = false;
 
   final steps = [
     'pending',
@@ -44,108 +47,50 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
     'completed': 'Completed',
   };
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Colors.green,
-                  size: 50,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Payment Successful!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Your payment of ₹${widget.booking.price - widget.booking.paidAmount} has been processed successfully.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                    Navigator.of(context).pop(); // Close bottom sheet
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ColorPalette.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
+    _currentBooking = widget.booking;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final index = steps.indexOf(widget.booking.status);
-      if (index > 1) {
-        _timelineScrollController.animateTo(
-          (index - 1) * 120.0,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
-      }
+      _scrollToCurrentStatus();
     });
 
     // Set up payment callbacks
     _razorpayService.onPaymentSuccess = (response) async {
-      // Update payment status
-      await _razorpayService.updatePaymentStatus(widget.booking.bedBookingId!);
+      setState(() {
+        _isProcessingPayment = true;
+      });
       
-      if (mounted) {
-        // Show success dialog
-        _showSuccessDialog();
+      try {
+        // Update payment status
+        await _razorpayService.updatePaymentStatus(_currentBooking.bedBookingId!);
+        
+        if (mounted) {
+          setState(() {
+            _isProcessingPayment = false;
+            _showPaymentSuccess = true;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isProcessingPayment = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating payment status: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     };
 
     _razorpayService.onPaymentError = (response) {
       if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Payment failed: ${response.message}'),
@@ -157,6 +102,9 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
 
     _razorpayService.onPaymentCancelled = (response) {
       if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment cancelled by user'),
@@ -165,6 +113,17 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
         );
       }
     };
+  }
+
+  void _scrollToCurrentStatus() {
+    final index = steps.indexOf(_currentBooking.status);
+    if (index > 1) {
+      _timelineScrollController.animateTo(
+        (index - 1) * 120.0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -181,15 +140,20 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
     });
 
     try {
-      if (widget.onRefresh != null) {
-        await widget.onRefresh!();
-      }
-      
       final viewModel = Provider.of<HospitalSearchViewModel>(context, listen: false);
-      await viewModel.loadUserBookings(context);
+      await viewModel.loadUserBookings(context, showBottomSheet: false);
+      
+      // Update the current booking data
+      final updatedBookings = viewModel.userBookings;
+      final updatedBooking = updatedBookings.firstWhere(
+        (booking) => booking.bedBookingId == _currentBooking.bedBookingId,
+        orElse: () => _currentBooking,
+      );
       
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _currentBooking = updatedBooking;
+        });
       }
     } catch (e) {
       debugPrint('Error refreshing: $e');
@@ -211,8 +175,8 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
   }
 
   void _callHospital() {
-    if (widget.booking.hospital.contactNumber != null) {
-      final Uri phoneUri = Uri(scheme: 'tel', path: widget.booking.hospital.contactNumber);
+    if (_currentBooking.hospital.contactNumber != null) {
+      final Uri phoneUri = Uri(scheme: 'tel', path: _currentBooking.hospital.contactNumber);
       launchUrl(phoneUri);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,9 +190,19 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final booking = widget.booking;
-    final formattedCreatedAt = DateFormat("dd MMM yyyy, hh:mm a").format(booking.bookingDate);
-    final isWaitingForPayment = booking.status == 'WaitingForPayment';
+    // Listen to the ViewModel for updates
+    final viewModel = Provider.of<HospitalSearchViewModel>(context);
+    if (viewModel.selectedBooking?.bedBookingId == _currentBooking.bedBookingId) {
+      _currentBooking = viewModel.selectedBooking!;
+      // Scroll to the new status when it changes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCurrentStatus();
+      });
+    }
+
+    final formattedCreatedAt = DateFormat("dd MMM yyyy, hh:mm a").format(_currentBooking.bookingDate);
+    final isWaitingForPayment = _currentBooking.status == 'WaitingForPayment';
+    final isCompleted = _currentBooking.status == 'completed';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -243,88 +217,181 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_isRefreshing)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                  Center(
-                    child: Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(child: Icon(Icons.local_hospital, size: 32, color: ColorPalette.primaryColor)),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      "Ongoing Bed Booking",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  _buildInfoRow(Icons.person, "Patient Name", booking.user.name ?? "Not Mentioned"),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(Icons.bed, "Bed Type", booking.bedType),
-                  const SizedBox(height: 24),
-
-                  _buildStatusTimeline(),
-                  const SizedBox(height: 20),
-
-                  if (isWaitingForPayment) ...[
-                    _buildPaymentReceipt(),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          _razorpayService.openPaymentGateway(
-                            (booking.price - booking.paidAmount).toInt(),
-                            booking.bedBookingId!,
-                            'Bed Booking Payment',
-                            'Payment for bed booking at ${booking.hospital.name}',
-                          );
-                        },
-                        icon: Icon(Icons.payment_outlined),
-                        label: Text("Pay Now"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.teal,
-                          side: BorderSide(color: Colors.teal),
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: _showPaymentSuccess
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 40),
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 50,
+                          ),
                         ),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                  ],
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Payment Successful!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Your payment of ₹${_currentBooking.price - _currentBooking.paidAmount} has been processed successfully.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close bottom sheet
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorPalette.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Done',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_isRefreshing)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                        Center(
+                          child: Container(
+                            width: 50,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[400],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Center(child: Icon(Icons.local_hospital, size: 32, color: ColorPalette.primaryColor)),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            isCompleted ? "Completed Bed Booking" : "Ongoing Bed Booking",
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _callHospital,
-                      icon: const Icon(Icons.call),
-                      label: const Text("Call Hospital"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
+                        _buildInfoRow(Icons.person, "Patient Name", _currentBooking.user.name ?? "Not Mentioned"),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(Icons.bed, "Bed Type", _currentBooking.bedType),
+                        const SizedBox(height: 24),
+
+                        _buildStatusTimeline(),
+                        const SizedBox(height: 20),
+
+                        if (isWaitingForPayment) ...[
+                          _buildPaymentReceipt(),
+                          if (_isProcessingPayment)
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Column(
+                                children: [
+                                  const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                                    strokeWidth: 3,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Processing Payment...',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Please wait while we confirm your payment.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  _razorpayService.openPaymentGateway(
+                                    (_currentBooking.price - _currentBooking.paidAmount).toInt(),
+                                    _currentBooking.bedBookingId!,
+                                    'Bed Booking Payment',
+                                    'Payment for bed booking at ${_currentBooking.hospital.name}',
+                                  );
+                                },
+                                icon: Icon(Icons.payment_outlined),
+                                label: Text("Pay Now"),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.teal,
+                                  side: BorderSide(color: Colors.teal),
+                                  padding: EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ),
+                          SizedBox(height: 12),
+                        ],
+
+                        if (!isCompleted) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _callHospital,
+                              icon: const Icon(Icons.call),
+                              label: const Text("Call Hospital"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -356,7 +423,7 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
   }
 
   Widget _buildStatusTimeline() {
-    final currentIndex = steps.indexOf(widget.booking.status);
+    final currentIndex = steps.indexOf(_currentBooking.status);
 
     return SizedBox(
       height: 90,
@@ -409,8 +476,6 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
   }
 
   Widget _buildPaymentReceipt() {
-    final booking = widget.booking;
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -427,7 +492,7 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
             children: [
               const Text("Payment Receipt", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const Spacer(),
-              if (booking.paymentStatus == "completed")
+              if (_currentBooking.paymentStatus == "completed")
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -442,7 +507,7 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
                     ],
                   ),
                 )
-              else if (booking.paymentStatus == "pending")
+              else if (_currentBooking.paymentStatus == "pending")
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -461,8 +526,8 @@ class _OngoingBookingBottomSheetState extends State<OngoingBookingBottomSheet> {
           ),
           const SizedBox(height: 10),
           const Divider(height: 24, thickness: 1),
-          _buildReceiptRow("Total Amount", "₹${booking.price.toStringAsFixed(2)}", bold: true),
-          _buildReceiptRow("Paid Amount", "₹${booking.paidAmount.toStringAsFixed(2)}"),
+          _buildReceiptRow("Total Amount", "₹${_currentBooking.price.toStringAsFixed(2)}", bold: true),
+          _buildReceiptRow("Paid Amount", "₹${_currentBooking.paidAmount.toStringAsFixed(2)}"),
         ],
       ),
     );

@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
-class ServiceDetailsDialog extends StatelessWidget {
+class ServiceDetailsDialog extends StatefulWidget {
   final AmbulanceBookingRequestViewModel viewModel;
   final String requestId;
 
   const ServiceDetailsDialog({super.key, required this.viewModel, required this.requestId});
+
+  @override
+  State<ServiceDetailsDialog> createState() => _ServiceDetailsDialogState();
+}
+
+class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -39,35 +47,48 @@ class ServiceDetailsDialog extends StatelessWidget {
 
               // Locations
               _buildSectionTitle("Locations"),
-              _buildTextField(viewModel.pickupLocationController, "Pickup Location"),
-              _buildTextField(viewModel.dropLocationController, "Drop Location"),
+              _buildTextField(widget.viewModel.pickupLocationController, "Pickup Location"),
+              _buildTextField(widget.viewModel.dropLocationController, "Drop Location"),
 
               // Fare Details
               _buildSectionTitle("Fare Details"),
-              _buildNumberField(viewModel.totalDistanceController, "Total Distance (km)"),
-              _buildNumberField(viewModel.costPerKmController, "Cost per KM"),
-              _buildNumberField(viewModel.baseChargeController, "Base Charge"),
+              _buildNumberField(widget.viewModel.totalDistanceController, "Total Distance (km)"),
+              _buildNumberField(widget.viewModel.costPerKmController, "Cost per KM"),
+              _buildNumberField(widget.viewModel.baseChargeController, "Base Charge"),
 
               // Vehicle Type
               _buildSectionTitle("Vehicle Type"),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: DropdownButtonFormField<String>(
-                  value: viewModel.vehicleTypes.contains(viewModel.selectedVehicleType)
-                      ? viewModel.selectedVehicleType
-                      : null,
-                  decoration: _inputDecoration("Select Vehicle Type"),
-                  items: viewModel.vehicleTypes.map((type) {
-                    return DropdownMenuItem<String>(
-                      value: type,
-                      child: Text(type),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      viewModel.setSelectedVehicleType(value);
-                    }
-                  },
+              DropdownButtonFormField<String>(
+                value: widget.viewModel.vehicleTypes.contains(widget.viewModel.selectedVehicleType)
+                    ? widget.viewModel.selectedVehicleType
+                    : widget.viewModel.vehicleTypes.isNotEmpty ? widget.viewModel.vehicleTypes.first : null,
+                decoration: InputDecoration(
+                  labelText: 'Vehicle Type',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: widget.viewModel.vehicleTypes.map((String type) {
+                  return DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(
+                      type,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    widget.viewModel.setSelectedVehicleType(newValue);
+                  }
+                },
+                isExpanded: true,
+                icon: const Icon(Icons.arrow_drop_down),
+                dropdownColor: Colors.white,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
                 ),
               ),
 
@@ -78,7 +99,7 @@ class ServiceDetailsDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _isLoading ? null : () => Navigator.pop(context),
                       icon: const Icon(Icons.cancel, color: Colors.redAccent),
                       label: const Text("Cancel"),
                       style: OutlinedButton.styleFrom(
@@ -94,11 +115,52 @@ class ServiceDetailsDialog extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        viewModel.addOrUpdateServiceDetails(requestId,context);
-                        Navigator.pop(context);
+                      onPressed: _isLoading ? null : () async {
+                        setState(() => _isLoading = true);
+                        final success = await widget.viewModel.addOrUpdateServiceDetails(widget.requestId);
+                        if (context.mounted) {
+                          setState(() => _isLoading = false);
+                          if (success) {
+                            Navigator.pop(context, true);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                elevation: 0,
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.transparent,
+                                content: AwesomeSnackbarContent(
+                                  title: 'Success!',
+                                  message: 'Service details have been sent to the user.',
+                                  contentType: ContentType.success,
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                elevation: 0,
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.transparent,
+                                content: AwesomeSnackbarContent(
+                                  title: 'Error!',
+                                  message: 'Failed to send service details. Please try again.',
+                                  contentType: ContentType.failure,
+                                ),
+                              ),
+                            );
+                          }
+                        }
                       },
-                      label: const Text("Notify to User"),
+                      icon: _isLoading 
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.notifications_active),
+                      label: Text(_isLoading ? "Sending..." : "Notify to User"),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
                         backgroundColor: Colors.cyan,

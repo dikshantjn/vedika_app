@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
-import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/ProcessAppointmentViewModel.dart';
 
 class ProcessAppointmentScreen extends StatefulWidget {
   final BedBooking booking;
@@ -20,9 +20,9 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   @override
   void initState() {
     super.initState();
-    // Reset the view model state when screen is opened
+    // Set the current booking ID in the ViewModel
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppointmentViewModel>().fetchAppointments();
+      context.read<ProcessAppointmentViewModel>().setCurrentBookingId(widget.booking.bedBookingId!);
     });
   }
 
@@ -37,7 +37,7 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: Consumer<AppointmentViewModel>(
+      body: Consumer<ProcessAppointmentViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.error != null) {
             return Center(
@@ -60,7 +60,7 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => viewModel.fetchAppointments(),
+                    onPressed: () => viewModel.resetState(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HospitalVendorColorPalette.primaryBlue,
                       foregroundColor: HospitalVendorColorPalette.textInverse,
@@ -239,7 +239,7 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: widget.booking.paymentStatus.toLowerCase() == 'paid'
+                                color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
                                     ? HospitalVendorColorPalette.successGreen.withOpacity(0.1)
                                     : HospitalVendorColorPalette.warningYellow.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
@@ -247,21 +247,21 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    widget.booking.paymentStatus.toLowerCase() == 'paid'
+                                    (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
                                         ? Icons.check_circle
                                         : Icons.pending,
                                     size: 20,
-                                    color: widget.booking.paymentStatus.toLowerCase() == 'paid'
+                                    color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
                                         ? HospitalVendorColorPalette.successGreen
                                         : HospitalVendorColorPalette.warningYellow,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    widget.booking.paymentStatus.toLowerCase() == 'paid' 
-                                        ? 'COMPLETED' 
+                                    (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
+                                        ? 'COMPLETED'
                                         : widget.booking.paymentStatus.toUpperCase(),
                                     style: TextStyle(
-                                      color: widget.booking.paymentStatus.toLowerCase() == 'paid'
+                                      color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
                                           ? HospitalVendorColorPalette.successGreen
                                           : HospitalVendorColorPalette.warningYellow,
                                       fontSize: 14,
@@ -279,14 +279,14 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                 ),
                 const SizedBox(height: 20),
                 // Notify User Button
-                if (widget.booking.paymentStatus.toLowerCase() != 'paid')
+                if (!viewModel.isPaymentCompleted && widget.booking.paymentStatus.toLowerCase() != 'paid')
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: viewModel.isLoading
+                      onPressed: viewModel.isLoading || viewModel.isNotifyingPayment
                           ? null
-                          : () => viewModel.notifyUserPayment(widget.booking.bedBookingId!),
-                      icon: viewModel.isLoading
+                          : () => viewModel.notifyPayment(widget.booking.bedBookingId!),
+                      icon: viewModel.isLoading || viewModel.isNotifyingPayment
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -297,17 +297,21 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                             )
                           : const Icon(Icons.notifications, size: 20),
                       label: Text(
-                        viewModel.isLoading 
-                            ? 'Sending...' 
-                            : widget.booking.status == 'WaitingForPayment'
-                                ? 'Notify Again  About Payment'
-                                : 'Notify User About Payment',
+                        viewModel.isNotifyingPayment
+                            ? 'Waiting for Payment...'
+                            : viewModel.isLoading 
+                                ? 'Sending...' 
+                                : widget.booking.status == 'WaitingForPayment'
+                                    ? 'Notify Again About Payment'
+                                    : 'Notify User About Payment',
                         style: const TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.booking.status == 'WaitingForPayment'
+                        backgroundColor: viewModel.isNotifyingPayment
                             ? HospitalVendorColorPalette.warningYellow
-                            : HospitalVendorColorPalette.primaryBlue,
+                            : widget.booking.status == 'WaitingForPayment'
+                                ? HospitalVendorColorPalette.warningYellow
+                                : HospitalVendorColorPalette.primaryBlue,
                         foregroundColor: HospitalVendorColorPalette.textInverse,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

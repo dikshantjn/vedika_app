@@ -30,9 +30,9 @@ class MedicineProductService {
   }
 
   // 📌 Get All Products
-  Future<List<MedicineProduct>> getAllProducts(String token) async {
+  Future<List<MedicineProduct>> getAllProducts(String token, String vendorId) async {
     Response response = await _handleRequest(() => _dio.get(
-      ApiEndpoints.getAllProducts,
+      "${ApiEndpoints.getAllProductsbyVendor}/$vendorId",
       options: Options(headers: _getAuthHeaders(token)),
     ));
 

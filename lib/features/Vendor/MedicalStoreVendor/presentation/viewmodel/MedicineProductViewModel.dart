@@ -15,8 +15,17 @@ class MedicineProductViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+
   // ✅ Fetch All Products
   Future<void> fetchProducts() async {
+    String? vendorId = await VendorLoginService().getVendorId();
+
+    if (vendorId == null) {
+      _errorMessage = "Vendor ID not set";
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -25,7 +34,7 @@ class MedicineProductViewModel extends ChangeNotifier {
       String? token = await _loginService.getVendorToken();
       if (token == null) throw Exception("Failed to retrieve token");
 
-      _products = await _medicineService.getAllProducts(token);
+      _products = await _medicineService.getAllProducts(token, vendorId);
     } catch (e) {
       _errorMessage = "Error fetching products: ${e.toString()}";
     }
