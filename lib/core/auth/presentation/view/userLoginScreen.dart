@@ -362,23 +362,6 @@ class _userLoginScreenState extends State<UserLoginScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         TextButton(
-          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
-          child: Text(
-            "Login as Guest",
-            style: TextStyle(
-              color: ColorPalette.primaryColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Container(
-          height: 15,
-          width: 1,
-          color: Colors.grey.shade300,
-          margin: EdgeInsets.symmetric(horizontal: 8),
-        ),
-        TextButton(
           onPressed: () => Navigator.pushNamed(context, AppRoutes.vendor),
           child: Text(
             "Login as Vendor",

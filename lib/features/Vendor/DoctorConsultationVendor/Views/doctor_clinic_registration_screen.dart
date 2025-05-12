@@ -77,36 +77,6 @@ class _DoctorClinicRegistrationScreenState extends State<DoctorClinicRegistratio
           elevation: 0,
           backgroundColor: DoctorConsultationColorPalette.primaryBlue,
           foregroundColor: DoctorConsultationColorPalette.textWhite,
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const DoctorDashboardScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.dashboard,
-                color: Colors.white,
-              ),
-              label: const Text(
-                'Go to Dashboard',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: const BorderSide(color: Colors.white, width: 1),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
         ),
         body: Consumer<DoctorClinicRegistrationViewModel>(
           builder: (context, viewModel, child) {
