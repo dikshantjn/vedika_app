@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import '../../data/models/VendorProduct.dart';
+import '../../data/services/ProductPartnerProductService.dart';
 
 class ProductPartnerProductsViewModel extends ChangeNotifier {
+  final ProductPartnerProductService _productService = ProductPartnerProductService();
   bool _isLoading = false;
   List<VendorProduct> _products = [];
   String _selectedCategory = 'All';
   String _searchQuery = '';
   List<String> _categories = ['All', 'Period Care', 'Medicine', 'Diagnostic'];
+  String? _error;
+  final VendorLoginService _loginService = VendorLoginService();
 
   // Getters
   bool get isLoading => _isLoading;
@@ -14,6 +19,7 @@ class ProductPartnerProductsViewModel extends ChangeNotifier {
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
   List<String> get categories => _categories;
+  String? get error => _error;
 
   // Filtered products based on category and search
   List<VendorProduct> get _filteredProducts {
@@ -28,51 +34,26 @@ class ProductPartnerProductsViewModel extends ChangeNotifier {
 
   Future<void> fetchProducts() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
+    String? vendorId = await _loginService.getVendorId();
 
     try {
-      // TODO: Implement API call to fetch products
-      // For now using dummy data
-      await Future.delayed(const Duration(seconds: 1));
-      _products = [
-        VendorProduct(
-          productId: '1',
-          vendorId: 'v1',
-          name: 'Organic Cotton Pads',
-          category: 'Period Care',
-          description: 'Soft and comfortable organic cotton pads for daily use.',
-          howItWorks: 'Use as needed for maximum comfort and protection.',
-          usp: ['Organic', 'Comfortable', 'Eco-friendly'],
-          price: 12.99,
-          images: ['https://example.com/pad1.jpg'],
-          isActive: true,
-          stock: 100,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-        VendorProduct(
-          productId: '2',
-          vendorId: 'v1',
-          name: 'Digital Thermometer',
-          category: 'Diagnostic',
-          description: 'Accurate digital thermometer for quick temperature readings.',
-          howItWorks: 'Place under tongue or armpit for 30 seconds.',
-          usp: ['Fast', 'Accurate', 'Easy to use'],
-          price: 24.99,
-          images: ['https://example.com/thermo1.jpg'],
-          isActive: true,
-          stock: 50,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ];
+      _products = await _productService.getVendorProducts(vendorId!);
+      // Update categories based on available products
+      _updateCategories();
     } catch (e) {
-      // Handle error
+      _error = e.toString();
       print('Error fetching products: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _updateCategories() {
+    final Set<String> uniqueCategories = _products.map((p) => p.category).toSet();
+    _categories = ['All', ...uniqueCategories.toList()];
   }
 
   void setCategory(String category) {
@@ -115,11 +96,24 @@ class ProductPartnerProductsViewModel extends ChangeNotifier {
 
   Future<void> deleteProduct(String productId) async {
     try {
-      // TODO: Implement API call to delete product
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Call service to delete product
+      await _productService.deleteProduct(productId);
+      
+      // Remove product from local list
       _products.removeWhere((p) => p.productId == productId);
+      _updateCategories(); // Update categories after deletion
+      
+      _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print('Error deleting product: $e');
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+      throw Exception('Failed to delete product: $e');
     }
   }
 } 

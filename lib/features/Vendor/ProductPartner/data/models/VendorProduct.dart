@@ -1,5 +1,5 @@
 class VendorProduct {
-  final String productId;
+  final String? productId;
   final String vendorId;
   final String name;
   final String category;
@@ -10,11 +10,11 @@ class VendorProduct {
   final List<String> images;
   final bool isActive;
   final int stock;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   VendorProduct({
-    required this.productId,
+    this.productId,
     required this.vendorId,
     required this.name,
     required this.category,
@@ -25,13 +25,13 @@ class VendorProduct {
     required this.images,
     required this.isActive,
     required this.stock,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory VendorProduct.fromJson(Map<String, dynamic> json) {
     return VendorProduct(
-      productId: json['id'],
+      productId: json['id'] ?? json['productId'] ?? json['_id'],
       vendorId: json['vendorId'],
       name: json['name'],
       category: json['category'],
@@ -42,13 +42,13 @@ class VendorProduct {
       images: List<String>.from(json['images']),
       isActive: json['isActive'] ?? true,
       stock: json['stock'] ?? 0,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> data = {
       'id': productId,
       'vendorId': vendorId,
       'name': name,
@@ -60,8 +60,11 @@ class VendorProduct {
       'images': images,
       'isActive': isActive,
       'stock': stock,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
     };
+
+    if (createdAt != null) data['createdAt'] = createdAt!.toIso8601String();
+    if (updatedAt != null) data['updatedAt'] = updatedAt!.toIso8601String();
+
+    return data;
   }
 } 

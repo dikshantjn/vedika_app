@@ -6,8 +6,22 @@ import '../viewmodels/ProductPartnerProductsViewModel.dart';
 import '../viewmodels/ProductPartnerAddProductViewModel.dart';
 import '../../data/models/VendorProduct.dart';
 
-class ProductPartnerProductsPage extends StatelessWidget {
+class ProductPartnerProductsPage extends StatefulWidget {
   const ProductPartnerProductsPage({Key? key}) : super(key: key);
+
+  @override
+  State<ProductPartnerProductsPage> createState() => _ProductPartnerProductsPageState();
+}
+
+class _ProductPartnerProductsPageState extends State<ProductPartnerProductsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch products when the page is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ProductPartnerProductsViewModel>().fetchProducts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +29,58 @@ class ProductPartnerProductsPage extends StatelessWidget {
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (viewModel.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: ProductPartnerColorPalette.error,
+                ),
+                const SizedBox(height: ProductPartnerColorPalette.spacing),
+                Text(
+                  'Error loading products',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ProductPartnerColorPalette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: ProductPartnerColorPalette.smallSpacing),
+                Text(
+                  viewModel.error!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: ProductPartnerColorPalette.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: ProductPartnerColorPalette.spacing),
+                ElevatedButton.icon(
+                  onPressed: () {
+                      viewModel.fetchProducts();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ProductPartnerColorPalette.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: ProductPartnerColorPalette.spacing,
+                      vertical: ProductPartnerColorPalette.smallSpacing,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         return Column(
@@ -64,8 +130,8 @@ class ProductPartnerProductsPage extends StatelessWidget {
               const SizedBox(width: ProductPartnerColorPalette.smallSpacing),
               IconButton(
                 icon: const Icon(Icons.add),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChangeNotifierProvider<ProductPartnerAddProductViewModel>(
@@ -74,6 +140,10 @@ class ProductPartnerProductsPage extends StatelessWidget {
                       ),
                     ),
                   );
+                  // Refresh products if a new product was added
+                  if (result == true) {
+                    viewModel.fetchProducts();
+                  }
                 },
                 style: IconButton.styleFrom(
                   backgroundColor: ProductPartnerColorPalette.primary,
@@ -137,130 +207,244 @@ class ProductPartnerProductsPage extends StatelessWidget {
 
   Widget _buildProductCard(BuildContext context, VendorProduct product, ProductPartnerProductsViewModel viewModel) {
     return Container(
+      width: 170,
+      height: 250,
+      margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
-        border: Border.all(color: ProductPartnerColorPalette.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Image Section with fixed height
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(ProductPartnerColorPalette.cardBorderRadius),
-                ),
-                child: Image.network(
-                  product.images.first,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 120,
-                      color: ProductPartnerColorPalette.quickActionBg,
-                      child: const Icon(Icons.image, size: 40),
-                    );
-                  },
+              SizedBox(
+                height: 120,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(ProductPartnerColorPalette.cardBorderRadius)),
+                  child: Image.network(
+                    product.images.isNotEmpty ? product.images[0] : 'https://via.placeholder.com/150',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                            valueColor: AlwaysStoppedAnimation<Color>(ProductPartnerColorPalette.primary),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported, size: 40),
+                      );
+                    },
+                  ),
                 ),
               ),
               Positioned(
                 top: 8,
                 right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: product.isActive
-                        ? ProductPartnerColorPalette.success.withOpacity(0.9)
-                        : ProductPartnerColorPalette.error.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    product.isActive ? 'Active' : 'Inactive',
-                    style: const TextStyle(
+                child: PopupMenuButton<String>(
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
+                    child: const Icon(Icons.more_vert, size: 20),
                   ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, color: ProductPartnerColorPalette.primary, size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Edit'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: ProductPartnerColorPalette.error, size: 20),
+                          const SizedBox(width: 8),
+                          const Text('Delete'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider<ProductPartnerAddProductViewModel>(
+                            create: (_) => ProductPartnerAddProductViewModel(),
+                            child: ProductPartnerAddProductPage(product: product),
+                          ),
+                        ),
+                      );
+                      if (result == true) {
+                        viewModel.fetchProducts();
+                      }
+                    } else if (value == 'delete') {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Product'),
+                          content: const Text('Are you sure you want to delete this product?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: TextButton.styleFrom(
+                                foregroundColor: ProductPartnerColorPalette.error,
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true && mounted) {
+                        try {
+                          await viewModel.deleteProduct(product.productId!);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    const Text('Product deleted successfully'),
+                                  ],
+                                ),
+                                backgroundColor: ProductPartnerColorPalette.success,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text('Failed to delete product: ${e.toString()}'),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: ProductPartnerColorPalette.error,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    }
+                  },
                 ),
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(ProductPartnerColorPalette.smallSpacing),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+          // Content Section with fixed height
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(ProductPartnerColorPalette.smallSpacing),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  product.category,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: ProductPartnerColorPalette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '\$${product.price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: ProductPartnerColorPalette.primary,
-                      ),
-                    ),
-                    Text(
-                      'Stock: ${product.stock}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: ProductPartnerColorPalette.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        product.isActive ? Icons.toggle_on : Icons.toggle_off,
-                        color: product.isActive ? ProductPartnerColorPalette.success : ProductPartnerColorPalette.error,
-                        size: 28,
-                      ),
-                      onPressed: () => viewModel.toggleProductStatus(product.productId),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined),
+                  const SizedBox(height: 4),
+                  Text(
+                    '₹${product.price.toStringAsFixed(2)}',
+                    style: TextStyle(
                       color: ProductPartnerColorPalette.primary,
-                      onPressed: () {
-                        // TODO: Navigate to edit product page
-                      },
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      color: ProductPartnerColorPalette.error,
-                      onPressed: () {
-                        // TODO: Show delete confirmation dialog
-                        viewModel.deleteProduct(product.productId);
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: product.isActive 
+                              ? ProductPartnerColorPalette.success.withOpacity(0.1)
+                              : ProductPartnerColorPalette.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          product.isActive ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                            color: product.isActive 
+                                ? ProductPartnerColorPalette.success
+                                : ProductPartnerColorPalette.error,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Stock: ${product.stock}',
+                        style: TextStyle(
+                          color: ProductPartnerColorPalette.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -297,8 +481,8 @@ class ProductPartnerProductsPage extends StatelessWidget {
           ),
           const SizedBox(height: ProductPartnerColorPalette.spacing),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ChangeNotifierProvider<ProductPartnerAddProductViewModel>(
@@ -307,6 +491,10 @@ class ProductPartnerProductsPage extends StatelessWidget {
                   ),
                 ),
               );
+              // Refresh products if a new product was added
+              if (result == true) {
+                context.read<ProductPartnerProductsViewModel>().fetchProducts();
+              }
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Product'),

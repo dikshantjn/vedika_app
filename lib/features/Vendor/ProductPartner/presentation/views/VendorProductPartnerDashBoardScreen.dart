@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
+import '../../../../../core/auth/presentation/viewmodel/AuthViewModel.dart';
 import '../viewmodels/ProductPartnerDashboardViewModel.dart';
 import '../viewmodels/ProductPartnerProductsViewModel.dart';
 import '../viewmodels/ProductPartnerOrdersViewModel.dart';
@@ -84,6 +85,55 @@ class _VendorProductPartnerDashBoardScreenState
     }
   }
 
+  Future<void> _logout() async {
+    try {
+      print('🔄 Starting logout process...');
+      
+      if (!mounted) {
+        print('❌ Widget not mounted, aborting logout');
+        return;
+      }
+      
+      print('🔍 Getting AuthViewModel...');
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      if (authViewModel == null) {
+        print('❌ AuthViewModel is null');
+        throw Exception('AuthViewModel not initialized');
+      }
+      print('✅ AuthViewModel found');
+
+      print('🚪 Calling logout on AuthViewModel...');
+      await authViewModel.logout(context);
+      print('✅ Logout successful');
+      
+      if (!mounted) {
+        print('❌ Widget not mounted after logout, cannot navigate');
+        return;
+      }
+      
+      print('🔄 Navigating to login screen...');
+      Navigator.pushReplacementNamed(context, "/login");
+      print('✅ Navigation complete');
+      
+    } catch (e, stackTrace) {
+      print('❌ Error during logout:');
+      print('Error message: $e');
+      print('Stack trace: $stackTrace');
+      
+      if (!mounted) {
+        print('❌ Widget not mounted, cannot show error snackbar');
+        return;
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during logout: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     print('Building VendorProductPartnerDashBoardScreen - Loading: $_isLoading, Error: $_error');
@@ -136,11 +186,15 @@ class _VendorProductPartnerDashBoardScreenState
         ChangeNotifierProvider(create: (_) => ProductPartnerOrdersViewModel()),
         ChangeNotifierProvider(create: (_) => ProductPartnerProfileViewModel()),
         ChangeNotifierProvider(create: (_) => ProductPartnerAddProductViewModel()),
+        ChangeNotifierProvider<AuthViewModel>(
+          create: (_) => AuthViewModel(),
+          lazy: false, // Initialize immediately
+        ),
       ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Product Partner'),
+          title: Text(_getAppBarTitle()),
           backgroundColor: ProductPartnerColorPalette.primary,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -215,6 +269,28 @@ class _VendorProductPartnerDashBoardScreenState
         ),
       ),
     );
+  }
+
+  String _getAppBarTitle() {
+    if (_showSettings) {
+      return 'Settings';
+    }
+    if (_showNotifications) {
+      return 'Notifications';
+    }
+    
+    switch (_currentIndex) {
+      case 0:
+        return 'Dashboard';
+      case 1:
+        return 'Products';
+      case 2:
+        return 'Orders';
+      case 3:
+        return 'Profile';
+      default:
+        return 'Product Partner';
+    }
   }
 
   Widget _buildDrawer() {
@@ -440,6 +516,7 @@ class _VendorProductPartnerDashBoardScreenState
               title: 'Logout',
               onTap: () {
                 Navigator.pop(context);
+                _logout();
               },
             ),
           ],
@@ -481,9 +558,15 @@ class _VendorProductPartnerDashBoardScreenState
     required String label,
     required int index,
   }) {
-    final isSelected = _currentIndex == index;
+    final isSelected = _currentIndex == index && !_showSettings && !_showNotifications;
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+          _showSettings = false;
+          _showNotifications = false;
+        });
+      },
       borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -158,13 +158,18 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                       ],
                     ),
                     child: Center(
-                      child: Lottie.asset(
-                'assets/animations/uploadPrescription.json',
-                        width: 80,
-                        height: 80,
+                      child: ClipOval(
+                        child: Container(
+                          width: 130,
+                          height: 110,
+                          child: Image.asset(
+                            'assets/logo/Logo.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                     ),
-              ),
+                  ),
                   const SizedBox(height: 30),
                   // App name with animation
               TweenAnimationBuilder(

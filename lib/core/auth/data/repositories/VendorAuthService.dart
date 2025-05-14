@@ -28,11 +28,6 @@ class VendorAuthService {
     }
   }
 
-  /// **🔹 Logout Vendor**
-  static Future<void> logout() async {
-    await _storage.delete(key: _keyToken); // Remove JWT token
-  }
-
   /// **🔹 Get JWT Token**
   static Future<String?> getToken() async {
     return await _storage.read(key: _keyToken);

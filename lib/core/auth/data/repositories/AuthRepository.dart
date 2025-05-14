@@ -19,10 +19,20 @@ class AuthRepository {
 
   // Logout function
   Future<void> logout() async {
-    String? userId = await StorageService.getUserId();
-    await FCMService().deleteTokenFromServer(userId!);
-    await storage.delete(key: "jwt_token"); // Remove stored JWT
-    await storage.delete(key: "user_id"); // Remove stored User ID
-    await _auth.signOut(); // Sign out from Firebase
+    try {
+      String? userId = await StorageService.getUserId();
+      if (userId != null) {
+        await FCMService().deleteTokenFromServer(userId);
+      }
+      await storage.delete(key: "jwt_token"); // Remove stored JWT
+      await storage.delete(key: "user_id"); // Remove stored User ID
+      await _auth.signOut(); // Sign out from Firebase
+    } catch (e) {
+      print('Error during logout: $e');
+      // Still try to clear local storage even if FCM token deletion fails
+      await storage.delete(key: "jwt_token");
+      await storage.delete(key: "user_id");
+      await _auth.signOut();
+    }
   }
 }

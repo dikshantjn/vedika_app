@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/services/ProductPartnerProfileService.dart';
+import '../../../Service/VendorService.dart';
 
 class ProductPartnerDashboardViewModel extends ChangeNotifier {
   final ProductPartnerProfileService _service = ProductPartnerProfileService();
+  final VendorService _vendorService = VendorService();
   bool _isLoading = false;
+  bool _isStatusLoading = false;
   bool _isActive = true;
   String _partnerName = '';
   String _companyLegalName = '';
@@ -17,9 +20,11 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> _recentActivities = [];
   List<FlSpot> _performanceData = [];
   String _currentPeriod = 'Weekly';
+  String _vendorId = '';
 
   // Getters
   bool get isLoading => _isLoading;
+  bool get isStatusLoading => _isStatusLoading;
   bool get isActive => _isActive;
   String get partnerName => _partnerName;
   String get companyLegalName => _companyLegalName;
@@ -35,9 +40,13 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
 
   Future<void> fetchDashboardData(String vendorId) async {
     _isLoading = true;
+    _vendorId = vendorId;
     notifyListeners();
 
     try {
+      // Fetch vendor status
+      _isActive = await _vendorService.getVendorStatus(vendorId);
+
       // Fetch overview data
       final overviewData = await _service.getOverview(vendorId);
       _partnerName = overviewData['brandName'] ?? '';
@@ -83,9 +92,25 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
     }
   }
 
-  void toggleActiveStatus() {
-    _isActive = !_isActive;
+  Future<bool?> toggleVendorStatus() async {
+    if (_isStatusLoading) return null;
+    
+    _isStatusLoading = true;
     notifyListeners();
+
+    try {
+      final newStatus = await _vendorService.toggleVendorStatus(_vendorId);
+      if (newStatus != null) {
+        _isActive = newStatus;
+      }
+      return newStatus;
+    } catch (e) {
+      print('Error toggling vendor status: $e');
+      return null;
+    } finally {
+      _isStatusLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> refreshDashboard(String vendorId) async {

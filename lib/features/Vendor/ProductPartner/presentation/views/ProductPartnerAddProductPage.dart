@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
 import '../../data/models/VendorProduct.dart';
 import '../viewmodels/ProductPartnerAddProductViewModel.dart';
 
 class ProductPartnerAddProductPage extends StatefulWidget {
-  const ProductPartnerAddProductPage({Key? key}) : super(key: key);
+  final VendorProduct? product;
+  
+  const ProductPartnerAddProductPage({
+    Key? key,
+    this.product,
+  }) : super(key: key);
 
   @override
   State<ProductPartnerAddProductPage> createState() => _ProductPartnerAddProductPageState();
@@ -20,8 +26,11 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
   final _howItWorksController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
+  final _uspController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final _imagePicker = ImagePicker();
+  bool _isActive = true;
 
   @override
   void initState() {
@@ -34,6 +43,35 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+
+    // Schedule the initialization after the widget is mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeForm();
+    });
+  }
+
+  void _initializeForm() {
+    print('Initializing form with product: ${widget.product?.toJson()}');
+    if (widget.product != null) {
+      print('Product ID: ${widget.product!.productId}');
+      _nameController.text = widget.product!.name;
+      _descriptionController.text = widget.product!.description;
+      _howItWorksController.text = widget.product!.howItWorks;
+      _priceController.text = widget.product!.price.toString();
+      _stockController.text = widget.product!.stock.toString();
+      _isActive = widget.product!.isActive;
+      
+      // Set the USPs in the ViewModel
+      final viewModel = context.read<ProductPartnerAddProductViewModel>();
+      for (final usp in widget.product!.usp) {
+        viewModel.addUSP(usp);
+      }
+      
+      // Set the images in the ViewModel
+      for (final imageUrl in widget.product!.images) {
+        viewModel.addImage(File(imageUrl));
+      }
+    }
   }
 
   @override
@@ -43,6 +81,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     _howItWorksController.dispose();
     _priceController.dispose();
     _stockController.dispose();
+    _uspController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -54,7 +93,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
         return Scaffold(
           backgroundColor: ProductPartnerColorPalette.background,
           appBar: AppBar(
-            title: const Text('Add New Product'),
+            title: Text(widget.product != null ? 'Edit Product' : 'Add New Product'),
             backgroundColor: ProductPartnerColorPalette.primary,
             foregroundColor: Colors.white,
             elevation: 0,
@@ -76,7 +115,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                   child: ListView(
                     padding: const EdgeInsets.all(ProductPartnerColorPalette.spacing),
                     children: [
-                      _buildImageUploadSection(context, viewModel),
+                      _buildImageSection(viewModel),
                       const SizedBox(height: ProductPartnerColorPalette.spacing),
                       _buildBasicInfoSection(context, viewModel),
                       const SizedBox(height: ProductPartnerColorPalette.spacing),
@@ -107,7 +146,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     );
   }
 
-  Widget _buildImageUploadSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+  Widget _buildImageSection(ProductPartnerAddProductViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.all(ProductPartnerColorPalette.spacing),
       decoration: BoxDecoration(
@@ -146,7 +185,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
               itemCount: viewModel.images.length + 1,
               itemBuilder: (context, index) {
                 if (index == viewModel.images.length) {
-                  return _buildAddImageButton(context, viewModel);
+                  return _buildAddImageButton(context);
                 }
                 return _buildImagePreview(context, index, viewModel);
               },
@@ -157,7 +196,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     );
   }
 
-  Widget _buildAddImageButton(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+  Widget _buildAddImageButton(BuildContext context) {
     return Container(
       width: 120,
       margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
@@ -169,7 +208,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _pickImage(context, viewModel),
+          onTap: _pickImage,
           borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -194,23 +233,74 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     );
   }
 
-  Future<void> _pickImage(BuildContext context, ProductPartnerAddProductViewModel viewModel) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70, // Compress image to 70% quality
-        maxWidth: 1000, // Limit image width
-        maxHeight: 1000, // Limit image height
-      );
+  Widget _buildImagePreview(BuildContext context, int index, ProductPartnerAddProductViewModel viewModel) {
+    final imagePath = viewModel.images[index];
+    final isNetworkImage = imagePath.startsWith('http');
 
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+            child: isNetworkImage
+                ? CachedNetworkImage(
+                    imageUrl: imagePath,
+                    fit: BoxFit.cover,
+                    width: 120,
+                    height: 120,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.error_outline),
+                    ),
+                  )
+                : Image.file(
+                    File(imagePath),
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                onPressed: () => _removeImage(index),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+        maxWidth: 1000,
+        maxHeight: 1000,
+      );
       if (image != null) {
-        // Convert XFile to File
-        final File imageFile = File(image.path);
-        
-        // TODO: Upload image to server and get URL
-        // For now, we'll use the local file path
-        viewModel.addImage(imageFile.path);
+        final viewModel = context.read<ProductPartnerAddProductViewModel>();
+        await viewModel.addImage(File(image.path));
       }
     } catch (e) {
       if (mounted) {
@@ -228,39 +318,15 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     }
   }
 
-  Widget _buildImagePreview(BuildContext context, int index, ProductPartnerAddProductViewModel viewModel) {
-    final String imagePath = viewModel.images[index];
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
-        image: DecorationImage(
-          image: imagePath.startsWith('http')
-              ? NetworkImage(imagePath) as ImageProvider
-              : FileImage(File(imagePath)),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                onPressed: () => viewModel.removeImage(index),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _removeImage(int index) async {
+    try {
+      final viewModel = context.read<ProductPartnerAddProductViewModel>();
+      await viewModel.removeImage(index);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error removing image: $e')),
+      );
+    }
   }
 
   Widget _buildBasicInfoSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
@@ -551,8 +617,12 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
             ],
           ),
           Switch(
-            value: viewModel.isActive,
-            onChanged: viewModel.setActive,
+            value: _isActive,
+            onChanged: (value) {
+              setState(() {
+                _isActive = value;
+              });
+            },
             activeColor: ProductPartnerColorPalette.success,
             activeTrackColor: ProductPartnerColorPalette.success.withOpacity(0.5),
           ),
@@ -573,9 +643,9 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
         ),
         elevation: 2,
       ),
-      child: const Text(
-        'Add Product',
-        style: TextStyle(
+      child: Text(
+        widget.product != null ? 'Update Product' : 'Add Product',
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
@@ -629,28 +699,192 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
 
   Future<void> _submitForm(BuildContext context, ProductPartnerAddProductViewModel viewModel) async {
     if (_formKey.currentState!.validate()) {
-      final success = await viewModel.createProduct(
-        name: _nameController.text,
-        description: _descriptionController.text,
-        howItWorks: _howItWorksController.text,
-        price: double.parse(_priceController.text),
-        stock: int.parse(_stockController.text),
-      );
+      try {
+        if (viewModel.images.isEmpty) {
+          _showErrorSnackBar(context, 'Please add at least one product image');
+          return;
+        }
 
-      if (success && mounted) {
-        Navigator.pop(context);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(viewModel.error),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
-            ),
-          ),
-        );
+        _showLoadingDialog(context, widget.product != null ? 'Updating product...' : 'Creating product...');
+
+        bool success;
+        if (widget.product != null) {
+          print('Product object: ${widget.product?.toJson()}');
+          print('Product ID from object: ${widget.product?.productId}');
+          
+          if (widget.product?.productId == null || widget.product!.productId!.isEmpty) {
+            if (mounted) {
+              Navigator.pop(context); // Remove loading dialog
+              _showErrorSnackBar(context, 'Invalid product ID. Cannot update product.');
+            }
+            return;
+          }
+
+          print('Starting product update...');
+          print('Product ID: ${widget.product!.productId}');
+          print('Form data:');
+          print('Name: ${_nameController.text}');
+          print('Description: ${_descriptionController.text}');
+          print('How it works: ${_howItWorksController.text}');
+          print('Price: ${_priceController.text}');
+          print('Stock: ${_stockController.text}');
+          print('Category: ${viewModel.selectedCategory}');
+          print('Is Active: $_isActive');
+          print('Images: ${viewModel.images}');
+          print('USPs: ${viewModel.usp}');
+
+          success = await viewModel.updateProduct(
+            productId: widget.product!.productId!,
+            name: _nameController.text,
+            description: _descriptionController.text,
+            howItWorks: _howItWorksController.text,
+            price: double.parse(_priceController.text),
+            stock: int.parse(_stockController.text),
+          );
+        } else {
+          print('Starting product creation...');
+          print('Form data:');
+          print('Name: ${_nameController.text}');
+          print('Description: ${_descriptionController.text}');
+          print('How it works: ${_howItWorksController.text}');
+          print('Price: ${_priceController.text}');
+          print('Stock: ${_stockController.text}');
+          print('Category: ${viewModel.selectedCategory}');
+          print('Is Active: $_isActive');
+          print('Images: ${viewModel.images}');
+          print('USPs: ${viewModel.usp}');
+
+          success = await viewModel.createProduct(
+            name: _nameController.text,
+            description: _descriptionController.text,
+            howItWorks: _howItWorksController.text,
+            price: double.parse(_priceController.text),
+            stock: int.parse(_stockController.text),
+          );
+        }
+
+        if (mounted) {
+          Navigator.pop(context); // Remove loading dialog
+        }
+
+        if (success && mounted) {
+          _showSuccessSnackBar(
+            context, 
+            widget.product != null ? 'Product updated successfully!' : 'Product added successfully!'
+          );
+          
+          await Future.delayed(const Duration(seconds: 1));
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
+        } else if (mounted) {
+          _showErrorSnackBar(
+            context,
+            viewModel.error.isNotEmpty 
+                ? viewModel.error 
+                : widget.product != null 
+                    ? 'Failed to update product. Please try again.'
+                    : 'Failed to add product. Please try again.'
+          );
+        }
+      } catch (e, stackTrace) {
+        print('Error in _submitForm: $e');
+        print('Stack trace: $stackTrace');
+        
+        if (mounted) {
+          Navigator.pop(context); // Remove loading dialog
+          _showErrorSnackBar(
+            context, 
+            'An error occurred: ${e.toString()}\nPlease try again or contact support if the issue persists.'
+          );
+        }
       }
     }
+  }
+
+  void _showLoadingDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: TextStyle(
+                  color: ProductPartnerColorPalette.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(message),
+          ],
+        ),
+        backgroundColor: ProductPartnerColorPalette.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(message),
+            ),
+          ],
+        ),
+        backgroundColor: ProductPartnerColorPalette.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+        ),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 } 

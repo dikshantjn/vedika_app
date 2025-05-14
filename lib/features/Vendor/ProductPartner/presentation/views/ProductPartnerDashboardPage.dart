@@ -124,31 +124,58 @@ class ProductPartnerDashboardPage extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 10,
-                      color: viewModel.isActive 
-                          ? ProductPartnerColorPalette.success
-                          : ProductPartnerColorPalette.error,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      viewModel.isActive ? 'Active' : 'Inactive',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+              InkWell(
+                onTap: viewModel.isStatusLoading ? null : () async {
+                  final newStatus = await viewModel.toggleVendorStatus();
+                  if (newStatus != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          newStatus ? 'Vendor activated successfully' : 'Vendor deactivated successfully',
+                        ),
+                        backgroundColor: newStatus 
+                            ? ProductPartnerColorPalette.success 
+                            : ProductPartnerColorPalette.error,
                       ),
-                    ),
-                  ],
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      if (viewModel.isStatusLoading)
+                        SizedBox(
+                          width: 10,
+                          height: 10,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.circle,
+                          size: 10,
+                          color: viewModel.isActive 
+                              ? ProductPartnerColorPalette.success
+                              : ProductPartnerColorPalette.error,
+                        ),
+                      const SizedBox(width: 6),
+                      Text(
+                        viewModel.isActive ? 'Active' : 'Inactive',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

@@ -101,10 +101,17 @@ class _userLoginScreenState extends State<UserLoginScreen> {
           ),
         ],
       ),
-      child: Icon(
-        Icons.medical_services_rounded,
-        size: 60,
-        color: Colors.white,
+      child: Center(
+        child: ClipOval(
+          child: Container(
+            width: 130,
+            height: 110,
+            child: Image.asset(
+              'assets/logo/Logo.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
       ),
     );
   }
