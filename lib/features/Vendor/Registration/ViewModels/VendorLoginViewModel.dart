@@ -25,6 +25,7 @@ class VendorLoginViewModel extends ChangeNotifier {
     "Blood Bank": 5,
     "Pathology/Diagnostic Center": 6,
     "Delivery Partner": 7,
+    "Product Partner": 8,
   };
 
   /// **🔹 Check Vendor Login Status**
@@ -90,6 +91,9 @@ class VendorLoginViewModel extends ChangeNotifier {
               break;
             case 7: // Delivery Partner
               await Navigator.of(context).pushReplacementNamed(AppRoutes.VendorDeliveryPartnerDashBoard);
+              break;
+            case 8: // Product Partner
+              await Navigator.of(context).pushReplacementNamed(AppRoutes.VendorProductPartnerDashBoard);
               break;
             default:
               print("❌ Unknown role");
@@ -183,6 +187,9 @@ class VendorLoginViewModel extends ChangeNotifier {
         break;
       case 7: // Delivery Partner
         routeToNavigate = AppRoutes.VendorDeliveryPartnerDashBoard;
+        break;
+      case 8: // Product Partner
+        routeToNavigate = AppRoutes.VendorProductPartnerDashBoard;
         break;
       default:
         print("❌ Unknown role");

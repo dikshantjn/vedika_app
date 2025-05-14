@@ -58,7 +58,8 @@ class LoginWidget extends StatelessWidget {
                     "Ambulance Agency",
                     "Blood Bank",
                     "Pathology/Diagnostic Center",
-                    "Delivery Partner"
+                    "Delivery Partner",
+                    "Product Partner"
                   ].map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,

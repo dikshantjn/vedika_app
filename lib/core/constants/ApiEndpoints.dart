@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.44:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.44:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.47:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.47:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
@@ -95,7 +95,9 @@ class ApiEndpoints {
   static const String toggleVendorStatus = '$baseUrl/vendors/toggle-status';
   static const String getVendorStatus = '$baseUrl/vendors/status';
   static const String getOrdersForOrderHistory = '$baseUrl/orders';
-
+  static const String registerProductPartner = '$baseUrl/productPartner/register-product-partner';
+  static const String getProductPartnerProfile = '$baseUrl/productPartner/vendor';
+  static const String getProductPartnerOverview = '$baseUrl/productPartner/vendor';
 
   static const String registerAmbulanceAgency = '$baseUrl/ambulance/register-agency';
   static const String getAmbulanceAgencyProfile = '$baseUrl/ambulance/profile';

@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalRegistrationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/lab_test_registration_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/View/MedicalStoreRegistrationScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/product_partner_registration_screen.dart';
 
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
@@ -28,6 +29,7 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
     VendorTypeOption("Blood Bank", Icons.bloodtype, "Register your blood bank"),
     VendorTypeOption("Pathology/Diagnostic Center", Icons.science, "Join as a diagnostic center"),
     VendorTypeOption("Delivery Partner", Icons.delivery_dining, "Become a delivery partner"),
+    VendorTypeOption("Product Partner", Icons.inventory_2, "Sell your healthcare products"),
   ];
 
   @override
@@ -276,6 +278,9 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
         break;
       case "Delivery Partner":
         registrationScreen = DeliveryPartnerRegistrationForm();
+        break;
+      case "Product Partner":
+        registrationScreen = ProductPartnerRegistrationScreen();
         break;
       default:
         registrationScreen = Container();

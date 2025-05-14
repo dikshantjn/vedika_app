@@ -56,6 +56,7 @@ flutter {
 dependencies {
 //    implementation 'com.google.firebase:firebase-auth:23.2.0'
     implementation 'com.google.android.gms:play-services-maps:19.0.0'
+    implementation 'com.google.android.gms:play-services-location:21.2.0'
 
     // Use only one of the play update/core modules:
     implementation 'com.google.android.play:app-update:2.1.0'

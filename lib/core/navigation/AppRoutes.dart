@@ -40,6 +40,8 @@ import 'package:vedika_healthcare/features/notifications/presentation/view/Notif
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class AppRoutes {
   static const String medicineOrder = "/medicineOrder";
@@ -90,9 +92,12 @@ class AppRoutes {
   static const String VendorBloodBankDashBoard = "/VendorBloodBankDashBoard";
   static const String VendorPathologyDashBoard = "/VendorPathologyDashBoard";
   static const String VendorDeliveryPartnerDashBoard = "/VendorDeliveryPartnerDashBoard";
+  static const String VendorProductPartnerDashBoard = "/VendorProductPartnerDashBoard";
   static const String bloodBankBooking = "/bloodBankBooking";
 
   static Map<String, WidgetBuilder> getRoutes() {
+    final vendorLoginService = VendorLoginService();
+    
     return {
       home: (context) => HomePage(),
       bloodBank: (context) => BloodBankMapScreen(),
@@ -129,6 +134,41 @@ class AppRoutes {
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
       VendorBloodBankDashBoard: (context) => VendorBloodBankMainScreen(),
       VendorPathologyDashBoard: (context) => LabTestDashboardScreen(),
+      VendorProductPartnerDashBoard: (context) => FutureBuilder<String?>(
+        future: vendorLoginService.getVendorId(),
+        builder: (context, snapshot) {
+          print('VendorProductPartnerDashBoard - Connection State: ${snapshot.connectionState}');
+          print('VendorProductPartnerDashBoard - Has Data: ${snapshot.hasData}');
+          print('VendorProductPartnerDashBoard - Data: ${snapshot.data}');
+          print('VendorProductPartnerDashBoard - Error: ${snapshot.error}');
+          
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(
+                child: Text('Error loading vendor ID: ${snapshot.error}'),
+              ),
+            );
+          }
+          
+          if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
+            return const Scaffold(
+              body: Center(
+                child: Text('No vendor ID found. Please login again.'),
+              ),
+            );
+          }
+          
+          return VendorProductPartnerDashBoardScreen(
+            vendorId: snapshot.data!,
+          );
+        },
+      ),
       // VendorDeliveryPartnerDashBoard: (context) => VendorDeliveryPartnerDashBoardScreen(),
     };
   }
