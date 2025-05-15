@@ -49,6 +49,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/Vendor
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/AmbulanceSearchViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/OnlineDoctorConsultationViewModel.dart';
+import 'package:vedika_healthcare/features/home/data/services/ProductCartService.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/CategoryViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/data/services/userCartService.dart';
@@ -76,6 +77,7 @@ import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:dio/dio.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -136,7 +138,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductViewModel()),
         ChangeNotifierProvider(create: (_) => CategoryViewModel()),
         ChangeNotifierProvider(create: (_) => HealthDaysViewModel()),
-        ChangeNotifierProvider(create: (_) => CartAndPlaceOrderViewModel(UserCartService())),
+        ChangeNotifierProvider(create: (_) => CartAndPlaceOrderViewModel(
+          UserCartService(),
+          ProductCartService(Dio()),
+        )),
         ChangeNotifierProvider(create: (_) => DeliveryPartnerViewModel()),
         ChangeNotifierProvider(create: (_) => EmergencyViewModel()),
         ChangeNotifierProvider(create: (_) => HospitalSearchViewModel()),

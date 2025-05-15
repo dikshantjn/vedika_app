@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
@@ -104,6 +104,12 @@ class ApiEndpoints {
   static const String getVendorProduct = '$baseUrl/vendor-product/products';  // Get a single product
   static const String updateVendorProduct = '$baseUrl/vendor-product/products';  // Update a product
   static const String deleteVendorProduct = '$baseUrl/vendor-product/products';  // Delete a product
+  static const String getProductsByCategory = '$baseUrl/vendor-product/get-product-by-category';  // Get products by category
+  static const String addToProductCart = '$baseUrl/product-cart/add';  // Add item to product cart
+  static const String checkProductInCart = '$baseUrl/product-cart/check';  // Check if product is in cart
+  static const String getProductCartItems = '$baseUrl/product-cart/get-cart-items';  // Get product cart items
+  static const String deleteProductCartItem = '$baseUrl/product-cart/delete-cart-item';  // Delete product cart item
+  static const String updateProductCartQuantity = '$baseUrl/product-cart/update-cart-item-qantity';  // Update product cart quantity
 
   static const String registerAmbulanceAgency = '$baseUrl/ambulance/register-agency';
   static const String getAmbulanceAgencyProfile = '$baseUrl/ambulance/profile';
@@ -178,4 +184,9 @@ class ApiEndpoints {
   // New Lab Test Profile APIs
   static const String getLabProfile = '$baseUrl/lab-test/profile';
   static const String updateLabProfile = '$baseUrl/lab-test/profile';
+
+  // 📌 Product Order APIs
+  static const String placeProductOrder = '$baseUrl/product-order/order';
+  static const String getPendingOrdersByVendorId = '$baseUrl/product-order/pending-orders';  // Get pending orders by vendor ID
+  static const String updateProductOrderStatus = '$baseUrl/product-order/order';  // Update product order status
 }

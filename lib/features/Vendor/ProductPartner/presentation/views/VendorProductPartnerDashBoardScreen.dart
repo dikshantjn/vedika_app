@@ -65,7 +65,9 @@ class _VendorProductPartnerDashBoardScreenState
           vendorId: widget.vendorId,
         ),
         const ProductPartnerProductsPage(),
-        const ProductPartnerOrdersPage(),
+        ProductPartnerOrdersPage(
+          vendorId: widget.vendorId,
+        ),
         ProductPartnerProfilePage(
           vendorId: widget.vendorId,
         ),

@@ -9,6 +9,8 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmod
 import 'package:vedika_healthcare/features/medicineDelivery/data/models/DeliveryPartner/DeliveryPartner.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/OrderPlacedBottomSheet.dart';
+import 'package:vedika_healthcare/features/home/data/models/ProductCart.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 
 class OrderSummarySheet extends StatefulWidget {
   final CartAndPlaceOrderViewModel cartViewModel;
@@ -31,6 +33,8 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   final TextEditingController _couponController = TextEditingController();
   final FocusNode _couponFocusNode = FocusNode(); // Added focus node for coupon field
   String _couponError = "";
+  double _totalSubtotal = 0.0; // Add this field to store the total subtotal
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +55,6 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     _couponFocusNode.dispose(); // Clean up focus node
     super.dispose();
   }
-
 
   // Add this new method
   void _handlePaymentSuccess(String paymentId) {
@@ -150,8 +153,6 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -210,11 +211,47 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   }
   Widget _buildOrderSummary() {
     final cartViewModel = widget.cartViewModel;
-    final List<CartModel> cartItems = cartViewModel.cartItems; // Get stored cart items
+    final List<CartModel> cartItems = cartViewModel.cartItems;
+    final List<ProductCart> productCartItems = cartViewModel.productCartItems;
     final Map<String, List<CartModel>> ordersGrouped = {};
 
-    // If cart is empty, show message
-    if (cartItems.isEmpty) {
+    // Calculate subtotal for medicine orders
+    double medicineSubtotal = cartItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+
+    // Calculate subtotal for product items
+    double productSubtotal = productCartItems.fold(0.0, (sum, item) {
+      final productDetails = cartViewModel.productDetails.firstWhere(
+        (product) => product.productId == item.productId,
+        orElse: () => VendorProduct(
+          productId: '',
+          vendorId: '',
+          name: '',
+          category: '',
+          description: '',
+          images: [],
+          price: 0.0,
+          rating: 0.0,
+          howItWorks: '',
+          usp: [],
+          isActive: false,
+          highlights: [],
+          comingSoon: false,
+          stock: 0,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          reviewCount: 0,
+        ),
+      );
+      final price = productDetails.price > 0 ? productDetails.price : (item.price ?? 0.0);
+      final quantity = item.quantity ?? 0;
+      return sum + (price * quantity);
+    });
+
+    // Update the class field with total subtotal
+    _totalSubtotal = medicineSubtotal + productSubtotal;
+
+    // If both cart and product cart are empty, show message
+    if (cartItems.isEmpty && productCartItems.isEmpty) {
       return Center(
         child: Text(
           "No orders found.",
@@ -253,7 +290,7 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '${cartItems.length} Items',
+                '${cartItems.length + productCartItems.length} Items',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -272,60 +309,232 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
           ),
           child: Column(
             children: [
-              ...ordersGrouped.entries.map((entry) {
-                String orderId = entry.key;
-                List<CartModel> items = entry.value;
+              // Show medicine orders if any
+              if (cartItems.isNotEmpty) ...[
+                ...ordersGrouped.entries.map((entry) {
+                  String orderId = entry.key;
+                  List<CartModel> items = entry.value;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.receipt_long, color: ColorPalette.primaryColor, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Order #${orderId.length > 12 ? '${orderId.substring(0, 8)}...' : orderId}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.medication_outlined, color: ColorPalette.primaryColor, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Medicine Order #${orderId.length > 12 ? '${orderId.substring(0, 8)}...' : orderId}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ...items.map((item) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.name,
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ...items.map((item) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        item.name,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      'x${item.quantity}',
                                       style: GoogleFonts.poppins(
                                         fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(
+                                      '₹${(item.price * item.quantity).toStringAsFixed(2)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                         color: Colors.black87,
                                       ),
                                     ),
-                                  ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                      if (entry.key != ordersGrouped.keys.last)
+                        Divider(height: 1, color: Colors.grey[200]),
+                    ],
+                  );
+                }).toList(),
+              ],
+
+              // Show product orders if any
+              if (productCartItems.isNotEmpty) ...[
+                if (cartItems.isNotEmpty) Divider(height: 1, color: Colors.grey[200]),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.shopping_bag_outlined, color: ColorPalette.primaryColor, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Product Items',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...productCartItems.map((item) {
+                        // Find the corresponding product details
+                        final productDetails = cartViewModel.productDetails.firstWhere(
+                          (product) => product.productId == item.productId,
+                          orElse: () => VendorProduct(
+                            productId: '',
+                            vendorId: '',
+                            name: '',
+                            category: '',
+                            description: '',
+                            images: [],
+                            price: 0.0,
+                            rating: 0.0,
+                            howItWorks: '',
+                            usp: [],
+                            isActive: false,
+                            highlights: [],
+                            comingSoon: false,
+                            stock: 0,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                            reviewCount: 0,
+                          ),
+                        );
+
+                        final price = productDetails.price > 0 ? productDetails.price : (item.price ?? 0.0);
+                        final quantity = item.quantity ?? 0;
+                        final name = productDetails.name.isNotEmpty ? productDetails.name : (item.productName ?? 'Product');
+                        final imageUrl = productDetails.images.isNotEmpty 
+                            ? productDetails.images.first 
+                            : item.imageUrl;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Product Image
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: imageUrl != null
+                                    ? Image.network(
+                                        imageUrl,
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Container(
+                                            width: 60,
+                                            height: 60,
+                                            color: Colors.grey[200],
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress.expectedTotalBytes != null
+                                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                    : null,
+                                                valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            width: 60,
+                                            height: 60,
+                                            color: Colors.grey[200],
+                                            child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                          );
+                                        },
+                                      )
+                                    : Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Product Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    if (productDetails.category.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          productDetails.category,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              // Quantity and Price
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
                                   Text(
-                                    'x${item.quantity}',
+                                    'x$quantity',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       color: Colors.grey[600],
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    '₹${(item.price * item.quantity).toStringAsFixed(2)}',
+                                    '₹${(price * quantity).toStringAsFixed(2)}',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -334,16 +543,14 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
                                   ),
                                 ],
                               ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                    if (entry.key != ordersGrouped.keys.last)
-                      Divider(height: 1, color: Colors.grey[200]),
-                  ],
-                );
-              }).toList(),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -360,13 +567,13 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
           ),
           child: Column(
             children: [
-              _priceRow('Subtotal', cartViewModel.subtotal),
+              _priceRow('Subtotal', _totalSubtotal),
               const SizedBox(height: 8),
               _priceRow('Delivery Charge', cartViewModel.deliveryCharge),
               const SizedBox(height: 8),
-              _priceRow('Platform Fee', cartViewModel.total - cartViewModel.subtotal - cartViewModel.deliveryCharge + cartViewModel.discount),
+              _priceRow('Platform Fee', 10.0),
               const Divider(height: 24),
-              _priceRow('Total Amount', cartViewModel.total, isBold: true),
+              _priceRow('Total Amount', _totalSubtotal + cartViewModel.deliveryCharge + 10.0 - cartViewModel.discount, isBold: true),
             ],
           ),
         ),
@@ -375,8 +582,6 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
       ],
     );
   }
-
-
 
   Widget _priceRow(String label, double amount, {bool isBold = false}) {
     return Row(
@@ -498,8 +703,6 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     );
   }
 
-
-
   Widget _discountBox() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -597,26 +800,27 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   void _payNow() {
     FocusScope.of(context).unfocus(); // Dismiss keyboard
 
-    // Ensure latest calculations before payment
-    widget.cartViewModel.setDeliveryCharge(_deliveryCharge);
-    widget.cartViewModel.setDiscount(_discount);
-    widget.cartViewModel.setPlatformFee(_platformFee);
+    // Calculate the final total amount
+    final totalAmount = _totalSubtotal + widget.cartViewModel.deliveryCharge + 10.0 - widget.cartViewModel.discount;
 
-    // Recalculate total
-    widget.cartViewModel.calculateTotal();
+    // Ensure latest calculations before payment
+    widget.cartViewModel.setDeliveryCharge(widget.cartViewModel.deliveryCharge);
+    widget.cartViewModel.setDiscount(widget.cartViewModel.discount);
+    widget.cartViewModel.setPlatformFee(10.0);
 
     // Ensuring total is positive
-    if (widget.cartViewModel.total <= 0) {
+    if (totalAmount <= 0) {
       debugPrint("❌ Payment Aborted: Total amount is zero or negative.");
       return;
     }
 
     // Advanced Logging Before Payment Call
     debugPrint("✅ All checks passed. Proceeding to Razorpay...");
+    debugPrint("💰 Total Amount: $totalAmount");
 
     // Ensuring `handlePayment` is called
     try {
-      double amount = widget.cartViewModel.total.roundToDouble(); // ✅ Ensuring integer conversion
+      double amount = totalAmount.roundToDouble(); // ✅ Ensuring integer conversion
       widget.cartViewModel.handlePayment(amount);
       debugPrint("🎉 Razorpay Payment Triggered Successfully.");
     } catch (e, stackTrace) {

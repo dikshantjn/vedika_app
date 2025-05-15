@@ -86,6 +86,10 @@ class ProductPartnerProductsViewModel extends ChangeNotifier {
           stock: product.stock,
           createdAt: product.createdAt,
           updatedAt: DateTime.now(),
+          highlights: product.highlights,
+          comingSoon: product.comingSoon,
+          rating: product.rating,
+          reviewCount: product.reviewCount,
         );
         notifyListeners();
       }

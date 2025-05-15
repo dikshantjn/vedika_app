@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/home/data/models/Product.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductDetailScreen.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 
 class ProductListScreen extends StatefulWidget {
   final String category;
@@ -131,7 +130,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(viewModel.error!),
+                          Text(
+                            'Error: ${viewModel.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: _loadProducts,
                             child: const Text('Retry'),
@@ -142,8 +145,52 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   }
 
                   if (viewModel.products.isEmpty) {
-                    return const Center(
-                      child: Text('No products found'),
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.subCategory != null
+                                ? 'No products found in ${widget.subCategory}'
+                                : 'No products found in ${widget.category}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please check back later or try a different category',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadProducts,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: categoryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }
 
@@ -158,7 +205,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     itemCount: viewModel.products.length,
                     itemBuilder: (context, index) {
                       final product = viewModel.products[index];
-                      return _buildProductCard(product);
+                      return _buildProductCard(context, product);
                     },
                   );
                 },
@@ -337,7 +384,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Widget _buildProductCard(Product product) {
+  Widget _buildProductCard(BuildContext context, VendorProduct product) {
     final categoryColor = CategoryColorPalette.getCategoryTextColor(widget.category);
     
     return GestureDetector(
@@ -374,7 +421,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
+                      imageUrl: product.images.isNotEmpty ? product.images[0] : '',
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
                         color: Colors.grey[100],
@@ -478,9 +525,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           ),
                         ],
                       )
-                    else if (product.price != null)
+                    else
                       Text(
-                        '₹${product.price!.toStringAsFixed(2)}',
+                        '₹${product.price.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

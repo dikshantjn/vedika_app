@@ -71,6 +71,38 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
       for (final imageUrl in widget.product!.images) {
         viewModel.addImage(File(imageUrl));
       }
+
+      // Set additional images in the ViewModel
+      if (widget.product!.additionalImages != null) {
+        for (final imageUrl in widget.product!.additionalImages!) {
+          viewModel.addAdditionalImage(File(imageUrl));
+        }
+      }
+
+      // Set other additional fields
+      viewModel.setDemoLink(widget.product!.demoLink);
+      viewModel.setVideoUrl(widget.product!.videoUrl);
+      viewModel.setSubCategory(widget.product!.subCategory);
+      viewModel.setComingSoon(widget.product!.comingSoon);
+      
+      // Set highlights
+      if (widget.product!.highlights != null) {
+        for (final highlight in widget.product!.highlights) {
+          viewModel.addHighlight(highlight);
+        }
+      }
+
+      // Set price tiers
+      if (widget.product!.priceTiers != null) {
+        for (final tier in widget.product!.priceTiers!) {
+          viewModel.addPriceTier(tier);
+        }
+      }
+
+      // Set specifications
+      if (widget.product!.specifications != null) {
+        viewModel.setSpecifications(widget.product!.specifications);
+      }
     }
   }
 
@@ -91,9 +123,15 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     return Consumer<ProductPartnerAddProductViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
-          backgroundColor: ProductPartnerColorPalette.background,
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            title: Text(widget.product != null ? 'Edit Product' : 'Add New Product'),
+            title: Text(
+              widget.product != null ? 'Edit Product' : 'Add New Product',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             backgroundColor: ProductPartnerColorPalette.primary,
             foregroundColor: Colors.white,
             elevation: 0,
@@ -120,6 +158,8 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                       _buildBasicInfoSection(context, viewModel),
                       const SizedBox(height: ProductPartnerColorPalette.spacing),
                       _buildDetailsSection(),
+                      const SizedBox(height: ProductPartnerColorPalette.spacing),
+                      _buildAdditionalDetailsSection(context, viewModel),
                       const SizedBox(height: ProductPartnerColorPalette.spacing),
                       _buildUSPSection(context, viewModel),
                       const SizedBox(height: ProductPartnerColorPalette.spacing),
@@ -165,12 +205,19 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
         children: [
           Row(
             children: [
-              Icon(Icons.image, color: ProductPartnerColorPalette.primary),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.image, color: ProductPartnerColorPalette.primary),
+              ),
+              const SizedBox(width: 12),
               Text(
                 'Product Images',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: ProductPartnerColorPalette.textPrimary,
                 ),
@@ -179,7 +226,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
           ),
           const SizedBox(height: ProductPartnerColorPalette.spacing),
           SizedBox(
-            height: 120,
+            height: 140,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: viewModel.images.length + 1,
@@ -198,7 +245,7 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
 
   Widget _buildAddImageButton(BuildContext context) {
     return Container(
-      width: 120,
+      width: 140,
       margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
       decoration: BoxDecoration(
         color: ProductPartnerColorPalette.quickActionBg,
@@ -213,17 +260,25 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 32,
-                color: ProductPartnerColorPalette.primary,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.add_photo_alternate_outlined,
+                  size: 32,
+                  color: ProductPartnerColorPalette.primary,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 'Add Image',
                 style: TextStyle(
                   color: ProductPartnerColorPalette.primary,
                   fontWeight: FontWeight.w500,
+                  fontSize: 14,
                 ),
               ),
             ],
@@ -238,10 +293,17 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     final isNetworkImage = imagePath.startsWith('http');
 
     return Container(
-      width: 120,
+      width: 140,
       margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -251,8 +313,8 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                 ? CachedNetworkImage(
                     imageUrl: imagePath,
                     fit: BoxFit.cover,
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[200],
                       child: const Center(
@@ -266,22 +328,24 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                   )
                 : Image.file(
                     File(imagePath),
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
                     fit: BoxFit.cover,
                   ),
           ),
           Positioned(
-            top: 4,
-            right: 4,
+            top: 8,
+            right: 8,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withOpacity(0.6),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 20),
                 onPressed: () => _removeImage(index),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
               ),
             ),
           ),
@@ -348,12 +412,19 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: ProductPartnerColorPalette.primary),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.info_outline, color: ProductPartnerColorPalette.primary),
+              ),
+              const SizedBox(width: 12),
               Text(
                 'Basic Information',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: ProductPartnerColorPalette.textPrimary,
                 ),
@@ -368,6 +439,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
               prefixIcon: const Icon(Icons.shopping_bag_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
               ),
             ),
             validator: (value) {
@@ -385,6 +464,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
               prefixIcon: const Icon(Icons.category_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
               ),
             ),
             items: viewModel.categories.map((category) {
@@ -423,12 +510,19 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
         children: [
           Row(
             children: [
-              Icon(Icons.description_outlined, color: ProductPartnerColorPalette.primary),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.description_outlined, color: ProductPartnerColorPalette.primary),
+              ),
+              const SizedBox(width: 12),
               Text(
                 'Product Details',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: ProductPartnerColorPalette.textPrimary,
                 ),
@@ -444,6 +538,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
               prefixIcon: const Icon(Icons.description_outlined),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
               ),
             ),
             validator: (value) {
@@ -462,6 +564,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
               prefixIcon: const Icon(Icons.help_outline),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
               ),
             ),
             validator: (value) {
@@ -483,6 +593,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                     prefixIcon: const Icon(Icons.attach_money),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                      borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
                     ),
                   ),
                   validator: (value) {
@@ -507,6 +625,14 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+                      borderSide: BorderSide(color: ProductPartnerColorPalette.primary),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -522,6 +648,762 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAdditionalDetailsSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Container(
+      padding: const EdgeInsets.all(ProductPartnerColorPalette.spacing),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.add_circle_outline, color: ProductPartnerColorPalette.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Additional Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: ProductPartnerColorPalette.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: 'Demo Link',
+              prefixIcon: const Icon(Icons.link),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+            ),
+            onChanged: (value) => viewModel.setDemoLink(value),
+          ),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: 'Video URL',
+              prefixIcon: const Icon(Icons.video_library),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+            ),
+            onChanged: (value) => viewModel.setVideoUrl(value),
+          ),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          TextFormField(
+            decoration: InputDecoration(
+              labelText: 'Sub Category',
+              prefixIcon: const Icon(Icons.category),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+              ),
+            ),
+            onChanged: (value) => viewModel.setSubCategory(value),
+          ),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          _buildHighlightsSection(context, viewModel),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          _buildPriceTiersSection(context, viewModel),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          _buildSpecificationsSection(context, viewModel),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          _buildAdditionalImagesSection(context, viewModel),
+          const SizedBox(height: ProductPartnerColorPalette.spacing),
+          SwitchListTile(
+            title: const Text('Coming Soon'),
+            value: viewModel.comingSoon,
+            onChanged: (value) => viewModel.setComingSoon(value),
+            activeColor: ProductPartnerColorPalette.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightsSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Highlights',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _showAddHighlightDialog(context, viewModel),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Highlight'),
+              style: TextButton.styleFrom(
+                foregroundColor: ProductPartnerColorPalette.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: viewModel.highlights.map((highlight) {
+            return Chip(
+              label: Text(highlight),
+              onDeleted: () => viewModel.removeHighlight(highlight),
+              backgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.1),
+              labelStyle: TextStyle(color: ProductPartnerColorPalette.primary),
+              deleteIconColor: ProductPartnerColorPalette.primary,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceTiersSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Price Tiers',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _showAddPriceTierDialog(context, viewModel),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Price Tier'),
+              style: TextButton.styleFrom(
+                foregroundColor: ProductPartnerColorPalette.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: viewModel.priceTiers.length,
+          itemBuilder: (context, index) {
+            final tier = viewModel.priceTiers[index];
+            return Card(
+              child: ListTile(
+                title: Text(tier.name),
+                subtitle: Text('₹${tier.price}${tier.description != null ? ' - ${tier.description}' : ''}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => viewModel.removePriceTier(index),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecificationsSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Specifications',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _showAddSpecificationDialog(context, viewModel),
+              icon: const Icon(Icons.list_alt),
+              label: const Text('Add Specification'),
+              style: TextButton.styleFrom(
+                foregroundColor: ProductPartnerColorPalette.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (viewModel.specifications != null)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: viewModel.specifications!.length,
+            itemBuilder: (context, index) {
+              final key = viewModel.specifications!.keys.elementAt(index);
+              final value = viewModel.specifications![key];
+              return Card(
+                child: ListTile(
+                  title: Text(key),
+                  subtitle: Text(value.toString()),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () {
+                      final newSpecs = Map<String, dynamic>.from(viewModel.specifications!);
+                      newSpecs.remove(key);
+                      viewModel.setSpecifications(newSpecs);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAdditionalImagesSection(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.photo_library_outlined, color: ProductPartnerColorPalette.primary),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Additional Images',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: viewModel.additionalImages.length + 1,
+            itemBuilder: (context, index) {
+              if (index == viewModel.additionalImages.length) {
+                return _buildAddAdditionalImageButton(context, viewModel);
+              }
+              return _buildAdditionalImagePreview(context, index, viewModel);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddAdditionalImageButton(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
+      decoration: BoxDecoration(
+        color: ProductPartnerColorPalette.quickActionBg,
+        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+        border: Border.all(color: ProductPartnerColorPalette.border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _pickAdditionalImage(viewModel),
+          borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 32,
+                color: ProductPartnerColorPalette.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add Image',
+                style: TextStyle(
+                  color: ProductPartnerColorPalette.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdditionalImagePreview(BuildContext context, int index, ProductPartnerAddProductViewModel viewModel) {
+    final imagePath = viewModel.additionalImages[index];
+    final isNetworkImage = imagePath.startsWith('http');
+
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: ProductPartnerColorPalette.smallSpacing),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+            child: isNetworkImage
+                ? CachedNetworkImage(
+                    imageUrl: imagePath,
+                    fit: BoxFit.cover,
+                    width: 120,
+                    height: 120,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.error_outline),
+                    ),
+                  )
+                : Image.file(
+                    File(imagePath),
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                onPressed: () => viewModel.removeAdditionalImage(index),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAdditionalImage(ProductPartnerAddProductViewModel viewModel) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+        maxWidth: 1000,
+        maxHeight: 1000,
+      );
+      if (image != null) {
+        await viewModel.addAdditionalImage(File(image.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAddHighlightDialog(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.star_outline, color: ProductPartnerColorPalette.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Add Highlight',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: 'Enter Highlight',
+                  hintText: 'Enter a key feature or benefit',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (controller.text.isNotEmpty) {
+                        viewModel.addHighlight(controller.text);
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductPartnerColorPalette.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddPriceTierDialog(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.attach_money, color: ProductPartnerColorPalette.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Add Price Tier',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Tier Name',
+                  hintText: 'e.g., Basic, Premium, Enterprise',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Price',
+                  hintText: 'Enter the price for this tier',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description (Optional)',
+                  hintText: 'Add any additional details about this tier',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (nameController.text.isNotEmpty && priceController.text.isNotEmpty) {
+                        final price = double.tryParse(priceController.text);
+                        if (price != null) {
+                          viewModel.addPriceTier(PriceTier(
+                            name: nameController.text,
+                            price: price,
+                            description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
+                          ));
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductPartnerColorPalette.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddSpecificationDialog(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
+    final keyController = TextEditingController();
+    final valueController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.list_alt, color: ProductPartnerColorPalette.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Add Specification',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: keyController,
+                decoration: InputDecoration(
+                  labelText: 'Specification Name',
+                  hintText: 'e.g., Dimensions, Weight, Material',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: valueController,
+                decoration: InputDecoration(
+                  labelText: 'Value',
+                  hintText: 'Enter the specification value',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (keyController.text.isNotEmpty && valueController.text.isNotEmpty) {
+                        final newSpecs = Map<String, dynamic>.from(viewModel.specifications ?? {});
+                        newSpecs[keyController.text] = valueController.text;
+                        viewModel.setSpecifications(newSpecs);
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductPartnerColorPalette.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -547,21 +1429,23 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
             children: [
               Icon(Icons.star_outline, color: ProductPartnerColorPalette.primary),
               const SizedBox(width: 8),
-              Text(
-                'Unique Selling Points',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: ProductPartnerColorPalette.textPrimary,
+              Expanded(
+                child: Text(
+                  'Unique Selling Points',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ProductPartnerColorPalette.textPrimary,
+                  ),
                 ),
               ),
-              const Spacer(),
               TextButton.icon(
                 onPressed: () => _showAddUSPDialog(context, viewModel),
                 icon: const Icon(Icons.add),
                 label: const Text('Add USP'),
                 style: TextButton.styleFrom(
                   foregroundColor: ProductPartnerColorPalette.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
               ),
             ],
@@ -632,22 +1516,35 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
   }
 
   Widget _buildSubmitButton(BuildContext context, ProductPartnerAddProductViewModel viewModel) {
-    return ElevatedButton(
-      onPressed: () => _submitForm(context, viewModel),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: ProductPartnerColorPalette.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: ProductPartnerColorPalette.spacing),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: ProductPartnerColorPalette.spacing),
+      child: ElevatedButton(
+        onPressed: () => _submitForm(context, viewModel),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ProductPartnerColorPalette.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
+          ),
+          elevation: 2,
         ),
-        elevation: 2,
-      ),
-      child: Text(
-        widget.product != null ? 'Update Product' : 'Add Product',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              widget.product != null ? Icons.save : Icons.add_circle_outline,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              widget.product != null ? 'Update Product' : 'Add Product',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -657,42 +1554,91 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.star_outline, color: ProductPartnerColorPalette.primary),
-            const SizedBox(width: 8),
-            const Text('Add USP'),
-          ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: 'Enter USP',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.star_outline, color: ProductPartnerColorPalette.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Add USP',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: 'Enter USP',
+                  hintText: 'Enter a unique selling point',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ProductPartnerColorPalette.primary, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (controller.text.isNotEmpty) {
+                        viewModel.addUSP(controller.text);
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductPartnerColorPalette.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                viewModel.addUSP(controller.text);
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ProductPartnerColorPalette.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }
@@ -806,31 +1752,28 @@ class _ProductPartnerAddProductPageState extends State<ProductPartnerAddProductP
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(ProductPartnerColorPalette.primary),
+              ),
+              const SizedBox(height: 24),
               Text(
                 message,
                 style: TextStyle(
                   color: ProductPartnerColorPalette.textPrimary,
                   fontWeight: FontWeight.w500,
+                  fontSize: 16,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

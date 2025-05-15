@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/home/data/models/Product.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 import 'package:vedika_healthcare/features/home/data/services/ProductService.dart';
 
 class ProductViewModel extends ChangeNotifier {
-  List<Product> _products = [];
+  final ProductService _productService = ProductService();
+  List<VendorProduct> _products = [];
   String _selectedCategory = '';
   String _selectedSubCategory = '';
   String _searchQuery = '';
@@ -11,7 +12,7 @@ class ProductViewModel extends ChangeNotifier {
   String? _error;
 
   // Getters
-  List<Product> get products => _products;
+  List<VendorProduct> get products => _products;
   String get selectedCategory => _selectedCategory;
   String get selectedSubCategory => _selectedSubCategory;
   String get searchQuery => _searchQuery;
@@ -20,19 +21,18 @@ class ProductViewModel extends ChangeNotifier {
 
   // Load products by category
   Future<void> loadProductsByCategory(String category) async {
-    _isLoading = true;
-    _error = null;
-    _selectedCategory = category;
-    _selectedSubCategory = '';
-    notifyListeners();
-
     try {
-      _products = ProductService.getProductsByCategory(category);
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _products = await _productService.getProductsByCategory(category);
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _error = 'Failed to load products: ${e.toString()}';
       _isLoading = false;
+      _error = e.toString();
       notifyListeners();
     }
   }
@@ -45,7 +45,7 @@ class ProductViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _products = ProductService.getProductsBySubCategory(subCategory);
+      _products = await _productService.getProductsBySubCategory(subCategory);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -57,18 +57,18 @@ class ProductViewModel extends ChangeNotifier {
 
   // Search products
   Future<void> searchProducts(String query) async {
-    _isLoading = true;
-    _error = null;
-    _searchQuery = query;
-    notifyListeners();
-
     try {
-      _products = ProductService.searchProducts(query);
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _products = await _productService.searchProducts(query);
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _error = 'Failed to search products: ${e.toString()}';
       _isLoading = false;
+      _error = e.toString();
       notifyListeners();
     }
   }
@@ -85,7 +85,13 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   // Get product by ID
-  Product? getProductById(String id) {
-    return ProductService.getProductById(id);
+  Future<VendorProduct?> getProductById(String id) async {
+    try {
+      return await _productService.getProductById(id);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
   }
 } 

@@ -1,39 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../data/services/ProductPartnerOrderService.dart';
+import '../../data/models/ProductOrder.dart';
 
 class ProductPartnerOrdersViewModel extends ChangeNotifier {
+  final ProductPartnerOrderService _orderService;
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  List<Map<String, dynamic>> _orders = [];
-  List<Map<String, dynamic>> get orders => _orders;
+  List<ProductOrder> _orders = [];
+  List<ProductOrder> get orders => _orders;
 
-  Future<void> fetchOrders() async {
+  ProductPartnerOrdersViewModel()
+      : _orderService = ProductPartnerOrderService(Dio());
+
+  Future<void> fetchOrders(String vendorId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // TODO: Implement API calls to fetch orders
-      // For now using dummy data
-      await Future.delayed(const Duration(seconds: 1));
-      _orders = [
-        {
-          'id': '1',
-          'customerName': 'John Doe',
-          'total': 299.99,
-          'status': 'Pending',
-          'date': '2024-03-15',
-        },
-        {
-          'id': '2',
-          'customerName': 'Jane Smith',
-          'total': 149.99,
-          'status': 'Completed',
-          'date': '2024-03-14',
-        },
-        // Add more dummy orders as needed
-      ];
+      _orders = await _orderService.getPendingOrdersByVendorId(vendorId);
     } catch (e) {
-      print('Error fetching orders: $e');
+      debugPrint('Error fetching orders: $e');
+      // You might want to handle the error differently, e.g., show a snackbar
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -45,14 +34,14 @@ class ProductPartnerOrdersViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Implement API call to update order status
-      await Future.delayed(const Duration(seconds: 1));
-      final orderIndex = _orders.indexWhere((order) => order['id'] == orderId);
+      final updatedOrder = await _orderService.updateOrderStatus(orderId, newStatus);
+      final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
       if (orderIndex != -1) {
-        _orders[orderIndex]['status'] = newStatus;
+        _orders[orderIndex] = updatedOrder;
       }
     } catch (e) {
-      print('Error updating order status: $e');
+      debugPrint('Error updating order status: $e');
+      rethrow; // Rethrow to handle in UI
     } finally {
       _isLoading = false;
       notifyListeners();

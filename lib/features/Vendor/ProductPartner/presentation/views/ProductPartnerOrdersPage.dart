@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
 import '../viewmodels/ProductPartnerOrdersViewModel.dart';
+import '../../data/models/ProductOrder.dart';
 
-class ProductPartnerOrdersPage extends StatelessWidget {
-  const ProductPartnerOrdersPage({Key? key}) : super(key: key);
+class ProductPartnerOrdersPage extends StatefulWidget {
+  final String vendorId;
+  
+  const ProductPartnerOrdersPage({
+    Key? key,
+    required this.vendorId,
+  }) : super(key: key);
+
+  @override
+  State<ProductPartnerOrdersPage> createState() => _ProductPartnerOrdersPageState();
+}
+
+class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch orders when the page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductPartnerOrdersViewModel>().fetchOrders(widget.vendorId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,9 +111,9 @@ class ProductPartnerOrdersPage extends StatelessWidget {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      _buildOrderList(context, viewModel, 'Pending'),
-                      _buildOrderList(context, viewModel, 'Processing'),
-                      _buildOrderList(context, viewModel, 'Completed'),
+                      _buildOrderList(context, viewModel, 'pending'),
+                      _buildOrderList(context, viewModel, 'processing'),
+                      _buildOrderList(context, viewModel, 'completed'),
                     ],
                   ),
                 ),
@@ -105,7 +126,7 @@ class ProductPartnerOrdersPage extends StatelessWidget {
   }
 
   Widget _buildOrderList(BuildContext context, ProductPartnerOrdersViewModel viewModel, String status) {
-    final filteredOrders = viewModel.orders.where((order) => order['status'] == status).toList();
+    final filteredOrders = viewModel.orders.where((order) => order.status == status).toList();
 
     if (filteredOrders.isEmpty) {
       return Center(
@@ -144,253 +165,161 @@ class ProductPartnerOrdersPage extends StatelessWidget {
       itemCount: filteredOrders.length,
       itemBuilder: (context, index) {
         final order = filteredOrders[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status).withOpacity(0.1),
-                  shape: BoxShape.circle,
+        final user = order.user;
+        
+        return GestureDetector(
+          onTap: () => _showOrderDetailsBottomSheet(context, order, viewModel),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                child: Icon(
-                  _getStatusIcon(status),
-                  color: _getStatusColor(status),
-                ),
-              ),
-              title: Text(
-                'Order #${order['id']}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              subtitle: Column(
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 4),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 16,
-                        color: ProductPartnerColorPalette.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        order['customerName'],
-                        style: TextStyle(
-                          color: ProductPartnerColorPalette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: ProductPartnerColorPalette.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        order['date'],
-                        style: TextStyle(
-                          color: ProductPartnerColorPalette.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${order['total']}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: ProductPartnerColorPalette.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        color: _getStatusColor(status),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(ProductPartnerColorPalette.cardBorderRadius),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Order Details',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Order items list
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: order['items']?.length ?? 0,
-                        itemBuilder: (context, index) {
-                          final item = order['items'][index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: NetworkImage(item['image']),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item['name'],
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Qty: ${item['quantity']}',
-                                        style: TextStyle(
-                                          color: ProductPartnerColorPalette.textSecondary,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '\$${item['price']}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const Divider(height: 24),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Total Amount',
-                            style: TextStyle(
-                              color: ProductPartnerColorPalette.textSecondary,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(status).withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _getStatusIcon(status),
+                              color: _getStatusColor(status),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.name ?? 'Unknown Customer',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.phone_outlined,
+                                    size: 14,
+                                    color: ProductPartnerColorPalette.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    user?.phoneNumber ?? 'N/A',
+                                    style: TextStyle(
+                                      color: ProductPartnerColorPalette.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            color: _getStatusColor(status),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            '\$${order['total']}',
+                            'Items',
                             style: TextStyle(
+                              color: ProductPartnerColorPalette.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${order.orderItems?.length ?? 0}',
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: ProductPartnerColorPalette.primary,
                               fontSize: 16,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          if (status == 'Pending')
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                viewModel.updateOrderStatus(order['id'], 'Processing');
-                              },
-                              icon: const Icon(Icons.sync),
-                              label: const Text('Process Order'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ProductPartnerColorPalette.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
-                                ),
-                              ),
+                          Text(
+                            'Total Amount',
+                            style: TextStyle(
+                              color: ProductPartnerColorPalette.textSecondary,
+                              fontSize: 12,
                             ),
-                          if (status == 'Processing')
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                viewModel.updateOrderStatus(order['id'], 'Completed');
-                              },
-                              icon: const Icon(Icons.check_circle),
-                              label: const Text('Complete Order'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ProductPartnerColorPalette.success,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
-                                ),
-                              ),
-                            ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              // View order details
-                            },
-                            icon: const Icon(Icons.visibility),
-                            label: const Text('View Details'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: ProductPartnerColorPalette.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(ProductPartnerColorPalette.buttonBorderRadius),
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${order.totalAmount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: ProductPartnerColorPalette.primary,
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: ProductPartnerColorPalette.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('MMM dd, yyyy • hh:mm a').format(order.placedAt),
+                        style: TextStyle(
+                          color: ProductPartnerColorPalette.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -398,13 +327,377 @@ class ProductPartnerOrdersPage extends StatelessWidget {
     );
   }
 
+  void _showOrderDetailsBottomSheet(BuildContext context, ProductOrder order, ProductPartnerOrdersViewModel viewModel) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Order Details',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: ProductPartnerColorPalette.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildUserDetails(order),
+                    const SizedBox(height: 24),
+                    _buildOrderItems(order),
+                    const SizedBox(height: 24),
+                    _buildOrderSummary(order),
+                    if (order.status == 'pending') ...[
+                      const SizedBox(height: 24),
+                      _buildActionButtons(order, viewModel),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserDetails(ProductOrder order) {
+    final user = order.user;
+    if (user == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ProductPartnerColorPalette.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person,
+                  color: ProductPartnerColorPalette.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Customer Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildDetailRow('Name', user.name ?? 'N/A'),
+          const SizedBox(height: 8),
+          _buildDetailRow('Phone', user.phoneNumber),
+          const SizedBox(height: 8),
+          _buildDetailRow('Email', user.emailId ?? 'N/A'),
+          const SizedBox(height: 8),
+          _buildDetailRow('Location', user.location ?? 'N/A'),
+          if (user.city != null) ...[
+            const SizedBox(height: 8),
+            _buildDetailRow('City', user.city!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: ProductPartnerColorPalette.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderItems(ProductOrder order) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Order Items',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...order.orderItems!.map((item) {
+          final product = item.vendorProduct;
+          if (product == null) return const SizedBox.shrink();
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: product.images.isNotEmpty
+                      ? Image.network(
+                          product.images.first,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                          ),
+                        )
+                      : Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.category,
+                        style: TextStyle(
+                          color: ProductPartnerColorPalette.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Qty: ${item.quantity}',
+                        style: TextStyle(
+                          color: ProductPartnerColorPalette.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '₹${item.priceAtPurchase.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildOrderSummary(ProductOrder order) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Order Summary',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildSummaryRow(
+            'Total Amount',
+            order.totalAmount,
+            isTotal: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, double amount, {bool isTotal = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: isTotal ? ProductPartnerColorPalette.textPrimary : ProductPartnerColorPalette.textSecondary,
+          ),
+        ),
+        Text(
+          '₹${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: isTotal ? ProductPartnerColorPalette.primary : ProductPartnerColorPalette.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ProductOrder order, ProductPartnerOrdersViewModel viewModel) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: viewModel.isLoading 
+              ? null 
+              : () async {
+                  try {
+                    await viewModel.updateOrderStatus(order.orderId, 'confirmed');
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Order status updated successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update order status: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+            icon: viewModel.isLoading 
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.check_circle),
+            label: Text(viewModel.isLoading ? 'Updating...' : 'Confirm Order'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ProductPartnerColorPalette.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Pending':
+      case 'pending':
         return Colors.orange;
-      case 'Processing':
+      case 'processing':
         return Colors.blue;
-      case 'Completed':
+      case 'completed':
         return Colors.green;
       default:
         return Colors.grey;
@@ -413,11 +706,11 @@ class ProductPartnerOrdersPage extends StatelessWidget {
 
   IconData _getStatusIcon(String status) {
     switch (status) {
-      case 'Pending':
+      case 'pending':
         return Icons.pending_actions;
-      case 'Processing':
+      case 'processing':
         return Icons.sync;
-      case 'Completed':
+      case 'completed':
         return Icons.check_circle;
       default:
         return Icons.help;
