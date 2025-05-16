@@ -17,21 +17,49 @@ class ProductPartnerOrdersPage extends StatefulWidget {
   State<ProductPartnerOrdersPage> createState() => _ProductPartnerOrdersPageState();
 }
 
-class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
+class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isRefreshing = false;
+  bool _isUpdatingStatus = false;
+  String? _updatingOrderId;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     // Fetch orders when the page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductPartnerOrdersViewModel>().fetchOrders(widget.vendorId);
+      _refreshOrders();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshOrders() async {
+    if (_isRefreshing) return;
+    
+    setState(() => _isRefreshing = true);
+    try {
+      final viewModel = context.read<ProductPartnerOrdersViewModel>();
+      await viewModel.fetchOrders(widget.vendorId);
+      await viewModel.fetchConfirmedOrders(widget.vendorId);
+      await viewModel.fetchDeliveredOrders(widget.vendorId);
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductPartnerOrdersViewModel>(
       builder: (context, viewModel, child) {
-        if (viewModel.isLoading) {
+        if (viewModel.isLoading && !_isRefreshing) {
           return const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(ProductPartnerColorPalette.primary),
@@ -39,94 +67,111 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
           );
         }
 
-        return DefaultTabController(
-          length: 3,
-          child: Scaffold(
-            backgroundColor: ProductPartnerColorPalette.background,
-            body: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TabBar(
-                    labelColor: ProductPartnerColorPalette.primary,
-                    unselectedLabelColor: ProductPartnerColorPalette.textSecondary,
-                    indicatorColor: ProductPartnerColorPalette.primary,
-                    indicatorWeight: 3,
-                    tabs: [
-                      Tab(
-                        height: 72,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.pending_actions, size: 24),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Pending',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        height: 72,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.sync, size: 24),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Processing',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        height: 72,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle, size: 24),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Completed',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+        return Scaffold(
+          backgroundColor: ProductPartnerColorPalette.background,
+          body: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildOrderList(context, viewModel, 'pending'),
-                      _buildOrderList(context, viewModel, 'processing'),
-                      _buildOrderList(context, viewModel, 'completed'),
-                    ],
-                  ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: ProductPartnerColorPalette.primary,
+                  unselectedLabelColor: ProductPartnerColorPalette.textSecondary,
+                  indicatorColor: ProductPartnerColorPalette.primary,
+                  indicatorWeight: 3,
+                  tabs: [
+                    Tab(
+                      height: 72,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.pending_actions, size: 24),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Pending',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      height: 72,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sync, size: 24),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Processing',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      height: 72,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle, size: 24),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Completed',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildRefreshableOrderList(context, viewModel, 'pending'),
+                    _buildRefreshableOrderList(context, viewModel, 'processing'),
+                    _buildRefreshableOrderList(context, viewModel, 'completed'),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildOrderList(BuildContext context, ProductPartnerOrdersViewModel viewModel, String status) {
-    final filteredOrders = viewModel.orders.where((order) => order.status == status).toList();
+  Widget _buildRefreshableOrderList(BuildContext context, ProductPartnerOrdersViewModel viewModel, String status) {
+    List<ProductOrder> filteredOrders;
+    
+    if (status == 'processing') {
+      // For the Processing tab, show all processing-related statuses
+      filteredOrders = viewModel.orders.where((order) => 
+        order.status == 'confirmed' || 
+        order.status == 'processing' || 
+        order.status == 'shipped' || 
+        order.status == 'out_for_delivery'
+      ).toList();
+    } else if (status == 'completed') {
+      // For the Completed tab, show delivered orders
+      filteredOrders = viewModel.deliveredOrders;
+    } else {
+      // For the Pending tab, show only pending orders
+      filteredOrders = viewModel.orders.where((order) => 
+        order.status == 'pending'
+      ).toList();
+    }
 
     if (filteredOrders.isEmpty) {
       return Center(
@@ -140,7 +185,11 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No $status Orders',
+              status == 'processing' 
+                ? 'No Processing Orders' 
+                : status == 'completed'
+                  ? 'No Completed Orders'
+                  : 'No Pending Orders',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -149,7 +198,11 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Orders will appear here when they are $status',
+              status == 'processing'
+                ? 'Orders will appear here when they are confirmed, processing, shipped, or out for delivery'
+                : status == 'completed'
+                  ? 'Orders will appear here when they are delivered'
+                  : 'Orders will appear here when they are pending',
               style: TextStyle(
                 fontSize: 14,
                 color: ProductPartnerColorPalette.textSecondary,
@@ -160,170 +213,175 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: filteredOrders.length,
-      itemBuilder: (context, index) {
-        final order = filteredOrders[index];
-        final user = order.user;
-        
-        return GestureDetector(
-          onTap: () => _showOrderDetailsBottomSheet(context, order, viewModel),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(status).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _getStatusIcon(status),
-                              color: _getStatusColor(status),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.name ?? 'Unknown Customer',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.phone_outlined,
-                                    size: 14,
-                                    color: ProductPartnerColorPalette.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    user?.phoneNumber ?? 'N/A',
-                                    style: TextStyle(
-                                      color: ProductPartnerColorPalette.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: TextStyle(
-                            color: _getStatusColor(status),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Items',
-                            style: TextStyle(
-                              color: ProductPartnerColorPalette.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${order.orderItems?.length ?? 0}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Total Amount',
-                            style: TextStyle(
-                              color: ProductPartnerColorPalette.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹${order.totalAmount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: ProductPartnerColorPalette.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: ProductPartnerColorPalette.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('MMM dd, yyyy • hh:mm a').format(order.placedAt),
-                        style: TextStyle(
-                          color: ProductPartnerColorPalette.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+    return RefreshIndicator(
+      onRefresh: _refreshOrders,
+      color: ProductPartnerColorPalette.primary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        itemCount: filteredOrders.length,
+        itemBuilder: (context, index) {
+          final order = filteredOrders[index];
+          final user = order.user;
+          final orderStatus = order.status;
+          
+          return GestureDetector(
+            onTap: () => _showOrderDetailsBottomSheet(context, order, viewModel),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(orderStatus).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getStatusIcon(orderStatus),
+                                color: _getStatusColor(orderStatus),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.name ?? 'Unknown Customer',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.phone_outlined,
+                                      size: 14,
+                                      color: ProductPartnerColorPalette.textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      user?.phoneNumber ?? 'N/A',
+                                      style: TextStyle(
+                                        color: ProductPartnerColorPalette.textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(orderStatus).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            orderStatus.toUpperCase(),
+                            style: TextStyle(
+                              color: _getStatusColor(orderStatus),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Items',
+                              style: TextStyle(
+                                color: ProductPartnerColorPalette.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${order.orderItems?.length ?? 0}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Total Amount',
+                              style: TextStyle(
+                                color: ProductPartnerColorPalette.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₹${order.totalAmount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: ProductPartnerColorPalette.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: ProductPartnerColorPalette.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('MMM dd, yyyy • hh:mm a').format(order.placedAt),
+                          style: TextStyle(
+                            color: ProductPartnerColorPalette.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -395,8 +453,13 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
                     _buildOrderItems(order),
                     const SizedBox(height: 24),
                     _buildOrderSummary(order),
-                    if (order.status == 'pending') ...[
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                    // Show action buttons for orders in pending tab or processing tab
+                    if (order.status == 'pending' || 
+                        order.status == 'confirmed' || 
+                        order.status == 'processing' || 
+                        order.status == 'shipped' || 
+                        order.status == 'out_for_delivery') ...[
                       _buildActionButtons(order, viewModel),
                     ],
                   ],
@@ -636,55 +699,123 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
   }
 
   Widget _buildActionButtons(ProductOrder order, ProductPartnerOrdersViewModel viewModel) {
-    return Row(
+    // Define the status progression
+    final Map<String, Map<String, dynamic>> statusProgression = {
+      'pending': {
+        'nextStatus': 'confirmed',
+        'buttonText': 'Confirm Order',
+        'icon': Icons.check_circle,
+      },
+      'confirmed': {
+        'nextStatus': 'processing',
+        'buttonText': 'Start Processing',
+        'icon': Icons.sync,
+      },
+      'processing': {
+        'nextStatus': 'shipped',
+        'buttonText': 'Mark as Shipped',
+        'icon': Icons.local_shipping,
+      },
+      'shipped': {
+        'nextStatus': 'out_for_delivery',
+        'buttonText': 'Out for Delivery',
+        'icon': Icons.delivery_dining,
+      },
+      'out_for_delivery': {
+        'nextStatus': 'delivered',
+        'buttonText': 'Mark as Delivered',
+        'icon': Icons.check_circle,
+      },
+    };
+
+    // Get the next status configuration
+    final nextStatusConfig = statusProgression[order.status];
+
+    // If no next status is available, don't show any button
+    if (nextStatusConfig == null) {
+      return const SizedBox.shrink();
+    }
+
+    final String nextStatus = nextStatusConfig['nextStatus'] as String;
+    final String buttonText = nextStatusConfig['buttonText'] as String;
+    final IconData icon = nextStatusConfig['icon'] as IconData;
+
+    final bool isThisOrderUpdating = _isUpdatingStatus && _updatingOrderId == order.orderId;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: viewModel.isLoading 
-              ? null 
-              : () async {
-                  try {
-                    await viewModel.updateOrderStatus(order.orderId, 'confirmed');
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Order status updated successfully'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to update order status: ${e.toString()}'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+        Text(
+          'Update Order Status',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: ProductPartnerColorPalette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: isThisOrderUpdating 
+            ? null 
+            : () async {
+                setState(() {
+                  _isUpdatingStatus = true;
+                  _updatingOrderId = order.orderId;
+                });
+                
+                try {
+                  await viewModel.updateOrderStatus(order.orderId, nextStatus);
+                  if (mounted) {
+                    // Refresh orders after successful status update
+                    await _refreshOrders();
+                    // Keep the current tab index
+                    final currentIndex = _tabController.index;
+                    _tabController.animateTo(currentIndex);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Order status updated to $nextStatus'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   }
-                },
-            icon: viewModel.isLoading 
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Icon(Icons.check_circle),
-            label: Text(viewModel.isLoading ? 'Updating...' : 'Confirm Order'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ProductPartnerColorPalette.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to update order status: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() {
+                      _isUpdatingStatus = false;
+                      _updatingOrderId = null;
+                    });
+                  }
+                }
+              },
+          icon: isThisOrderUpdating 
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Icon(icon),
+          label: Text(isThisOrderUpdating ? 'Updating...' : buttonText),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ProductPartnerColorPalette.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
+            disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
           ),
         ),
       ],
@@ -695,9 +826,15 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
     switch (status) {
       case 'pending':
         return Colors.orange;
+      case 'confirmed':
+        return Colors.blue;
       case 'processing':
         return Colors.blue;
-      case 'completed':
+      case 'shipped':
+        return Colors.purple;
+      case 'out_for_delivery':
+        return Colors.deepPurple;
+      case 'delivered':
         return Colors.green;
       default:
         return Colors.grey;
@@ -708,9 +845,15 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> {
     switch (status) {
       case 'pending':
         return Icons.pending_actions;
+      case 'confirmed':
+        return Icons.check_circle;
       case 'processing':
         return Icons.sync;
-      case 'completed':
+      case 'shipped':
+        return Icons.local_shipping;
+      case 'out_for_delivery':
+        return Icons.delivery_dining;
+      case 'delivered':
         return Icons.check_circle;
       default:
         return Icons.help;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/services/ProductPartnerOrderService.dart';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
 import '../../../../../core/auth/presentation/viewmodel/AuthViewModel.dart';
 import '../viewmodels/ProductPartnerDashboardViewModel.dart';
@@ -14,6 +15,7 @@ import 'ProductPartnerProfilePage.dart';
 import 'ProductPartnerAddProductPage.dart';
 import 'ProductPartnerSettingsPage.dart';
 import 'ProductPartnerNotificationsPage.dart';
+import 'package:dio/dio.dart';
 
 class VendorProductPartnerDashBoardScreen extends StatefulWidget {
   final String vendorId;
@@ -185,7 +187,11 @@ class _VendorProductPartnerDashBoardScreenState
           },
         ),
         ChangeNotifierProvider(create: (_) => ProductPartnerProductsViewModel()),
-        ChangeNotifierProvider(create: (_) => ProductPartnerOrdersViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => ProductPartnerOrdersViewModel(
+            ProductPartnerOrderService(Dio()),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ProductPartnerProfileViewModel()),
         ChangeNotifierProvider(create: (_) => ProductPartnerAddProductViewModel()),
         ChangeNotifierProvider<AuthViewModel>(

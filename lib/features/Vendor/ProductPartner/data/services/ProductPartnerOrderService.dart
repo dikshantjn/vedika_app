@@ -59,6 +59,86 @@ class ProductPartnerOrderService {
     }
   }
 
+  Future<List<ProductOrder>> getConfirmedOrdersByVendorId(String vendorId) async {
+    try {
+      _logger.i('Fetching confirmed orders for vendor: $vendorId');
+      
+      final response = await _dio.get(
+        '${ApiEndpoints.getConfirmedOrdersByVendorId}/$vendorId',
+      );
+
+      _logger.i('Response status code: ${response.statusCode}');
+      _logger.i('Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> ordersData = response.data['confirmedOrders'];
+        _logger.i('Found ${ordersData.length} confirmed orders');
+        
+        return ordersData.map((orderData) {
+          _logger.i('Processing order: ${orderData['orderId']}');
+          _logger.i('User data: ${orderData['User']}');
+          
+          return ProductOrder.fromJson(orderData);
+        }).toList();
+      } else {
+        _logger.e('Failed to fetch confirmed orders: ${response.statusMessage}');
+        throw Exception('Failed to fetch confirmed orders');
+      }
+    } on DioException catch (e) {
+      _logger.e('Dio error fetching confirmed orders: ${e.message}');
+      if (e.response != null) {
+        _logger.e('Error response: ${e.response?.data}');
+      }
+      if (e.response?.statusCode == 404) {
+        throw Exception('No confirmed orders found');
+      }
+      throw Exception('Error fetching confirmed orders: ${e.message}');
+    } catch (e) {
+      _logger.e('Error fetching confirmed orders: $e');
+      throw Exception('Error fetching confirmed orders: $e');
+    }
+  }
+
+  Future<List<ProductOrder>> getDeliveredOrdersByVendorId(String vendorId) async {
+    try {
+      _logger.i('Fetching delivered orders for vendor: $vendorId');
+      
+      final response = await _dio.get(
+        '${ApiEndpoints.getDeliveredOrdersByVendorId}/$vendorId',
+      );
+
+      _logger.i('Response status code: ${response.statusCode}');
+      _logger.i('Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> ordersData = response.data['deliveredOrders'];
+        _logger.i('Found ${ordersData.length} delivered orders');
+        
+        return ordersData.map((orderData) {
+          _logger.i('Processing order: ${orderData['orderId']}');
+          _logger.i('User data: ${orderData['User']}');
+          
+          return ProductOrder.fromJson(orderData);
+        }).toList();
+      } else {
+        _logger.e('Failed to fetch delivered orders: ${response.statusMessage}');
+        throw Exception('Failed to fetch delivered orders');
+      }
+    } on DioException catch (e) {
+      _logger.e('Dio error fetching delivered orders: ${e.message}');
+      if (e.response != null) {
+        _logger.e('Error response: ${e.response?.data}');
+      }
+      if (e.response?.statusCode == 404) {
+        throw Exception('No delivered orders found');
+      }
+      throw Exception('Error fetching delivered orders: ${e.message}');
+    } catch (e) {
+      _logger.e('Error fetching delivered orders: $e');
+      throw Exception('Error fetching delivered orders: $e');
+    }
+  }
+
   Future<ProductOrder> updateOrderStatus(String orderId, String status) async {
     try {
       _logger.i('Updating order status for order: $orderId to: $status');

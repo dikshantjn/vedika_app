@@ -84,30 +84,40 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   }
 
   Future<void> fetchOrdersAndCartItems() async {
+    debugPrint("🔄 Starting to fetch orders and cart items...");
     _isLoading = true;
     notifyListeners();
 
     try {
       String? userId = await StorageService.getUserId();
       if (userId == null) {
+        debugPrint("❌ User ID not found");
         _isLoading = false;
         notifyListeners();
         return;
       }
+      debugPrint("👤 User ID: $userId");
 
       // Fetch existing product items
+      debugPrint("📦 Fetching user cart items...");
       final existingItems = await _userCartService.getUserCart(userId);
+      debugPrint("📦 Fetched ${existingItems.length} cart items");
       _cartItems = existingItems;
 
       // Fetch medicine orders
+      debugPrint("💊 Fetching medicine orders...");
       final medicineOrders = await _userCartService.fetchOrdersByUserId(userId);
+      debugPrint("💊 Fetched ${medicineOrders.length} medicine orders");
       _orders = medicineOrders;
 
       // Fetch product cart items
+      debugPrint("🛍️ Fetching product cart items...");
       final productItems = await _productCartService.getProductCartItems();
+      debugPrint("🛍️ Fetched ${productItems.length} product cart items");
       _productCartItems = productItems;
 
       // Fetch product details for each cart item
+      debugPrint("🔍 Fetching product details...");
       _productDetails = [];
       for (var cartItem in _productCartItems) {
         if (cartItem.productId != null && cartItem.productId!.isNotEmpty) {
@@ -115,26 +125,41 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
             final product = await _productService.getProductById(cartItem.productId!);
             if (product != null) {
               _productDetails.add(product);
+              debugPrint("✅ Found product details for ID: ${cartItem.productId}");
             } else {
-              print('Warning: No product details found for product ID: ${cartItem.productId}');
+              debugPrint('⚠️ No product details found for product ID: ${cartItem.productId}');
             }
           } catch (e) {
-            print('Error fetching product details for ID ${cartItem.productId}: $e');
+            debugPrint('❌ Error fetching product details for ID ${cartItem.productId}: $e');
           }
         } else {
-          print('Warning: Cart item has null or empty product ID');
+          debugPrint('⚠️ Cart item has null or empty product ID');
         }
       }
 
       // Update total item count
       _totalItemCount = _cartItems.length + _productCartItems.length;
+      debugPrint("📊 Total items in cart: $_totalItemCount");
+      debugPrint("📊 Medicine cart items: ${_cartItems.length}");
+      debugPrint("📊 Product cart items: ${_productCartItems.length}");
       
+      // Calculate subtotal
       _calculateSubtotal(_cartItems);
-    } catch (e) {
-      print('Error fetching cart items: $e');
+      debugPrint("💰 Subtotal calculated: $_subtotal");
+
+      // Print cart items for debugging
+      debugPrint("🛒 Current cart items:");
+      for (var item in _cartItems) {
+        debugPrint("- ${item.name} (Quantity: ${item.quantity}, Price: ${item.price})");
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error fetching cart items: $e");
+      debugPrint("❌ Stack trace: $stackTrace");
     } finally {
       _isLoading = false;
       notifyListeners();
+      debugPrint("✅ Finished fetching orders and cart items");
     }
   }
 
@@ -251,14 +276,20 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   // **🔹 Calculate Subtotal**
   void _calculateSubtotal(List<CartModel> cartItems) {
+    debugPrint("💰 Calculating subtotal for ${cartItems.length} items");
     double newSubtotal = 0.0;
     for (var item in cartItems) {
-      newSubtotal += item.price * item.quantity;
+      double itemTotal = item.price * item.quantity;
+      newSubtotal += itemTotal;
+      debugPrint("- ${item.name}: ${item.quantity} x ${item.price} = $itemTotal");
     }
 
     if (_subtotal != newSubtotal) {
+      debugPrint("💰 Updating subtotal from $_subtotal to $newSubtotal");
       _subtotal = newSubtotal;
       calculateTotal();
+    } else {
+      debugPrint("💰 Subtotal unchanged: $_subtotal");
     }
   }
 
@@ -474,6 +505,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         debugPrint("❌ User ID not found for socket registration");
         return;
       }
+      debugPrint("👤 User ID for socket: $userId");
 
       // Close existing socket if any
       _socket?.disconnect();
@@ -498,6 +530,10 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       _socket!.onConnect((_) {
         debugPrint('✅ Socket connected for cart updates');
         _socket!.emit('register', userId);
+        debugPrint('📡 Emitted register event with userId: $userId');
+        
+        // Fetch cart items immediately after connection
+        fetchOrdersAndCartItems();
       });
 
       _socket!.onConnectError((data) {
@@ -528,7 +564,9 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       // Add ping/pong handlers
       _socket!.on('ping', (_) {
+        debugPrint('📡 Received ping');
         _socket!.emit('pong');
+        debugPrint('📡 Sent pong');
       });
 
       // Connect to the socket
@@ -562,15 +600,23 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       final totalItems = cartData['totalItems'];
       
       if (orderId != null && newCartItems != null) {
+        debugPrint('🛒 Updating cart for order: $orderId');
+        debugPrint('🛒 New cart items: $newCartItems');
+        
         // Convert new items to CartModel objects
-        List<CartModel> parsedNewItems = (newCartItems as List).map((item) => CartModel.fromJson(item)).toList();
+        List<CartModel> parsedNewItems = (newCartItems as List).map((item) {
+          debugPrint('🔄 Converting item: $item');
+          return CartModel.fromJson(item);
+        }).toList();
+        
+        debugPrint('🛒 Converted ${parsedNewItems.length} items');
         
         // Replace the entire cart items list with the new items
-        // This ensures we have the exact state from the backend
         _cartItems = parsedNewItems;
         
         // Update total item count based on unique items
         _totalItemCount = _cartItems.length;
+        debugPrint('📊 Updated total items: $_totalItemCount');
         
         // Recalculate totals
         _calculateSubtotal(_cartItems);
@@ -578,10 +624,14 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         // Notify listeners to update UI
         if (mounted) {
           notifyListeners();
+          debugPrint('🔄 UI updated with new cart data');
         }
         
-        debugPrint('✅ Cart updated successfully. Total items: $_totalItemCount');
-        debugPrint('🛒 Current cart items: ${_cartItems.length}');
+        debugPrint('✅ Cart updated successfully');
+        debugPrint('🛒 Current cart items:');
+        for (var item in _cartItems) {
+          debugPrint("- ${item.name} (Quantity: ${item.quantity}, Price: ${item.price})");
+        }
       } else {
         debugPrint('❌ Missing orderId or cartItems in data: $cartData');
       }

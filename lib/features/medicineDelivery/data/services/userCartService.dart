@@ -14,30 +14,38 @@ class UserCartService {
   Future<List<CartModel>> getUserCart(String userId) async {
     try {
       final response = await dio.get(
-        '${ApiEndpoints.getCartItemsByUserId}/$userId', // Make sure the endpoint is correct
+        '${ApiEndpoints.getCartItemsByUserId}/$userId/AddedItemsInCart',
       );
 
-      // Print the full response data
-      print('Response: ${response.data}');  // This will print the response data
+      debugPrint('Response Cart Items: ${response.data}');
 
-      // Check if the request is successful
       if (response.statusCode == 200) {
-        // Extract the cart items from the response
-        List<dynamic> cartItemsData = response.data['allCartItems'] ?? [];
+        // First get the pending orders
+        List<dynamic> pendingOrders = response.data['pendingOrders'] ?? [];
+        debugPrint('Found ${pendingOrders.length} pending orders');
 
-        // Map the raw data to a list of CartModel
-        List<CartModel> cartItems = cartItemsData.map((item) {
-          return CartModel.fromJson(item);  // Convert each item to CartModel
-        }).toList();
+        List<CartModel> allCartItems = [];
 
-        return cartItems;
+        // For each pending order, fetch its cart items
+        for (var order in pendingOrders) {
+          String orderId = order['orderId'];
+          debugPrint('Fetching cart items for order: $orderId');
+          
+          // Fetch cart items for this order
+          List<CartModel> orderCartItems = await fetchCartItemsByOrderId(orderId);
+          debugPrint('Found ${orderCartItems.length} items for order $orderId');
+          
+          allCartItems.addAll(orderCartItems);
+        }
+
+        debugPrint('Total cart items found: ${allCartItems.length}');
+        return allCartItems;
       } else {
-        // Return an empty list if the status code is not 200
+        debugPrint('Failed to fetch cart items. Status code: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      // Handle any error during the request and return an empty list
-      print('Error fetching cart items: $e');
+      debugPrint('Error fetching cart items: $e');
       return [];
     }
   }
