@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/EnableLocationWidget.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 
 class MedicineOrderScreen extends StatefulWidget {
   const MedicineOrderScreen({Key? key}) : super(key: key);
@@ -211,7 +212,10 @@ class _MedicineOrderScreenState extends State<MedicineOrderScreen> with SingleTi
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) => TrackOrderScreen(),
+                                                        builder: (context) => ChangeNotifierProvider(
+                                                          create: (_) => TrackOrderViewModel(),
+                                                          child: const TrackOrderScreen(),
+                                                        ),
                                                       ),
                                                     );
                                                   },

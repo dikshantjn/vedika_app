@@ -8,6 +8,8 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tab
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BedBookingTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BloodBankTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ClinicAppointmentTab.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ProductOrdersTab.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/OrderHistoryViewModel.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
@@ -51,6 +53,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       LabTestTab(),
       BloodBankTab(),
       ClinicAppointmentTab(),
+      ProductOrdersTab(),
     ];
   }
 
@@ -61,12 +64,16 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     'Lab Test',
     'Blood Bank',
     'Clinic',
+    'Products',
   ];
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ClinicAppointmentViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ClinicAppointmentViewModel()),
+        ChangeNotifierProvider(create: (_) => OrderHistoryViewModel()),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(

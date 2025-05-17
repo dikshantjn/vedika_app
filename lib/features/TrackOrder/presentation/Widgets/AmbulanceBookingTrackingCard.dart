@@ -7,21 +7,33 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBookingRazorPayService.dart';
 
-class AmbulanceBookingTrackingCard extends StatelessWidget {
+class AmbulanceBookingTrackingCard extends StatefulWidget {
   final List<AmbulanceBooking> bookings;
 
   const AmbulanceBookingTrackingCard({Key? key, required this.bookings}) : super(key: key);
 
   @override
+  State<AmbulanceBookingTrackingCard> createState() => _AmbulanceBookingTrackingCardState();
+}
+
+class _AmbulanceBookingTrackingCardState extends State<AmbulanceBookingTrackingCard> {
+  final Map<String, int> _previousStepIndices = {};
+
+  @override
   Widget build(BuildContext context) {
-    if (bookings.isEmpty) {
+    if (widget.bookings.isEmpty) {
       return const Center(child: Text("No ambulance bookings found."));
     }
 
     return Column(
-      children: bookings.map((booking) {
+      children: widget.bookings.map((booking) {
         final steps = _getSteps(booking.status);
         final currentStepIndex = _getCurrentStepIndex(booking.status);
+
+        // Store the previous step index if it doesn't exist
+        if (!_previousStepIndices.containsKey(booking.requestId)) {
+          _previousStepIndices[booking.requestId] = currentStepIndex;
+        }
 
         return Stack(
           children: [
@@ -49,7 +61,7 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                   _buildHeader(booking),
                   Divider(color: Colors.grey.shade200),
                   const SizedBox(height: 16),
-                  _buildTimeline(steps, currentStepIndex),
+                  _buildTimeline(steps, currentStepIndex, booking.requestId),
                   const SizedBox(height: 16),
                   _buildBookingDetails(booking),
                 ],
@@ -110,18 +122,26 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
     );
   }
 
-  // Adjust the timeline builder to ensure "Payment Completed" stays visible
-  Widget _buildTimeline(List<String> steps, int currentStepIndex) {
+  Widget _buildTimeline(List<String> steps, int currentStepIndex, String requestId) {
     final scrollController = ScrollController();
-    final animatedStepIndex = ValueNotifier<int>(-1);
+    final animatedStepIndex = ValueNotifier<int>(_previousStepIndices[requestId] ?? currentStepIndex);
 
     Future<void> animateSteps() async {
-      for (int step = 0; step <= currentStepIndex; step++) {
-        await Future.delayed(const Duration(milliseconds: 400));
-        animatedStepIndex.value = step;
-        if (scrollController.hasClients) {
-          scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      final previousIndex = _previousStepIndices[requestId] ?? currentStepIndex;
+      if (previousIndex != currentStepIndex) {
+        // Only animate if the status has changed
+        for (int step = previousIndex; step <= currentStepIndex; step++) {
+          await Future.delayed(const Duration(milliseconds: 400));
+          animatedStepIndex.value = step;
+          if (scrollController.hasClients) {
+            scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          }
         }
+        // Update the previous index for next time
+        _previousStepIndices[requestId] = currentStepIndex;
+      } else {
+        // If no change, just set to current index
+        animatedStepIndex.value = currentStepIndex;
       }
     }
 
@@ -171,9 +191,9 @@ class AmbulanceBookingTrackingCard extends StatelessWidget {
                       steps[index],
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey)
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey),
                       ),
                     ),
                   ),

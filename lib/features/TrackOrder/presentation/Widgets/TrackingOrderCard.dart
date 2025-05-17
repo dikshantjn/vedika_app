@@ -7,23 +7,35 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 
-class TrackingOrderCard extends StatelessWidget {
+class TrackingOrderCard extends StatefulWidget {
   final TrackOrderViewModel viewModel;
 
   const TrackingOrderCard({Key? key, required this.viewModel}) : super(key: key);
 
   @override
+  State<TrackingOrderCard> createState() => _TrackingOrderCardState();
+}
+
+class _TrackingOrderCardState extends State<TrackingOrderCard> {
+  final Map<String, int> _previousStepIndices = {};
+
+  @override
   Widget build(BuildContext context) {
-    if (viewModel.orders.isEmpty) {
+    if (widget.viewModel.orders.isEmpty) {
       return const Center(child: Text("No orders found."));
     }
 
     return Column(
-      children: viewModel.orders.map((order) {
+      children: widget.viewModel.orders.map((order) {
         final steps = _getOrderSteps();
         final currentStepIndex = _getCurrentStepIndex(order.orderStatus);
 
-        List<CartModel> cartItems = viewModel.orderItems[order.orderId] ?? [];
+        // Store the previous step index if it doesn't exist
+        if (!_previousStepIndices.containsKey(order.orderId)) {
+          _previousStepIndices[order.orderId] = currentStepIndex;
+        }
+
+        List<CartModel> cartItems = widget.viewModel.orderItems[order.orderId] ?? [];
 
         return Stack(
           children: [
@@ -51,7 +63,7 @@ class TrackingOrderCard extends StatelessWidget {
                   _buildHeader(order),
                   Divider(color: Colors.grey.shade200),
                   const SizedBox(height: 16),
-                  _buildTimeline(steps, currentStepIndex),
+                  _buildTimeline(steps, currentStepIndex, order.orderId),
                   const SizedBox(height: 16),
                   _buildOrderDetails(cartItems, order.totalAmount),
                   if (order.orderStatus == "OutForDelivery") 
@@ -92,7 +104,6 @@ class TrackingOrderCard extends StatelessWidget {
     );
   }
 
-
   Widget _buildHeader(MedicineOrderModel order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +121,7 @@ class TrackingOrderCard extends StatelessWidget {
             const Icon(Icons.access_time, size: 16, color: Colors.blueAccent), // Clock icon
             const SizedBox(width: 4),
             Text(
-              'Arriving by ${viewModel.formatDeliveryDate(order.estimatedDeliveryDate)}',
+              'Arriving by ${widget.viewModel.formatDeliveryDate(order.estimatedDeliveryDate)}',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.blueAccent),
             ),
           ],
@@ -119,28 +130,29 @@ class TrackingOrderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline(List<String> steps, int currentStepIndex) {
-    ScrollController _scrollController = ScrollController();
-    ValueNotifier<int> animatedStepIndex = ValueNotifier<int>(-1); // Start from -1 to show animation
+  Widget _buildTimeline(List<String> steps, int currentStepIndex, String orderId) {
+    final scrollController = ScrollController();
+    final animatedStepIndex = ValueNotifier<int>(_previousStepIndices[orderId] ?? currentStepIndex);
 
-    // Function to animate steps one by one
     Future<void> animateSteps() async {
-      for (int step = 0; step <= currentStepIndex; step++) {
-        await Future.delayed(const Duration(milliseconds: 400)); // Delay between each step
-        animatedStepIndex.value = step;
-
-        // Smooth scrolling
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            (step * 80.0).clamp(0.0, _scrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
+      final previousIndex = _previousStepIndices[orderId] ?? currentStepIndex;
+      if (previousIndex != currentStepIndex) {
+        // Only animate if the status has changed
+        for (int step = previousIndex; step <= currentStepIndex; step++) {
+          await Future.delayed(const Duration(milliseconds: 400));
+          animatedStepIndex.value = step;
+          if (scrollController.hasClients) {
+            scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          }
         }
+        // Update the previous index for next time
+        _previousStepIndices[orderId] = currentStepIndex;
+      } else {
+        // If no change, just set to current index
+        animatedStepIndex.value = currentStepIndex;
       }
     }
 
-    // Start animation when the screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) => animateSteps());
 
     return SizedBox(
@@ -149,7 +161,7 @@ class TrackingOrderCard extends StatelessWidget {
         valueListenable: animatedStepIndex,
         builder: (context, animatedIndex, _) {
           return ListView.builder(
-            controller: _scrollController,
+            controller: scrollController,
             scrollDirection: Axis.horizontal,
             itemCount: steps.length,
             itemBuilder: (context, index) {
@@ -204,8 +216,6 @@ class TrackingOrderCard extends StatelessWidget {
     );
   }
 
-
-
   Widget _buildOrderDetails(List<CartModel> cartItems, double totalAmount) {
     if (cartItems.isEmpty) return const SizedBox.shrink(); // Don't render anything if no items exist
 
@@ -223,7 +233,7 @@ class TrackingOrderCard extends StatelessWidget {
           children: cartItems.map((item) => _buildOrderItem(item)).toList(),
         ),
         const SizedBox(height: 16),
-        if (viewModel.orders.first.paymentStatus == 'PAID') ...[
+        if (widget.viewModel.orders.first.paymentStatus == 'PAID') ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -241,7 +251,6 @@ class TrackingOrderCard extends StatelessWidget {
       ],
     );
   }
-
 
   Widget _buildOrderItem(CartModel item) {
     return Padding(
@@ -318,8 +327,6 @@ class TrackingOrderCard extends StatelessWidget {
     return mappedStep != null ? steps.indexOf(mappedStep) : -1; // Return index or -1 if not found
   }
 
-
-// 🔹 List of Order Steps (Formatted with Spaces)
   List<String> _getOrderSteps() {
     return [
       "Prescription Sent",

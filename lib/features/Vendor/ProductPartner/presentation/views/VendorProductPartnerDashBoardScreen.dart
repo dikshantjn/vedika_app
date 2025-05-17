@@ -47,10 +47,16 @@ class _VendorProductPartnerDashBoardScreenState
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null && args.containsKey('initialIndex')) {
-        setState(() {
-          _currentIndex = args['initialIndex'] as int;
-        });
+      if (args != null) {
+        if (args.containsKey('initialIndex')) {
+          setState(() {
+            _currentIndex = args['initialIndex'] as int;
+          });
+        } else if (args.containsKey('initialTab')) {
+          setState(() {
+            _currentIndex = args['initialTab'] as int;
+          });
+        }
       }
     });
   }

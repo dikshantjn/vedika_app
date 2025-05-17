@@ -247,52 +247,63 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(orderStatus).withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _getStatusIcon(orderStatus),
-                                color: _getStatusColor(orderStatus),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.name ?? 'Unknown Customer',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(orderStatus).withOpacity(0.1),
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
+                                child: Icon(
+                                  _getStatusIcon(orderStatus),
+                                  color: _getStatusColor(orderStatus),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      Icons.phone_outlined,
-                                      size: 14,
-                                      color: ProductPartnerColorPalette.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
                                     Text(
-                                      user?.phoneNumber ?? 'N/A',
-                                      style: TextStyle(
-                                        color: ProductPartnerColorPalette.textSecondary,
-                                        fontSize: 12,
+                                      user?.name ?? 'Unknown Customer',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.phone_outlined,
+                                          size: 14,
+                                          color: ProductPartnerColorPalette.textSecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            user?.phoneNumber ?? 'N/A',
+                                            style: TextStyle(
+                                              color: ProductPartnerColorPalette.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
@@ -742,83 +753,111 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
 
     final bool isThisOrderUpdating = _isUpdatingStatus && _updatingOrderId == order.orderId;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Update Order Status',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: ProductPartnerColorPalette.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: isThisOrderUpdating 
-            ? null 
-            : () async {
-                setState(() {
-                  _isUpdatingStatus = true;
-                  _updatingOrderId = order.orderId;
-                });
-                
-                try {
-                  await viewModel.updateOrderStatus(order.orderId, nextStatus);
-                  if (mounted) {
-                    // Refresh orders after successful status update
-                    await _refreshOrders();
-                    // Keep the current tab index
-                    final currentIndex = _tabController.index;
-                    _tabController.animateTo(currentIndex);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Order status updated to $nextStatus'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to update order status: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                } finally {
-                  if (mounted) {
-                    setState(() {
-                      _isUpdatingStatus = false;
-                      _updatingOrderId = null;
-                    });
-                  }
-                }
-              },
-          icon: isThisOrderUpdating 
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Icon(icon),
-          label: Text(isThisOrderUpdating ? 'Updating...' : buttonText),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: ProductPartnerColorPalette.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Update Order Status',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
             ),
-            disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
-          ),
-        ),
-      ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: isThisOrderUpdating
+                ? null
+                : () async {
+                    // First update local state for immediate UI feedback
+                    setLocalState(() {
+                      _isUpdatingStatus = true;
+                      _updatingOrderId = order.orderId;
+                    });
+                    
+                    // Then update parent state
+                    setState(() {
+                      _isUpdatingStatus = true;
+                      _updatingOrderId = order.orderId;
+                    });
+                    
+                    try {
+                      await viewModel.updateOrderStatus(order.orderId, nextStatus);
+                      if (mounted) {
+                        // Refresh orders after successful status update
+                        await _refreshOrders();
+                        // Keep the current tab index
+                        final currentIndex = _tabController.index;
+                        _tabController.animateTo(currentIndex);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Order status updated to $nextStatus'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to update order status: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setLocalState(() {
+                          _isUpdatingStatus = false;
+                          _updatingOrderId = null;
+                        });
+                        setState(() {
+                          _isUpdatingStatus = false;
+                          _updatingOrderId = null;
+                        });
+                      }
+                    }
+                  },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ProductPartnerColorPalette.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
+              ),
+              child: isThisOrderUpdating
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Updating...'),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon),
+                      const SizedBox(width: 8),
+                      Text(buttonText),
+                    ],
+                  ),
+            ),
+          ],
+        );
+      }
     );
   }
 

@@ -233,6 +233,22 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'ProductPartnerOrders':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorProductPartnerDashBoard,
+              arguments: {'initialTab': 2}, // 2 is the index for Orders tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorProductPartnerDashBoard,
+              arguments: {'initialTab': 2}, // 2 is the index for Orders tab
+            );
+          }
+          break;
+
         case 'VIEW_BED_BOOKING':
           if (isAppLaunch) {
             // First navigate to HospitalDashboardScreen to ensure drawer and bottom nav are available

@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/AmbulanceBookingTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/BloodBankBookingTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/TrackingOrderCard.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/ProductOrderTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:flutter/rendering.dart';
@@ -20,25 +21,28 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🚀 TrackOrderScreen initState');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
-      viewModel.initSocketConnection(); // 👈 Call this to connect socket
-      viewModel.fetchOrdersAndCartItems();
-      viewModel.fetchActiveAmbulanceBookings();
-      viewModel.fetchBloodBankBookings();
+      debugPrint('🔄 Initializing viewModel');
+      viewModel.initSocketConnection();
     });
   }
 
   Future<void> _refreshData() async {
+    debugPrint('🔄 Refreshing data');
     final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
-    viewModel.initSocketConnection(); // 👈 Call this to connect socket
-    await viewModel.fetchOrdersAndCartItems();
-    await viewModel.fetchActiveAmbulanceBookings();
-    await viewModel.fetchBloodBankBookings();
+    await Future.wait([
+      viewModel.fetchOrdersAndCartItems(),
+      viewModel.fetchActiveAmbulanceBookings(),
+      viewModel.fetchBloodBankBookings(),
+      viewModel.fetchProductOrders(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🏗️ Building TrackOrderScreen');
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -100,17 +104,23 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                 SliverToBoxAdapter(
                   child: Consumer<TrackOrderViewModel>(
                     builder: (context, viewModel, child) {
+                      debugPrint('🔄 Consumer rebuilding');
                       if (viewModel.isLoading) {
+                        debugPrint('⏳ Showing loading state');
                         return _buildLoadingState();
                       }
                       if (viewModel.error != null) {
+                        debugPrint('❌ Showing error state: ${viewModel.error}');
                         return _buildErrorState(viewModel.error!);
                       }
                       if (viewModel.orders.isEmpty && 
                           viewModel.ambulanceBookings.isEmpty && 
-                          viewModel.bloodBankBookings.isEmpty) {
+                          viewModel.bloodBankBookings.isEmpty &&
+                          viewModel.productOrders.isEmpty) {
+                        debugPrint('📭 Showing empty state');
                         return _buildEmptyState();
                       }
+                      debugPrint('📦 Building orders list');
                       return _buildOrdersList(viewModel);
                     },
                   ),
@@ -138,19 +148,64 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Text(
-        'No orders found.',
-        style: TextStyle(color: ColorPalette.textColor),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              size: 80,
+              color: ColorPalette.primaryColor.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Orders Found',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: ColorPalette.textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your order Tracking will appear here',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildOrdersList(TrackOrderViewModel viewModel) {
+    debugPrint('🔄 Building orders list');
+    debugPrint('📦 Product Orders count: ${viewModel.productOrders.length}');
+    debugPrint('🩸 Blood Bank Bookings count: ${viewModel.bloodBankBookings.length}');
+    debugPrint('🚑 Ambulance Bookings count: ${viewModel.ambulanceBookings.length}');
+    debugPrint('💊 Medicine Orders count: ${viewModel.orders.length}');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (viewModel.productOrders.isNotEmpty) ...[
+            const Text(
+              'Product Orders',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ProductOrderTrackingCard(orders: viewModel.productOrders),
+            const SizedBox(height: 20),
+          ],
           if (viewModel.bloodBankBookings.isNotEmpty) ...[
             const Text(
               'Blood Bank Bookings',
@@ -179,6 +234,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
             ),
             const SizedBox(height: 12),
             TrackingOrderCard(viewModel: viewModel),
+            const SizedBox(height: 20),
           ],
         ],
       ),

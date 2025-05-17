@@ -9,7 +9,7 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/ser
 import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankPaymentService.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
-class BloodBankBookingTrackingCard extends StatelessWidget {
+class BloodBankBookingTrackingCard extends StatefulWidget {
   final List<BloodBankBooking> bookings;
   final Function()? onRefreshData;
 
@@ -20,15 +20,27 @@ class BloodBankBookingTrackingCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BloodBankBookingTrackingCard> createState() => _BloodBankBookingTrackingCardState();
+}
+
+class _BloodBankBookingTrackingCardState extends State<BloodBankBookingTrackingCard> {
+  final Map<String, int> _previousStepIndices = {};
+
+  @override
   Widget build(BuildContext context) {
-    if (bookings.isEmpty) {
+    if (widget.bookings.isEmpty) {
       return const Center(child: Text("No blood bank bookings found."));
     }
 
     return Column(
-      children: bookings.map((booking) {
+      children: widget.bookings.map((booking) {
         final steps = _getSteps(booking.status);
         final currentStepIndex = _getCurrentStepIndex(booking.status);
+
+        // Store the previous step index if it doesn't exist
+        if (!_previousStepIndices.containsKey(booking.bookingId)) {
+          _previousStepIndices[booking.bookingId!] = currentStepIndex;
+        }
 
         return Stack(
           children: [
@@ -56,7 +68,7 @@ class BloodBankBookingTrackingCard extends StatelessWidget {
                   _buildHeader(booking),
                   Divider(color: Colors.grey.shade200),
                   const SizedBox(height: 16),
-                  _buildTimeline(steps, currentStepIndex),
+                  _buildTimeline(steps, currentStepIndex, booking.bookingId!),
                   const SizedBox(height: 16),
                   _buildBookingDetails(booking),
                 ],
@@ -132,17 +144,26 @@ class BloodBankBookingTrackingCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline(List<String> steps, int currentStepIndex) {
+  Widget _buildTimeline(List<String> steps, int currentStepIndex, String bookingId) {
     final scrollController = ScrollController();
-    final animatedStepIndex = ValueNotifier<int>(-1);
+    final animatedStepIndex = ValueNotifier<int>(_previousStepIndices[bookingId] ?? currentStepIndex);
 
     Future<void> animateSteps() async {
-      for (int step = 0; step <= currentStepIndex; step++) {
-        await Future.delayed(const Duration(milliseconds: 400));
-        animatedStepIndex.value = step;
-        if (scrollController.hasClients) {
-          scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      final previousIndex = _previousStepIndices[bookingId] ?? currentStepIndex;
+      if (previousIndex != currentStepIndex) {
+        // Only animate if the status has changed
+        for (int step = previousIndex; step <= currentStepIndex; step++) {
+          await Future.delayed(const Duration(milliseconds: 400));
+          animatedStepIndex.value = step;
+          if (scrollController.hasClients) {
+            scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          }
         }
+        // Update the previous index for next time
+        _previousStepIndices[bookingId] = currentStepIndex;
+      } else {
+        // If no change, just set to current index
+        animatedStepIndex.value = currentStepIndex;
       }
     }
 
@@ -192,9 +213,9 @@ class BloodBankBookingTrackingCard extends StatelessWidget {
                       steps[index],
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey)
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isCompleted ? Colors.green : (isCurrent ? Colors.orange : Colors.grey),
                       ),
                     ),
                   ),
@@ -340,7 +361,7 @@ class BloodBankBookingTrackingCard extends StatelessWidget {
                             ),
                           );
                         },
-                        onRefreshData: onRefreshData,
+                        onRefreshData: widget.onRefreshData,
                       );
                     },
                     style: ElevatedButton.styleFrom(

@@ -4,6 +4,8 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/mod
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/ProductOrder.dart';
+import 'package:flutter/foundation.dart';
 
 class TrackOrderService {
   final Dio _dio = Dio();
@@ -117,6 +119,27 @@ class TrackOrderService {
     } catch (e) {
       print('Error fetching blood bank bookings: $e');
       throw Exception('Failed to fetch blood bank bookings: $e');
+    }
+  }
+
+  // 🔹 Fetch product orders
+  Future<List<ProductOrder>> fetchProductOrders(String userId) async {
+    try {
+      debugPrint('🛍️ Fetching product orders for user: $userId');
+      final response = await _dio.get('${ApiEndpoints.getProductOrdersByUserId}/$userId');
+      debugPrint('📦 API Response: ${response.data}');
+      
+      if (response.statusCode == 200 && response.data['orders'] != null) {
+        List<dynamic> ordersJson = response.data['orders'];
+        debugPrint('📦 Found ${ordersJson.length} product orders');
+        return ordersJson.map((json) => ProductOrder.fromJson(json)).toList();
+      } else {
+        debugPrint('❌ No orders found or invalid response format');
+        throw Exception('Failed to load product orders');
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching product orders: $e');
+      throw Exception('Failed to load product orders');
     }
   }
 }
