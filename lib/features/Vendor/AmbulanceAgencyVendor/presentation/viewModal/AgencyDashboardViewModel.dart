@@ -1,63 +1,85 @@
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceBookingService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceAgencyService.dart';
 
-class AgencyDashboardViewModel extends GetxController {
-  var liveRequests = <Map<String, String>>[].obs;
+class AgencyDashboardViewModel extends ChangeNotifier {
+  final _bookingService = AmbulanceBookingService();
+  final _loginService = VendorLoginService();
+  final _agencyService = AmbulanceAgencyService();
 
-  var totalBookings = 0.obs;
-  var todaysBookings = 0.obs;
-  var avgResponseTime = 0.obs;
-  var operationalKms = 0.0.obs;
+  AmbulanceAgency? _agencyProfile;
+  AmbulanceAgency? get agencyProfile => _agencyProfile;
 
-  var vehicleStats = <String, double>{
+  int _totalBookings = 0;
+  int get totalBookings => _totalBookings;
+
+  int _todaysBookings = 0;
+  int get todaysBookings => _todaysBookings;
+
+  int _avgResponseTime = 0;
+  int get avgResponseTime => _avgResponseTime;
+
+  double _operationalKms = 0.0;
+  double get operationalKms => _operationalKms;
+
+  Map<String, double> _vehicleStats = {
     "BLS": 40.0,
     "ALS": 70.0,
     "ICU": 50.0,
     "Air": 30.0,
     "Train": 10.0,
-  }.obs;
+  };
+  Map<String, double> get vehicleStats => _vehicleStats;
 
-  var pendingBookings = <AmbulanceBooking>[].obs;
+  List<AmbulanceBooking> _pendingBookings = [];
+  List<AmbulanceBooking> get pendingBookings => _pendingBookings;
 
-  final _bookingService = AmbulanceBookingService(); // Use your actual service
-  final _loginService = VendorLoginService();        // Use your actual login service
-
-  @override
-  void onInit() {
-    super.onInit();
+  AgencyDashboardViewModel() {
     fetchDashboardData();
     fetchPendingBookings();
+    fetchAgencyProfile();
+  }
+
+  Future<void> fetchAgencyProfile() async {
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId != null) {
+        _agencyProfile = await _agencyService.getAgencyProfile(vendorId);
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error fetching agency profile: $e");
+    }
   }
 
   void fetchDashboardData() {
-    liveRequests.assignAll([
-      {"title": "ICU Ambulance Required"},
-      {"title": "Air Ambulance Emergency"},
-      {"title": "Train Ambulance Needed"},
-    ]);
-
-    totalBookings.value = 120;
-    todaysBookings.value = 8;
-    avgResponseTime.value = 12;
-    operationalKms.value = 20.7;
+    _totalBookings = 120;
+    _todaysBookings = 8;
+    _avgResponseTime = 12;
+    _operationalKms = 20.7;
+    notifyListeners();
   }
 
   Future<void> fetchPendingBookings() async {
     String? vendorId = await _loginService.getVendorId();
     try {
-      final bookings = await _bookingService.getPendingBookings(vendorId!);
-      pendingBookings.assignAll(bookings);
+      if (vendorId != null) {
+        final bookings = await _bookingService.getPendingBookings(vendorId);
+        _pendingBookings = bookings;
+        notifyListeners();
+      }
     } catch (e) {
       print("Error fetching bookings: $e");
     }
   }
 
-  /// 🔄 Use this inside RefreshIndicator to refresh all dashboard data
   Future<void> refreshDashboardData() async {
-    await Future.delayed(const Duration(milliseconds: 600)); // optional delay
+    await Future.delayed(const Duration(milliseconds: 600));
     fetchDashboardData();
     await fetchPendingBookings();
+    await fetchAgencyProfile();
   }
 }

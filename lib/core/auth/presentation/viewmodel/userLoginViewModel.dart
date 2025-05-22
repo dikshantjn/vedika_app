@@ -1,3 +1,4 @@
+import 'dart:io'; // Make sure this is imported at the top
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
@@ -64,7 +65,7 @@ class UserLoginViewModel extends ChangeNotifier {
     }
   }
 
-  /// Verifies the OTP entered by the user
+
   Future<void> verifyOtp(String otp) async {
     if (_verificationId == null) {
       _setError("Verification ID not found. Please request OTP again.");
@@ -89,18 +90,32 @@ class UserLoginViewModel extends ChangeNotifier {
 
           print("✅ User Verified! Checking Registration...");
 
-          // Check if user exists, if not register them
-          UserModel? registeredUser = await _signUpRepository.registerUser(user.phoneNumber!, idToken);
+          // Detect platform
+          String platform = Platform.isAndroid
+              ? 'android'
+              : Platform.isIOS
+              ? 'ios'
+              : 'unknown';
+
+          // Attempt to register user
+          UserModel? registeredUser = await _signUpRepository.registerUser(
+            user.phoneNumber!,
+            idToken,
+          );
+
+          // 🟢 Regardless of registration, update platform
+          await _signUpRepository.updatePlatform(user.phoneNumber!, platform);
 
           if (registeredUser != null) {
             print("✅ User Registered: ${registeredUser.userId}");
-            if (registeredUser.userId.isNotEmpty) await FCMService().getTokenAndSend(registeredUser.userId);
-
+            if (registeredUser.userId.isNotEmpty) {
+              await FCMService().getTokenAndSend(registeredUser.userId);
+            }
           } else {
             print("⚠️ User already exists or registration failed.");
           }
 
-          // Use the navigatorKey to navigate
+          // Navigate to home
           if (navigatorKey.currentState != null) {
             String? userId = await StorageService.getUserId();
             await FCMService().getTokenAndSend(userId!);
@@ -117,6 +132,8 @@ class UserLoginViewModel extends ChangeNotifier {
       _setLoadingState(false);
     }
   }
+
+
 
   /// Resends OTP using the stored phone number
   Future<void> resendOtp() async {

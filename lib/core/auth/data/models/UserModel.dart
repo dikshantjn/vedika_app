@@ -16,6 +16,7 @@ class UserModel {
   final DateTime createdAt;
   final String? password;
   final bool status; // Boolean field for active/inactive
+  final String? platform; // Add this line
 
   UserModel({
     required this.userId,
@@ -35,9 +36,10 @@ class UserModel {
     required this.createdAt,
     this.password,
     required this.status,
+    this.platform, // Add this line
   });
 
-  // ✅ Static method to return an empty user
+
   factory UserModel.empty() {
     return UserModel(
       userId: '',
@@ -57,6 +59,7 @@ class UserModel {
       createdAt: DateTime.now(),
       password: null,
       status: false,
+      platform: null, // Add this
     );
   }
 
@@ -80,6 +83,8 @@ class UserModel {
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) ?? DateTime.now() : DateTime.now(),
       password: json['password'],
       status: json['status'] == 1 || json['status'] == true, // Supports both `1/0` and `true/false`
+      platform: json['platform'],
+
     );
   }
 
@@ -103,6 +108,8 @@ class UserModel {
       "createdAt": createdAt.toIso8601String(),
       "password": password,
       "status": status ? 1 : 0, // Converts boolean to `1/0` for API consistency
+      "platform": platform,
+
     };
   }
 }

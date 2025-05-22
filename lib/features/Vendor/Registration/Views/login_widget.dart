@@ -147,12 +147,11 @@ class LoginWidget extends StatelessWidget {
                           builder: (_) => Center(child: CircularProgressIndicator()),
                         );
 
-                        // Call the login method
-                        await viewModel.login(context);  // Simply call the method
-                        print("Selected Role: ${viewModel.selectedRole}");
-                        print("Role Number: ${viewModel.roleNumber}");
-                        // Dismiss the loading indicator
-                        Navigator.of(context).pop();
+                        // Call the login method and wait for it to complete
+                        await viewModel.login(context);
+                        
+                        // Note: We don't need to manually dismiss the loading dialog here
+                        // as it's handled in the ViewModel's login method
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text("Please fill in all fields"))

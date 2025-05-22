@@ -24,10 +24,10 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   final Set<Marker> markers = {};
   List<AmbulanceAgency> ambulances = [];
   bool isLocationEnabled = false;
-  bool mounted = true; // Manually track mounting state
+  bool _mounted = true; // Track if view model is mounted
   bool _isDialogShowing = false;
   EmergiencyAmbulanceService _service = EmergiencyAmbulanceService();
-  final TrackOrderService _trackOrderService = TrackOrderService(); // Service instance
+  final TrackOrderService _trackOrderService = TrackOrderService();
   final logger = Logger();
   IO.Socket? _socket;
 
@@ -45,11 +45,29 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
   bool _isLoading = false;
   final BuildContext context;
 
-  bool _isBookingInProgress = false;  // Add this flag at class level
+  bool _isBookingInProgress = false;
 
   AmbulanceSearchViewModel(this.context) {
     _checkLocationEnabled();
     initSocketConnection();
+  }
+
+  @override
+  void dispose() {
+    _mounted = false; // Mark as disposed
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
+    mapController?.dispose();
+    super.dispose();
+  }
+
+  // Helper method to safely notify listeners
+  void _safeNotifyListeners() {
+    if (_mounted) {
+      notifyListeners();
+    }
   }
 
   void initSocketConnection() async {
@@ -173,20 +191,16 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
           if (status == "WaitingForPayment") {
             debugPrint('🔄 Refreshing bookings for WaitingForPayment status');
             // First update the current booking
-            notifyListeners();
+            _safeNotifyListeners();
             
             // Then fetch fresh data
             await fetchActiveAmbulanceBookings();
             
             // Force another UI update after fetching
-            if (mounted) {
-              notifyListeners();
-            }
+            _safeNotifyListeners();
           } else {
             // For other status updates, just notify listeners
-            if (mounted) {
-              notifyListeners();
-            }
+            _safeNotifyListeners();
           }
           
           debugPrint('✅ Booking $requestId status updated to: $status');
@@ -195,9 +209,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
           
           // If booking not found, refresh bookings
           await fetchActiveAmbulanceBookings();
-          if (mounted) {
-            notifyListeners();
-          }
+          _safeNotifyListeners();
         }
       } else {
         debugPrint('❌ Missing requestId or status in data: $bookingData');
@@ -207,22 +219,13 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       debugPrint('❌ Stack trace: $stackTrace');
       // Even if there's an error, try to refresh the data
       await fetchActiveAmbulanceBookings();
-      if (mounted) {
-        notifyListeners();
+      _safeNotifyListeners();
       }
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_socket != null) {
-      _socket!.disconnect();
-      _socket!.dispose();
-    }
-    super.dispose();
   }
 
   Future<void> _checkLocationEnabled() async {
+    if (!_mounted) return; // Don't proceed if disposed
+
     Location location = Location();
     bool serviceEnabled = await location.serviceEnabled();
 
@@ -230,11 +233,11 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       serviceEnabled = await location.requestService();
       if (!serviceEnabled) {
         isLocationEnabled = false;
-        if (mounted) notifyListeners();
+        if (_mounted) _safeNotifyListeners();
 
         // Delay showing dialog slightly to avoid race condition with system prompt
         Future.delayed(Duration(milliseconds: 300), () {
-          if (!_isDialogShowing) _showLocationDialog();
+          if (!_isDialogShowing && _mounted) _showLocationDialog();
         });
 
         return;
@@ -244,16 +247,17 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     LocationData? userLocation = await location.getLocation();
     if (userLocation.latitude != null && userLocation.longitude != null) {
       isLocationEnabled = true;
-      if (mounted) notifyListeners();
+      if (_mounted) _safeNotifyListeners();
       initialize();
     } else {
       isLocationEnabled = false;
-      if (mounted) notifyListeners();
-      if (!_isDialogShowing) _showLocationDialog();
+      if (_mounted) _safeNotifyListeners();
+      if (!_isDialogShowing && _mounted) _showLocationDialog();
     }
   }
 
   Future<void> initialize() async {
+    if (!_mounted) return; // Don't proceed if disposed
     await getUserLocation();
     fetchAvailableAgencies();
     await fetchActiveAmbulanceBookings();
@@ -295,7 +299,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       ),
     );
 
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _showLocationDialog() {
@@ -371,7 +375,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       );
     }
 
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _showAmbulanceDetails(AmbulanceAgency ambulance) {
@@ -497,7 +501,7 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
         await fetchActiveAmbulanceBookings();
         
         // Ensure state is updated
-        notifyListeners();
+        _safeNotifyListeners();
 
         return true;
       }
@@ -541,8 +545,10 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
 
   /// ✅ Fetch active ambulance bookings for current user
   Future<void> fetchActiveAmbulanceBookings() async {
+    if (!_mounted) return; // Don't proceed if disposed
+
     _isLoading = true;
-    notifyListeners();
+    _safeNotifyListeners();
 
     debugPrint("📦 Starting to fetch active ambulance bookings...");
 
@@ -566,11 +572,15 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       debugPrint("❌ Error fetching ambulance bookings: $e");
       debugPrint("🔍 Stack Trace:\n$stackTrace");
 
+      if (_mounted) {
       _ambulanceBookings = [];
       errorMessage = "No Ambulance Booking Found".obs;
+      }
     } finally {
+      if (_mounted) {
       _isLoading = false;
-      notifyListeners();
+        _safeNotifyListeners();
+      }
       debugPrint("📦 Done fetching ambulance bookings.");
     }
   }
@@ -613,6 +623,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
 
   void clearBookings() {
     _ambulanceBookings = [];
-    notifyListeners();
+    _safeNotifyListeners();
   }
 }

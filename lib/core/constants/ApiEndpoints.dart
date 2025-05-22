@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.45:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.45:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.48:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.48:5000/api";  // Current IP address
   // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
@@ -11,6 +11,7 @@ class ApiEndpoints {
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
   static const String signUp = '$baseUrl/auth/signup';
+  static const String updatePlatform = '$baseUrl/auth/platform-update';
 
   // 📌 User Profile APIs
   static const String getUserProfile = '$baseUrl/user';

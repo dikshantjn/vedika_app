@@ -1,32 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/notifications/data/models/NotificationModel.dart';
+import 'package:vedika_healthcare/features/notifications/data/models/AppNotification.dart';
 import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
 
 class NotificationViewModel extends ChangeNotifier {
-  final NotificationRepository _notificationRepository;
-  List<NotificationModel> _notifications = [];
+  final NotificationRepository _repository;
+  List<AppNotification> _notifications = [];
+  bool _isLoading = false;
+  String _searchQuery = '';
 
-  NotificationViewModel(this._notificationRepository);
+  NotificationViewModel(this._repository) {
+    _init();
+  }
 
-  List<NotificationModel> get notifications => _notifications;
+  List<AppNotification> get notifications => _searchQuery.isEmpty
+      ? _notifications
+      : _repository.searchNotifications(_searchQuery);
 
-  // Fetch notifications from the repository
+  bool get isLoading => _isLoading;
+  int get unreadCount => _repository.unreadCount;
+
+  Future<void> _init() async {
+    await _repository.init();
+    await fetchNotifications();
+  }
+
   Future<void> fetchNotifications() async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
-      // Fetch notifications from the repository
-      _notifications = await _notificationRepository.fetchNotifications();
-      notifyListeners(); // Notify listeners to update the UI
-    } catch (error) {
-      // Handle any errors that occur during fetching
-      print("Error fetching notifications: $error");
+      _notifications = _repository.getAllNotifications();
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  // Mark notification as read
-  void markAsRead(String notificationId) {
-    final notification =
-    _notifications.firstWhere((n) => n.id == notificationId);
-    notification.markAsRead();
+  Future<void> addNotification(AppNotification notification) async {
+    await _repository.saveNotification(notification);
+    await fetchNotifications();
+  }
+
+  Future<void> markAsRead(String id) async {
+    await _repository.markAsRead(id);
+    await fetchNotifications();
+  }
+
+  Future<void> deleteNotification(String id) async {
+    await _repository.deleteNotification(id);
+    await fetchNotifications();
+  }
+
+  Future<void> clearAllNotifications() async {
+    await _repository.clearAllNotifications();
+    await fetchNotifications();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
     notifyListeners();
   }
 }

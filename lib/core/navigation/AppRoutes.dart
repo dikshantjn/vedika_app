@@ -68,6 +68,7 @@ class AppRoutes {
   static const String userProfile = "/userProfile";
   static const String healthRecords = "/healthRecords";
   static const String login = "/login";
+  static const String vendorLogin = "/vendorLogin";
   static const String logout = "/logout";
   static const String doctorAppointments = "/doctor/appointments"; // New route for doctor appointments
   static const String clinicConsultationType = "/clinic/consultationType"; // New route for consultation type selection
@@ -119,6 +120,8 @@ class AppRoutes {
       userProfile: (context) => UserProfilePage(), // Added route for EnableLocationPage
       healthRecords: (context) => HealthRecordsPage(), // Added route for EnableLocationPage
       login: (context) => UserLoginScreen(), // Added route for EnableLocationPage
+      vendorLogin: (context) => VendorRegistrationPage(), // Added route for EnableLocationPage
+
       logout: (context) => LogoutPage(), // Added route for EnableLocationPage
 
       bloodBankBooking: (context) => BloodBankBookingScreen(), // Added route for EnableLocationPage

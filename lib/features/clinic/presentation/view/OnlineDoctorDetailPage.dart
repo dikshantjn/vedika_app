@@ -34,45 +34,42 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
     _paymentService.onPaymentCancelled = _handlePaymentCancelled;
   }
 
-  void _handlePaymentSuccess(Map<String, dynamic> response) {
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
     setState(() {
       _isPaymentProcessing = false;
     });
-    
-    print('Payment successful: ${response['transactionId']}');
-    
-    // Show success dialog
-    _showAppointmentConfirmedDialog();
-    
-    // Navigate to order history after a delay
-    Future.delayed(Duration(seconds: 2), () {
-      Navigator.pushNamed(context, AppRoutes.orderHistory);
-    });
-  }
 
-  void _handlePaymentError(String error) {
-    setState(() {
-      _isPaymentProcessing = false;
-    });
-    
-    print('Payment failed: $error');
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment failed: $error"),
+        content: Text("Payment Successful! Appointment Booked"),
+        backgroundColor: DoctorConsultationColorPalette.successGreen,
+      ),
+    );
+
+    _showAppointmentConfirmedDialog();
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() {
+      _isPaymentProcessing = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed: ${response.message}"),
         backgroundColor: DoctorConsultationColorPalette.errorRed,
       ),
     );
   }
 
-  void _handlePaymentCancelled(String reason) {
+  void _handlePaymentCancelled(PaymentFailureResponse response) {
     setState(() {
       _isPaymentProcessing = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment Cancelled: $reason"),
+        content: Text("Payment Cancelled"),
         backgroundColor: DoctorConsultationColorPalette.warningYellow,
       ),
     );
@@ -558,11 +555,11 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
-          
+
           // Check if this day is in the doctor's consultation days
           final day = DateFormat('EEEE').format(date);
           final isAvailable = widget.doctor.consultationDays.any(
-            (consultationDay) => consultationDay.toLowerCase() == day.toLowerCase()
+                  (consultationDay) => consultationDay.toLowerCase() == day.toLowerCase()
           );
 
           return GestureDetector(
@@ -580,17 +577,17 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                 color: isSelected
                     ? DoctorConsultationColorPalette.primaryBlue
                     : isAvailable
-                        ? DoctorConsultationColorPalette.backgroundCard
-                        : Colors.grey.shade200,
+                    ? DoctorConsultationColorPalette.backgroundCard
+                    : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: isSelected
                     ? [
-                        BoxShadow(
-                          color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ]
+                  BoxShadow(
+                    color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ]
                     : null,
               ),
               child: Column(
@@ -602,8 +599,8 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textPrimary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textPrimary
+                          : Colors.grey.shade500,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -615,8 +612,8 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textPrimary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textPrimary
+                          : Colors.grey.shade500,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -628,8 +625,8 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textSecondary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textSecondary
+                          : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -644,74 +641,74 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
   Widget _buildTimeSlots() {
     // Get the consultation time slots from the doctor model
     final timeSlots = widget.doctor.consultationTimeSlots;
-    
+
     if (timeSlots.isEmpty) {
       return _buildNoTimeSlotsMessage();
     }
-    
+
     // Check if we have the new format
-    bool isNewFormat = timeSlots.isNotEmpty && 
+    bool isNewFormat = timeSlots.isNotEmpty &&
         (timeSlots.first.containsKey('startTime') || timeSlots.first.containsKey('endTime'));
-    
+
     // Get all 30-minute slots for all timeSlots
     List<String> thirtyMinuteSlots = [];
-    
+
     for (var slot in timeSlots) {
       String startTimeStr = isNewFormat ? slot['startTime'] ?? '' : slot['start'] ?? '';
       String endTimeStr = isNewFormat ? slot['endTime'] ?? '' : slot['end'] ?? '';
-      
+
       // Skip if start or end time is empty
       if (startTimeStr.isEmpty || endTimeStr.isEmpty) continue;
-      
+
       // Parse the times
       List<String> startComponents = startTimeStr.split(':');
       List<String> endComponents = endTimeStr.split(':');
-      
+
       if (startComponents.length < 2 || endComponents.length < 2) continue;
-      
+
       int startHour = int.tryParse(startComponents[0]) ?? 0;
       int startMinute = int.tryParse(startComponents[1]) ?? 0;
       int endHour = int.tryParse(endComponents[0]) ?? 0;
       int endMinute = int.tryParse(endComponents[1]) ?? 0;
-      
+
       // Create DateTime objects for easier manipulation
       DateTime startTime = DateTime(2022, 1, 1, startHour, startMinute);
       DateTime endTime = DateTime(2022, 1, 1, endHour, endMinute);
-      
+
       // Generate 30-minute slots
       DateTime currentSlot = startTime;
       while (currentSlot.isBefore(endTime)) {
         DateTime nextSlot = currentSlot.add(Duration(minutes: 30));
-        
+
         // Make sure we don't go past the end time
         if (nextSlot.isAfter(endTime)) {
           nextSlot = endTime;
         }
-        
+
         // Format the times
         String formattedCurrentSlot = DateFormat('HH:mm').format(currentSlot);
         String formattedNextSlot = DateFormat('HH:mm').format(nextSlot);
-        
+
         // Only add if it's at least a 5-minute slot
         if (nextSlot.difference(currentSlot).inMinutes >= 5) {
           thirtyMinuteSlots.add('$formattedCurrentSlot - $formattedNextSlot');
         }
-        
+
         // Move to next slot
         currentSlot = nextSlot;
       }
     }
-    
+
     if (thirtyMinuteSlots.isEmpty) {
       return _buildNoTimeSlotsMessage();
     }
-    
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: thirtyMinuteSlots.map((timeSlot) {
         final isSelected = _selectedTimeSlot == timeSlot;
-        
+
         return GestureDetector(
           onTap: () {
             setState(() {
@@ -728,12 +725,12 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: isSelected
                   ? [
-                      BoxShadow(
-                        color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ]
+                BoxShadow(
+                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ]
                   : null,
             ),
             child: Text(
@@ -750,7 +747,7 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
       }).toList(),
     );
   }
-  
+
   Widget _buildNoTimeSlotsMessage() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
@@ -787,7 +784,7 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
 
   Widget _buildBookingButton() {
     final bool canBook = _selectedTimeSlot != null;
-    
+
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -833,7 +830,7 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                     setState(() {
                       _isPaymentProcessing = true;
                     });
-                    
+
                     // Process payment directly
                     _processPayment();
                   }
@@ -849,8 +846,8 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
                   ),
                 ),
                 child: Text(
-                  _isPaymentProcessing 
-                      ? "Processing..." 
+                  _isPaymentProcessing
+                      ? "Processing..."
                       : "Book Appointment",
                   style: TextStyle(
                     fontSize: 16,
@@ -865,58 +862,35 @@ class _OnlineDoctorDetailPageState extends State<OnlineDoctorDetailPage> {
     );
   }
 
-  void _processPayment() async {
-    if (_selectedTimeSlot == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Please select a time slot"),
-          backgroundColor: DoctorConsultationColorPalette.warningYellow,
-        ),
-      );
-      return;
-    }
+  void _processPayment() {
+    // Extract fee amount as double
+    final feeString = widget.doctor.consultationFeesRange.split('-')[0];
+    final double amount = double.tryParse(feeString) ?? 500.0;
 
-    setState(() {
-      _isPaymentProcessing = true;
-    });
+    // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
+    final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
 
     try {
-      // Extract fee amount as double
-      final feeString = widget.doctor.consultationFeesRange.split('-')[0];
-      final double amount = double.tryParse(feeString) ?? 500.0;
-      
-      // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
-      final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
-
-      // Initialize SDK with correct parameters
-      await _paymentService.initializePhonePe();
-      
-      // Process payment
-      await _paymentService.openPaymentGateway(
+      _paymentService.openPaymentGateway(
         doctorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
-        isOnline: true,
+        isOnline: true, // This is an online appointment
         date: _selectedDate,
         time: time,
         amount: amount,
         vendorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
-        patientPhone: "", // Add patient phone if available
-        patientEmail: "", // Add patient email if available
         onPaymentSuccess: _handlePaymentSuccess,
         onPaymentError: _handlePaymentError,
         onPaymentCancelled: _handlePaymentCancelled,
-        onRefreshData: () {
-          setState(() {});
-        },
       );
     } catch (e) {
-      print('❌ Error processing payment: $e');
+      print('❌ Error opening payment gateway: $e');
       setState(() {
         _isPaymentProcessing = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error processing payment: $e"),
+          content: Text("Error opening payment gateway: $e"),
           backgroundColor: DoctorConsultationColorPalette.errorRed,
         ),
       );

@@ -57,8 +57,6 @@ class _AmbulanceAgencyMainScreenState extends State<AmbulanceAgencyMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<AmbulanceMainViewModel>(context);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -76,43 +74,11 @@ class _AmbulanceAgencyMainScreenState extends State<AmbulanceAgencyMainScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Row(
-              children: [
-                Switch(
-                  value: viewModel.isActive,
-                  onChanged: (bool value) async {
-                    await viewModel.toggleVendorStatus();
-
-                    final snackBar = SnackBar(
-                      elevation: 0,
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Colors.transparent,
-                      content: AwesomeSnackbarContent(
-                        title: 'Status Changed',
-                        message: viewModel.isActive
-                            ? 'You are now ONLINE'
-                            : 'You are now OFFLINE',
-                        contentType: viewModel.isActive
-                            ? ContentType.success
-                            : ContentType.warning,
-                      ),
-                    );
-
-                    ScaffoldMessenger.of(context)
-                      ..clearSnackBars()
-                      ..showSnackBar(snackBar);
-                  },
-                  activeColor: AmbulanceAgencyColorPalette.iconActive,
-                  inactiveThumbColor: AmbulanceAgencyColorPalette.iconInactive,
-                  inactiveTrackColor: AmbulanceAgencyColorPalette.iconInactive.withOpacity(0.3),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.notifications, color: Colors.white),
-                  onPressed: () {
-                    _openSpecialPage(AmbulanceAgencyNotificationScreen());
-                  },
-                ),
-              ],
+            child: IconButton(
+              icon: const Icon(Icons.notifications, color: Colors.white),
+              onPressed: () {
+                _openSpecialPage(AmbulanceAgencyNotificationScreen());
+              },
             ),
           ),
         ],

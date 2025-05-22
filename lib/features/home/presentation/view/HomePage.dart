@@ -12,8 +12,11 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmod
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
-import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart'; // Import MedicalBox widget
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart';
 import 'package:flutter/rendering.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -43,8 +46,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     super.initState();
     Provider.of<LocationProvider>(context, listen: false).loadSavedLocation();
     _scrollController.addListener(_onScroll);
+    _initializeAnimations();
+    _refreshUserProfile();
+  }
 
-    // Initialize animation controller
+  Future<void> _refreshUserProfile() async {
+    final userViewModel = context.read<UserViewModel>();
+    final userId = await StorageService.getUserId();
+    if (userId != null) {
+      await userViewModel.fetchUserDetails(userId);
+    }
+  }
+
+  void _initializeAnimations() {
     _placeholderAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 800),
@@ -67,7 +81,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       curve: Curves.easeInOut,
     ));
 
-    // Start the animation
     _placeholderAnimationController.forward();
   }
 
@@ -173,26 +186,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               children: [
                 Builder(
                   builder: (context) => GestureDetector(
-                    onTap: () => Scaffold.of(context).openDrawer(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: ColorPalette.primaryColor,
-                        boxShadow: [
-                          BoxShadow(
-                            color: ColorPalette.primaryColor.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        size: 24,
-                        color: Colors.white,
-                      ),
+                    onTap: () {
+                      Scaffold.of(context).openDrawer();
+                      _refreshUserProfile();
+                    },
+                    child: Consumer<UserViewModel>(
+                      builder: (context, userViewModel, child) {
+                        return _buildProfileAvatar(context, userViewModel);
+                      },
                     ),
                   ),
                 ),
@@ -287,26 +288,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               padding: EdgeInsets.only(left: 8.0),
               child: Builder(
                 builder: (context) => GestureDetector(
-                  onTap: () => Scaffold.of(context).openDrawer(),
-                  child: Container(
-                    width: 35,
-                    height: 35,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: ColorPalette.primaryColor,
-                      boxShadow: [
-                        BoxShadow(
-                          color: ColorPalette.primaryColor.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      size: 20,
-                      color: Colors.white,
-                    ),
+                  onTap: () {
+                    Scaffold.of(context).openDrawer();
+                    _refreshUserProfile();
+                  },
+                  child: Consumer<UserViewModel>(
+                    builder: (context, userViewModel, child) {
+                      return _buildProfileAvatar(context, userViewModel, size: 35);
+                    },
                   ),
                 ),
               ),
@@ -425,6 +414,47 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ],
         );
       },
+    );
+  }
+
+  Widget _buildProfileAvatar(BuildContext context, UserViewModel userViewModel, {double size = 40}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ColorPalette.primaryColor,
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.2),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: userViewModel.user?.photo?.isNotEmpty == true
+          ? ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: userViewModel.user!.photo!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                errorWidget: (context, url, error) => Icon(
+                  Icons.person,
+                  size: size * 0.6,
+                  color: Colors.white,
+                ),
+              ),
+            )
+          : Icon(
+              Icons.person,
+              size: size * 0.6,
+              color: Colors.white,
+            ),
     );
   }
 }

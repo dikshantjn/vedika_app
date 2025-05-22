@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class VendorLoginViewModel extends ChangeNotifier {
   String? selectedRole;
@@ -60,10 +61,16 @@ class VendorLoginViewModel extends ChangeNotifier {
         var response = await _vendorLoginService.loginVendor(email, password, role);
 
         print("✅ Login response received: $response");
+
+        // Remove loading indicator before showing any dialogs
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
+
+        if (response['success'] == true) {
         String? vendorId = await VendorLoginService().getVendorId();
         await FCMService().getVendorTokenAndSend(vendorId ?? " ");
 
-        if (response.containsKey('success') && response['success'] == true) {
           _isVendorLoggedIn = true;  // Update login state
           notifyListeners();
 
@@ -98,30 +105,269 @@ class VendorLoginViewModel extends ChangeNotifier {
             default:
               print("❌ Unknown role");
           }
-
         } else {
           String errorMessage = response['message'] ?? "Invalid credentials or role.";
           print("❌ Login failed: $errorMessage");
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage)),
-          );
+          // Check if the message contains status information
+          if (errorMessage.toLowerCase().contains('currently')) {
+            String status = errorMessage.toLowerCase().contains('pending') ? 'pending' : 'not approved';
+            _showAccountStatusDialog(context, status, errorMessage);
+          } else {
+            _showErrorDialog(context, errorMessage);
+          }
         }
       } catch (e) {
         print("🚨 Error during login: $e");
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("An error occurred: $e")),
-        );
+        // Remove loading indicator before showing error dialog
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
+        }
+        _showErrorDialog(context, "An error occurred: $e");
       }
     } else {
       print("⚠️ Missing fields - Please enter all required fields.");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields and select a role")),
-      );
+      _showErrorDialog(context, "Please fill in all fields and select a role");
     }
   }
 
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red,
+                size: 28,
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Login Error',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[800],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAccountStatusDialog(BuildContext context, String status, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Status Icon Container
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: status == 'pending' 
+                          ? Colors.orange.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      status == 'pending' ? Icons.hourglass_empty : Icons.warning_amber_rounded,
+                      color: status == 'pending' ? Colors.orange : Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Title
+                  Text(
+                    status == 'pending' ? 'Account Pending' : 'Account Not Approved',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: status == 'pending' ? Colors.orange : Colors.red,
+                    ),
+                  ),
+                  SizedBox(height: 15),
+
+                  // Message
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey[200]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[800],
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // What to do next section
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.blue[700],
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'What to do next?',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Please contact our support team for assistance with your account status.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.blue[900],
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 25),
+
+                  // Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Close Button
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: Colors.grey[300]!),
+                            ),
+                          ),
+                          child: Text(
+                            'Close',
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      // Contact Support Button
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // TODO: Implement contact support functionality
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ColorPalette.primaryColor,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Contact Support',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   /// **🔹 Logout Vendor**
   Future<void> logout() async {

@@ -34,11 +34,13 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   final FocusNode _couponFocusNode = FocusNode(); // Added focus node for coupon field
   String _couponError = "";
   double _totalSubtotal = 0.0; // Add this field to store the total subtotal
+  bool _isProcessingPayment = false;
 
   @override
   void initState() {
     super.initState();
     widget.cartViewModel.setOnPaymentSuccess(_handlePaymentSuccess);
+    widget.cartViewModel.setOnPaymentError(_handlePaymentError);
     
     // Use addPostFrameCallback to set address ID after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,12 +54,18 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   @override
   void dispose() {
     widget.cartViewModel.setOnPaymentSuccess(null);
+    widget.cartViewModel.setOnPaymentError(null);
     _couponFocusNode.dispose(); // Clean up focus node
     super.dispose();
   }
 
-  // Add this new method
   void _handlePaymentSuccess(String paymentId) {
+    if (!mounted) return;
+    
+    setState(() {
+      _isProcessingPayment = false;
+    });
+
     // Close the current bottom sheet
     Navigator.of(context).pop();
 
@@ -65,6 +73,72 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       OrderPlacedBottomSheet.showOrderPlacedBottomSheet(context, paymentId);
     });
+  }
+
+  void _handlePaymentError(String error) {
+    if (!mounted) return;
+    
+    setState(() {
+      _isProcessingPayment = false;
+    });
+
+    // Show error bottom sheet
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16.0),
+          topRight: Radius.circular(16.0),
+        ),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Lottie.asset(
+                'assets/animations/error.json',
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
+              SizedBox(height: 16),
+              Text(
+                "Payment Failed",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                error,
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 40),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text("Try Again", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _setupKeyboardListeners() {
@@ -774,11 +848,21 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: _payNow,
+          onTap: _isProcessingPayment ? null : _payNow,
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                if (_isProcessingPayment)
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else ...[
                 Text(
                   'Pay Now',
                   style: GoogleFonts.poppins(
@@ -789,6 +873,7 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
                 ),
                 const SizedBox(width: 8),
                 Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                ],
               ],
             ),
           ),
@@ -798,7 +883,11 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
   }
 
   void _payNow() {
-    FocusScope.of(context).unfocus(); // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _isProcessingPayment = true;
+    });
 
     // Calculate the final total amount
     final totalAmount = _totalSubtotal + widget.cartViewModel.deliveryCharge + 10.0 - widget.cartViewModel.discount;
@@ -810,23 +899,15 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
     // Ensuring total is positive
     if (totalAmount <= 0) {
-      debugPrint("❌ Payment Aborted: Total amount is zero or negative.");
+      _handlePaymentError("Invalid amount. Please try again.");
       return;
     }
 
-    // Advanced Logging Before Payment Call
-    debugPrint("✅ All checks passed. Proceeding to Razorpay...");
-    debugPrint("💰 Total Amount: $totalAmount");
-
-    // Ensuring `handlePayment` is called
     try {
-      double amount = totalAmount.roundToDouble(); // ✅ Ensuring integer conversion
+      double amount = totalAmount.roundToDouble();
       widget.cartViewModel.handlePayment(amount);
-      debugPrint("🎉 Razorpay Payment Triggered Successfully.");
-    } catch (e, stackTrace) {
-      debugPrint("❌ ERROR: Payment Failed.");
-      debugPrint(e.toString());
-      debugPrint(stackTrace.toString());
+    } catch (e) {
+      _handlePaymentError("An unexpected error occurred. Please try again.");
     }
   }
 }

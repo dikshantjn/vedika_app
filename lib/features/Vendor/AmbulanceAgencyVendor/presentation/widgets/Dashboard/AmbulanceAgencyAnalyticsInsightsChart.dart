@@ -14,6 +14,13 @@ class AmbulanceAgencyAnalyticsInsightsChart extends StatefulWidget {
 
 class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyAnalyticsInsightsChart> {
   final List<String> _titles = ["BLS", "ALS", "ICU", "Air", "Train"];
+  final List<Color> _colors = [
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.red,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -25,21 +32,43 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          )
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Analytics & Insights",
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Vehicle Analytics",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "Last 30 Days",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           AspectRatio(
             aspectRatio: 1.5,
@@ -52,11 +81,16 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                   touchTooltipData: BarTouchTooltipData(
                     tooltipPadding: const EdgeInsets.all(8),
                     tooltipRoundedRadius: 8,
+                    tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final name = _titles[group.x.toInt()];
                       return BarTooltipItem(
-                        "$name: ${rod.toY.toStringAsFixed(1)}",
-                        TextStyle(color: Colors.black87, fontSize: 14),
+                        "$name: ${rod.toY.toStringAsFixed(1)}%",
+                        TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       );
                     },
                   ),
@@ -68,8 +102,12 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                       reservedSize: 28,
                       interval: 20,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
-                        style: TextStyle(fontSize: 10),
+                        "${value.toInt()}%",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -77,12 +115,15 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        final titles = ["BLS", "ALS", "ICU", "Air", "Train"];
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            titles[value.toInt()],
-                            style: TextStyle(fontSize: 12),
+                            _titles[value.toInt()],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         );
                       },
@@ -92,25 +133,70 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
-                gridData: FlGridData(show: true, horizontalInterval: 20),
+                gridData: FlGridData(
+                  show: true,
+                  horizontalInterval: 20,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: Colors.grey[200],
+                      strokeWidth: 1,
+                      dashArray: [5, 5],
+                    );
+                  },
+                ),
                 barGroups: List.generate(_titles.length, (index) {
                   final stat = vehicleStats[_titles[index]] ?? 0.0;
-                  return BarChartGroupData(x: index, barRods: [
-                    BarChartRodData(
-                      toY: stat,
-                      width: 20,
-                      borderRadius: BorderRadius.circular(6),
-                      gradient: LinearGradient(
-                        colors: [Colors.redAccent, Colors.red.withOpacity(0.7)],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ),
-                    )
-                  ]);
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: stat,
+                        width: 20,
+                        borderRadius: BorderRadius.circular(6),
+                        gradient: LinearGradient(
+                          colors: [
+                            _colors[index].withOpacity(0.8),
+                            _colors[index],
+                          ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                      )
+                    ],
+                  );
                 }),
               ),
             ),
-          )
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: List.generate(_titles.length, (index) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: _colors[index],
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _titles[index],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
         ],
       ),
     );

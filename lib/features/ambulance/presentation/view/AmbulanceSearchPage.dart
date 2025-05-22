@@ -18,29 +18,34 @@ class AmbulanceSearchPage extends StatefulWidget {
 
 class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     with SingleTickerProviderStateMixin {
-  GoogleMapController? _mapController;
   late AnimationController _animationController;
   bool _isLoading = false;
+  late AmbulanceSearchViewModel _viewModel;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
-    _animationController =
-    AnimationController(vsync: this, duration: Duration(seconds: 1))
-      ..repeat(reverse: true); // Blinking effect for button
+    _animationController = AnimationController(
+      vsync: this, 
+      duration: Duration(seconds: 1)
+    )..repeat(reverse: true);
+    
+    // Initialize view model
+    _viewModel = AmbulanceSearchViewModel(context);
+    _viewModel.initialize();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AmbulanceSearchViewModel(context)..initialize(),
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           title: Text("Nearby Ambulance Services"),
           backgroundColor: ColorPalette.primaryColor,
@@ -48,7 +53,9 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
           foregroundColor: Colors.white,
         ),
         drawer: DrawerMenu(),
-        body: Consumer<AmbulanceSearchViewModel>(
+      body: ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: Consumer<AmbulanceSearchViewModel>(
           builder: (context, viewModel, child) {
             return Stack(
               children: [

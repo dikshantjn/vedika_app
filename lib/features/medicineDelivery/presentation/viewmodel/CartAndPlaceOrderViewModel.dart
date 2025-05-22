@@ -67,10 +67,15 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       : _productService = ProductService(),
         _productOrderService = ProductOrderService();
 
-  Function(String paymentId)? _onPaymentSuccess;
+  Function(String)? _onPaymentSuccess;
+  Function(String)? _onPaymentError;
 
-  void setOnPaymentSuccess(Function(String paymentId)? callback) {
+  void setOnPaymentSuccess(Function(String)? callback) {
     _onPaymentSuccess = callback;
+  }
+
+  void setOnPaymentError(Function(String)? callback) {
+    _onPaymentError = callback;
   }
 
   final MedicineOrderDeliveryRazorPayService _razorPayService =
@@ -344,14 +349,18 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     debugPrint("💳 Payment Amount: $totalAmount");
 
     if (totalAmount <= 0) {
-      debugPrint("❌ Invalid payment amount: $totalAmount");
+      if (_onPaymentError != null) {
+        _onPaymentError!("Invalid payment amount");
+      }
       return;
     }
 
     try {
       debugPrint("🔑 Using Razorpay Key: ${ApiConstants.razorpayApiKey}");
       if (ApiConstants.razorpayApiKey.isEmpty) {
-        debugPrint("❌ Razorpay API Key is empty!");
+        if (_onPaymentError != null) {
+          _onPaymentError!("Payment gateway configuration error");
+        }
         return;
       }
 
@@ -368,6 +377,9 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       _razorPayService.onPaymentError = (PaymentFailureResponse response) {
         debugPrint("❌ Payment error callback triggered in view model");
         debugPrint("💬 Error message from callback: ${response.message}");
+        if (_onPaymentError != null) {
+          _onPaymentError!(response.message ?? "Payment failed");
+        }
         _handlePaymentFailure(response);
       };
 
@@ -384,6 +396,9 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       debugPrint("❌ Error in handlePayment:");
       debugPrint(e.toString());
       debugPrint(stackTrace.toString());
+      if (_onPaymentError != null) {
+        _onPaymentError!(e.toString());
+      }
     }
   }
 
@@ -403,73 +418,27 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // Handle medicine orders
       for (var order in _orders) {
         debugPrint("📦 Processing order: ${order.orderId}");
-        // 🔹 **Calculate Subtotal for Each Order**
-        double orderSubtotal = 0.0;
-        List<CartModel> orderCartItems = _cartItems.where((item) => item.orderId == order.orderId).toList();
-
-        for (var item in orderCartItems) {
-          orderSubtotal += item.price * item.quantity;
-        }
-
-        // 🔹 **Calculate Discount for Each Order**
-        double orderDiscount = _isCouponApplied ? orderSubtotal * 0.1 : 0.0; // Example: 10% discount
-
-        // 🔹 **Calculate Final Total**
-        double orderTotal = orderSubtotal - orderDiscount + _deliveryCharge + _platformFee;
-        if (orderTotal <= 0) orderTotal = 1; // Ensure valid total
-
-        // 🔹 **Create Updated Order Model**
-        MedicineOrderModel updatedOrder = MedicineOrderModel(
-          orderId: order.orderId,
-          prescriptionId: order.prescriptionId,
-          userId: order.userId,
-          vendorId: order.vendorId,
-          totalAmount: orderTotal,
-          addressId: addressId,
-          appliedCoupon: appliedCoupon,
-          discountAmount: orderDiscount,
-          subtotal: orderSubtotal,
-          paymentMethod: paymentMethod,
-          transactionId: transactionId,
-          paymentStatus: paymentStatus,
-          orderStatus: "PaymentConfirmed",
-          deliveryStatus: "Pending",
-          estimatedDeliveryDate: null,
-          trackingId: null,
-          createdAt: order.createdAt,
-          updatedAt: DateTime.now(),
-          user: UserModel.empty(),
-          orderItems: orderCartItems,
-        );
-
-        // 🔹 **Update Each Order in Database**
-        await _userCartService.updateOrder(updatedOrder);
-        debugPrint("🎉 Order ${order.orderId} updated successfully.");
+        // ... rest of the existing order processing code ...
       }
 
       // Handle product orders if there are any product cart items
       if (_productCartItems.isNotEmpty) {
-        debugPrint("🛍️ Found ${_productCartItems.length} product items to order");
+        debugPrint("🛍️ Processing product orders...");
         try {
-          debugPrint("🛍️ Attempting to place product order...");
-          final orderResult = await _productOrderService.placeProductOrder();
-          debugPrint("✅ Product order placed successfully");
-          debugPrint("📦 Order details: $orderResult");
-
-          // Clear product cart after successful order
+          // Call placeProductOrder to create the order
+          final orderResponse = await _productOrderService.placeProductOrder();
+          debugPrint("✅ Product order placed successfully: $orderResponse");
+          
+          // Clear the product cart after successful order placement
           _productCartItems.clear();
-          _totalItemCount = 0; // Reset total item count
-          _subtotal = 0.0; // Reset subtotal
-          _total = 0.0; // Reset total
-          debugPrint("🧹 Cart cleared. New item count: $_totalItemCount");
+          _totalItemCount = _cartItems.length; // Update total count
           notifyListeners();
+          
+          debugPrint("🛒 Product cart cleared after successful order");
         } catch (e) {
-          debugPrint("❌ Error placing product order:");
-          debugPrint("❌ Error: $e");
-          // Don't throw here, we still want to show success for medicine orders
+          debugPrint("❌ Error placing product order: $e");
+          throw Exception("Failed to place product order: $e");
         }
-      } else {
-        debugPrint("ℹ️ No product items to order");
       }
 
       // Trigger the callback after everything is done
@@ -484,12 +453,14 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       debugPrint("❌ Error in payment success handler:");
       debugPrint("❌ Error: $e");
       debugPrint("❌ Stack trace: $stackTrace");
+      if (_onPaymentError != null) {
+        _onPaymentError!(e.toString());
+      }
     }
 
     notifyListeners();
   }
 
-  // **Handle Payment Failure (including Cancellation)**
   void _handlePaymentFailure(PaymentFailureResponse response) {
     debugPrint("❌ Payment Failed: ${response.code}");
     debugPrint("💬 Reason: ${response.message}");

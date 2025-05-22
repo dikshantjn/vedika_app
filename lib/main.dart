@@ -18,7 +18,6 @@ import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/Tra
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingHistoryViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/FeeViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodAvailabilityViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankAgencyProfileViewModel.dart';
@@ -78,6 +77,11 @@ import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:vedika_healthcare/features/notifications/data/models/AppNotification.dart';
+import 'package:vedika_healthcare/features/notifications/data/adapters/AppNotificationAdapter.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -92,18 +96,39 @@ Future<void> getWifiIpAddress() async {
   print("Connected Wi-Fi IP Address: $ip");
 }
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Hive
+  await Hive.initFlutter();
+  
+  // Register adapters
+  Hive.registerAdapter(AppNotificationAdapter());
+  
+  // Open boxes
+  await Hive.openBox<AppNotification>('notifications');
+  
   await Firebase.initializeApp();
-  WidgetsBinding.instance.addObserver(AppLifecycleObserver()); // Add lifecycle observer
+  WidgetsBinding.instance.addObserver(AppLifecycleObserver());
 
   // Initialize FCM Service
   final fcmService = FCMService();
+  final notificationRepository = NotificationRepository();
+  await notificationRepository.init();
+  final notificationViewModel = NotificationViewModel(notificationRepository);
 
   // Handle initial notification (app opened from terminated state)
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage != null) {
+    final notification = AppNotification.fromPayload({
+      'notification': {
+        'title': initialMessage.notification?.title ?? '',
+        'body': initialMessage.notification?.body ?? '',
+      },
+      'data': initialMessage.data,
+    });
+    await notificationViewModel.addNotification(notification);
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fcmService.handleNotificationTap(
           jsonEncode(initialMessage.data),
@@ -111,6 +136,28 @@ void main() async {
       );
     });
   }
+
+  // Set up FCM message handlers
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    debugPrint('Got a message whilst in the foreground!');
+    debugPrint('Message data: ${message.data}');
+    
+    if (message.notification != null) {
+      debugPrint('Message also contained a notification: ${message.notification}');
+      
+      // Create notification object
+      final notification = AppNotification.fromPayload({
+        'notification': {
+          'title': message.notification!.title,
+          'body': message.notification!.body,
+        },
+        'data': message.data,
+      });
+      
+      // Save notification
+      await notificationViewModel.addNotification(notification);
+    }
+  });
 
   // Request permissions and setup token
   await fcmService.requestNotificationPermission();
@@ -121,7 +168,6 @@ void main() async {
 
   runApp(MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -179,11 +225,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TrackOrderViewModel()),
 
         ChangeNotifierProvider(create: (_) => AmbulanceAgencyViewModel()),
-
+        ChangeNotifierProvider(create: (_) => AmbulanceMainViewModel()),
+        ChangeNotifierProvider(create: (_) => AgencyDashboardViewModel()),
         ChangeNotifierProvider(create: (context) => FeeViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceBookingRequestViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceBookingHistoryViewModel()),
-        ChangeNotifierProvider(create: (context) => AmbulanceMainViewModel()),
         ChangeNotifierProvider(create: (context) => AmbulanceSearchViewModel(context)),
         ChangeNotifierProvider(create: (context) => VendorBloodBankDashBoardViewModel()),
         ChangeNotifierProvider(create: (context) => BloodBankRequestViewModel()),

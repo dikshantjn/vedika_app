@@ -43,6 +43,16 @@ class VendorLoginService {
           'vendorId': vendorId,
           'vendorRole': vendorRole,
         };
+      } else if (response.statusCode == 403) {
+        // Handle vendor status not approved
+        String message = response.data['message'] ?? 'Account not approved';
+        String status = message.toLowerCase().contains('pending') ? 'pending' : 'not approved';
+        
+        return {
+          'success': false,
+          'message': message,
+          'status': status,
+        };
       } else {
         return {
           'success': false,

@@ -13,7 +13,7 @@ class SignUpRepository {
   Future<UserModel?> registerUser(String phoneNumber, String idToken) async {
     try {
       final response = await _dio.post(
-        ApiEndpoints.signUp, // Use the centralized endpoint
+        ApiEndpoints.signUp,
         options: Options(
           headers: {
             "Content-Type": "application/json",
@@ -28,13 +28,9 @@ class SignUpRepository {
       print("📩 API Response: ${response.statusCode} - ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // ✅ User is successfully registered
         final responseData = response.data;
         final user = UserModel.fromJson(responseData['user']);
-
-        // ✅ Save Token
         await _authRepository.saveToken(idToken);
-
         print("✅ User Registered: ${user.userId}");
         return user;
       } else {
@@ -44,6 +40,35 @@ class SignUpRepository {
     } catch (e) {
       print("❌ Signup Error: $e");
       return null;
+    }
+  }
+
+  /// Only Update Platform
+  Future<bool> updatePlatform(String phoneNumber, String platform) async {
+    try {
+      final response = await _dio.post(
+        ApiEndpoints.updatePlatform,
+        data: {
+          "phone_number": phoneNumber,
+          "platform": platform,
+        },
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Platform updated successfully.");
+        return true;
+      } else {
+        print("⚠️ Failed to update platform: ${response.statusCode} - ${response.data}");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Platform update error: $e");
+      return false;
     }
   }
 }

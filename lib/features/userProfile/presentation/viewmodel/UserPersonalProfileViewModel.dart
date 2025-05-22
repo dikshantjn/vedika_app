@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
@@ -7,16 +8,18 @@ import 'package:vedika_healthcare/features/userProfile/data/services/UserProfile
 class UserPersonalProfileViewModel extends ChangeNotifier {
   final UserProfileService _userProfileService = UserProfileService();
   PersonalProfile? _personalProfile;
-  bool _isProfileUpdated = false;  // New variable to track profile update status
+  bool _isProfileUpdated = false;
+  bool _isUploading = false;
 
   PersonalProfile? get personalProfile => _personalProfile;
-  bool get isProfileUpdated => _isProfileUpdated;  // Getter for isProfileUpdated
+  bool get isProfileUpdated => _isProfileUpdated;
+  bool get isUploading => _isUploading;
 
   Future<void> fetchUserProfile() async {
     String? userId = await StorageService.getUserId();
     if (userId != null) {
       _personalProfile = await _userProfileService.getUserProfile(userId);
-      _isProfileUpdated = false;  // Reset to false when profile is fetched
+      _isProfileUpdated = false;
       notifyListeners();
     }
   }
@@ -30,17 +33,58 @@ class UserPersonalProfileViewModel extends ChangeNotifier {
     return success;
   }
 
-  Future<bool> editUserProfile(PersonalProfile profile) async {
+  Future<bool> editUserProfile(PersonalProfile profile, {File? profileImage}) async {
     String? userId = await StorageService.getUserId();
     if (userId == null) return false;
 
-    bool success = await _userProfileService.editUserProfile(userId, profile);
-    if (success) {
-      _personalProfile = profile;
-      _isProfileUpdated = true;  // Set to true when profile is edited
+    try {
+      _isUploading = true;
       notifyListeners();
+
+      String? photoUrl = profile.photoUrl;
+      
+      // If there's a new profile image, upload it
+      if (profileImage != null) {
+        photoUrl = await _userProfileService.uploadProfilePicture(profileImage, userId);
+        if (photoUrl == null) {
+          _isUploading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      // Create updated profile with new photo URL
+      final updatedProfile = PersonalProfile(
+        name: profile.name,
+        photoUrl: photoUrl ?? profile.photoUrl,
+        phoneNumber: profile.phoneNumber,
+        abhaId: profile.abhaId,
+        email: profile.email,
+        dateOfBirth: profile.dateOfBirth,
+        gender: profile.gender,
+        bloodGroup: profile.bloodGroup,
+        height: profile.height,
+        weight: profile.weight,
+        emergencyContactNumber: profile.emergencyContactNumber,
+        location: profile.location,
+      );
+
+      bool success = await _userProfileService.editUserProfile(userId, updatedProfile);
+      if (success) {
+        _personalProfile = updatedProfile;
+        _isProfileUpdated = true;
+        notifyListeners();
+      }
+
+      _isUploading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      print("Error in editUserProfile: $e");
+      _isUploading = false;
+      notifyListeners();
+      return false;
     }
-    return success;
   }
 
   String get formattedDateOfBirth {

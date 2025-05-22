@@ -131,23 +131,37 @@ class BloodBankAgencyService {
       // Ensure token is set
       await _setupDioWithAuthToken();
       
+      // Create request body
+      final Map<String, dynamic> requestBody = {
+        'userId': actualUserId,
+        'customerName': customerName,
+        'bloodType': bloodTypes.join(','), // Join blood types with comma
+        'units': units,
+        'prescriptionUrls': prescriptionUrls,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius': DEFAULT_SEARCH_RADIUS,
+      };
+
+      // Log the request details
+      _logger.i('Sending blood request with body: $requestBody');
+      _logger.i('Blood types requested: $bloodTypes');
+      _logger.i('User ID: $actualUserId');
+      _logger.i('Location: $latitude, $longitude');
+      _logger.i('Radius: $DEFAULT_SEARCH_RADIUS km');
+      
       // Create a single request with all blood types
       final response = await _dio.post(
         '${ApiEndpoints.getNearestBloodBankAndSendRequest}',
-        data: {
-          'userId': actualUserId,
-          'customerName': customerName,
-          'bloodType': bloodTypes.join(','), // Join blood types with comma
-          'units': units,
-          'prescriptionUrls': prescriptionUrls,
-          'latitude': latitude,
-          'longitude': longitude,
-          'radius': DEFAULT_SEARCH_RADIUS,
-        },
+        data: requestBody,
         options: Options(
           validateStatus: (status) => status! < 500, // Accept 400 responses
         ),
       );
+      
+      // Log the response
+      _logger.i('Blood request response status: ${response.statusCode}');
+      _logger.i('Blood request response data: ${response.data}');
       
       if (response.statusCode == 200) {
         return {
@@ -156,6 +170,8 @@ class BloodBankAgencyService {
           'data': response.data,
         };
       } else {
+        _logger.e('Blood request failed with status ${response.statusCode}');
+        _logger.e('Error response: ${response.data}');
         return {
           'success': false,
           'message': response.data['message'] ?? 'Failed to send blood request',
@@ -164,6 +180,7 @@ class BloodBankAgencyService {
       }
     } catch (e) {
       _logger.e('Error sending blood request: $e');
+      _logger.e('Stack trace: ${StackTrace.current}');
       return {
         'success': false,
         'message': 'An error occurred while sending the blood request',

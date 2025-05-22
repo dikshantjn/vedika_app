@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/services/ProductPartnerOrderService.dart';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
 import '../../../../../core/auth/presentation/viewmodel/AuthViewModel.dart';
+import '../../../../../core/navigation/AppRoutes.dart';
+import '../../../../../features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import '../viewmodels/ProductPartnerDashboardViewModel.dart';
 import '../viewmodels/ProductPartnerProductsViewModel.dart';
 import '../viewmodels/ProductPartnerOrdersViewModel.dart';
@@ -103,26 +105,46 @@ class _VendorProductPartnerDashBoardScreenState
         print('❌ Widget not mounted, aborting logout');
         return;
       }
-      
-      print('🔍 Getting AuthViewModel...');
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      if (authViewModel == null) {
-        print('❌ AuthViewModel is null');
-        throw Exception('AuthViewModel not initialized');
-      }
-      print('✅ AuthViewModel found');
 
-      print('🚪 Calling logout on AuthViewModel...');
-      await authViewModel.logout(context);
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(ProductPartnerColorPalette.primary),
+          ),
+        ),
+      );
+      
+      print('🔍 Getting VendorLoginViewModel...');
+      final vendorLoginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+      if (vendorLoginViewModel == null) {
+        print('❌ VendorLoginViewModel is null');
+        throw Exception('VendorLoginViewModel not initialized');
+      }
+      print('✅ VendorLoginViewModel found');
+
+      print('🚪 Calling logout on VendorLoginViewModel...');
+      await vendorLoginViewModel.logout();
       print('✅ Logout successful');
       
       if (!mounted) {
         print('❌ Widget not mounted after logout, cannot navigate');
         return;
       }
+
+      // Remove loading dialog
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
       
-      print('🔄 Navigating to login screen...');
-      Navigator.pushReplacementNamed(context, "/login");
+      print('🔄 Navigating to vendor login screen...');
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.vendorLogin,
+        (route) => false,
+      );
       print('✅ Navigation complete');
       
     } catch (e, stackTrace) {
@@ -130,15 +152,27 @@ class _VendorProductPartnerDashBoardScreenState
       print('Error message: $e');
       print('Stack trace: $stackTrace');
       
+      // Remove loading dialog if it's showing
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+      
       if (!mounted) {
-        print('❌ Widget not mounted, cannot show error snackbar');
+        print('❌ Widget not mounted, cannot show error dialog');
         return;
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error during logout: $e'),
-          backgroundColor: Colors.red,
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Logout Error'),
+          content: Text('Failed to logout: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
         ),
       );
     }

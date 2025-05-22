@@ -22,51 +22,67 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
   final GlobalKey<FormState> _patientFormKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final ClinicPaymentService _paymentService = ClinicPaymentService();
-  
+
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
   String _selectedPatientType = "Self";
   bool _isPaymentProcessing = false;
-  
+
   // Patient form controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   String _selectedGender = 'Male';
-  
+
   @override
   void initState() {
     super.initState();
     _setupPaymentCallbacks();
   }
-  
+
   void _setupPaymentCallbacks() {
     _paymentService.onPaymentSuccess = _handlePaymentSuccess;
     _paymentService.onPaymentError = _handlePaymentError;
     _paymentService.onPaymentCancelled = _handlePaymentCancelled;
   }
 
-  void _handlePaymentSuccess(Map<String, dynamic> response) {
-    print('Payment successful: ${response['transactionId']}');
-    // Handle successful payment
-    // You can show a success message or navigate to a success page
-  }
-
-  void _handlePaymentError(String error) {
-    print('Payment failed: $error');
-    // Handle payment error
-    // You can show an error message to the user
-  }
-
-  void _handlePaymentCancelled(String reason) {
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
     setState(() {
       _isPaymentProcessing = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Payment Cancelled: $reason"),
+        content: Text("Payment Successful! Appointment Booked"),
+        backgroundColor: DoctorConsultationColorPalette.successGreen,
+      ),
+    );
+
+    _showAppointmentConfirmedDialog();
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() {
+      _isPaymentProcessing = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Failed: ${response.message}"),
+        backgroundColor: DoctorConsultationColorPalette.errorRed,
+      ),
+    );
+  }
+
+  void _handlePaymentCancelled(PaymentFailureResponse response) {
+    setState(() {
+      _isPaymentProcessing = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Payment Cancelled"),
         backgroundColor: DoctorConsultationColorPalette.warningYellow,
       ),
     );
@@ -85,15 +101,15 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
 
   bool get isFormComplete {
     if (_selectedTimeSlot == null) return false;
-    
+
     if (_selectedPatientType == "Other") {
-      if (_nameController.text.isEmpty || 
-          _ageController.text.isEmpty || 
+      if (_nameController.text.isEmpty ||
+          _ageController.text.isEmpty ||
           _phoneController.text.isEmpty) {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -107,19 +123,19 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       );
       return;
     }
-    
+
     setState(() {
       _isPaymentProcessing = true;
     });
-    
+
     try {
       // Extract consultation fee from range format (e.g., "500-700" -> 500)
       final feesRange = widget.doctor.consultationFeesRange ?? "0-0";
       final minFee = double.parse(feesRange.split('-')[0]);
-      
+
       // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
       final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
-      
+
       _paymentService.openPaymentGateway(
         doctorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
         isOnline: false, // This is an in-person/clinic appointment
@@ -140,7 +156,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       setState(() {
         _isPaymentProcessing = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error processing payment: $e"),
@@ -149,7 +165,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       );
     }
   }
-  
+
   void _showAppointmentConfirmedDialog() {
     showDialog(
       context: context,
@@ -336,7 +352,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       expandedHeight: 200.0,
       floating: false,
       pinned: true,
-        backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+      backgroundColor: DoctorConsultationColorPalette.primaryBlue,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -385,7 +401,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           fontWeight: FontWeight.bold,
         ),
       ),
-        centerTitle: true,
+      centerTitle: true,
     );
   }
 
@@ -405,11 +421,11 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
         ),
         SizedBox(width: 16),
         Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
-          children: [
+            children: [
               Text(
                 widget.doctor.doctorName,
                 style: TextStyle(
@@ -610,12 +626,12 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
               SizedBox(width: 12),
               Text(
                 "About Doctor",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: DoctorConsultationColorPalette.textPrimary,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
               ),
-            ),
             ],
           ),
           SizedBox(height: 16),
@@ -626,8 +642,8 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
               color: DoctorConsultationColorPalette.textSecondary,
               height: 1.5,
             ),
-            ),
-            SizedBox(height: 20),
+          ),
+          SizedBox(height: 20),
           _buildDoctorInfoRow(Icons.medical_services, "Specializations", widget.doctor.specializations.join(', ')),
           _buildDoctorInfoRow(Icons.school, "Education", widget.doctor.educationalQualifications.join(', ')),
           _buildDoctorInfoRow(Icons.language, "Languages", widget.doctor.languageProficiency.join(', ')),
@@ -638,14 +654,14 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       ),
     );
   }
-  
+
   Widget _buildDoctorInfoRow(IconData icon, String title, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-              Container(
+          Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: DoctorConsultationColorPalette.backgroundCard,
@@ -764,11 +780,11 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
-          
+
           // Check if this day is in the doctor's consultation days
           final day = DateFormat('EEEE').format(date);
           final isAvailable = widget.doctor.consultationDays.any(
-            (consultationDay) => consultationDay.toLowerCase() == day.toLowerCase()
+                  (consultationDay) => consultationDay.toLowerCase() == day.toLowerCase()
           );
 
           return GestureDetector(
@@ -786,17 +802,17 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                 color: isSelected
                     ? DoctorConsultationColorPalette.primaryBlue
                     : isAvailable
-                        ? DoctorConsultationColorPalette.backgroundCard
-                        : Colors.grey.shade200,
+                    ? DoctorConsultationColorPalette.backgroundCard
+                    : Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: isSelected
                     ? [
-                        BoxShadow(
-                          color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ]
+                  BoxShadow(
+                    color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ]
                     : null,
               ),
               child: Column(
@@ -808,8 +824,8 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textPrimary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textPrimary
+                          : Colors.grey.shade500,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -821,8 +837,8 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textPrimary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textPrimary
+                          : Colors.grey.shade500,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -834,8 +850,8 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                       color: isSelected
                           ? Colors.white
                           : isAvailable
-                              ? DoctorConsultationColorPalette.textSecondary
-                              : Colors.grey.shade500,
+                          ? DoctorConsultationColorPalette.textSecondary
+                          : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -850,74 +866,74 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
   Widget _buildTimeSlots() {
     // Get the consultation time slots from the doctor model
     final timeSlots = widget.doctor.consultationTimeSlots;
-    
+
     if (timeSlots.isEmpty) {
       return _buildNoTimeSlotsMessage();
     }
-    
+
     // Check if we have the new format
-    bool isNewFormat = timeSlots.isNotEmpty && 
+    bool isNewFormat = timeSlots.isNotEmpty &&
         (timeSlots.first.containsKey('startTime') || timeSlots.first.containsKey('endTime'));
-    
+
     // Get all 30-minute slots for all timeSlots
     List<String> thirtyMinuteSlots = [];
-    
+
     for (var slot in timeSlots) {
       String startTimeStr = isNewFormat ? slot['startTime'] ?? '' : slot['start'] ?? '';
       String endTimeStr = isNewFormat ? slot['endTime'] ?? '' : slot['end'] ?? '';
-      
+
       // Skip if start or end time is empty
       if (startTimeStr.isEmpty || endTimeStr.isEmpty) continue;
-      
+
       // Parse the times
       List<String> startComponents = startTimeStr.split(':');
       List<String> endComponents = endTimeStr.split(':');
-      
+
       if (startComponents.length < 2 || endComponents.length < 2) continue;
-      
+
       int startHour = int.tryParse(startComponents[0]) ?? 0;
       int startMinute = int.tryParse(startComponents[1]) ?? 0;
       int endHour = int.tryParse(endComponents[0]) ?? 0;
       int endMinute = int.tryParse(endComponents[1]) ?? 0;
-      
+
       // Create DateTime objects for easier manipulation
       DateTime startTime = DateTime(2022, 1, 1, startHour, startMinute);
       DateTime endTime = DateTime(2022, 1, 1, endHour, endMinute);
-      
+
       // Generate 30-minute slots
       DateTime currentSlot = startTime;
       while (currentSlot.isBefore(endTime)) {
         DateTime nextSlot = currentSlot.add(Duration(minutes: 30));
-        
+
         // Make sure we don't go past the end time
         if (nextSlot.isAfter(endTime)) {
           nextSlot = endTime;
         }
-        
+
         // Format the times
         String formattedCurrentSlot = DateFormat('HH:mm').format(currentSlot);
         String formattedNextSlot = DateFormat('HH:mm').format(nextSlot);
-        
+
         // Only add if it's at least a 5-minute slot
         if (nextSlot.difference(currentSlot).inMinutes >= 5) {
           thirtyMinuteSlots.add('$formattedCurrentSlot - $formattedNextSlot');
         }
-        
+
         // Move to next slot
         currentSlot = nextSlot;
       }
     }
-    
+
     if (thirtyMinuteSlots.isEmpty) {
       return _buildNoTimeSlotsMessage();
     }
-    
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: thirtyMinuteSlots.map((timeSlot) {
         final isSelected = _selectedTimeSlot == timeSlot;
-        
+
         return GestureDetector(
           onTap: () {
             setState(() {
@@ -934,12 +950,12 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: isSelected
                   ? [
-                      BoxShadow(
-                        color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ]
+                BoxShadow(
+                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ]
                   : null,
             ),
             child: Text(
@@ -956,7 +972,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       }).toList(),
     );
   }
-  
+
   Widget _buildNoTimeSlotsMessage() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
@@ -1023,108 +1039,108 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                 ),
               ),
               SizedBox(width: 12),
-            Text(
-              "Patient Details",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: DoctorConsultationColorPalette.textPrimary,
+              Text(
+                "Patient Details",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
               ),
-            ),
             ],
           ),
           SizedBox(height: 16),
 
-            // Patient Type Selection (Self / Other)
-            Container(
-              decoration: BoxDecoration(
-                color: DoctorConsultationColorPalette.backgroundCard,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: EdgeInsets.all(4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
+          // Patient Type Selection (Self / Other)
+          Container(
+            decoration: BoxDecoration(
+              color: DoctorConsultationColorPalette.backgroundCard,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            padding: EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
                     onTap: () {
                       setState(() {
                         _selectedPatientType = "Self";
                       });
                     },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
                         color: _selectedPatientType == "Self"
-                              ? DoctorConsultationColorPalette.primaryBlue
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Self",
-                              style: TextStyle(
-                                fontSize: 16,
-                              color: _selectedPatientType == "Self"
-                                    ? Colors.white
-                                    : DoctorConsultationColorPalette.primaryBlue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: () => _showInfoPopup(context),
-                              child: Icon(
-                                Icons.info_outline,
-                              color: _selectedPatientType == "Self"
-                                    ? Colors.white
-                                    : DoctorConsultationColorPalette.primaryBlue,
-                                size: 20,
-                              ),
-                            ),
-                          ],
-                        ),
+                            ? DoctorConsultationColorPalette.primaryBlue
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedPatientType = "Other";
-                      });
-                    },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                        color: _selectedPatientType == "Other"
-                              ? DoctorConsultationColorPalette.primaryBlue
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "Other",
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Self",
                             style: TextStyle(
                               fontSize: 16,
-                            color: _selectedPatientType == "Other"
+                              color: _selectedPatientType == "Self"
                                   ? Colors.white
                                   : DoctorConsultationColorPalette.primaryBlue,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => _showInfoPopup(context),
+                            child: Icon(
+                              Icons.info_outline,
+                              color: _selectedPatientType == "Self"
+                                  ? Colors.white
+                                  : DoctorConsultationColorPalette.primaryBlue,
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedPatientType = "Other";
+                      });
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _selectedPatientType == "Other"
+                            ? DoctorConsultationColorPalette.primaryBlue
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "Other",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _selectedPatientType == "Other"
+                                ? Colors.white
+                                : DoctorConsultationColorPalette.primaryBlue,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
           SizedBox(height: 16),
 
-            // Show Patient Details Form if "Other" is selected
+          // Show Patient Details Form if "Other" is selected
           if (_selectedPatientType == "Other")
             Form(
               key: _patientFormKey,
@@ -1206,7 +1222,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       ),
     );
   }
-  
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -1251,7 +1267,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       ),
     );
   }
-  
+
   Widget _buildDropdown({
     required String value,
     required String label,
@@ -1358,12 +1374,12 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                ),
-                ),
+                  ),
                 ),
               ),
             ),
-          ],
+          ),
+        ],
       ),
     );
   }

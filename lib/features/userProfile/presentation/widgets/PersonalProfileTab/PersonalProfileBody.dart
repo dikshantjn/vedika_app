@@ -11,15 +11,15 @@ class PersonalProfileBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -63,12 +63,12 @@ class PersonalProfileBody extends StatelessWidget {
     required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.all(12),
+      margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withOpacity(0.08),
           width: 1,
         ),
       ),
@@ -76,26 +76,26 @@ class PersonalProfileBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: ColorPalette.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
                     color: ColorPalette.primaryColor,
-                    size: 24,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -112,11 +112,11 @@ class PersonalProfileBody extends StatelessWidget {
 
   Widget _buildInfoRow(String label, String? value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withOpacity(0.08),
             width: 1,
           ),
         ),
@@ -125,10 +125,10 @@ class PersonalProfileBody extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 20,
+            size: 18,
             color: Colors.grey[600],
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,16 +136,16 @@ class PersonalProfileBody extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value ?? 'N/A',
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
+                    fontSize: 15,
                     color: Colors.black87,
                     fontWeight: FontWeight.w500,
                   ),

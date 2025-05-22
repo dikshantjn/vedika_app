@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/userProfile/data/models/PersonalProfile.dart';
 
@@ -13,6 +15,26 @@ class UserProfileService {
       },
     ),
   );
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  // Upload profile picture to Firebase Storage
+  Future<String?> uploadProfilePicture(File imageFile, String userId) async {
+    try {
+      final String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String storagePath = 'user_profiles/$userId/$fileName';
+      
+      final Reference ref = _storage.ref().child(storagePath);
+      final UploadTask uploadTask = ref.putFile(imageFile);
+      
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      print("Error uploading profile picture: $e");
+      return null;
+    }
+  }
 
   // Get User Profile by userId
   Future<PersonalProfile?> getUserProfile(String userId) async {

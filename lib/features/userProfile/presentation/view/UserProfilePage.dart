@@ -37,7 +37,7 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
       backgroundColor: Colors.grey[50],
       drawer: DrawerMenu(),
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(140.0),
+        preferredSize: Size.fromHeight(120.0),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -50,8 +50,8 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -60,7 +60,7 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -72,12 +72,12 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 Icons.arrow_back_ios_new,
                                 color: Colors.white,
-                                size: 24,
+                                size: 20,
                               ),
                             ),
                           ),
@@ -85,10 +85,10 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                           Text(
                             'My Profile',
                             style: GoogleFonts.poppins(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ],
@@ -97,24 +97,24 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.settings_outlined,
                           color: Colors.white,
-                          size: 24,
+                          size: 20,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
-                  height: 48,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),
                       width: 1,
@@ -131,11 +131,11 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -144,22 +144,22 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                     labelColor: ColorPalette.primaryColor,
                     unselectedLabelColor: Colors.white,
                     labelStyle: GoogleFonts.poppins(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.2,
                     ),
                     unselectedLabelStyle: GoogleFonts.poppins(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.2,
                     ),
                     tabs: [
                       Tab(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.person_outline, size: 20),
-                            const SizedBox(width: 8),
+                            Icon(Icons.person_outline, size: 18),
+                            const SizedBox(width: 6),
                             Text('Personal'),
                           ],
                         ),
@@ -168,8 +168,8 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.medical_services_outlined, size: 20),
-                            const SizedBox(width: 8),
+                            Icon(Icons.medical_services_outlined, size: 18),
+                            const SizedBox(width: 6),
                             Text('Medical'),
                           ],
                         ),
@@ -185,7 +185,7 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
       body: Container(
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: TabBarView(
           controller: _tabController,
