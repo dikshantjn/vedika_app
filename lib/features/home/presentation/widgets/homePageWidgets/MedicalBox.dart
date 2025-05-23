@@ -14,7 +14,7 @@ class MedicalBoxRow extends StatelessWidget {
         "icon": Icons.emergency_rounded,
         "bgColor": MedicalBoxColors.ambulance,
         "textColor": MedicalBoxColors.ambulanceText,
-        "route": "/ambulance"
+        "route": "/ambulance-search"
       },
       {
         "title": "Blood",
@@ -30,7 +30,7 @@ class MedicalBoxRow extends StatelessWidget {
         "icon": Icons.medication_rounded,
         "bgColor": MedicalBoxColors.medicine,
         "textColor": MedicalBoxColors.medicineText,
-        "route": "/medicineOrder"
+        "route": "/medicine-order"
       },
       {
         "title": "Hospital",

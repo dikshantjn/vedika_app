@@ -44,57 +44,66 @@ import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/vi
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class AppRoutes {
-  static const String medicineOrder = "/medicineOrder";
-  static const String home = "/home";
-  static const String labTest = "/labTest";
-  static const String bloodBank = "/bloodBank";
-  static const String clinic = "/clinic";
-  static const String hospital = "/hospital";
-  static const String vendor = "/vendor";
-  static const String settings = "/settings";
-  static const String help = "/help";
-  static const String terms = "/terms";
-  static const String profile = "/profile";
-  static const String vedikaPlus = "/vedikaPlus";
-  static const String donorRegistration = "/DonorRegistrationPage";
-  static const String bookAppointment = "/BookAppointmentPage";
-  static const String ambulanceSearch = "/ambulance";
-  static const String bookClinicAppointment = "/bookClinicAppointment";
-  static const String orderHistory = "/orderHistory"; // New route
-  static const String enableBloodBankLocation = "/enableBloodBankLocation"; // New route
-  static const String goToCart = "/goToCart"; // New route
-  static const String bookLabTestAppointment = "/bookLabTestAppointment";
-  static const String notification = "/notification";
-  static const String userProfile = "/userProfile";
-  static const String healthRecords = "/healthRecords";
-  static const String login = "/login";
-  static const String vendorLogin = "/vendorLogin";
-  static const String logout = "/logout";
-  static const String doctorAppointments = "/doctor/appointments"; // New route for doctor appointments
-  static const String clinicConsultationType = "/clinic/consultationType"; // New route for consultation type selection
-  static const String onlineDoctorConsultation = "/clinic/onlineConsultation"; // New route for online doctor consultation
-  static const String onlineDoctorDetail = "/clinic/onlineConsultation/doctor"; // New route for online doctor detail
+  // Auth Routes
+  static const String login = '/login';
+  static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
+  static const String vendorLogin = '/vendorLogin';
+  static const String logout = '/logout';
 
+  // Main Routes
+  static const String home = '/home';
+  static const String profile = '/profile';
+  static const String settings = '/settings';
+  static const String notification = '/notification';
+  static const String userProfile = '/userProfile';
+  static const String healthRecords = '/healthRecords';
+  static const String vedikaPlus = '/vedikaPlus';
 
-  //Vendor
-  static const String VendorMedicalStoreDashBoard = "/VendorMedicalStoreDashBoard";
-  static const String MedicalStoreVendordashboard = "/MedicalStoreVendordashboard";
-  static const String MedicalStoreVendorOrders = "/orders";
-  static const String MedicalStoreVendorInventory = "/inventory";
-  static const String MedicalStoreVendorReturns = "/returns";
-  static const String MedicalStoreVendorSettings = "/settings";
-  static const String trackOrderScreen = "/trackOrder";
+  // Service Routes
+  static const String ambulanceSearch = '/ambulance-search';
+  static const String bloodBank = '/blood-bank';
+  static const String medicineOrder = '/medicine-order';
+  static const String hospitalSearch = '/hospital-search';
+  static const String clinicSearch = '/clinic-search';
+  static const String labSearch = '/lab-search';
+  static const String labTest = '/labTest';
+  static const String clinic = '/clinic';
+  static const String hospital = '/hospital';
 
+  // Booking Routes
+  static const String bookAppointment = '/book-appointment';
+  static const String bookClinicAppointment = '/book-clinic-appointment';
+  static const String bookLabTestAppointment = '/book-lab-test-appointment';
+  static const String clinicConsultationType = '/clinic/consultationType';
+  static const String onlineDoctorConsultation = '/clinic/onlineConsultation';
+  static const String onlineDoctorDetail = '/clinic/onlineConsultation/doctor';
+  static const String doctorAppointments = '/doctor/appointments';
 
-  // Vendor Dashboards
-  static const String VendorHospitalDashBoard = "/VendorHospitalDashBoard";
-  static const String VendorClinicDashBoard = "/VendorClinicDashBoard";
-  static const String AmbulanceAgencyDashboard = "/AmbulanceAgencyDashboard";
-  static const String VendorBloodBankDashBoard = "/VendorBloodBankDashBoard";
-  static const String VendorPathologyDashBoard = "/VendorPathologyDashBoard";
-  static const String VendorDeliveryPartnerDashBoard = "/VendorDeliveryPartnerDashBoard";
-  static const String VendorProductPartnerDashBoard = "/VendorProductPartnerDashBoard";
-  static const String bloodBankBooking = "/bloodBankBooking";
+  // Other Routes
+  static const String donorRegistration = '/donor-registration';
+  static const String trackOrder = '/track-order';
+  static const String orderHistory = '/orderHistory';
+  static const String enableBloodBankLocation = '/enableBloodBankLocation';
+  static const String goToCart = '/goToCart';
+
+  // Vendor Routes
+  static const String vendor = '/vendor';
+  static const String VendorMedicalStoreDashBoard = '/VendorMedicalStoreDashBoard';
+  static const String MedicalStoreVendordashboard = '/MedicalStoreVendordashboard';
+  static const String MedicalStoreVendorOrders = '/orders';
+  static const String MedicalStoreVendorInventory = '/inventory';
+  static const String MedicalStoreVendorReturns = '/returns';
+  static const String MedicalStoreVendorSettings = '/settings';
+  static const String trackOrderScreen = '/trackOrder';
+  static const String VendorHospitalDashBoard = '/VendorHospitalDashBoard';
+  static const String VendorClinicDashBoard = '/VendorClinicDashBoard';
+  static const String AmbulanceAgencyDashboard = '/AmbulanceAgencyDashboard';
+  static const String VendorBloodBankDashBoard = '/VendorBloodBankDashBoard';
+  static const String VendorPathologyDashBoard = '/VendorPathologyDashBoard';
+  static const String VendorDeliveryPartnerDashBoard = '/VendorDeliveryPartnerDashBoard';
+  static const String VendorProductPartnerDashBoard = '/VendorProductPartnerDashBoard';
+  static const String bloodBankBooking = '/bloodBankBooking';
 
   static Map<String, WidgetBuilder> getRoutes() {
     final vendorLoginService = VendorLoginService();

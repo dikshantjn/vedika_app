@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyProfileViewModel.dart';
 
 class AgencyBasicInfoSection extends StatefulWidget {
@@ -14,28 +15,41 @@ class _AgencyBasicInfoSectionState extends State<AgencyBasicInfoSection> {
   Widget _buildInfoBox(String label, String value, {Color? color}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: color ?? Colors.grey.shade100,
+        color: color ?? Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           Flexible(
-            child: Text(value,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -46,31 +60,73 @@ class _AgencyBasicInfoSectionState extends State<AgencyBasicInfoSection> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(40),
-          child: Image.network(
-            "url",
-            width: 64,
-            height: 64,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              width: 64,
-              height: 64,
-              color: Colors.white,
-              child: const Icon(Icons.person, size: 32, color: Colors.grey),
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.blue.shade100, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: Image.network(
+              "url",
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.blue.shade50,
+                child: Icon(Icons.business, size: 40, color: Colors.blue[300]),
+              ),
             ),
           ),
         ),
         Positioned(
-          top: -2,
-          right: -2,
+          bottom: 0,
+          right: 0,
           child: Container(
-            width: 14,
-            height: 14,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isLive ? Colors.green : Colors.red,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: (isLive ? Colors.green : Colors.red).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isLive ? 'Active' : 'Inactive',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -84,81 +140,87 @@ class _AgencyBasicInfoSectionState extends State<AgencyBasicInfoSection> {
     final agency = viewModel.agency;
 
     if (agency == null) {
-      return const Center(child: CircularProgressIndicator()); // Optional null check
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// Top Card with Profile and Status Pic
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(16),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
-          child: Row(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Left: Main Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(agency.agencyName,
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.person, size: 18, color: Colors.black54),
-                        const SizedBox(width: 6),
-                        Text(agency.ownerName,
-                            style: const TextStyle(fontSize: 16, color: Colors.black87)),
-                      ],
+                    Text(
+                      agency.agencyName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
+                    const SizedBox(height: 12),
+                    _buildContactInfo(Icons.person_outline, agency.ownerName),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, size: 18, color: Colors.black54),
-                        const SizedBox(width: 6),
-                        Text(agency.contactNumber,
-                            style: const TextStyle(fontSize: 16, color: Colors.black87)),
-                      ],
-                    ),
+                    _buildContactInfo(Icons.phone_outlined, agency.contactNumber),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.email, size: 18, color: Colors.black54),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(agency.email,
-                              style: const TextStyle(fontSize: 16, color: Colors.black87)),
-                        ),
-                      ],
-                    ),
+                    _buildContactInfo(Icons.email_outlined, agency.email),
                   ],
                 ),
               ),
-
-              const SizedBox(width: 16),
-
-              /// Right: Profile Pic with Status
+              const SizedBox(width: 20),
               _buildProfilePictureWithStatus(agency.isLive),
             ],
           ),
+          const SizedBox(height: 24),
+          _buildInfoBox("Website", agency.website),
+          _buildInfoBox(
+            "Address",
+            "${agency.address}, ${agency.city}, ${agency.state} - ${agency.pinCode}",
+          ),
+          _buildInfoBox("Landmark", agency.landmark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactInfo(IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: Colors.blue[700]),
         ),
-
-
-        const SizedBox(height: 20),
-
-        /// Info Boxes
-        _buildInfoBox("Website", agency.website),
-        _buildInfoBox("Address", "${agency.address}, ${agency.city}, ${agency.state} - ${agency.pinCode}"),
-        _buildInfoBox("Landmark", agency.landmark),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }

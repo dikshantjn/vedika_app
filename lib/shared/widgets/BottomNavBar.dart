@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
+import 'package:vedika_healthcare/shared/widgets/VoiceRecognitionOverlay.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
@@ -28,12 +29,12 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   late NotchBottomBarController _controller;
   late Animation<Color?> _blinkAnimation;
   late AnimationController _blinkController;
-
+  bool _showVoiceRecognition = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = NotchBottomBarController(index: 1); // Default to Speak button
+    _controller = NotchBottomBarController(index: 1);
 
     _gradientController = AnimationController(
       vsync: this,
@@ -42,10 +43,9 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
 
     _gradientAnimation = Tween<double>(begin: 0, end: 1).animate(_gradientController);
 
-    // Blinking Red Background Animation
     _blinkController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1), // Adjust speed of blinking
+      duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
 
     _blinkAnimation = ColorTween(
@@ -81,6 +81,22 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
       builder: (BuildContext context) {
         return EmergencyDialog(ambulanceNumber: "9370320066",bloodBankNumber: "9370320066",doctorNumber: "9370320066",);
       },
+    );
+  }
+
+  void _onSpeakTap() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.5),
+      enableDrag: false,
+      isDismissible: false,
+      builder: (context) => VoiceRecognitionOverlay(
+        onClose: () {
+          Navigator.pop(context);
+        },
+      ),
     );
   }
 
@@ -132,7 +148,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                       },
                       child: Icon(
                         Icons.mic_none,
-                        color: Colors.white, // Base color (will be overridden by gradient)
+                        color: Colors.white,
                       ),
                     );
                   },
@@ -157,7 +173,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                       },
                       child: Icon(
                         Icons.mic,
-                        color: Colors.white, // Base color (will be overridden by gradient)
+                        color: Colors.white,
                       ),
                     );
                   },
@@ -169,9 +185,9 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                   animation: _blinkAnimation,
                   builder: (context, child) {
                     return CircleAvatar(
-                      radius: 28, // Adjust size of the circular avatar
-                      backgroundColor: _blinkAnimation.value, // Blinking red background
-                      child: const Icon(Icons.call, color: Colors.white, size: 20), // Larger call icon
+                      radius: 28,
+                      backgroundColor: _blinkAnimation.value,
+                      child: const Icon(Icons.call, color: Colors.white, size: 20),
                     );
                   },
                 ),
@@ -179,26 +195,24 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                   animation: _blinkAnimation,
                   builder: (context, child) {
                     return CircleAvatar(
-                      radius: 82, // Adjust size of the circular avatar
-                      backgroundColor: _blinkAnimation.value, // Blinking red background
-                      child: const Icon(Icons.call, color: Colors.white, size: 20), // Larger call icon
+                      radius: 82,
+                      backgroundColor: _blinkAnimation.value,
+                      child: const Icon(Icons.call, color: Colors.white, size: 20),
                     );
                   },
                 ),
                 itemLabel: 'Emergency',
               ),
-
-
             ],
             onTap: (index) {
-              log('Current selected index: $index');
-              if (index == 2) {
+              if (index == 1) {
+                _onSpeakTap();
+              } else if (index == 2) {
                 _onEmergencyTap();
               } else {
                 widget.onItemTapped(index);
               }
-              // Force the Speak button to always appear active
-              _controller.index = 1; // Speak button index
+              _controller.index = 1;
             },
             kIconSize: 24.0,
           ),

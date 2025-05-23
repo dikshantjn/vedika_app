@@ -367,6 +367,18 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // ✅ Ensure amount is converted to integer before passing to Razorpay
       double roundedAmount = totalAmount.roundToDouble();
 
+      // Determine payment title based on cart items
+      String paymentTitle;
+      if (_cartItems.isNotEmpty && _productCartItems.isNotEmpty) {
+        paymentTitle = 'Medicine & Product Order';
+      } else if (_cartItems.isNotEmpty) {
+        paymentTitle = 'Medicine Order';
+      } else if (_productCartItems.isNotEmpty) {
+        paymentTitle = 'Product Order';
+      } else {
+        paymentTitle = 'Order Payment';
+      }
+
       // Set up Razorpay event handlers
       _razorPayService.onPaymentSuccess = (PaymentSuccessResponse response) {
         debugPrint("🎯 Payment success callback triggered in view model");
@@ -383,12 +395,12 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         _handlePaymentFailure(response);
       };
 
-      // Open payment gateway
+      // Open payment gateway with appropriate title
       _razorPayService.openPaymentGateway(
         roundedAmount,
         ApiConstants.razorpayApiKey,
-        'Medicine Order Delivery',
-        'Payment for your medicine delivery order',
+        paymentTitle,
+        'Payment for your $paymentTitle',
       );
 
       debugPrint("✅ Payment gateway opened successfully");

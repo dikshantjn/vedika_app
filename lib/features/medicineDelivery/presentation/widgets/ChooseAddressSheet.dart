@@ -19,6 +19,7 @@ class ChooseAddressSheet extends StatefulWidget {
 class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
   bool showAddressList = false;
   String? selectedAddressId;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -28,14 +29,22 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
     });
   }
 
-  void _loadAddresses() {
+  void _loadAddresses() async {
+    setState(() {
+      isLoading = true;
+    });
+    
     final viewModel = Provider.of<AddNewAddressViewModel>(context, listen: false);
-    viewModel.getAllAddresses().then((_) {
-      if (viewModel.addresses.isNotEmpty) {
-        setState(() {
-          selectedAddressId = viewModel.addresses.first.addressId;
-        });
-      }
+    await viewModel.getAllAddresses();
+    
+    if (viewModel.addresses.isNotEmpty) {
+      setState(() {
+        selectedAddressId = viewModel.addresses.first.addressId;
+      });
+    }
+    
+    setState(() {
+      isLoading = false;
     });
   }
 
@@ -62,7 +71,9 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
             children: [
               _buildHeader(viewModel),
               const SizedBox(height: 20),
-              showAddressList ? _buildAddressList(viewModel) : _buildSelectedAddress(viewModel),
+              isLoading 
+                ? _buildLoadingView() 
+                : (showAddressList ? _buildAddressList(viewModel) : _buildSelectedAddress(viewModel)),
               const SizedBox(height: 20),
               _buildConfirmButton(viewModel),
             ],
@@ -391,6 +402,34 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Loading addresses...",
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
             ),
           ),
         ],

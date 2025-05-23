@@ -4,11 +4,13 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/ProcessBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Dashboard/AmbulanceAgencyAnalyticsInsightsChart.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AmbulanceAgencyDashboardScreen extends StatelessWidget {
   @override
@@ -51,134 +53,176 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, AgencyDashboardViewModel viewModel, AmbulanceMainViewModel mainViewModel) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, bottom: 16),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 24,
+        left: 16,
+        right: 16,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade700,
+            Colors.blue.shade900,
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // Profile Picture
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.blue, width: 2),
-                    image: DecorationImage(
-                      image: NetworkImage(viewModel.agencyProfile?.officePhotos.firstOrNull?['url'] ?? 'https://via.placeholder.com/150'),
-                      fit: BoxFit.cover,
+          Row(
+            children: [
+              // Profile Picture
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
+                  ],
+                  image: DecorationImage(
+                    image: NetworkImage(viewModel.agencyProfile?.officePhotos.firstOrNull?['url'] ?? 'https://via.placeholder.com/150'),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Agency Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        viewModel.agencyProfile?.agencyName ?? 'Agency Name',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+              ),
+              const SizedBox(width: 16),
+              // Agency Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      viewModel.agencyProfile?.agencyName ?? 'Agency Name',
+                      style: GoogleFonts.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 4),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.email_outlined, size: 16, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(
+                          viewModel.agencyProfile?.email ?? 'agency@email.com',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Status Toggle
+              GestureDetector(
+                onTap: () async {
+                  if (!mainViewModel.isLoading) {
+                    try {
+                      final newStatus = await mainViewModel.toggleVendorStatus();
+                      Fluttertoast.showToast(
+                        msg: "You are now ${newStatus ? 'Active' : 'Inactive'}",
+                        toastLength: Toast.LENGTH_LONG,
+                        gravity: ToastGravity.TOP,
+                        backgroundColor: newStatus ? Colors.green : Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                        timeInSecForIosWeb: 2,
+                        webPosition: "center",
+                        webBgColor: "linear-gradient(to right, ${newStatus ? '#00b09b' : '#ff0000'}, ${newStatus ? '#96c93d' : '#ff4b2b'})",
+                      );
+                    } catch (e) {
+                      Fluttertoast.showToast(
+                        msg: "Failed to update status. Please try again.",
+                        toastLength: Toast.LENGTH_LONG,
+                        gravity: ToastGravity.TOP,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                        timeInSecForIosWeb: 2,
+                        webPosition: "center",
+                        webBgColor: "linear-gradient(to right, #ff0000, #ff4b2b)",
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: mainViewModel.isActive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (mainViewModel.isActive ? Colors.green : Colors.red).withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (mainViewModel.isLoading)
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                            ),
+                          ),
+                        )
+                      else ...[
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Text(
-                        viewModel.agencyProfile?.email ?? 'agency@email.com',
-                        style: TextStyle(
+                        mainViewModel.isActive ? 'Active' : 'Inactive',
+                        style: GoogleFonts.poppins(
+                          color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                          fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Status Toggle
-                GestureDetector(
-                  onTap: () async {
-                    if (!mainViewModel.isLoading) {
-                      final newStatus = await mainViewModel.toggleVendorStatus();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: AwesomeSnackbarContent(
-                            title: newStatus ? 'Status Updated' : 'Error',
-                            message: newStatus ? 'You are now ${newStatus ? 'Active' : 'Inactive'}' : 'Failed to update status',
-                            contentType: newStatus ? ContentType.success : ContentType.failure,
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: mainViewModel.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: mainViewModel.isActive ? Colors.green : Colors.red,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (mainViewModel.isLoading)
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                mainViewModel.isActive ? Colors.green : Colors.red,
-                              ),
-                            ),
-                          )
-                        else ...[
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: mainViewModel.isActive ? Colors.green : Colors.red,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(
-                          mainViewModel.isActive ? 'Active' : 'Inactive',
-                          style: TextStyle(
-                            color: mainViewModel.isActive ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           // Quick Stats Row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 _quickStatItem(Icons.phone, '${viewModel.totalBookings}', 'Total Calls'),
@@ -194,32 +238,33 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
 
   Widget _quickStatItem(IconData icon, String value, String label) {
     return Container(
-      margin: EdgeInsets.only(right: 16),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blue, size: 20),
-          const SizedBox(width: 8),
+          Icon(icon, color: Colors.white, size: 24),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.white70,
                 ),
               ),
             ],

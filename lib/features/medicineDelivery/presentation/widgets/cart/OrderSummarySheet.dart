@@ -86,6 +86,7 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
+      isScrollControlled: true, // Add this to allow full height
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(16.0),
@@ -93,47 +94,87 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
         ),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
+        return Container(
+          padding: EdgeInsets.only(
+            top: 32,
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Lottie.asset(
-                'assets/animations/error.json',
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
+              Container(
+                width: 300,
+                height: 300,
+                child: Lottie.asset(
+                  'assets/animations/paymentfailed.json',
+                  fit: BoxFit.contain,
+                ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 24),
               Text(
                 "Payment Failed",
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: Colors.red,
                 ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 12),
               Text(
                 error,
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+              SizedBox(height: 32),
+              Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.red,
+                      Colors.red.withOpacity(0.8),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Center(
+                      child: Text(
+                        "Try Again",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text("Try Again", style: TextStyle(color: Colors.white)),
               ),
+              SizedBox(height: 16),
             ],
           ),
         );
