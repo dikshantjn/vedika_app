@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/JitsiMeetService.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Utils/MeetingRoutes.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetService.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/ErrorState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
@@ -398,31 +396,74 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
     );
   }
 
-  void _joinMeeting(String meetingUrl) {
-    // Get the view model
-    final viewModel = Provider.of<ClinicAppointmentViewModel>(context, listen: false);
-    
-    // Get user information
-    final user = viewModel.getCurrentUser();
-    final userName = user?.name ?? "Patient";
-    final userEmail = user?.emailId;
-    final userAvatarUrl = user?.photo;
-    
-    // Extract room name from URL
-    final roomName = meetingUrl.contains('/')
-        ? meetingUrl.split('/').last
-        : meetingUrl;
-    
-    // Navigate to the JitsiMeetScreen
-    navigateToMeeting(
-      context,
-      JitsiMeetScreen(
+  void _joinMeeting(String meetingUrl) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: DoctorConsultationColorPalette.primaryBlue,
+          ),
+        ),
+      );
+
+      // Get the view model
+      final viewModel = Provider.of<ClinicAppointmentViewModel>(context, listen: false);
+
+      // Get user information
+      final user = viewModel.getCurrentUser();
+      final userName = user?.name ?? "Patient";
+      final userEmail = user?.emailId;
+      final userAvatarUrl = user?.photo;
+
+      // Parse the meeting URL
+      final uri = Uri.parse(meetingUrl);
+      final roomName = uri.pathSegments.last;
+      final jwtToken = uri.fragment.contains("jwt=")
+          ? uri.fragment.split("jwt=").last
+          : null;
+
+      if (jwtToken == null || jwtToken.isEmpty) {
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Invalid meeting URL'),
+              backgroundColor: DoctorConsultationColorPalette.errorRed,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Join meeting using service
+      await JitsiMeetService().joinMeeting(
         roomName: roomName,
-        displayName: userName, // changed from userDisplayName to displayName
+        displayName: userName,
         email: userEmail,
         avatarUrl: userAvatarUrl,
-      ),
-    );
+        jwtToken: jwtToken,
+        isDoctor: false, // Patients are not moderators
+      );
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      // Close loading dialog if open
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining meeting: $e'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   void _confirmCancelAppointment(String appointmentId) {

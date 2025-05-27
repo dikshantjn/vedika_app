@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Utils/MeetingRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/ClinicAppointmentViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetScreen.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetService.dart';
+
 
 class ClinicAppointmentsScreen extends StatefulWidget {
   const ClinicAppointmentsScreen({Key? key}) : super(key: key);
@@ -615,24 +616,93 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     ClinicAppointment appointment,
     ClinicAppointmentViewModel viewModel,
   ) async {
-    // Get doctor name - fallback to a generic name if doctorProfile is null
-    final doctorName = viewModel.doctorProfile?.doctorName != null 
-        ? "${viewModel.doctorProfile!.doctorName}"
-        : "${appointment.doctor?.doctorName ?? "Doctor"}";
-    
-    // Get doctor email - fallback to null if not available
-    final doctorEmail = viewModel.doctorProfile?.email ?? appointment.doctor?.email;
-    
-    // Get doctor avatar - fallback to null if not available
-    final doctorAvatar = viewModel.doctorProfile?.profilePicture ?? appointment.doctor?.profilePicture;
-    
-    // Launch meeting with the appointment ID
-    await viewModel.launchMeetingLink(
-      appointment.clinicAppointmentId,
-      context,
-      doctorName,
-      true, // isDoctor
-    );
+    try {
+      // Get doctor name - fallback to a generic name if doctorProfile is null
+      final doctorName = viewModel.doctorProfile?.doctorName != null 
+          ? "${viewModel.doctorProfile!.doctorName}"
+          : "${appointment.doctor?.doctorName ?? "Doctor"}";
+      
+      // Get doctor email - fallback to null if not available
+      final doctorEmail = viewModel.doctorProfile?.email ?? appointment.doctor?.email;
+      
+      // Get doctor avatar - fallback to null if not available
+      final doctorAvatar = viewModel.doctorProfile?.profilePicture ?? appointment.doctor?.profilePicture;
+      
+      // Generate or get meeting URL
+      String? meetingUrl = appointment.meetingUrl;
+      if (meetingUrl == null || meetingUrl.isEmpty) {
+        meetingUrl = await viewModel.generateMeetingUrl(appointment.clinicAppointmentId);
+        if (meetingUrl == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to generate meeting link'),
+                backgroundColor: DoctorConsultationColorPalette.errorRed,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // Extract room name and JWT token from meeting URL
+      final uri = Uri.parse(meetingUrl);
+      final roomName = uri.pathSegments.last;
+      final jwtToken = uri.fragment.contains("jwt=")
+          ? uri.fragment.split("jwt=").last
+          : null;
+
+      if (jwtToken == null || jwtToken.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Invalid meeting URL'),
+              backgroundColor: DoctorConsultationColorPalette.errorRed,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show loading dialog
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: CircularProgressIndicator(
+              color: DoctorConsultationColorPalette.primaryBlue,
+            ),
+          ),
+        );
+      }
+
+      // Join meeting using service
+      await JitsiMeetService().joinMeeting(
+        roomName: roomName,
+        displayName: doctorName,
+        email: doctorEmail,
+        avatarUrl: doctorAvatar,
+        jwtToken: jwtToken,
+        isDoctor: true,
+      );
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      // Close loading dialog if open
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining meeting: $e'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   bool _isWithinTimeWindow(ClinicAppointment appointment) {
@@ -1216,19 +1286,12 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                               TextButton.icon(
                                 onPressed: () async {
                                   Navigator.pop(context);
-                                  
+
                                   final viewModel = Provider.of<ClinicAppointmentViewModel>(context, listen: false);
-                                  // Get doctor name - fallback to a generic name if doctorProfile is null
-                                  final doctorName = viewModel.doctorProfile?.doctorName != null 
-                                      ? "${viewModel.doctorProfile!.doctorName}"
-                                      : "${appointment.doctor?.doctorName ?? "Doctor"}";
-                                  
-                                  // Get doctor email - fallback to null if not available
+                                  final doctorName = viewModel.doctorProfile?.doctorName ?? appointment.doctor?.doctorName ?? "Doctor";
                                   final doctorEmail = viewModel.doctorProfile?.email ?? appointment.doctor?.email;
-                                  
-                                  // Get doctor avatar - fallback to null if not available
                                   final doctorAvatar = viewModel.doctorProfile?.profilePicture ?? appointment.doctor?.profilePicture;
-                                  
+
                                   // Generate or get meeting URL
                                   String? meetingUrl = appointment.meetingUrl;
                                   if (meetingUrl == null || meetingUrl.isEmpty) {
@@ -1245,44 +1308,43 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                                       return;
                                     }
                                   }
-                                  
-                                  // Extract room name from URL
-                                  final roomName = meetingUrl.contains('/')
-                                      ? meetingUrl.split('/').last
-                                      : 'vedika-consult-${appointment.clinicAppointmentId}';
-                                      
+
+                                  // Extract room name and JWT token from meeting URL
+                                  final uri = Uri.parse(meetingUrl);
+                                  final roomName = uri.pathSegments.last;
+                                  final jwtToken = uri.fragment.contains("jwt=")
+                                      ? uri.fragment.split("jwt=").last
+                                      : null;
+
+                                  if (jwtToken == null || jwtToken.isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('Invalid meeting URL'),
+                                          backgroundColor: DoctorConsultationColorPalette.errorRed,
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+
+                                  // Launch Jitsi meeting
                                   if (context.mounted) {
-                                    navigateToMeeting(
+                                    Navigator.push(
                                       context,
-                                      JitsiMeetScreen(
-                                        roomName: roomName,
-                                        displayName: doctorName,    // changed here
-                                        email: doctorEmail,         // changed from userEmail to email
-                                        avatarUrl: doctorAvatar,    // changed from userAvatarUrl to avatarUrl
-                                        // onMeetingClosed: () {
-                                        //   if (context.mounted) {
-                                        //     // Mark the appointment as completed after the meeting ends
-                                        //     viewModel.completeAppointmentAfterMeeting(appointment.clinicAppointmentId).then((success) {
-                                        //       if (context.mounted) {
-                                        //         String message = success
-                                        //             ? 'Meeting ended and appointment marked as completed'
-                                        //             : 'Meeting ended but failed to mark appointment as completed';
-                                        //
-                                        //         ScaffoldMessenger.of(context).showSnackBar(
-                                        //           SnackBar(
-                                        //             content: Text(message),
-                                        //             backgroundColor: success
-                                        //                 ? DoctorConsultationColorPalette.successGreen
-                                        //                 : DoctorConsultationColorPalette.primaryBlue,
-                                        //           ),
-                                        //         );
-                                        //       }
-                                        //     });
-                                        //   }
-                                        // },
+                                      MaterialPageRoute(
+                                        builder: (context) => JitsiMeetScreen(
+                                          roomName: roomName,
+                                          displayName: doctorName,
+                                          email: doctorEmail,
+                                          avatarUrl: doctorAvatar,
+                                          jwtToken: jwtToken,
+                                          isDoctor: true,
+                                        ),
                                       ),
                                     );
                                   }
+
                                 },
                                 icon: const Icon(Icons.video_call, size: 18),
                                 label: const Text('Join'),

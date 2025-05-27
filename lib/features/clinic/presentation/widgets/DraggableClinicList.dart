@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 
 class DraggableClinicList extends StatelessWidget {
@@ -243,7 +244,7 @@ class DraggableClinicList extends StatelessWidget {
                                     // Push to the Book Appointment screen with clinic data
                                     Navigator.pushNamed(
                                       context,
-                                      '/bookClinicAppointment',
+                                      AppRoutes.bookClinicAppointment,
                                       arguments: clinic,
                                     );
                                   },
