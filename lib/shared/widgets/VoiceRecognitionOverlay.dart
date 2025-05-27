@@ -5,6 +5,10 @@ import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vedika_healthcare/shared/services/VoiceCommandService.dart';
 import 'package:translator/translator.dart';
+import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:logger/logger.dart';
 
 class VoiceRecognitionOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -18,7 +22,19 @@ class VoiceRecognitionOverlay extends StatefulWidget {
 class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with TickerProviderStateMixin {
   final SpeechToText _speechToText = SpeechToText();
   final GoogleTranslator _translator = GoogleTranslator();
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 2,
+      errorMethodCount: 8,
+      lineLength: 120,
+      colors: true,
+      printEmojis: true,
+      printTime: true
+    ),
+  );
   bool _isListening = false;
+  bool _isProcessing = false;
   String _lastWords = '';
   String _displayText = '';
   bool _isInitialized = false;
@@ -31,16 +47,9 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
   int _currentSuggestionIndex = 0;
   String? _errorMessage;
   bool _showError = false;
-  List<LocaleName> _supportedLocales = [];
-  bool _isLoadingLanguages = true;
-
-  // Language options with their display names and codes
-  final Map<String, Map<String, String>> _languageNames = {
-    'en_US': {'name': 'English', 'code': 'en'},
-    'hi_IN': {'name': 'हिंदी', 'code': 'hi'},
-    'mr_IN': {'name': 'मराठी', 'code': 'mr'},
-    'gu_IN': {'name': 'ગુજરાતી', 'code': 'gu'},
-  };
+  Timer? _retryTimer;
+  bool _isDisposed = false;
+  bool _hasPermission = false;
 
   final List<String> _suggestions = [
     '"Emergency help"',
@@ -71,7 +80,17 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
   void initState() {
     super.initState();
     _initAnimations();
-    _initSpeech();
+    _checkPermissions();
+  }
+
+  @override
+  void didUpdateWidget(VoiceRecognitionOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isInitialized) {
+      _initSpeech();
+    } else if (!_isListening) {
+      _startListening();
+    }
   }
 
   void _initAnimations() {
@@ -119,37 +138,151 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _retryTimer?.cancel();
     _animationController.dispose();
     _suggestionController.dispose();
     _stopListening();
     super.dispose();
   }
 
-  Future<void> _initSpeech() async {
+  Future<void> _checkPermissions() async {
     try {
+      _logger.i('Starting permission check...');
+      
+      // Check microphone permission
+      var status = await Permission.microphone.status;
+      _logger.d('Initial microphone permission status: $status');
+      
+      if (!status.isGranted) {
+        _logger.i('Requesting microphone permission...');
+        status = await Permission.microphone.request();
+        _logger.d('Microphone permission request result: $status');
+      }
+      
+      // Check device info
+      if (Theme.of(context).platform == TargetPlatform.android) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        _logger.i('Device Info:', error: {
+          'brand': androidInfo.brand,
+          'manufacturer': androidInfo.manufacturer,
+          'model': androidInfo.model,
+          'androidVersion': androidInfo.version.release,
+          'sdkInt': androidInfo.version.sdkInt,
+        });
+        
+        final isRealme = androidInfo.brand.toLowerCase().contains('realme');
+        _logger.i('Is Realme device: $isRealme');
+        
+        if (isRealme) {
+          _logger.w('Realme device detected - showing special instructions');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'For Realme devices: Please ensure "Auto-start" and "Background pop-up" permissions are enabled in device settings.',
+                  style: TextStyle(color: Colors.white),
+                ),
+                duration: Duration(seconds: 5),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        }
+      }
+
+      if (status.isGranted) {
+        _logger.i('Microphone permission granted');
+        _hasPermission = true;
+        _initSpeech();
+      } else {
+        _logger.e('Microphone permission denied');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Microphone permission is required for voice recognition';
+            _showError = true;
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      _logger.e('Error checking permissions', error: e, stackTrace: stackTrace);
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error checking permissions: $e';
+          _showError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _initSpeech() async {
+    if (_isDisposed || !_hasPermission) {
+      _logger.w('Cannot initialize speech: disposed=$_isDisposed, hasPermission=$_hasPermission');
+      return;
+    }
+
+    try {
+      _logger.i('Starting speech initialization...');
+      if (mounted) {
+        setState(() {
+          _isListening = false;
+          _isInitialized = false;
+          _isProcessing = true;
+        });
+      }
+
+      _retryTimer?.cancel();
+
+      if (_speechToText.isListening) {
+        _logger.i('Stopping existing listening session...');
+        await _speechToText.stop();
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      _logger.i('Initializing speech recognition...');
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
-          developer.log('Speech recognition error: ${error.errorMsg}');
-          developer.log('Error details: ${error.permanent ? 'Permanent' : 'Temporary'}');
+          if (_isDisposed) return;
+          _logger.e('Speech recognition error', error: {
+            'errorMsg': error.errorMsg,
+            'permanent': error.permanent,
+          });
+          
+          if (error.errorMsg == 'error_language_unavailable') {
+            _handleLanguageUnavailable();
+          }
+          
           if (mounted) {
             setState(() {
               _isListening = false;
               _errorMessage = 'Error: ${error.errorMsg}';
               _showError = true;
             });
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                _startListening();
-              }
-            });
           }
+
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (!_isDisposed && mounted) {
+              _startListening();
+            }
+          });
         },
         onStatus: (status) {
-          developer.log('Speech recognition status: $status');
-          if (status == 'done' || status == 'notListening' || status == 'doneNoResult') {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                _startListening();
+          if (_isDisposed) return;
+          _logger.d('Speech recognition status: $status');
+          
+          if (mounted) {
+            setState(() {
+              switch (status) {
+                case 'listening':
+                  _isListening = true;
+                  break;
+                case 'done':
+                case 'notListening':
+                case 'doneNoResult':
+                  _isListening = false;
+                  break;
+                default:
+                  _isListening = false;
               }
             });
           }
@@ -157,163 +290,226 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
         debugLogging: true,
       );
       
-      if (_isInitialized) {
+      _logger.i('Speech recognition initialized: $_isInitialized');
+      
+      if (_isInitialized && !_isDisposed) {
+        // Check available locales
         final locales = await _speechToText.locales();
-        developer.log('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
+        _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
         
+        // Try to find a suitable locale
+        String? selectedLocale;
+        if (locales.any((locale) => locale.localeId == 'en_US')) {
+          selectedLocale = 'en_US';
+        } else if (locales.any((locale) => locale.localeId == 'en_IN')) {
+          selectedLocale = 'en_IN';
+        } else if (locales.isNotEmpty) {
+          selectedLocale = locales.first.localeId;
+        }
+        
+        if (selectedLocale != null) {
+          _currentLocaleId = selectedLocale;
+          _logger.i('Selected locale: $_currentLocaleId');
+        } else {
+          _logger.w('No suitable locale found, using default');
+        }
+
         if (mounted) {
           setState(() {
-            _supportedLocales = locales;
-            _isLoadingLanguages = false;
-            
-            // Try to find a supported language from our preferred list
-            final preferredLocale = locales.firstWhere(
-              (locale) => _languageNames.containsKey(locale.localeId),
-              orElse: () => locales.first,
-            );
-            _currentLocaleId = preferredLocale.localeId;
-            developer.log('Selected locale: $_currentLocaleId');
+            _isProcessing = false;
           });
           
-          _startListening();
+          await Future.delayed(const Duration(milliseconds: 300));
+          if (!_isDisposed) {
+            _startListening();
+          }
+        }
+      } else {
+        _logger.e('Failed to initialize speech recognition');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to initialize speech recognition';
+            _showError = true;
+            _isProcessing = false;
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      _logger.e('Error initializing speech recognition', error: e, stackTrace: stackTrace);
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _errorMessage = 'Error initializing speech recognition: $e';
+          _showError = true;
+          _isInitialized = false;
+          _isProcessing = false;
+          _isListening = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleLanguageUnavailable() async {
+    _logger.w('Handling language unavailable error');
+    try {
+      final locales = await _speechToText.locales();
+      _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
+      
+      // Try to find a suitable locale
+      String? selectedLocale;
+      if (locales.any((locale) => locale.localeId == 'en_IN')) {
+        selectedLocale = 'en_IN';
+      } else if (locales.any((locale) => locale.localeId == 'en_US')) {
+        selectedLocale = 'en_US';
+      } else if (locales.isNotEmpty) {
+        selectedLocale = locales.first.localeId;
+      }
+      
+      if (selectedLocale != null) {
+        _currentLocaleId = selectedLocale;
+        _logger.i('Switched to locale: $_currentLocaleId');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Switched to ${_currentLocaleId} for speech recognition'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        _logger.e('No suitable locale found');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Speech recognition is not available in your language'),
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e) {
-      developer.log('Error initializing speech recognition: $e');
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error initializing speech recognition';
-          _showError = true;
-          _isLoadingLanguages = false;
-        });
-      }
+      _logger.e('Error handling language unavailable', error: e);
     }
   }
 
   Future<void> _startListening() async {
-    if (!_isInitialized || !mounted) return;
+    if (!_isInitialized || !mounted || _isProcessing || _isDisposed) {
+      _logger.w('Cannot start listening', error: {
+        'initialized': _isInitialized,
+        'mounted': mounted,
+        'processing': _isProcessing,
+        'disposed': _isDisposed
+      });
+      return;
+    }
 
     try {
-      await _speechToText.listen(
-        onResult: _onSpeechResult,
-        localeId: _currentLocaleId,
-        listenFor: const Duration(seconds: 60),
-        pauseFor: const Duration(seconds: 10),
-        partialResults: true,
-        onDevice: true,
-        cancelOnError: false,
-        listenMode: ListenMode.confirmation,
-        onSoundLevelChange: (level) {
-          developer.log('Sound level: $level');
-        },
-      );
+      _logger.i('Starting listening session...');
       if (mounted) {
         setState(() {
-          _isListening = true;
-          _showError = false;
-          _errorMessage = null;
-        });
-      }
-    } catch (e) {
-      developer.log('Error starting speech recognition: $e');
-      if (mounted) {
-        setState(() {
+          _isProcessing = true;
           _isListening = false;
-          _errorMessage = 'Error starting speech recognition';
-          _showError = true;
-        });
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            _startListening();
-          }
+          _errorMessage = null;
+          _showError = false;
         });
       }
-    }
-  }
-
-  void _onSpeechResult(result) async {
-    if (mounted) {
-      setState(() {
-        _lastWords = result.recognizedWords;
-        _displayText = result.recognizedWords; // Keep original text for display
-      });
       
-      developer.log('Recognized words: $_lastWords');
-      developer.log('Confidence: ${result.confidence}');
-      developer.log('Final: ${result.finalResult}');
-      
-      if (_lastWords.isNotEmpty && result.finalResult) {
-        String textToProcess = _lastWords;
-        
-        // Only translate if not English
-        if (_currentLocaleId != 'en_US') {
-          try {
-            final translation = await _translator.translate(
-              _lastWords,
-              from: _languageNames[_currentLocaleId]!['code']!,
-              to: 'en'
-            );
-            textToProcess = translation.text;
-            developer.log('Translated text: $textToProcess');
-          } catch (e) {
-            developer.log('Translation error: $e');
-            textToProcess = _lastWords;
-          }
-        }
+      if (_speechToText.isListening) {
+        _logger.i('Stopping existing listening session...');
+        await _speechToText.stop();
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
 
-        VoiceCommandService.handleVoiceCommand(context, textToProcess, (error) {
-          if (mounted) {
-            setState(() {
-              _errorMessage = error;
-              _showError = true;
+      if (!_speechToText.isListening && !_isDisposed) {
+        _logger.i('Starting new listening session');
+        await _speechToText.listen(
+          onResult: (result) {
+            _logger.i('Speech result received', error: {
+              'recognizedWords': result.recognizedWords,
+              'confidence': result.confidence,
+              'finalResult': result.finalResult,
             });
-            Future.delayed(const Duration(seconds: 3), () {
-              if (mounted) {
-                setState(() {
-                  _showError = false;
-                  _errorMessage = null;
+            
+            if (mounted && !_isDisposed) {
+              setState(() {
+                _lastWords = result.recognizedWords;
+                _displayText = result.recognizedWords;
+              });
+              
+              if (_lastWords.isNotEmpty && result.finalResult) {
+                VoiceCommandService.handleVoiceCommand(context, _lastWords, (error) {
+                  if (mounted && !_isDisposed) {
+                    setState(() {
+                      _errorMessage = error;
+                      _showError = true;
+                    });
+                    Future.delayed(const Duration(seconds: 3), () {
+                      if (mounted && !_isDisposed) {
+                        setState(() {
+                          _showError = false;
+                          _errorMessage = null;
+                        });
+                      }
+                    });
+                  }
                 });
               }
-            });
-          }
-        });
+            }
+          },
+          localeId: _currentLocaleId,
+          partialResults: true,
+          onDevice: true,
+          cancelOnError: false,
+          listenMode: ListenMode.confirmation,
+          onSoundLevelChange: (level) {
+            _logger.v('Sound level: $level');
+          },
+        );
+        
+        if (mounted && !_isDisposed) {
+          setState(() {
+            _isListening = true;
+            _isProcessing = false;
+          });
+          _logger.i('Listening session started successfully');
+        }
       }
-      
-      if (!_speechToText.isListening) {
-        _startListening();
+    } catch (e, stackTrace) {
+      _logger.e('Error starting speech recognition', error: e, stackTrace: stackTrace);
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _isListening = false;
+          _errorMessage = 'Error starting speech recognition: $e';
+          _showError = true;
+          _isProcessing = false;
+        });
       }
     }
   }
 
   Future<void> _stopListening() async {
+    if (_isProcessing || _isDisposed) return;
+    
     try {
-      await _speechToText.stop();
-      if (mounted) {
+      _isProcessing = true;
+      if (_speechToText.isListening) {
+        await _speechToText.stop();
+      }
+      if (mounted && !_isDisposed) {
         setState(() {
           _isListening = false;
+          _isProcessing = false;
         });
       }
     } catch (e) {
       developer.log('Error stopping speech recognition: $e');
+      if (mounted && !_isDisposed) {
+        setState(() {
+          _isListening = false;
+          _isProcessing = false;
+        });
+      }
     }
-  }
-
-  void _changeLanguage(String localeId) {
-    if (!_supportedLocales.any((locale) => locale.localeId == localeId)) {
-      setState(() {
-        _errorMessage = 'This language is not supported on your device';
-        _showError = true;
-      });
-      return;
-    }
-
-    setState(() {
-      _currentLocaleId = localeId;
-      _displayText = ''; // Clear display text when changing language
-    });
-    _stopListening().then((_) {
-      _startListening();
-    });
   }
 
   @override
@@ -356,120 +552,84 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Language selector
-                if (!_isLoadingLanguages)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: _languageNames.entries.map((entry) {
-                          final isSupported = _supportedLocales.any((locale) => locale.localeId == entry.key);
-                          final isSelected = entry.key == _currentLocaleId;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: InkWell(
-                              onTap: isSupported ? () => _changeLanguage(entry.key) : null,
+                const SizedBox(height: 20),
+                // Animated microphone icon with pulsing rings
+                GestureDetector(
+                  onTap: () {
+                    if (!_isListening) {
+                      _startListening();
+                    }
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Pulsing rings
+                      ...List.generate(3, (index) {
+                        return AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: 1.0 + (_pulseAnimation.value * 0.3 * (index + 1)),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                width: 80,
+                                height: 80,
                                 decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
+                                  shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Text(
-                                  entry.value['name']!,
-                                  style: GoogleFonts.poppins(
-                                    color: isSupported ? Colors.white : Colors.white.withOpacity(0.3),
-                                    fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: Colors.blue.withOpacity(0.3 - (index * 0.1)),
+                                    width: 2,
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  )
-                else
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                const SizedBox(height: 20),
-                // Animated microphone icon with pulsing rings
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Pulsing rings
-                    ...List.generate(3, (index) {
-                      return AnimatedBuilder(
+                            );
+                          },
+                        );
+                      }),
+                      // Main microphone icon
+                      AnimatedBuilder(
                         animation: _animationController,
                         builder: (context, child) {
                           return Transform.scale(
-                            scale: 1.0 + (_pulseAnimation.value * 0.3 * (index + 1)),
+                            scale: _scaleAnimation.value,
                             child: Container(
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.blue.withOpacity(0.3 - (index * 0.1)),
-                                  width: 2,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF8A2BE2),
+                                    Color(0xFF4169E1),
+                                    Color(0xFFAC4A79),
+                                    Color(0xFF8A2BE2),
+                                  ],
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.mic,
+                                size: 35,
+                                color: Colors.white,
                               ),
                             ),
                           );
                         },
-                      );
-                    }),
-                    // Main microphone icon
-                    AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _scaleAnimation.value,
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF8A2BE2),
-                                  Color(0xFF4169E1),
-                                  Color(0xFFAC4A79),
-                                  Color(0xFF8A2BE2),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.mic,
-                              size: 35,
-                              color: Colors.white,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 32),
                 // Status text with modern typography
                 Text(
-                  _isListening ? 'Listening...' : 'Start speaking',
+                  _isProcessing ? 'Processing...' : (_isListening ? 'Listening...' : 'Tap the mic to start speaking'),
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 20,
@@ -477,6 +637,18 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                     letterSpacing: 0.5,
                   ),
                 ),
+                if (!_isListening && !_isProcessing)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Tap the microphone icon to start listening',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 // Error message
                 if (_showError && _errorMessage != null)

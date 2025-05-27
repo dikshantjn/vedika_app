@@ -392,15 +392,9 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
         roomName: roomName,
         userDisplayName: userDisplayName,
         userEmail: userEmail,
-        userAvatarUrl: userAvatarUrl,
-        jwtToken: jwtToken,          // Pass the extracted JWT token
-        onConferenceTerminated: () {
-          debugPrint('Conference terminated');
-        },
-        onError: (error) {
-          debugPrint('Error joining meeting: $error');
-        },
+        avatarUrl: userAvatarUrl,
       );
+
 
       return true;
     } catch (e) {
@@ -411,7 +405,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   
   // Hang up the current meeting
   Future<void> hangUpMeeting() async {
-    await _jitsiMeetService.hangUp();
+    // await _jitsiMeetService.hangUp();
   }
   
   @override
@@ -738,24 +732,12 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
               MaterialPageRoute(
                 builder: (context) => JitsiMeetScreen(
                   roomName: roomName,
-                  userDisplayName: userName,
-                  userEmail: isDoctor ? "doctor@vedika.com" : "user@vedika.com",
-                  userAvatarUrl: "",
-                  jwtToken: jwtToken,
-                  isDoctor: isDoctor,
-                  meetingUrl: newMeetingUrl,
-                  onMeetingClosed: () {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Meeting ended'),
-                          backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-                        ),
-                      );
-                    }
-                  },
+                  displayName: userName,
+                  email: isDoctor ? "doctor@vedika.com" : "user@vedika.com",
+                  avatarUrl: "",  // or pass a real avatar URL if you have one
                 ),
               ),
+
             );
           }
         }

@@ -48,6 +48,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _scrollController.addListener(_onScroll);
     _initializeAnimations();
     _refreshUserProfile();
+    _setupCartCountListener();
   }
 
   Future<void> _refreshUserProfile() async {
@@ -84,8 +85,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _placeholderAnimationController.forward();
   }
 
+  void _setupCartCountListener() {
+    final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+    cartViewModel.onCartCountUpdate = () {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild of the cart icon with the new count
+        });
+      }
+    };
+  }
+
   @override
   void dispose() {
+    // Clear the callback when disposing
+    final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+    cartViewModel.onCartCountUpdate = null;
+    
     _searchController.dispose();
     _scrollController.dispose();
     _placeholderAnimationController.dispose();

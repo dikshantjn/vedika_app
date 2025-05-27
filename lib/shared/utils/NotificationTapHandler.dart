@@ -373,6 +373,30 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'NEW_BOOKING':
+          if (isAppLaunch) {
+            // First navigate to home screen
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 100));
+            // Then navigate to AmbulanceAgencyMainScreen with Requests tab selected
+            await _navigateWithHistory(
+              context,
+              AppRoutes.AmbulanceAgencyDashboard,
+              arguments: {'initialTab': 1}, // 1 is the index for Requests tab
+            );
+          } else {
+            // If app is already running, navigate to AmbulanceAgencyMainScreen with Requests tab
+            await _navigateWithHistory(
+              context,
+              AppRoutes.AmbulanceAgencyDashboard,
+              arguments: {'initialTab': 1}, // 1 is the index for Requests tab
+            );
+          }
+          break;
+
         case 'LAB_TEST_BOOKING':
           if (isAppLaunch) {
             // First navigate to home screen

@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/BottomSheetWidgets/OrderDetailsWidget.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/BottomSheetWidgets/SelectedMedicineWidget.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/BottomSheetWidgets/FetchedCartItemsWidget.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/PrescriptionPreviewScreen.dart';
 
 class ProcessOrderScreen extends StatefulWidget {
   final String prescriptionUrl;
@@ -44,6 +45,21 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
       viewModel.fetchCartItems(widget.orderId);
       viewModel.clearSearchResults();
       viewModel.clearCarts();
+      
+      // Set up the callback for order updates
+      viewModel.onOrderUpdate = (prescriptionId) {
+        if (mounted) {
+          // Refresh cart items
+          viewModel.fetchCartItems(widget.orderId);
+          // Show a snackbar to notify the user
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Order updated. Refreshing...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      };
     });
 
     _scrollController.addListener(_scrollListener);
@@ -51,6 +67,10 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
 
   @override
   void dispose() {
+    // Clear the callback when disposing
+    final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+    viewModel.onOrderUpdate = null;
+    
     _tabController.dispose();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
@@ -71,6 +91,26 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     _previousOffset = currentOffset;
   }
 
+  void _viewPrescription() {
+    if (widget.prescriptionUrl.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PrescriptionPreviewScreen(
+            prescriptionUrl: widget.prescriptionUrl,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No prescription file available"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +121,13 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         centerTitle: true,
         title: const Text("Process Order"),
         backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.medical_services),
+            onPressed: _viewPrescription,
+            tooltip: 'View Prescription',
+          ),
+        ],
       ),
       body: Consumer<MedicineOrderViewModel>(
         builder: (context, viewModel, child) {

@@ -36,6 +36,9 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   IO.Socket? _socket;
   bool mounted = true;
 
+  // Add callback for cart count updates
+  Function()? onCartCountUpdate;
+
   // Add list to store product cart items
   List<ProductCart> _productCartItems = [];
   List<ProductCart> get productCartItems => _productCartItems;
@@ -427,11 +430,75 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       String appliedCoupon = _isCouponApplied ? "TEST10" : "";
 
       debugPrint("🔄 Processing medicine orders...");
+      debugPrint("📦 Total orders to process: ${_orders.length}");
+      
       // Handle medicine orders
       for (var order in _orders) {
-        debugPrint("📦 Processing order: ${order.orderId}");
-        // ... rest of the existing order processing code ...
+        try {
+          debugPrint("📦 Processing order: ${order.orderId}");
+          debugPrint("📦 Current order data:");
+          debugPrint("- Order ID: ${order.orderId}");
+          debugPrint("- Address ID: ${order.addressId}");
+          debugPrint("- Applied Coupon: ${order.appliedCoupon}");
+          debugPrint("- Discount Amount: $_discount");
+          debugPrint("- Subtotal: $_subtotal");
+          debugPrint("- Total Amount: $_total");
+          debugPrint("- Order Status: ${order.orderStatus}");
+          debugPrint("- Payment Method: ${order.paymentMethod}");
+          debugPrint("- Transaction ID: ${order.transactionId}");
+          debugPrint("- Payment Status: ${order.paymentStatus}");
+          
+          // Update order with payment details while preserving original data
+          final updatedOrder = order.copyWith(
+            // Preserve original order data
+            addressId: order.addressId,
+            appliedCoupon: _isCouponApplied ? "TEST10" : "",
+            discountAmount: _discount,
+            subtotal: _subtotal,
+            totalAmount: _total,
+            trackingId: order.trackingId,
+            
+            // Update payment-related fields
+            orderStatus: "PaymentConfirmed",
+            paymentMethod: paymentMethod,
+            transactionId: transactionId,
+            paymentStatus: paymentStatus,
+            estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
+            updatedAt: DateTime.now(),
+          );
+          
+          debugPrint("📦 Updated order details:");
+          debugPrint("- Address ID: ${updatedOrder.addressId}");
+          debugPrint("- Applied Coupon: ${updatedOrder.appliedCoupon}");
+          debugPrint("- Discount Amount: ${updatedOrder.discountAmount}");
+          debugPrint("- Subtotal: ${updatedOrder.subtotal}");
+          debugPrint("- Total Amount: ${updatedOrder.totalAmount}");
+          debugPrint("- Order Status: ${updatedOrder.orderStatus}");
+          debugPrint("- Payment Method: ${updatedOrder.paymentMethod}");
+          debugPrint("- Transaction ID: ${updatedOrder.transactionId}");
+          debugPrint("- Payment Status: ${updatedOrder.paymentStatus}");
+          
+          // Update order in backend
+          debugPrint("🔄 Calling updateOrder for order: ${order.orderId}");
+          final success = await _userCartService.updateOrder(updatedOrder);
+          debugPrint("✅ Order update result: $success");
+          
+          if (!success) {
+            debugPrint("❌ Failed to update order: ${order.orderId}");
+          }
+        } catch (e, stackTrace) {
+          debugPrint("❌ Error processing order ${order.orderId}:");
+          debugPrint("Error: $e");
+          debugPrint("Stack trace: $stackTrace");
+        }
       }
+
+      // Clear medicine orders and cart items after successful payment
+      _orders.clear();
+      _cartItems.clear();
+      _calculateSubtotal(_cartItems); // Recalculate subtotal with empty cart
+      _totalItemCount = 0; // Reset total item count
+      debugPrint("🧹 Cleared medicine orders and cart items after payment");
 
       // Handle product orders if there are any product cart items
       if (_productCartItems.isNotEmpty) {
@@ -443,7 +510,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
           
           // Clear the product cart after successful order placement
           _productCartItems.clear();
-          _totalItemCount = _cartItems.length; // Update total count
+          _totalItemCount = 0; // Reset total count since both carts are empty
           notifyListeners();
           
           debugPrint("🛒 Product cart cleared after successful order");
@@ -458,6 +525,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         debugPrint("📞 Calling external payment success callback");
         _onPaymentSuccess!(transactionId);
         debugPrint("✅ External payment success callback executed");
+      }
+      
+      // Notify about cart count update
+      if (onCartCountUpdate != null) {
+        onCartCountUpdate!();
       }
 
       debugPrint("✅ Payment Success Handler Completed");
@@ -545,6 +617,12 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         await _handleMedicineOrderUpdate(data);
       });
 
+      // Add event listener for order status updates
+      _socket!.on('orderStatusUpdated', (data) async {
+        debugPrint('📦 Order status update received: $data');
+        await _handleOrderStatusUpdate(data);
+      });
+
       // Add ping/pong handlers
       _socket!.on('ping', (_) {
         debugPrint('📡 Received ping');
@@ -604,6 +682,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         // Recalculate totals
         _calculateSubtotal(_cartItems);
         
+        // Notify about cart count update
+        if (onCartCountUpdate != null) {
+          onCartCountUpdate!();
+        }
+        
         // Notify listeners to update UI
         if (mounted) {
           notifyListeners();
@@ -635,9 +718,37 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // Refresh cart data
       await fetchOrdersAndCartItems();
       
+      // Notify about cart count update
+      if (onCartCountUpdate != null) {
+        onCartCountUpdate!();
+      }
+      
       debugPrint('✅ Cart refreshed after medicine order update');
     } catch (e, stackTrace) {
       debugPrint('❌ Error handling medicine order update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  Future<void> _handleOrderStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('📦 Processing order status update: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
+      debugPrint('📦 Parsed data: $orderData');
+      
+      // Refresh cart data to get latest state
+      await fetchOrdersAndCartItems();
+      
+      // Notify about cart count update
+      if (onCartCountUpdate != null) {
+        onCartCountUpdate!();
+      }
+      
+      debugPrint('✅ Cart refreshed after order status update');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling order status update: $e');
       debugPrint('❌ Stack trace: $stackTrace');
     }
   }

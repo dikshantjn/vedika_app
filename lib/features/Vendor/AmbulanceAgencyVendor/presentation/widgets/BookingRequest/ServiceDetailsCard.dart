@@ -8,6 +8,13 @@ class ServiceDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔍 ServiceDetailsCard - isFilled: $isFilled');
+    debugPrint('🔍 ServiceDetailsCard - booking data: ${booking.toString()}');
+    debugPrint('🔍 ServiceDetailsCard - pickupLocation: ${booking.pickupLocation}');
+    debugPrint('🔍 ServiceDetailsCard - dropLocation: ${booking.dropLocation}');
+    debugPrint('🔍 ServiceDetailsCard - vehicleType: ${booking.vehicleType}');
+    debugPrint('🔍 ServiceDetailsCard - totalAmount: ${booking.totalAmount}');
+
     if (!isFilled) {
       return Container(
         width: double.infinity,

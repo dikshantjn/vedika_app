@@ -418,20 +418,9 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
       context,
       JitsiMeetScreen(
         roomName: roomName,
-        userDisplayName: userName,
-        userEmail: userEmail,
-        userAvatarUrl: userAvatarUrl,
-        isDoctor: false,
-        onMeetingClosed: () {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Meeting ended'),
-                backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-              ),
-            );
-          }
-        },
+        displayName: userName, // changed from userDisplayName to displayName
+        email: userEmail,
+        avatarUrl: userAvatarUrl,
       ),
     );
   }

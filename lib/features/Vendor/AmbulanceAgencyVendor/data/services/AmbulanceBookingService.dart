@@ -72,7 +72,7 @@ class AmbulanceBookingService {
     }
   }
 
-  Future<void> updateServiceDetails({
+  Future<AmbulanceBooking> updateServiceDetails({
     required String requestId,
     required String pickupLocation,
     required String dropLocation,
@@ -96,7 +96,9 @@ class AmbulanceBookingService {
         },
       );
 
-      if (response.statusCode != 200 || response.data['success'] != true) {
+      if (response.statusCode == 200 && response.data['success']) {
+        return AmbulanceBooking.fromJson(response.data['data']);
+      } else {
         throw Exception(response.data['message'] ?? 'Failed to update service details');
       }
     } on DioError catch (e) {

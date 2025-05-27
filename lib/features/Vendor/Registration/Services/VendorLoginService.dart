@@ -13,12 +13,13 @@ class VendorLoginService {
   static const String _vendorRoleKey = "vendor_role"; // Key for storing vendor role
 
   /// **🔹 Vendor Login & Session Management**
-  Future<Map<String, dynamic>> loginVendor(String email, String password, int roleNumber) async {
+  Future<Map<String, dynamic>> loginVendor(String email, String password, int roleNumber, String deviceId) async {
     try {
       Map<String, dynamic> body = {
         'email': email,
         'password': password,
         'role': roleNumber,
+        'deviceId': deviceId,
       };
 
       Response response = await _dio.post(ApiEndpoints.loginVendor, data: body);
@@ -89,10 +90,51 @@ class VendorLoginService {
   }
 
   /// **🔹 Logout Vendor & Clear Storage**
-  Future<void> logoutVendor() async {
-    await _storage.delete(key: _tokenKey); // Remove JWT token
-    await _storage.delete(key: _vendorIdKey); // Remove Vendor ID
-    await _storage.delete(key: _vendorRoleKey); // Remove Vendor Role
+  Future<Map<String, dynamic>> logoutVendor() async {
+    try {
+      String? token = await _storage.read(key: _tokenKey);
+      String? vendorId = await _storage.read(key: _vendorIdKey);
+      
+      if (token == null) {
+        return {'success': false, 'message': 'No active session'};
+      }
+
+      if (vendorId == null) {
+        return {'success': false, 'message': 'Vendor ID not found'};
+      }
+
+      // Add token to headers
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+
+      // Prepare request body
+      Map<String, dynamic> body = {
+        'vendorId': vendorId
+      };
+
+      // Call logout API with vendorId in body
+      Response response = await _dio.post(ApiEndpoints.logoutVendor, data: body);
+
+      if (response.statusCode == 200) {
+        // Clear local storage
+        await _storage.delete(key: _tokenKey);
+        await _storage.delete(key: _vendorIdKey);
+        await _storage.delete(key: _vendorRoleKey);
+
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Logged out successfully'
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data['message'] ?? 'Logout failed'
+        };
+      }
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return {'success': false, 'message': 'Unexpected error: ${e.toString()}'};
+    }
   }
 
   /// **🔹 Check if Vendor is Logged In**

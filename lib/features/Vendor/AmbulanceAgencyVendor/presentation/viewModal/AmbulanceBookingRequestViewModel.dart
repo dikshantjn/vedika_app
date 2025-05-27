@@ -82,6 +82,12 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
         await _handleAmbulanceBookingUpdate(data);
       });
 
+      // Add event listener for paymentCompleted
+      _socket!.on('paymentCompleted', (data) async {
+        debugPrint('💰 Payment completed event received: $data');
+        await _handlePaymentCompleted(data);
+      });
+
       // Connect to the socket
       _socket!.connect();
       debugPrint('🔄 Attempting to connect socket for ambulance bookings...');
@@ -117,6 +123,36 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> _handlePaymentCompleted(dynamic data) async {
+    try {
+      debugPrint('💰 Processing payment completed event: $data');
+      
+      // Parse the data if it's a string
+      Map<String, dynamic> paymentData = data is String ? json.decode(data) : data;
+      debugPrint('💰 Parsed payment data: $paymentData');
+      
+      // Update the booking status in the local list
+      final requestId = paymentData['requestId'];
+      if (requestId != null) {
+        final index = bookingRequests.indexWhere((b) => b.requestId == requestId);
+        if (index != -1) {
+          bookingRequests[index] = bookingRequests[index].copyWith(status: 'paymentCompleted');
+          debugPrint('✅ Updated booking status to paymentCompleted for requestId: $requestId');
+        }
+      }
+      
+      // Refresh the bookings list
+      await fetchPendingBookings();
+      debugPrint('✅ Refreshed bookings after payment completion');
+      
+      // Notify listeners to update UI
+      notifyListeners();
+      
+    } catch (e) {
+      debugPrint('❌ Error handling payment completed event: $e');
+    }
+  }
+
   // ----------------------------
   // 👇 Service Details Fields
   // ----------------------------
@@ -131,10 +167,14 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
   String? selectedVehicleType;
 
   void setSelectedVehicleType(String type) {
-    selectedVehicleType = type;
-    notifyListeners();
+    debugPrint('🔍 setSelectedVehicleType - Setting vehicle type to: $type');
+    if (vehicleTypes.contains(type)) {
+      selectedVehicleType = type;
+      notifyListeners();
+    } else {
+      debugPrint('❌ setSelectedVehicleType - Invalid vehicle type: $type');
+    }
   }
-
 
   void prefillServiceDetails({
     required String pickup,
@@ -144,6 +184,7 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     required double baseCharge,
     required String vehicleType,
   }) {
+    debugPrint('🔍 prefillServiceDetails - Prefilling with vehicle type: $vehicleType');
     pickupLocationController.text = pickup;
     dropLocationController.text = drop;
     totalDistanceController.text = distance.toString();
@@ -209,8 +250,10 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
       final types = await _bookingService.getVehicleTypes();
       vehicleTypes = types;
 
-      if (!vehicleTypes.contains(selectedVehicleType)) {
-        selectedVehicleType = vehicleTypes.isNotEmpty ? vehicleTypes.first : '';
+      // Initialize selectedVehicleType if it's not set or not in the list
+      if (selectedVehicleType == null || !vehicleTypes.contains(selectedVehicleType)) {
+        selectedVehicleType = vehicleTypes.isNotEmpty ? vehicleTypes.first : null;
+        debugPrint('🔍 fetchVehicleTypes - Initialized selectedVehicleType to: $selectedVehicleType');
       }
 
       _logger.i("Fetched vehicle types: $vehicleTypes");
@@ -234,10 +277,18 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
 
     final totalAmount = (distance * costPerKm) + baseCharge;
 
-    _logger.i("Sending updated service details for requestId: $requestId");
+    debugPrint('🔍 addOrUpdateServiceDetails - Starting update for requestId: $requestId');
+    debugPrint('🔍 addOrUpdateServiceDetails - Input data:');
+    debugPrint('  pickup: $pickup');
+    debugPrint('  drop: $drop');
+    debugPrint('  distance: $distance');
+    debugPrint('  costPerKm: $costPerKm');
+    debugPrint('  baseCharge: $baseCharge');
+    debugPrint('  vehicleType: $vehicleType');
+    debugPrint('  totalAmount: $totalAmount');
 
     try {
-      await _bookingService.updateServiceDetails(
+      final updatedBooking = await _bookingService.updateServiceDetails(
         requestId: requestId,
         pickupLocation: pickup,
         dropLocation: drop,
@@ -247,9 +298,24 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
         vehicleType: vehicleType,
         totalAmount: totalAmount,
       );
+
+      debugPrint('🔍 addOrUpdateServiceDetails - API call successful');
+      debugPrint('🔍 addOrUpdateServiceDetails - Updated booking data: ${updatedBooking.toString()}');
+
+      // Update the local booking data
+      final index = bookingRequests.indexWhere((b) => b.requestId == requestId);
+      if (index != -1) {
+        bookingRequests[index] = updatedBooking;
+        debugPrint('🔍 addOrUpdateServiceDetails - Local booking data updated at index: $index');
+        notifyListeners();
+      } else {
+        debugPrint('❌ addOrUpdateServiceDetails - Booking not found in local list');
+      }
+
       return true;
     } catch (e, stackTrace) {
-      _logger.e("Failed to update service details", error: e, stackTrace: stackTrace);
+      debugPrint('❌ addOrUpdateServiceDetails - Error: $e');
+      debugPrint('❌ addOrUpdateServiceDetails - Stack trace: $stackTrace');
       return false;
     }
   }

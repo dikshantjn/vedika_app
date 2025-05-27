@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/PrescriptionPreviewScreen.dart';
 import 'package:vedika_healthcare/shared/utils/FileOpenHelper.dart';
 
 class OrderRequestsWidget extends StatefulWidget {
@@ -165,7 +166,14 @@ class _OrderRequestsWidgetState extends State<OrderRequestsWidget> {
                 child: OutlinedButton(
                   onPressed: () {
                     if (request.prescriptionUrl != null && request.prescriptionUrl.isNotEmpty) {
-                      FileOpenHelper.openFile(context, request.prescriptionUrl);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PrescriptionPreviewScreen(
+                            prescriptionUrl: request.prescriptionUrl,
+                          ),
+                        ),
+                      );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("No prescription file available")),

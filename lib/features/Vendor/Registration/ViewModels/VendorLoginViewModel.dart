@@ -3,14 +3,17 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class VendorLoginViewModel extends ChangeNotifier {
   String? selectedRole;
   int? roleNumber;  // Role number for selected vendor type
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  String? _deviceId;
 
   final VendorLoginService _vendorLoginService = VendorLoginService(); // Vendor login service instance
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   bool _isVendorLoggedIn = false; // To track vendor login state
 
@@ -29,6 +32,24 @@ class VendorLoginViewModel extends ChangeNotifier {
     "Product Partner": 8,
   };
 
+  // Initialize device ID
+  Future<void> initializeDeviceId() async {
+    try {
+      if (WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark) {
+        // For Android
+        final androidInfo = await _deviceInfo.androidInfo;
+        _deviceId = androidInfo.id;
+      } else {
+        // For iOS
+        final iosInfo = await _deviceInfo.iosInfo;
+        _deviceId = iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      print("Error getting device ID: $e");
+      _deviceId = "unknown-device";
+    }
+  }
+
   /// **🔹 Check Vendor Login Status**
   Future<void> checkLoginStatus() async {
     _isVendorLoggedIn = await _vendorLoginService.isVendorLoggedIn();
@@ -41,24 +62,30 @@ class VendorLoginViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Vendor Login**
-  /// **🔹 Vendor Login**
   Future<void> login(BuildContext context) async {
     if (emailController.text.trim().isNotEmpty &&
         passwordController.text.trim().isNotEmpty &&
         selectedRole != null &&
         roleNumber != null) {
 
+      // Ensure device ID is initialized
+      if (_deviceId == null) {
+        await initializeDeviceId();
+      }
+
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
       int role = roleNumber!;
+      String deviceId = _deviceId ?? "unknown-device";
 
       print("📢 Attempting login...");
       print("🔹 Email: $email");
       print("🔹 Password: $password");
       print("🔹 Role: $selectedRole, Role Number: $role");
+      print("🔹 Device ID: $deviceId");
 
       try {
-        var response = await _vendorLoginService.loginVendor(email, password, role);
+        var response = await _vendorLoginService.loginVendor(email, password, role, deviceId);
 
         print("✅ Login response received: $response");
 
@@ -371,11 +398,21 @@ class VendorLoginViewModel extends ChangeNotifier {
 
   /// **🔹 Logout Vendor**
   Future<void> logout() async {
-    String? vendorId = await VendorLoginService().getVendorId();
-    await FCMService().deleteVendorTokenFromServer(vendorId!);
-    await _vendorLoginService.logoutVendor();
-    _isVendorLoggedIn = false; // Update login state
-    notifyListeners();
+    try {
+      String? vendorId = await VendorLoginService().getVendorId();
+      await FCMService().deleteVendorTokenFromServer(vendorId!);
+      
+      var response = await _vendorLoginService.logoutVendor();
+      
+      if (response['success']) {
+        _isVendorLoggedIn = false; // Update login state
+        notifyListeners();
+      } else {
+        print("❌ Logout failed: ${response['message']}");
+      }
+    } catch (e) {
+      print("🚨 Error during logout: $e");
+    }
   }
 
   /// **🔹 Update Selected Role**

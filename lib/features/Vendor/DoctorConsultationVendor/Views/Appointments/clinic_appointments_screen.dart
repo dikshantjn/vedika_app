@@ -1256,32 +1256,30 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                                       context,
                                       JitsiMeetScreen(
                                         roomName: roomName,
-                                        userDisplayName: doctorName,
-                                        userEmail: doctorEmail,
-                                        userAvatarUrl: doctorAvatar,
-                                        isDoctor: true,
-                                        onMeetingClosed: () {
-                                          if (context.mounted) {
-                                            // Mark the appointment as completed after the meeting ends
-                                            viewModel.completeAppointmentAfterMeeting(appointment.clinicAppointmentId)
-                                              .then((success) {
-                                                if (context.mounted) {
-                                                  String message = success 
-                                                    ? 'Meeting ended and appointment marked as completed'
-                                                    : 'Meeting ended but failed to mark appointment as completed';
-                                                  
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(message),
-                                                      backgroundColor: success 
-                                                        ? DoctorConsultationColorPalette.successGreen
-                                                        : DoctorConsultationColorPalette.primaryBlue,
-                                                    ),
-                                                  );
-                                                }
-                                              });
-                                          }
-                                        },
+                                        displayName: doctorName,    // changed here
+                                        email: doctorEmail,         // changed from userEmail to email
+                                        avatarUrl: doctorAvatar,    // changed from userAvatarUrl to avatarUrl
+                                        // onMeetingClosed: () {
+                                        //   if (context.mounted) {
+                                        //     // Mark the appointment as completed after the meeting ends
+                                        //     viewModel.completeAppointmentAfterMeeting(appointment.clinicAppointmentId).then((success) {
+                                        //       if (context.mounted) {
+                                        //         String message = success
+                                        //             ? 'Meeting ended and appointment marked as completed'
+                                        //             : 'Meeting ended but failed to mark appointment as completed';
+                                        //
+                                        //         ScaffoldMessenger.of(context).showSnackBar(
+                                        //           SnackBar(
+                                        //             content: Text(message),
+                                        //             backgroundColor: success
+                                        //                 ? DoctorConsultationColorPalette.successGreen
+                                        //                 : DoctorConsultationColorPalette.primaryBlue,
+                                        //           ),
+                                        //         );
+                                        //       }
+                                        //     });
+                                        //   }
+                                        // },
                                       ),
                                     );
                                   }

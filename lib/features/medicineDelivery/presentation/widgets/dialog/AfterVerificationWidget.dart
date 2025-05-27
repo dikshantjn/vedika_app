@@ -35,10 +35,10 @@ class AfterVerificationWidget extends StatelessWidget {
         const SizedBox(height: 10),
 
         // Store Verification Details
-        Text(
-          'Verified by: $medicalStoreName',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black87),
-        ),
+        // Text(
+        //   'Verified by: $medicalStoreName',
+        //   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black87),
+        // ),
         const SizedBox(height: 20),
 
         // Track Order Button

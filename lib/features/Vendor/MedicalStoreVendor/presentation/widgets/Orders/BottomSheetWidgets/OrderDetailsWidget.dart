@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/PrescriptionPreviewScreen.dart';
 
 class OrderDetailsWidget extends StatefulWidget {
   final String orderId;
@@ -24,21 +25,62 @@ class OrderDetailsWidget extends StatefulWidget {
 
 class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   String? _currentStatus;
+  MedicineOrderViewModel? _viewModel;  // Store viewModel reference
 
   @override
   void initState() {
     super.initState();
     // Fetch order status when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
-      viewModel.fetchOrderStatus(widget.orderId).then((_) {
+      _viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+      _viewModel?.fetchOrderStatus(widget.orderId).then((_) {
         if (mounted) {
           setState(() {
-            _currentStatus = viewModel.orderStatus;
+            _currentStatus = _viewModel?.orderStatus;
           });
         }
       });
+
+      // Set up the callback for order status updates
+      _viewModel?.onOrderStatusUpdate = (prescriptionId) {
+        if (mounted) {
+          _viewModel?.fetchOrderStatus(widget.orderId).then((_) {
+            if (mounted) {
+              setState(() {
+                _currentStatus = _viewModel?.orderStatus;
+              });
+            }
+          });
+        }
+      };
     });
+  }
+
+  @override
+  void dispose() {
+    // Clear the callback when disposing using stored reference
+    _viewModel?.onOrderStatusUpdate = null;
+    super.dispose();
+  }
+
+  void _viewPrescription(BuildContext context) {
+    if (widget.prescriptionUrl.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PrescriptionPreviewScreen(
+            prescriptionUrl: widget.prescriptionUrl,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No prescription file available"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -195,99 +237,98 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
             children: [
               // Show Status or Accept Order button based on order status
               if (_currentStatus == "PrescriptionVerified" || _currentStatus == "Pending")
-                OutlinedButton(
-                  onPressed: () async {
-                    await viewModel.acceptOrder(widget.orderId);
-                    if (context.mounted) {
-                      if (viewModel.isOrderAccepted) {
-                        setState(() {
-                          _currentStatus = "Accepted";
-                        });
-                        // Refresh the order status to ensure consistency
-                        await viewModel.fetchOrderStatus(widget.orderId);
-                        // Call the callback to refresh orders list without navigating back
-                        widget.onOrderConfirmed();
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      await viewModel.acceptOrder(widget.orderId);
+                      if (context.mounted) {
+                        if (viewModel.isOrderAccepted) {
+                          setState(() {
+                            _currentStatus = "Accepted";
+                          });
+                          // Refresh the order status to ensure consistency
+                          await viewModel.fetchOrderStatus(widget.orderId);
+                          // Call the callback to refresh orders list without navigating back
+                          widget.onOrderConfirmed();
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(viewModel.acceptMessage),
+                            backgroundColor: viewModel.isOrderAccepted 
+                                ? Colors.green 
+                                : Colors.red,
+                          ),
+                        );
                       }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(viewModel.acceptMessage),
-                          backgroundColor: viewModel.isOrderAccepted 
-                              ? Colors.green 
-                              : Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    side: const BorderSide(color: Colors.green, width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      side: const BorderSide(color: Colors.green, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
+                    child: viewModel.isAccepting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.green,
+                            ),
+                          )
+                        : const Text(
+                            "Confirm Order",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
-                  child: viewModel.isAccepting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.green,
-                          ),
-                        )
-                      : const Text(
-                          "Confirm Order",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.green,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                 )
               else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    _currentStatus == "Accepted" ? "Order Confirmed" : _currentStatus ?? "Loading...",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.green,
-                      fontWeight: FontWeight.w500,
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      _currentStatus == "Accepted" ? "Order Confirmed" : _currentStatus ?? "Loading...",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
 
+              const SizedBox(width: 8),
+
               // 🔍 View Prescription Button (always at the right side)
-              OutlinedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      content: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(widget.prescriptionUrl, fit: BoxFit.cover),
-                      ),
+              Expanded(
+                flex: 1,
+                child: OutlinedButton.icon(
+                  onPressed: () => _viewPrescription(context),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text(
+                    "View Prescription",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  side: const BorderSide(color: Colors.blueAccent, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text(
-                  "View Prescription",
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
             ],

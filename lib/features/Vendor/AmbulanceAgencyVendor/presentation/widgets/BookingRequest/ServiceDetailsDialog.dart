@@ -59,28 +59,41 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
               // Vehicle Type
               _buildSectionTitle("Vehicle Type"),
               DropdownButtonFormField<String>(
-                value: widget.viewModel.vehicleTypes.contains(widget.viewModel.selectedVehicleType)
+                value: widget.viewModel.selectedVehicleType != null && 
+                       widget.viewModel.vehicleTypes.contains(widget.viewModel.selectedVehicleType)
                     ? widget.viewModel.selectedVehicleType
-                    : widget.viewModel.vehicleTypes.isNotEmpty ? widget.viewModel.vehicleTypes.first : null,
+                    : null,
                 decoration: InputDecoration(
                   labelText: 'Vehicle Type',
+                  hintText: 'Select Vehicle Type',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
-                items: widget.viewModel.vehicleTypes.map((String type) {
-                  return DropdownMenuItem<String>(
-                    value: type,
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: null,
                     child: Text(
-                      type,
-                      overflow: TextOverflow.ellipsis,
+                      'Select Vehicle Type',
+                      style: TextStyle(color: Colors.grey),
                     ),
-                  );
-                }).toList(),
+                  ),
+                  ...widget.viewModel.vehicleTypes.map((String type) {
+                    return DropdownMenuItem<String>(
+                      value: type,
+                      child: Text(
+                        type,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                ],
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    widget.viewModel.setSelectedVehicleType(newValue);
+                    setState(() {
+                      widget.viewModel.setSelectedVehicleType(newValue);
+                    });
                   }
                 },
                 isExpanded: true,
@@ -90,6 +103,12 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
                   color: Colors.black87,
                   fontSize: 14,
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a vehicle type';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 16),
@@ -116,6 +135,22 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _isLoading ? null : () async {
+                        if (widget.viewModel.selectedVehicleType == null || widget.viewModel.selectedVehicleType!.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              elevation: 0,
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.transparent,
+                              content: AwesomeSnackbarContent(
+                                title: 'Error!',
+                                message: 'Please select a vehicle type',
+                                contentType: ContentType.failure,
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        
                         setState(() => _isLoading = true);
                         final success = await widget.viewModel.addOrUpdateServiceDetails(widget.requestId);
                         if (context.mounted) {

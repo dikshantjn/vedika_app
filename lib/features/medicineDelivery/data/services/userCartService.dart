@@ -214,36 +214,81 @@ class UserCartService {
 
   Future<bool> updateOrder(MedicineOrderModel order) async {
     try {
-      String url = '${ApiEndpoints.placedOrderWithPayment}/${order.orderId}'; // Build URL with orderId
+      String url = '${ApiEndpoints.placedOrderWithPayment}/${order.orderId}';
+      debugPrint("🔄 Updating order at URL: $url");
+      debugPrint("📦 Original order data:");
+      debugPrint("- Order ID: ${order.orderId}");
+      debugPrint("- Address ID: ${order.addressId}");
+      debugPrint("- Applied Coupon: ${order.appliedCoupon}");
+      debugPrint("- Discount Amount: ${order.discountAmount}");
+      debugPrint("- Subtotal: ${order.subtotal}");
+      debugPrint("- Total Amount: ${order.totalAmount}");
+      debugPrint("- Order Status: ${order.orderStatus}");
+      debugPrint("- Payment Method: ${order.paymentMethod}");
+      debugPrint("- Transaction ID: ${order.transactionId}");
+      debugPrint("- Payment Status: ${order.paymentStatus}");
 
-      // Prepare the data from the MedicineOrderModel to send to the backend
+      // Prepare the data without null checks to preserve original values
+      final Map<String, dynamic> orderData = {
+        "addressId": order.addressId,
+        "appliedCoupon": order.appliedCoupon,
+        "discountAmount": order.discountAmount,
+        "subtotal": order.subtotal,
+        "totalAmount": order.totalAmount,
+        "orderStatus": order.orderStatus,
+        "paymentMethod": order.paymentMethod,
+        "transactionId": order.transactionId,
+        "paymentStatus": order.paymentStatus,
+        "estimatedDeliveryDate": order.estimatedDeliveryDate?.toIso8601String(),
+        "trackingId": order.trackingId,
+        "updatedAt": DateTime.now().toIso8601String(),
+      };
+
+      // Remove null values to avoid sending them to the API
+      orderData.removeWhere((key, value) => value == null);
+
+      debugPrint("📦 Prepared order data for API (JSON):");
+      debugPrint(jsonEncode(orderData));
+
       Response response = await dio.put(
         url,
-        data: {
-          "addressId": order.addressId,
-          "appliedCoupon": order.appliedCoupon,
-          "discountAmount": order.discountAmount,
-          "subtotal": order.subtotal,
-          "totalAmount": order.totalAmount,
-          "orderStatus": order.orderStatus,
-          "paymentMethod": order.paymentMethod,
-          "transactionId": order.transactionId,
-          "paymentStatus": order.paymentStatus,
-          "estimatedDeliveryDate": order.estimatedDeliveryDate?.toIso8601String(),
-          "trackingId": order.trackingId,
-          "updatedAt": DateTime.now().toIso8601String(),
-        },
+        data: orderData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          validateStatus: (status) => true,
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+        ),
       );
 
-      if (response.statusCode == 200) {
-        return true; // Order updated successfully
+      debugPrint("📦 API Response Status: ${response.statusCode}");
+      debugPrint("📦 API Response Data: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint("✅ Order updated successfully");
+        return true;
       } else {
-        debugPrint("❌ Failed to update order: ${response.data}");
-        return false; // Failed to update
+        debugPrint("❌ Failed to update order. Status: ${response.statusCode}");
+        debugPrint("❌ Error details: ${response.data}");
+        return false;
       }
-    } catch (e) {
-      debugPrint("❌ Error updating order: $e");
-      return false; // Handle error
+    } on DioException catch (e) {
+      debugPrint("❌ DioException in updateOrder:");
+      debugPrint("Error type: ${e.type}");
+      debugPrint("Error message: ${e.message}");
+      if (e.response != null) {
+        debugPrint("Response status: ${e.response?.statusCode}");
+        debugPrint("Response data: ${e.response?.data}");
+      }
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error updating order:");
+      debugPrint("Error: $e");
+      debugPrint("Stack trace: $stackTrace");
+      return false;
     }
   }
 }

@@ -141,15 +141,56 @@ class _TrackingOrderCardState extends State<TrackingOrderCard> {
         for (int step = previousIndex; step <= currentStepIndex; step++) {
           await Future.delayed(const Duration(milliseconds: 400));
           animatedStepIndex.value = step;
+          
+          // Calculate scroll position to ensure the current step is visible
           if (scrollController.hasClients) {
-            scrollController.animateTo(step * 80.0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+            // Calculate the position to scroll to
+            double scrollPosition = step * 80.0; // 80 is the width of each step
+            
+            // Get the screen width
+            double screenWidth = MediaQuery.of(context).size.width;
+            
+            // Calculate how many steps can fit on the screen
+            int visibleSteps = (screenWidth / 80).floor();
+            
+            // Adjust scroll position to center the current step if possible
+            if (step >= visibleSteps) {
+              scrollPosition = scrollPosition - (screenWidth / 2) + 40; // 40 is half of step width
+            }
+            
+            // Ensure we don't scroll past the end
+            scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+            
+            // Animate to the calculated position
+            scrollController.animateTo(
+              scrollPosition,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           }
         }
         // Update the previous index for next time
         _previousStepIndices[orderId] = currentStepIndex;
       } else {
-        // If no change, just set to current index
+        // If no change, just set to current index and ensure it's visible
         animatedStepIndex.value = currentStepIndex;
+        if (scrollController.hasClients) {
+          double scrollPosition = currentStepIndex * 80.0;
+          double screenWidth = MediaQuery.of(context).size.width;
+          int visibleSteps = (screenWidth / 80).floor();
+          
+          if (currentStepIndex >= visibleSteps) {
+            scrollPosition = scrollPosition - (screenWidth / 2) + 40;
+          }
+          
+          scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+          
+          scrollController.animateTo(
+            scrollPosition,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
       }
     }
 

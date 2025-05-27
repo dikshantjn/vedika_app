@@ -33,6 +33,16 @@ class _AmbulanceAgencyMainScreenState extends State<AmbulanceAgencyMainScreen> {
     final viewModel = Provider.of<AmbulanceMainViewModel>(context, listen: false);
     viewModel.fetchVendorStatus();
 
+    // Get the initial tab from navigation arguments
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('initialTab')) {
+        setState(() {
+          _currentIndex = args['initialTab'] as int;
+        });
+      }
+    });
+
     _screens.addAll([
       AmbulanceAgencyDashboardScreen(),
       AmbulanceRequestsScreen(),

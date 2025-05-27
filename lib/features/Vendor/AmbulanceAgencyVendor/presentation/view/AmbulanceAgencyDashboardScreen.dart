@@ -60,14 +60,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
         right: 16,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.shade700,
-            Colors.blue.shade900,
-          ],
-        ),
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -86,7 +79,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: Colors.blue.shade700, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -111,19 +104,22 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.email_outlined, size: 16, color: Colors.white70),
+                        Icon(Icons.email_outlined, size: 16, color: Colors.grey[600]),
                         const SizedBox(width: 4),
-                        Text(
-                          viewModel.agencyProfile?.email ?? 'agency@email.com',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.white70,
+                        Flexible(
+                          child: Text(
+                            viewModel.agencyProfile?.email ?? 'agency@email.com',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -241,13 +237,13 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.blue.shade100),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 24),
+          Icon(icon, color: Colors.blue.shade700, size: 24),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,14 +253,14 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: Colors.blue.shade700,
                 ),
               ),
               Text(
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: Colors.white70,
+                  color: Colors.blue.shade700.withOpacity(0.7),
                 ),
               ),
             ],

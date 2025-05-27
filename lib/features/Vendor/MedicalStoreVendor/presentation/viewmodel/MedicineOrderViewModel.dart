@@ -55,6 +55,11 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
   bool _disposed = false;
 
+  // Add callbacks
+  Function(String)? onOrderUpdate;
+  Function(String)? onOrderStatusUpdate;
+  Function()? onOrdersListUpdate;  // New callback for orders list updates
+
   MedicineOrderViewModel() {
     initSocketConnection();
   }
@@ -156,6 +161,17 @@ class MedicineOrderViewModel extends ChangeNotifier {
           fetchOrders(),
           fetchPrescriptionRequests(),
         ]);
+        
+        // Notify the screen to refresh cart items
+        if (onOrderUpdate != null) {
+          onOrderUpdate!(prescriptionId);
+        }
+
+        // Fetch and notify order status update
+        if (onOrderStatusUpdate != null) {
+          await fetchOrderStatus(prescriptionId);
+          onOrderStatusUpdate!(prescriptionId);
+        }
         
         debugPrint('✅ Refreshed orders and prescription requests after update');
       } else {
@@ -486,6 +502,12 @@ class MedicineOrderViewModel extends ChangeNotifier {
 
       if (result) {
         _orderStatus = newStatus;
+        // Fetch updated orders list
+        await fetchOrders();
+        // Notify about orders list update
+        if (onOrdersListUpdate != null) {
+          onOrdersListUpdate!();
+        }
         _safeNotifyListeners();
       } else {
         throw Exception("Failed to update status");

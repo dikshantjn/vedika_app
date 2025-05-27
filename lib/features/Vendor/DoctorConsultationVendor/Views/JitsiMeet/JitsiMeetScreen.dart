@@ -1,27 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/JitsiMeetService.dart';
+import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 
 class JitsiMeetScreen extends StatefulWidget {
   final String roomName;
-  final String userDisplayName;
-  final String? userEmail;
-  final String? userAvatarUrl;
+  final String displayName;
+  final String? email;
+  final String? avatarUrl;
   final String? jwtToken;
-  final bool isDoctor;
-  final VoidCallback? onMeetingClosed;
-  final String? meetingUrl;
 
   const JitsiMeetScreen({
     Key? key,
     required this.roomName,
-    required this.userDisplayName,
-    this.userEmail,
-    this.userAvatarUrl,
+    required this.displayName,
+    this.email,
+    this.avatarUrl,
     this.jwtToken,
-    this.isDoctor = false,
-    this.onMeetingClosed,
-    this.meetingUrl,
   }) : super(key: key);
 
   @override
@@ -29,23 +22,19 @@ class JitsiMeetScreen extends StatefulWidget {
 }
 
 class _JitsiMeetScreenState extends State<JitsiMeetScreen> {
-  final JitsiMeetService _jitsiMeetService = JitsiMeetService();
+  final _jitsiMeet = JitsiMeet();
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _joinMeeting();
-    });
+    _joinMeeting();
   }
 
   @override
   void dispose() {
-    if (mounted) {
-      _jitsiMeetService.hangUp();
-    }
+    _jitsiMeet.hangUp();
     super.dispose();
   }
 
@@ -56,60 +45,69 @@ class _JitsiMeetScreenState extends State<JitsiMeetScreen> {
         _errorMessage = null;
       });
 
-      debugPrint("\n====== JOINING JITSI MEETING ======");
-      
-      if (widget.meetingUrl != null) {
-        // Join using the complete meeting URL
-        await _jitsiMeetService.joinFromUrl(
-          meetingUrl: widget.meetingUrl!,
-          userDisplayName: widget.userDisplayName,
-          userEmail: widget.userEmail,
-          userAvatarUrl: widget.userAvatarUrl,
-          onConferenceTerminated: () {
-            if (widget.onMeetingClosed != null) {
-              widget.onMeetingClosed!();
-            }
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-          onError: (error) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = error;
-            });
-          },
-        );
-      } else {
-        // Join using room name and JWT
-        await _jitsiMeetService.joinMeeting(
-          roomName: widget.roomName,
-          userDisplayName: widget.userDisplayName,
-          userEmail: widget.userEmail,
-          userAvatarUrl: widget.userAvatarUrl,
-          jwtToken: widget.jwtToken,
-          onConferenceTerminated: () {
-            if (widget.onMeetingClosed != null) {
-              widget.onMeetingClosed!();
-            }
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-          onError: (error) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = error;
-            });
-          },
-        );
-      }
+      var options = JitsiMeetConferenceOptions(
+        serverURL: "https://meet.vedika.health",
+        room: widget.roomName,
+        token: widget.jwtToken,
+        userInfo: JitsiMeetUserInfo(
+          displayName: widget.displayName,
+          email: widget.email,
+          avatar: widget.avatarUrl,
+        ),
+        configOverrides: {
+          "startWithAudioMuted": false,
+          "startWithVideoMuted": false,
+          "subject": "Vedika Health Consultation",
+        },
+        featureFlags: {
+          "welcomepage.enabled": false,
+          "invite.enabled": false,
+          "calendar.enabled": false,
+          "call-integration.enabled": false,
+        },
+      );
 
-      setState(() {
-        _isLoading = false;
-      });
+      await _jitsiMeet.join(
+        options,
+        JitsiMeetEventListener(
+          conferenceJoined: (url) {
+            debugPrint("Conference joined: url: $url");
+            setState(() {
+              _isLoading = false;
+            });
+          },
+          conferenceTerminated: (url, error) {
+            debugPrint("Conference terminated: url: $url, error: $error");
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+          conferenceWillJoin: (url) {
+            debugPrint("Conference will join: url: $url");
+          },
+          participantJoined: (email, name, role, participantId) {
+            debugPrint("Participant joined: email: $email, name: $name, role: $role, participantId: $participantId");
+          },
+          participantLeft: (participantId) {
+            debugPrint("Participant left: participantId: $participantId");
+          },
+          audioMutedChanged: (muted) {
+            debugPrint("Audio muted changed: muted: $muted");
+          },
+          videoMutedChanged: (muted) {
+            debugPrint("Video muted changed: muted: $muted");
+          },
+          readyToClose: () {
+            debugPrint("Ready to close");
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      );
+
     } catch (e) {
-      debugPrint("Exception while joining: $e");
+      debugPrint("Error joining meeting: $e");
       setState(() {
         _isLoading = false;
         _errorMessage = e.toString();
@@ -119,108 +117,88 @@ class _JitsiMeetScreenState extends State<JitsiMeetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        await _jitsiMeetService.hangUp();
-        return true;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-          title: const Text(
-            'Video Consultation',
-            style: TextStyle(color: Colors.white),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () async {
-              await _jitsiMeetService.hangUp();
-              Navigator.of(context).pop();
-            },
-          ),
-        ),
-        body: _isLoading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: DoctorConsultationColorPalette.primaryBlue,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Joining video consultation...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Joining video consultation...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                  ),
+                ],
+              ),
+            )
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 60,
                       ),
-                    ),
-                  ],
-                ),
-              )
-            : _errorMessage != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: DoctorConsultationColorPalette.errorRed,
-                          size: 60,
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Failed to join meeting',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Failed to join meeting',
+                      ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _joinMeeting,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text(
+                          'Go Back',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: _joinMeeting,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Go Back',
-                            style: TextStyle(
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Container(),
-      ),
+                      ),
+                    ],
+                  ),
+                )
+              : Container(),
     );
   }
-} 
+}

@@ -4,10 +4,35 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/ProcessOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 
-class OrdersWidget extends StatelessWidget {
+class OrdersWidget extends StatefulWidget {
   final MedicineOrderViewModel viewModel;
 
   const OrdersWidget({Key? key, required this.viewModel}) : super(key: key);
+
+  @override
+  State<OrdersWidget> createState() => _OrdersWidgetState();
+}
+
+class _OrdersWidgetState extends State<OrdersWidget> {
+  @override
+  void initState() {
+    super.initState();
+    // Set up the callback for orders list updates
+    widget.viewModel.onOrdersListUpdate = () {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild with the updated orders list
+        });
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    // Clear the callback when disposing
+    widget.viewModel.onOrdersListUpdate = null;
+    super.dispose();
+  }
 
   // Function to get formatted status text
   String _formatStatus(String status) {
@@ -62,7 +87,7 @@ class OrdersWidget extends StatelessWidget {
             ),
           ),
         ),
-        viewModel.orders.isEmpty
+        widget.viewModel.orders.isEmpty
             ? Padding(
           padding: const EdgeInsets.all(12.0),
           child: Center(
@@ -75,9 +100,9 @@ class OrdersWidget extends StatelessWidget {
             : ListView.builder(
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
-          itemCount: viewModel.orders.length,
+          itemCount: widget.viewModel.orders.length,
           itemBuilder: (context, index) {
-            final order = viewModel.orders[index];
+            final order = widget.viewModel.orders[index];
             return _buildOrderCard(order, context);
           },
         ),
@@ -154,7 +179,7 @@ class OrdersWidget extends StatelessWidget {
                 OutlinedButton(
                   onPressed: () => _showProcessOrderScreen(
                     context,
-                    viewModel,
+                    widget.viewModel,
                     order.prescriptionId,
                     order.orderId,
                     order.user.name!,

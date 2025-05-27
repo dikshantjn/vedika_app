@@ -63,6 +63,26 @@ class BookingDetailsCard extends StatelessWidget {
 
   Widget _buildStatusRow(String title, String status) {
     final displayStatus = _getDisplayStatus(status);
+    Color statusColor;
+    Color backgroundColor;
+
+    switch (status.toLowerCase()) {
+      case 'paymentcompleted':
+        statusColor = Colors.green;
+        backgroundColor = Colors.green.shade100;
+        break;
+      case 'completed':
+        statusColor = Colors.blue;
+        backgroundColor = Colors.blue.shade100;
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
+        backgroundColor = Colors.red.shade100;
+        break;
+      default:
+        statusColor = Colors.orange;
+        backgroundColor = Colors.orange.shade100;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -80,15 +100,15 @@ class BookingDetailsCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.shade100, // optional: dynamic based on status
+              color: backgroundColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               displayStatus,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.green,
+                color: statusColor,
               ),
             ),
           ),
@@ -107,6 +127,8 @@ class BookingDetailsCard extends StatelessWidget {
         return 'Completed';
       case 'cancelled':
         return 'Cancelled';
+      case 'paymentcompleted':
+        return 'Payment Completed';
       default:
         return status;
     }

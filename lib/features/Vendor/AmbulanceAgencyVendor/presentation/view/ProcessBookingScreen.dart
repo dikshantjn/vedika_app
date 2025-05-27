@@ -17,27 +17,76 @@ class ProcessBookingScreen extends StatefulWidget {
 }
 
 class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
-  late AmbulanceBooking booking;
+  AmbulanceBooking? booking;
   String? selectedStatus;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
-      viewModel.fetchVehicleTypes();
+      await viewModel.fetchVehicleTypes();
+      await viewModel.fetchPendingBookings();
+      
+      // Initialize the booking
+      final initialBooking = viewModel.bookingRequests
+          .cast<AmbulanceBooking?>()
+          .firstWhere(
+            (b) => b?.requestId == widget.requestId,
+            orElse: () => null,
+          );
+      
+      if (mounted) {
+        setState(() {
+          booking = initialBooking;
+          isLoading = false;
+        });
+      }
+
+      // Add listener for payment completed status
+      viewModel.addListener(() {
+        if (mounted) {
+          final updatedBooking = viewModel.bookingRequests
+              .cast<AmbulanceBooking?>()
+              .firstWhere(
+                (b) => b?.requestId == widget.requestId,
+                orElse: () => null,
+              );
+          
+          if (updatedBooking != null && updatedBooking.status.toLowerCase() == 'paymentcompleted') {
+            setState(() {
+              booking = updatedBooking;
+            });
+          }
+        }
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
+    viewModel.removeListener(() {});
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context);
-    AmbulanceBooking? booking = viewModel.bookingRequests
-        .cast<AmbulanceBooking?>()
-        .firstWhere(
-          (b) => b?.requestId == widget.requestId,
-      orElse: () => null,
-    );
+
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Process Booking"),
+          backgroundColor: Colors.cyan,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     if (booking == null) {
       return Scaffold(
@@ -55,13 +104,18 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
       );
     }
 
+    final isDetailsFilled = booking!.pickupLocation.isNotEmpty &&
+        booking!.dropLocation.isNotEmpty &&
+        booking!.vehicleType.isNotEmpty &&
+        booking!.totalAmount != 0;
 
-    final isDetailsFilled = booking.pickupLocation.isNotEmpty &&
-        booking.dropLocation.isNotEmpty &&
-        booking.vehicleType.isNotEmpty &&
-        booking.totalAmount != 0;
+    debugPrint('🔍 ProcessBookingScreen - isDetailsFilled: $isDetailsFilled');
+    debugPrint('🔍 ProcessBookingScreen - pickupLocation: ${booking!.pickupLocation}');
+    debugPrint('🔍 ProcessBookingScreen - dropLocation: ${booking!.dropLocation}');
+    debugPrint('🔍 ProcessBookingScreen - vehicleType: ${booking!.vehicleType}');
+    debugPrint('🔍 ProcessBookingScreen - totalAmount: ${booking!.totalAmount}');
 
-    final statusOptions = _getNextStatusOptions(booking.status);
+    final statusOptions = _getNextStatusOptions(booking!.status);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -72,8 +126,23 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          setState(() => isLoading = true);
           await viewModel.fetchPendingBookings();
           await viewModel.fetchVehicleTypes();
+          
+          final updatedBooking = viewModel.bookingRequests
+              .cast<AmbulanceBooking?>()
+              .firstWhere(
+                (b) => b?.requestId == widget.requestId,
+                orElse: () => null,
+              );
+          
+          if (mounted) {
+            setState(() {
+              booking = updatedBooking;
+              isLoading = false;
+            });
+          }
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -83,12 +152,12 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
             children: [
               Text("Booking Details", style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 10),
-              BookingDetailsCard(booking: booking),
+              BookingDetailsCard(booking: booking!),
 
               const SizedBox(height: 24),
               Text("Service Details", style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 10),
-              ServiceDetailsCard(booking: booking, isFilled: isDetailsFilled),
+              ServiceDetailsCard(booking: booking!, isFilled: isDetailsFilled),
 
               const SizedBox(height: 32),
               Text("Change Booking Status", style: Theme.of(context).textTheme.titleMedium),
@@ -113,11 +182,6 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                             selectedStatus = value;
                           });
                           viewModel.updateBookingStatus(widget.requestId, value);
-
-                          // Optional: Show a feedback message
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Status updated to ${value.toString()}")),
-                          );
                         }
                       },
                       decoration: InputDecoration(
@@ -135,12 +199,12 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                 child: OutlinedButton(
                   onPressed: () {
                     viewModel.prefillServiceDetails(
-                      pickup: booking.pickupLocation,
-                      drop: booking.dropLocation,
-                      distance: booking.totalDistance,
-                      costPerKm: booking.costPerKm,
-                      baseCharge: booking.baseCharge,
-                      vehicleType: booking.vehicleType,
+                      pickup: booking!.pickupLocation,
+                      drop: booking!.dropLocation,
+                      distance: booking!.totalDistance,
+                      costPerKm: booking!.costPerKm,
+                      baseCharge: booking!.baseCharge,
+                      vehicleType: booking!.vehicleType,
                     );
 
                     _showServiceDetailsDialog();
@@ -166,13 +230,55 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
 
   void _showServiceDetailsDialog() async {
     final viewModel = Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false);
-    await showDialog(
+    debugPrint('🔍 _showServiceDetailsDialog - Starting dialog');
+    
+    final result = await showDialog(
       context: context,
       builder: (context) => ServiceDetailsDialog(
         viewModel: viewModel,
         requestId: widget.requestId,
       ),
     );
+    
+    debugPrint('🔍 _showServiceDetailsDialog - Dialog result: $result');
+    
+    if (result == true && mounted) {
+      setState(() => isLoading = true);
+      try {
+        debugPrint('🔍 _showServiceDetailsDialog - Fetching pending bookings');
+        // Refresh the screen data
+        await viewModel.fetchPendingBookings();
+        
+        // Get the updated booking
+        final updatedBooking = viewModel.bookingRequests
+            .cast<AmbulanceBooking?>()
+            .firstWhere(
+              (b) => b?.requestId == widget.requestId,
+              orElse: () => null,
+            );
+        
+        debugPrint('🔍 _showServiceDetailsDialog - Updated booking: ${updatedBooking?.toString()}');
+        
+        if (mounted && updatedBooking != null) {
+          setState(() {
+            booking = updatedBooking;
+            isLoading = false;
+          });
+          debugPrint('🔍 _showServiceDetailsDialog - State updated with new booking');
+        }
+      } catch (e) {
+        debugPrint('❌ _showServiceDetailsDialog - Error: $e');
+        if (mounted) {
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating service details: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   List<_StatusOption> _getNextStatusOptions(String currentStatus) {

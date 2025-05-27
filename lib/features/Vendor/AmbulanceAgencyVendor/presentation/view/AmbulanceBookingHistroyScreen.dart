@@ -118,9 +118,24 @@ class _AmbulanceBookingHistoryScreenState extends State<AmbulanceBookingHistoryS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Vehicle: ${booking.vehicleType}", style: TextStyle(fontSize: 14)),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  "Vehicle: ${booking.vehicleType}",
+                  style: TextStyle(fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               if (booking.totalDistance != null)
-                Text("Distance: ${booking.totalDistance.toStringAsFixed(1)} km", style: TextStyle(fontSize: 14)),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    "Distance: ${booking.totalDistance.toStringAsFixed(1)} km",
+                    style: TextStyle(fontSize: 14),
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
           ),
 
@@ -130,10 +145,27 @@ class _AmbulanceBookingHistoryScreenState extends State<AmbulanceBookingHistoryS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Total: ₹${booking.totalAmount.toStringAsFixed(2)}",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green[700])),
-              Text(formattedDate,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  "Total: ₹${booking.totalAmount.toStringAsFixed(2)}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[700],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ],
