@@ -82,6 +82,8 @@ import 'package:vedika_healthcare/features/notifications/data/models/AppNotifica
 import 'package:vedika_healthcare/features/notifications/data/adapters/AppNotificationAdapter.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
+import 'package:vedika_healthcare/features/home/presentation/viewmodel/ScannerViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -177,6 +179,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => SearchViewModel()),
+        ChangeNotifierProvider(create: (_) => ScannerViewModel()),
         ChangeNotifierProvider(create: (_) => BookAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => BloodBankOrderViewModel()),

@@ -22,26 +22,25 @@ class JitsiMeetService {
     required bool isDoctor,
   }) async {
     try {
+      debugPrint("Joining meeting as doctor: $isDoctor");
       var options = JitsiMeetConferenceOptions(
         serverURL: serverUrl,
         room: roomName,
         configOverrides: {
-          "startWithAudioMuted": false,
-          "startWithVideoMuted": false,
+          "startWithAudioMuted": !isDoctor,
+          "startWithVideoMuted": !isDoctor,
           "subject": "Vedika Consultation",
-          if (jwtToken != null && jwtToken.isNotEmpty)
-            "jwt": jwtToken,
+          if (jwtToken != null && jwtToken.isNotEmpty) "jwt": jwtToken,
           "prejoinPageEnabled": false,
           "disableDeepLinking": true,
           "disablePolls": true,
           "disableReactions": true,
           "disableSelfView": false,
           "enableClosePage": true,
-          "enableWelcomePage": true,
+          "enableWelcomePage": false,
           "enableLobby": true,
           "enableNoAudioDetection": true,
           "enableNoisyMicDetection": true,
-          "enablePrejoinPage": false,
           "enableP2P": true,
           "p2p": {
             "enabled": true,
@@ -49,12 +48,9 @@ class JitsiMeetService {
             "disableH264": false,
             "useStunTurn": true,
           },
-          "startWithVideoMuted": !isDoctor,
-          "startWithAudioMuted": !isDoctor,
-          "filmstrip": {
-            "enabled": true,
-          },
-          "toolbarButtons": isDoctor ? [
+          "filmstrip": {"enabled": true},
+          "toolbarButtons": isDoctor
+              ? [
             "microphone",
             "camera",
             "closedcaptions",
@@ -81,7 +77,8 @@ class JitsiMeetService {
             "help",
             "mute-everyone",
             "security"
-          ] : [
+          ]
+              : [
             "microphone",
             "camera",
             "closedcaptions",
@@ -104,29 +101,21 @@ class JitsiMeetService {
           ],
         },
         featureFlags: {
-          "ios-recording-enabled": false,
-          "recording-enabled": false,
+          "recordingEnabled": isDoctor,
           "live-streaming-enabled": false,
           "tile-view-enabled": true,
           "call-integration-enabled": false,
           "conference-timer-enabled": true,
-          "welcome-page-enabled": true,
+          "welcome-page-enabled": false,
           "raise-hand-enabled": true,
           "close-page-enabled": isDoctor,
           "invite-enabled": isDoctor,
-          "tile-view-enabled": true,
           "toolbox-enabled": true,
           "settings-enabled": isDoctor,
           "pip-enabled": true,
           "fullscreen-enabled": true,
           "overflow-menu-enabled": true,
           "chat-enabled": true,
-          "raise-hand-enabled": true,
-          "recording-enabled": false,
-          "live-streaming-enabled": false,
-          "call-integration-enabled": false,
-          "conference-timer-enabled": true,
-          "welcome-page-enabled": true,
           "moderator-enabled": isDoctor,
         },
         userInfo: JitsiMeetUserInfo(
@@ -142,6 +131,7 @@ class JitsiMeetService {
       rethrow;
     }
   }
+
 
   void hangUp() {
     _jitsiMeet.hangUp();

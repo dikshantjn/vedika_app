@@ -23,7 +23,15 @@ class VoiceCommandService {
     if (normalizedCommand.contains('emergency') || 
         normalizedCommand.contains('emergency help') ||
         normalizedCommand.contains('emergency assistance') ||
-        normalizedCommand.contains('emergency services')) {
+        normalizedCommand.contains('emergency services') ||
+        // Marathi emergency commands
+        normalizedCommand.contains('emergency madat') ||
+        normalizedCommand.contains('tatkal madat pahije') ||
+        normalizedCommand.contains('emergency sevha') ||
+        // Hindi emergency commands
+        normalizedCommand.contains('emergency madad') ||
+        normalizedCommand.contains('turant madad chahiye') ||
+        normalizedCommand.contains('emergency seva')) {
       _showEmergencyDialog(context);
       return;
     }
@@ -31,21 +39,33 @@ class VoiceCommandService {
     // Direct emergency calls
     if (normalizedCommand.contains('call doctor') || 
         normalizedCommand.contains('doctor emergency') ||
-        normalizedCommand.contains('emergency doctor')) {
+        normalizedCommand.contains('emergency doctor') ||
+        // Marathi doctor emergency
+        normalizedCommand.contains('doctor la call kara') ||
+        // Hindi doctor emergency
+        normalizedCommand.contains('doctor ko call karo')) {
       _triggerDoctorEmergency(context);
       return;
     }
 
     if (normalizedCommand.contains('call ambulance') || 
         normalizedCommand.contains('ambulance emergency') ||
-        normalizedCommand.contains('emergency ambulance')) {
+        normalizedCommand.contains('emergency ambulance') ||
+        // Marathi ambulance emergency
+        normalizedCommand.contains('ambulance la call kara') ||
+        // Hindi ambulance emergency
+        normalizedCommand.contains('ambulance ko bulao')) {
       _triggerAmbulanceEmergency(context);
       return;
     }
 
     if (normalizedCommand.contains('call blood bank') || 
         normalizedCommand.contains('blood bank emergency') ||
-        normalizedCommand.contains('emergency blood bank')) {
+        normalizedCommand.contains('emergency blood bank') ||
+        // Marathi blood bank emergency
+        normalizedCommand.contains('rakta bank la call kara') ||
+        // Hindi blood bank emergency
+        normalizedCommand.contains('blood bank ko call karo')) {
       _triggerBloodBankEmergency(context);
       return;
     }
@@ -56,7 +76,15 @@ class VoiceCommandService {
         normalizedCommand.contains('previous') ||
         normalizedCommand.contains('return') ||
         normalizedCommand.contains('close overlay') ||
-        normalizedCommand.contains('exit overlay')) {
+        normalizedCommand.contains('exit overlay') ||
+        // Marathi back commands
+        normalizedCommand.contains('magh ja') ||
+        normalizedCommand.contains('purn kara') ||
+        normalizedCommand.contains('back ja') ||
+        // Hindi back commands
+        normalizedCommand.contains('peeche jao') ||
+        normalizedCommand.contains('wapas jao') ||
+        normalizedCommand.contains('back karo')) {
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
         return;
@@ -78,7 +106,15 @@ class VoiceCommandService {
     // Ambulance related commands
     if (normalizedCommand.contains('ambulance') || 
         normalizedCommand.contains('book ambulance') ||
-        normalizedCommand.contains('call ambulance')) {
+        normalizedCommand.contains('call ambulance') ||
+        // Marathi ambulance commands
+        normalizedCommand.contains('ambulance bolav') ||
+        normalizedCommand.contains('ambulance lavkar pathav') ||
+        normalizedCommand.contains('ambulance book kar') ||
+        // Hindi ambulance commands
+        normalizedCommand.contains('ambulance bulao') ||
+        normalizedCommand.contains('ambulance bhejo') ||
+        normalizedCommand.contains('ambulance book karo')) {
       _navigateToRoute(context, AppRoutes.ambulanceSearch);
       return;
     }
@@ -86,7 +122,15 @@ class VoiceCommandService {
     // Blood Bank related commands
     if (normalizedCommand.contains('blood bank') || 
         normalizedCommand.contains('find blood') ||
-        normalizedCommand.contains('donate blood')) {
+        normalizedCommand.contains('donate blood') ||
+        // Marathi blood bank commands
+        normalizedCommand.contains('rakta bank shodh') ||
+        normalizedCommand.contains('rakta donate karayche') ||
+        normalizedCommand.contains('blood bank la jau') ||
+        // Hindi blood bank commands
+        normalizedCommand.contains('blood bank khojo') ||
+        normalizedCommand.contains('rakht daan karna hai') ||
+        normalizedCommand.contains('blood donate karna hai')) {
       _navigateToRoute(context, AppRoutes.bloodBank);
       return;
     }
@@ -94,7 +138,15 @@ class VoiceCommandService {
     // Medicine Delivery related commands
     if (normalizedCommand.contains('medicine') || 
         normalizedCommand.contains('order medicine') ||
-        normalizedCommand.contains('deliver medicine')) {
+        normalizedCommand.contains('deliver medicine') ||
+        // Marathi medicine commands
+        normalizedCommand.contains('aushadh magva') ||
+        normalizedCommand.contains('medicine order kar') ||
+        normalizedCommand.contains('aushadh gharivar manga') ||
+        // Hindi medicine commands
+        normalizedCommand.contains('dawai mangao') ||
+        normalizedCommand.contains('medicine order karo') ||
+        normalizedCommand.contains('ghar pe dawai mangao')) {
       _navigateToRoute(context, AppRoutes.medicineOrder);
       return;
     }
@@ -102,7 +154,15 @@ class VoiceCommandService {
     // Hospital related commands
     if (normalizedCommand.contains('hospital') || 
         normalizedCommand.contains('find hospital') ||
-        normalizedCommand.contains('book hospital')) {
+        normalizedCommand.contains('book hospital') ||
+        // Marathi hospital commands
+        normalizedCommand.contains('hospital shodh') ||
+        normalizedCommand.contains('hospital la jaayche') ||
+        normalizedCommand.contains('hospital book kar') ||
+        // Hindi hospital commands
+        normalizedCommand.contains('aspatal khojo') ||
+        normalizedCommand.contains('hospital jana hai') ||
+        normalizedCommand.contains('hospital book karo')) {
       _navigateToRoute(context, AppRoutes.hospital);
       return;
     }
@@ -111,7 +171,15 @@ class VoiceCommandService {
     if (normalizedCommand.contains('doctor') || 
         normalizedCommand.contains('clinic') ||
         normalizedCommand.contains('book appointment') ||
-        normalizedCommand.contains('doctor appointment')) {
+        normalizedCommand.contains('doctor appointment') ||
+        // Marathi clinic/doctor commands
+        normalizedCommand.contains('doctor appointment theva') ||
+        normalizedCommand.contains('clinic shodh') ||
+        normalizedCommand.contains('doctor la bagha') ||
+        // Hindi clinic/doctor commands
+        normalizedCommand.contains('doctor ka appointment lo') ||
+        normalizedCommand.contains('clinic khojo') ||
+        normalizedCommand.contains('doctor se milna hai')) {
       _navigateToRoute(context, AppRoutes.clinic);
       return;
     }
@@ -120,7 +188,15 @@ class VoiceCommandService {
     if (normalizedCommand.contains('lab') || 
         normalizedCommand.contains('test') ||
         normalizedCommand.contains('book test') ||
-        normalizedCommand.contains('lab test')) {
+        normalizedCommand.contains('lab test') ||
+        // Marathi lab test commands
+        normalizedCommand.contains('lab test karaycha') ||
+        normalizedCommand.contains('test book kar') ||
+        normalizedCommand.contains('test pahije') ||
+        // Hindi lab test commands
+        normalizedCommand.contains('lab test karna hai') ||
+        normalizedCommand.contains('test book karo') ||
+        normalizedCommand.contains('test karwana hai')) {
       _navigateToRoute(context, AppRoutes.labTest);
       return;
     }

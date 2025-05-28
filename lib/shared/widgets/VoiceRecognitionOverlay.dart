@@ -84,11 +84,19 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInitialized && !_isListening && !_isProcessing && mounted) {
+      _startListening();
+    }
+  }
+
+  @override
   void didUpdateWidget(VoiceRecognitionOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_isInitialized) {
       _initSpeech();
-    } else if (!_isListening) {
+    } else if (!_isListening && !_isProcessing && mounted) {
       _startListening();
     }
   }
@@ -142,7 +150,9 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
     _retryTimer?.cancel();
     _animationController.dispose();
     _suggestionController.dispose();
-    _stopListening();
+    if (_speechToText.isListening) {
+      _speechToText.stop();
+    }
     super.dispose();
   }
 
@@ -260,7 +270,8 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             });
           }
 
-          Future.delayed(const Duration(milliseconds: 300), () {
+          // Retry starting listening after a short delay
+          Future.delayed(const Duration(seconds: 2), () {
             if (!_isDisposed && mounted) {
               _startListening();
             }
@@ -280,6 +291,14 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 case 'notListening':
                 case 'doneNoResult':
                   _isListening = false;
+                  // Restart listening if it stops
+                  if (!_isDisposed && mounted) {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (!_isDisposed && mounted) {
+                        _startListening();
+                      }
+                    });
+                  }
                   break;
                 default:
                   _isListening = false;
@@ -431,28 +450,32 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             });
             
             if (mounted && !_isDisposed) {
-              setState(() {
-                _lastWords = result.recognizedWords;
-                _displayText = result.recognizedWords;
-              });
-              
-              if (_lastWords.isNotEmpty && result.finalResult) {
-                VoiceCommandService.handleVoiceCommand(context, _lastWords, (error) {
-                  if (mounted && !_isDisposed) {
-                    setState(() {
-                      _errorMessage = error;
-                      _showError = true;
-                    });
-                    Future.delayed(const Duration(seconds: 3), () {
-                      if (mounted && !_isDisposed) {
-                        setState(() {
-                          _showError = false;
-                          _errorMessage = null;
-                        });
-                      }
-                    });
-                  }
+              // Only update text if it's different and not empty
+              if (result.recognizedWords.isNotEmpty && 
+                  (result.finalResult || result.recognizedWords != _lastWords)) {
+                setState(() {
+                  _lastWords = result.recognizedWords;
+                  _displayText = result.recognizedWords;
                 });
+                
+                if (result.finalResult) {
+                  VoiceCommandService.handleVoiceCommand(context, _lastWords, (error) {
+                    if (mounted && !_isDisposed) {
+                      setState(() {
+                        _errorMessage = error;
+                        _showError = true;
+                      });
+                      Future.delayed(const Duration(seconds: 3), () {
+                        if (mounted && !_isDisposed) {
+                          setState(() {
+                            _showError = false;
+                            _errorMessage = null;
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
               }
             }
           },
@@ -483,30 +506,11 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
           _showError = true;
           _isProcessing = false;
         });
-      }
-    }
-  }
-
-  Future<void> _stopListening() async {
-    if (_isProcessing || _isDisposed) return;
-    
-    try {
-      _isProcessing = true;
-      if (_speechToText.isListening) {
-        await _speechToText.stop();
-      }
-      if (mounted && !_isDisposed) {
-        setState(() {
-          _isListening = false;
-          _isProcessing = false;
-        });
-      }
-    } catch (e) {
-      developer.log('Error stopping speech recognition: $e');
-      if (mounted && !_isDisposed) {
-        setState(() {
-          _isListening = false;
-          _isProcessing = false;
+        // Retry starting listening after a short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !_isDisposed && !_isListening) {
+            _startListening();
+          }
         });
       }
     }
@@ -556,7 +560,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 // Animated microphone icon with pulsing rings
                 GestureDetector(
                   onTap: () {
-                    if (!_isListening) {
+                    if (!_isListening && !_isProcessing) {
                       _startListening();
                     }
                   },
@@ -569,14 +573,18 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                           animation: _animationController,
                           builder: (context, child) {
                             return Transform.scale(
-                              scale: 1.0 + (_pulseAnimation.value * 0.3 * (index + 1)),
+                              scale: _isListening 
+                                ? 1.0 + (_pulseAnimation.value * 0.3 * (index + 1))
+                                : 1.0,
                               child: Container(
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.blue.withOpacity(0.3 - (index * 0.1)),
+                                    color: _isListening 
+                                      ? Colors.blue.withOpacity(0.3 - (index * 0.1))
+                                      : Colors.white.withOpacity(0.3 - (index * 0.1)),
                                     width: 2,
                                   ),
                                 ),
@@ -590,7 +598,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                         animation: _animationController,
                         builder: (context, child) {
                           return Transform.scale(
-                            scale: _scaleAnimation.value,
+                            scale: _isListening ? _scaleAnimation.value : 1.0,
                             child: Container(
                               width: 80,
                               height: 80,
@@ -599,16 +607,23 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF8A2BE2),
-                                    Color(0xFF4169E1),
-                                    Color(0xFFAC4A79),
-                                    Color(0xFF8A2BE2),
-                                  ],
+                                  colors: _isListening 
+                                    ? [
+                                        Color(0xFF8A2BE2),
+                                        Color(0xFF4169E1),
+                                        Color(0xFFAC4A79),
+                                        Color(0xFF8A2BE2),
+                                      ]
+                                    : [
+                                        Colors.grey.shade700,
+                                        Colors.grey.shade600,
+                                      ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.blue.withOpacity(0.3),
+                                    color: _isListening 
+                                      ? Colors.blue.withOpacity(0.3)
+                                      : Colors.grey.withOpacity(0.3),
                                     blurRadius: 20,
                                     spreadRadius: 5,
                                   ),
@@ -629,7 +644,11 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 const SizedBox(height: 32),
                 // Status text with modern typography
                 Text(
-                  _isProcessing ? 'Processing...' : (_isListening ? 'Listening...' : 'Tap the mic to start speaking'),
+                  _isProcessing 
+                    ? 'Processing...' 
+                    : (_isListening 
+                        ? 'Listening...' 
+                        : 'Tap the mic to start'),
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 20,
@@ -677,14 +696,18 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 if (_displayText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      _displayText,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 18,
-                        height: 1.5,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _displayText,
+                        key: ValueKey<String>(_displayText),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   )
                 else
@@ -713,8 +736,8 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 // Close button
                 _buildActionButton(
                   icon: Icons.close,
-                  onPressed: () {
-                    _stopListening();
+                  onPressed: () async {
+                    await _speechToText.stop();
                     widget.onClose();
                   },
                   color: Colors.red.shade400,

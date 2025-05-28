@@ -68,6 +68,8 @@ dependencies:
   hive: ^2.2.3
   speech_to_text: ^7.0.0
   translator: ^1.0.3+1
+  camera: ^0.10.5+9
+  google_mlkit_text_recognition: ^0.15.0
 
 dev_dependencies:
   flutter_test:

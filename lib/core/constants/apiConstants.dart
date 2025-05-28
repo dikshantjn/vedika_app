@@ -10,4 +10,8 @@ class ApiConstants {
   static const String phonePeApiEndpoint = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
   static const String phonePeCallbackUrl = "https://webhook.site/0fa9bfdc-33a8-4f93-ab93-111e4a25bb03"; // Your callback URL
   static const String phonePeRedirectUrl = "https://webhook.site/0fa9bfdc-33a8-4f93-ab93-111e4a25bb03";
+
+  // Google Vision API
+  static const String googleVisionApiKey = "AIzaSyDIFRThseqk53zAOQ6hEv-meLn0B4SIVmM";
+  static const String googleVisionApiEndpoint = "https://vision.googleapis.com/v1/images:annotate";
 }
