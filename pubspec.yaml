@@ -70,6 +70,11 @@ dependencies:
   translator: ^1.0.3+1
   camera: ^0.10.5+9
   google_mlkit_text_recognition: ^0.15.0
+  googleapis_auth: ^1.4.1
+  googleapis: ^11.0.0
+  http: ^1.1.0
+  record: ^5.0.4
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
@@ -88,8 +93,7 @@ flutter:
     - assets/healthDays/
     - assets/animations/
     - assets/logo/
-
-
+    - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
 
   uses-material-design: true
 

@@ -25,12 +25,12 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   final Logger _logger = Logger(
     printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      printTime: true
+        methodCount: 2,
+        errorMethodCount: 8,
+        lineLength: 120,
+        colors: true,
+        printEmojis: true,
+        printTime: true
     ),
   );
   bool _isListening = false;
@@ -159,17 +159,17 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
   Future<void> _checkPermissions() async {
     try {
       _logger.i('Starting permission check...');
-      
+
       // Check microphone permission
       var status = await Permission.microphone.status;
       _logger.d('Initial microphone permission status: $status');
-      
+
       if (!status.isGranted) {
         _logger.i('Requesting microphone permission...');
         status = await Permission.microphone.request();
         _logger.d('Microphone permission request result: $status');
       }
-      
+
       // Check device info
       if (Theme.of(context).platform == TargetPlatform.android) {
         final androidInfo = await _deviceInfo.androidInfo;
@@ -180,10 +180,10 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
           'androidVersion': androidInfo.version.release,
           'sdkInt': androidInfo.version.sdkInt,
         });
-        
+
         final isRealme = androidInfo.brand.toLowerCase().contains('realme');
         _logger.i('Is Realme device: $isRealme');
-        
+
         if (isRealme) {
           _logger.w('Realme device detected - showing special instructions');
           if (mounted) {
@@ -257,11 +257,11 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             'errorMsg': error.errorMsg,
             'permanent': error.permanent,
           });
-          
+
           if (error.errorMsg == 'error_language_unavailable') {
             _handleLanguageUnavailable();
           }
-          
+
           if (mounted) {
             setState(() {
               _isListening = false;
@@ -280,7 +280,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
         onStatus: (status) {
           if (_isDisposed) return;
           _logger.d('Speech recognition status: $status');
-          
+
           if (mounted) {
             setState(() {
               switch (status) {
@@ -308,14 +308,14 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
         },
         debugLogging: true,
       );
-      
+
       _logger.i('Speech recognition initialized: $_isInitialized');
-      
+
       if (_isInitialized && !_isDisposed) {
         // Check available locales
         final locales = await _speechToText.locales();
         _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
-        
+
         // Try to find a suitable locale
         String? selectedLocale;
         if (locales.any((locale) => locale.localeId == 'en_US')) {
@@ -325,7 +325,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
         } else if (locales.isNotEmpty) {
           selectedLocale = locales.first.localeId;
         }
-        
+
         if (selectedLocale != null) {
           _currentLocaleId = selectedLocale;
           _logger.i('Selected locale: $_currentLocaleId');
@@ -337,7 +337,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
           setState(() {
             _isProcessing = false;
           });
-          
+
           await Future.delayed(const Duration(milliseconds: 300));
           if (!_isDisposed) {
             _startListening();
@@ -372,7 +372,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
     try {
       final locales = await _speechToText.locales();
       _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
-      
+
       // Try to find a suitable locale
       String? selectedLocale;
       if (locales.any((locale) => locale.localeId == 'en_IN')) {
@@ -382,11 +382,11 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
       } else if (locales.isNotEmpty) {
         selectedLocale = locales.first.localeId;
       }
-      
+
       if (selectedLocale != null) {
         _currentLocaleId = selectedLocale;
         _logger.i('Switched to locale: $_currentLocaleId');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -432,7 +432,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
           _showError = false;
         });
       }
-      
+
       if (_speechToText.isListening) {
         _logger.i('Stopping existing listening session...');
         await _speechToText.stop();
@@ -448,16 +448,16 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
               'confidence': result.confidence,
               'finalResult': result.finalResult,
             });
-            
+
             if (mounted && !_isDisposed) {
               // Only update text if it's different and not empty
-              if (result.recognizedWords.isNotEmpty && 
+              if (result.recognizedWords.isNotEmpty &&
                   (result.finalResult || result.recognizedWords != _lastWords)) {
                 setState(() {
                   _lastWords = result.recognizedWords;
                   _displayText = result.recognizedWords;
                 });
-                
+
                 if (result.finalResult) {
                   VoiceCommandService.handleVoiceCommand(context, _lastWords, (error) {
                     if (mounted && !_isDisposed) {
@@ -488,7 +488,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             _logger.v('Sound level: $level');
           },
         );
-        
+
         if (mounted && !_isDisposed) {
           setState(() {
             _isListening = true;
@@ -573,18 +573,18 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                           animation: _animationController,
                           builder: (context, child) {
                             return Transform.scale(
-                              scale: _isListening 
-                                ? 1.0 + (_pulseAnimation.value * 0.3 * (index + 1))
-                                : 1.0,
+                              scale: _isListening
+                                  ? 1.0 + (_pulseAnimation.value * 0.3 * (index + 1))
+                                  : 1.0,
                               child: Container(
                                 width: 80,
                                 height: 80,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: _isListening 
-                                      ? Colors.blue.withOpacity(0.3 - (index * 0.1))
-                                      : Colors.white.withOpacity(0.3 - (index * 0.1)),
+                                    color: _isListening
+                                        ? Colors.blue.withOpacity(0.3 - (index * 0.1))
+                                        : Colors.white.withOpacity(0.3 - (index * 0.1)),
                                     width: 2,
                                   ),
                                 ),
@@ -607,23 +607,23 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: _isListening 
-                                    ? [
-                                        Color(0xFF8A2BE2),
-                                        Color(0xFF4169E1),
-                                        Color(0xFFAC4A79),
-                                        Color(0xFF8A2BE2),
-                                      ]
-                                    : [
-                                        Colors.grey.shade700,
-                                        Colors.grey.shade600,
-                                      ],
+                                  colors: _isListening
+                                      ? [
+                                    Color(0xFF8A2BE2),
+                                    Color(0xFF4169E1),
+                                    Color(0xFFAC4A79),
+                                    Color(0xFF8A2BE2),
+                                  ]
+                                      : [
+                                    Colors.grey.shade700,
+                                    Colors.grey.shade600,
+                                  ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: _isListening 
-                                      ? Colors.blue.withOpacity(0.3)
-                                      : Colors.grey.withOpacity(0.3),
+                                    color: _isListening
+                                        ? Colors.blue.withOpacity(0.3)
+                                        : Colors.grey.withOpacity(0.3),
                                     blurRadius: 20,
                                     spreadRadius: 5,
                                   ),
@@ -644,11 +644,11 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 const SizedBox(height: 32),
                 // Status text with modern typography
                 Text(
-                  _isProcessing 
-                    ? 'Processing...' 
-                    : (_isListening 
-                        ? 'Listening...' 
-                        : 'Tap the mic to start'),
+                  _isProcessing
+                      ? 'Processing...'
+                      : (_isListening
+                      ? 'Listening...'
+                      : 'Tap the mic to start'),
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 20,
