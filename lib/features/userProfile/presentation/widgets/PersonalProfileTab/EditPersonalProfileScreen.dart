@@ -51,8 +51,18 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
     dateOfBirth = profile?.dateOfBirth;
     dobController = TextEditingController(
         text: dateOfBirth != null ? DateFormat('dd/MM/yyyy').format(dateOfBirth!) : '');
-    gender = profile?.gender;
-    bloodGroup = profile?.bloodGroup;
+    
+    // Ensure gender value matches exactly with dropdown items
+    final genderList = ['Male', 'Female', 'Other'];
+    gender = profile?.gender != null && genderList.contains(profile?.gender) 
+        ? profile?.gender 
+        : null;
+    
+    // Ensure blood group value matches exactly with dropdown items
+    final bloodGroupList = ['A+', 'B+', 'O+', 'AB+', 'A-', 'B-', 'O-', 'AB-'];
+    bloodGroup = profile?.bloodGroup != null && bloodGroupList.contains(profile?.bloodGroup)
+        ? profile?.bloodGroup
+        : null;
   }
 
   Future<void> _pickImage() async {
@@ -204,7 +214,24 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
                             const SizedBox(height: 16),
                             _buildTextField(nameController, 'Full Name', Icons.person_outline, isRequired: true),
                             _buildTextField(contactController, 'Phone Number', Icons.phone_outlined, isRequired: true),
-                            _buildTextField(emailController, 'Email Address', Icons.email_outlined),
+                            _buildTextField(
+                              emailController, 
+                              'Email Address', 
+                              Icons.email_outlined,
+                              isRequired: true,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Email is required';
+                                }
+                                // Email validation regex
+                                final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                if (!emailRegex.hasMatch(value)) {
+                                  return 'Please enter a valid email address';
+                                }
+                                return null;
+                              },
+                            ),
                             _buildTextField(abhaIdController, 'ABHA ID', Icons.badge_outlined),
                             _buildTextField(locationController, 'Location', Icons.location_on_outlined),
                             
@@ -422,6 +449,7 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
     IconData icon, {
     bool isRequired = false,
     TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -455,9 +483,9 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
           fontSize: 14,
           color: Colors.black87,
         ),
-        validator: isRequired
+        validator: validator ?? (isRequired
             ? (value) => value == null || value.isEmpty ? '$labelText is required' : null
-            : null,
+            : null),
       ),
     );
   }
@@ -472,7 +500,7 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
     return Container(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: value != null && items.contains(value) ? value : null,
         decoration: InputDecoration(
           labelText: labelText,
           prefixIcon: Icon(icon, color: ColorPalette.primaryColor),
