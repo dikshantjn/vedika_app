@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/home/data/services/ProductCartService
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductDetailScreen.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescriptionView.dart';
 
 class ScannedProductsBottomSheet extends StatelessWidget {
   final List<VendorProduct> products;
@@ -29,7 +30,15 @@ class ScannedProductsBottomSheet extends StatelessWidget {
       child: _ScannedProductsContent(
         products: products,
         onClose: onClose,
-        onScanAgain: onScanAgain,
+        onScanAgain: () {
+          Navigator.pop(context); // Close the bottom sheet
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanPrescriptionView(),
+            ),
+          );
+        },
       ),
     );
   }

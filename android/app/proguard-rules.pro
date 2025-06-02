@@ -104,3 +104,11 @@
 -keep class com.google.mlkit.vision.text.japanese.** { *; }
 -keep class com.google.mlkit.vision.text.korean.** { *; }
 -dontwarn com.google.mlkit.vision.text.**
+
+# Jitsi Meet SDK
+-keep class org.jitsi.** { *; }
+-dontwarn org.jitsi.**
+
+# WebRTC (used internally by Jitsi)
+-keep class org.webrtc.** { *; }
+-dontwarn org.webrtc.**

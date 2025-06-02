@@ -120,6 +120,8 @@ class AppRoutes {
       doctorAppointments: (context) => ClinicAppointmentsScreen(), // Route for doctor appointments
       clinicConsultationType: (context) => ClinicConsultationTypePage(),
       onlineDoctorConsultation: (context) => OnlineDoctorConsultationPage(),
+      hospitalSearch: (context) => HospitalSearchPage(),
+      clinicSearch: (context) => ClinicSearchPage(),
 
       medicineOrder: (context) => MedicineOrderScreen(), // Added route for EnableLocationPage
       goToCart: (context) => CartScreen(), // Added route for EnableLocationPage

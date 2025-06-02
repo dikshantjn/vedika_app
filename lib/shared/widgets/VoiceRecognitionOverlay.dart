@@ -291,10 +291,10 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 case 'notListening':
                 case 'doneNoResult':
                   _isListening = false;
-                  // Restart listening if it stops
-                  if (!_isDisposed && mounted) {
+                  // Only restart if we're not explicitly stopping
+                  if (!_isDisposed && mounted && !_isProcessing) {
                     Future.delayed(const Duration(milliseconds: 500), () {
-                      if (!_isDisposed && mounted) {
+                      if (!_isDisposed && mounted && !_isProcessing) {
                         _startListening();
                       }
                     });
@@ -433,6 +433,9 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
         });
       }
 
+      // Cancel any existing retry timer
+      _retryTimer?.cancel();
+
       if (_speechToText.isListening) {
         _logger.i('Stopping existing listening session...');
         await _speechToText.stop();
@@ -486,6 +489,12 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
           listenMode: ListenMode.confirmation,
           onSoundLevelChange: (level) {
             _logger.v('Sound level: $level');
+            // If we get sound level updates, we know the mic is active
+            if (mounted && !_isDisposed && !_isListening) {
+              setState(() {
+                _isListening = true;
+              });
+            }
           },
         );
 
@@ -495,6 +504,14 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
             _isProcessing = false;
           });
           _logger.i('Listening session started successfully');
+
+          // Set up a periodic check to ensure the mic is still active
+          _retryTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+            if (!_speechToText.isListening && mounted && !_isDisposed && !_isProcessing) {
+              _logger.w('Mic stopped unexpectedly, attempting to restart...');
+              _startListening();
+            }
+          });
         }
       }
     } catch (e, stackTrace) {
@@ -630,7 +647,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                                 ],
                               ),
                               child: Icon(
-                                Icons.mic,
+                                _isListening ? Icons.mic : Icons.mic_off,
                                 size: 35,
                                 color: Colors.white,
                               ),
