@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/HealthRecords/data/models/HealthRecor
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordItem.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HealthRecordsPage extends StatefulWidget {
   @override
@@ -14,6 +15,14 @@ class HealthRecordsPage extends StatefulWidget {
 }
 
 class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTickerProviderStateMixin {
+  final Map<String, String> categoryIdMap = {
+    "All": "all",
+    "Prescription": "prescription",
+    "Test Reports": "test_report",
+    "Medical Bills": "medical_bill",
+    "Mediclaim Policy": "mediclaim_policy",
+    "Vaccine/Immunization History": "vaccine_history"
+  };
   final List<String> categories = [
     "All",
     "Prescription",
@@ -28,11 +37,14 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
   final TextEditingController _passwordController = TextEditingController();
   final String _dummyPassword = "123456"; // Dummy password for demonstration
   late TabController _tabController;
+  static const String _authTimeKey = 'health_records_last_auth_time';
+  static const int _authSessionMinutes = 15;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: categories.length, vsync: this);
+    _checkAuthSession();
     Future.microtask(() => Provider.of<HealthRecordViewModel>(context, listen: false).loadRecords());
   }
 
@@ -43,11 +55,27 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
     super.dispose();
   }
 
-  void _authenticate() {
+  Future<void> _checkAuthSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastAuthMillis = prefs.getInt(_authTimeKey);
+    if (lastAuthMillis != null) {
+      final lastAuth = DateTime.fromMillisecondsSinceEpoch(lastAuthMillis);
+      final now = DateTime.now();
+      if (now.difference(lastAuth).inMinutes < _authSessionMinutes) {
+        setState(() {
+          isAuthenticated = true;
+        });
+      }
+    }
+  }
+
+  void _authenticate() async {
     if (_passwordController.text == _dummyPassword) {
       setState(() {
         isAuthenticated = true;
       });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_authTimeKey, DateTime.now().millisecondsSinceEpoch);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -121,7 +149,7 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showUploadBottomSheet(),
+        onPressed: () => _showUploadDialog(),
         backgroundColor: ColorPalette.primaryColor,
         icon: const Icon(Icons.upload_file, color: Colors.white),
         label: const Text('Upload Record', style: TextStyle(color: Colors.white)),
@@ -245,9 +273,37 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
   Widget _buildRecordList(String category) {
     return Consumer<HealthRecordViewModel>(
       builder: (context, healthRecordVM, child) {
-        List<HealthRecord> filteredRecords = category == "All"
+        if (healthRecordVM.isLoading) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Loading health records...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        String? categoryId = categoryIdMap[category];
+        List<HealthRecord> filteredRecords = categoryId == "all"
             ? healthRecordVM.records
-            : healthRecordVM.records.where((record) => record.type == category).toList();
+            : healthRecordVM.records.where((record) => record.type == categoryId).toList();
 
         if (filteredRecords.isEmpty) {
           return Center(
@@ -307,165 +363,181 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
     );
   }
 
-  void _showUploadBottomSheet() {
-    showModalBottomSheet(
+  void _showUploadDialog() {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.4,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Upload Health Record',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _buildUploadOption(
-              icon: Icons.photo_library,
-              title: 'Upload from Gallery',
-              subtitle: 'Select images from your gallery',
-              onTap: () => _pickFile(type: FileType.image),
-            ),
-            _buildUploadOption(
-              icon: Icons.picture_as_pdf,
-              title: 'Upload PDF',
-              subtitle: 'Select PDF documents',
-              onTap: () => _pickFile(type: FileType.custom, allowedExtensions: ['pdf']),
-            ),
-            _buildUploadOption(
-              icon: Icons.camera_alt,
-              title: 'Take Photo',
-              subtitle: 'Capture new image',
-              onTap: () => _pickFile(source: ImageSource.camera),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+      builder: (context) {
+        String? name;
+        String? selectedType = categoryIdMap[categories[selectedIndex]] == 'all' ? null : categoryIdMap[categories[selectedIndex]];
+        PlatformFile? pickedFile;
+        bool isUploading = false;
+        final _formKey = GlobalKey<FormState>();
 
-  Widget _buildUploadOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: ColorPalette.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: ColorPalette.primaryColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              elevation: 8,
+              backgroundColor: Colors.white,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(18),
+                                child: const Icon(Icons.upload_file, size: 40, color: ColorPalette.primaryColor),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Upload Health Record',
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: ColorPalette.primaryColor),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        TextFormField(
+                          decoration: InputDecoration(
+                            labelText: 'Name',
+                            prefixIcon: const Icon(Icons.edit_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          onChanged: (val) => name = val,
+                          validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
+                        ),
+                        const SizedBox(height: 18),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return DropdownButtonFormField<String>(
+                              value: selectedType,
+                              isExpanded: true,
+                              items: categoryIdMap.entries
+                                .where((e) => e.key != 'All')
+                                .map((e) => DropdownMenuItem(
+                                  value: e.value,
+                                  child: Text(e.key),
+                                )).toList(),
+                              onChanged: (val) => setState(() => selectedType = val),
+                              decoration: InputDecoration(
+                                labelText: 'Type',
+                                prefixIcon: const Icon(Icons.category_outlined),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                              validator: (val) => val == null ? 'Select a type' : null,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        GestureDetector(
+                          onTap: isUploading
+                              ? null
+                              : () async {
+                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                                  );
+                                  if (result != null) {
+                                    setState(() => pickedFile = result.files.first);
+                                  }
+                                },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: pickedFile != null ? ColorPalette.primaryColor : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  pickedFile != null ? Icons.check_circle : Icons.attach_file,
+                                  color: pickedFile != null ? Colors.green : Colors.grey[600],
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    pickedFile?.name ?? 'Select file or image',
+                                    style: TextStyle(
+                                      color: pickedFile != null ? Colors.black87 : Colors.grey[600],
+                                      fontWeight: pickedFile != null ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (pickedFile != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.redAccent, size: 20),
+                                    onPressed: isUploading ? null : () => setState(() => pickedFile = null),
+                                    tooltip: 'Remove file',
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: isUploading ? null : () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ColorPalette.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 2,
+                              ),
+                              icon: isUploading
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.cloud_upload),
+                              label: Text(isUploading ? 'Uploading...' : 'Upload', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              onPressed: isUploading
+                                  ? null
+                                  : () async {
+                                      if (!_formKey.currentState!.validate() || pickedFile == null) return;
+                                      setState(() => isUploading = true);
+                                      await Provider.of<HealthRecordViewModel>(context, listen: false)
+                                          .uploadRecordWithDialog(name!, selectedType!, pickedFile!, context);
+                                      setState(() => isUploading = false);
+                                      Navigator.pop(context);
+                                    },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey[400],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickFile({FileType? type, List<String>? allowedExtensions, ImageSource? source}) async {
-    Navigator.pop(context); // Close bottom sheet
-    
-    if (source != null) {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: source);
-      if (image != null) {
-        Provider.of<HealthRecordViewModel>(context, listen: false).uploadRecord(
-          PlatformFile(
-            name: image.name,
-            path: image.path,
-            size: await image.length(),
-          ),
-          categories[selectedIndex],
+            );
+          },
         );
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${image.name} uploaded successfully'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
-      return;
-    }
-
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: type ?? FileType.any,
-      allowedExtensions: allowedExtensions,
+      },
     );
-
-    if (result != null) {
-      PlatformFile file = result.files.first;
-      Provider.of<HealthRecordViewModel>(context, listen: false).uploadRecord(file, categories[selectedIndex]);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${file.name} uploaded successfully'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
   }
 }
 

@@ -1,8 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String socketUrl = "http://192.168.1.37:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
-  // static const String baseUrl = "http://172.20.10.3:5000/api";  // For Android emulator
+  // static const String socketUrl = "http://192.168.1.41:5000";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
   static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://192.168.218.210:5000";  // Current IP address
@@ -198,4 +197,9 @@ class ApiEndpoints {
 
   // 📌 AI Prescription Scanning API
   static const String scanPrescription = '$baseUrl/ai/scanPrescription';
+
+  // 📌 Health Record APIs
+  static const String addHealthRecord = '$baseUrl/health-record/add-health-record';
+  static const String getHealthRecords = '$baseUrl/health-record/get-health-record';
+  static const String deleteHealthRecord = '$baseUrl/health-record/delete-health-record';
 }

@@ -1,0 +1,2 @@
+C:/Users/DELL/AndroidStudioProjects/vedika_app/android/app/.cxx/RelWithDebInfo/2h4g291h/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/DELL/AndroidStudioProjects/vedika_app/android/app/.cxx/RelWithDebInfo/2h4g291h/arm64-v8a/CMakeFiles/rebuild_cache.dir

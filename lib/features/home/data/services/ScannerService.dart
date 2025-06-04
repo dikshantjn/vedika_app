@@ -4,11 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
-import 'package:logger/logger.dart';
 
 class ScannerService {
   final Dio _dio = Dio();
-  final Logger _logger = Logger();
 
   Future<String> _extractTextFromImage(String imagePath) async {
     try {
@@ -45,17 +43,19 @@ class ScannerService {
         if (textAnnotations.isNotEmpty) {
           // The first annotation contains the full text
           final String extractedText = textAnnotations[0]['description'] as String;
-          _logger.i('Google Vision API extracted text: $extractedText');
-          return extractedText;
+          // Join all lines with spaces and remove extra whitespace
+          final String singleLineText = extractedText.split('\n').join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+          print(singleLineText);
+          return singleLineText;
         }
-        _logger.w('No text found in the image');
+        print('No text found in the image');
         return '';
       } else {
-        _logger.e('Failed to extract text from image. Status code: ${response.statusCode}');
+        print('Failed to extract text. Status code: ${response.statusCode}');
         throw Exception('Failed to extract text from image');
       }
     } catch (e) {
-      _logger.e('Error extracting text from image: $e');
+      print('Error extracting text: $e');
       throw Exception('Error extracting text from image: $e');
     }
   }
@@ -64,7 +64,6 @@ class ScannerService {
     try {
       // First, extract text from the image using Google Vision API
       final String extractedText = await _extractTextFromImage(imagePath);
-      _logger.i('Sending extracted text to backend: $extractedText');
 
       // Then, send the extracted text to your backend
       final response = await _dio.post(
@@ -77,14 +76,14 @@ class ScannerService {
       if (response.statusCode == 200) {
         final List<dynamic> productsJson = response.data['products'];
         final products = productsJson.map((json) => VendorProduct.fromJson(json)).toList();
-        _logger.i('Found ${products.length} products from scanned text');
+        print('Found ${products.length} products from scanned text');
         return products;
       } else {
-        _logger.e('Failed to scan prescription. Status code: ${response.statusCode}');
+        print('Failed to scan prescription. Status code: ${response.statusCode}');
         throw Exception('Failed to scan prescription');
       }
     } catch (e) {
-      _logger.e('Error scanning prescription: $e');
+      print('Error scanning prescription: $e');
       throw Exception('Error scanning prescription: $e');
     }
   }

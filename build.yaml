@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      hive_generator:
+        options:
+          input_directory: lib/features/notifications/data/models
+          output_directory: lib/features/notifications/data/models 

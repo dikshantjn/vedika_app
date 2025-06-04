@@ -15,6 +15,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   permission_handler_windows
   record_windows
   rive_common
+  share_plus
   syncfusion_pdfviewer_windows
   url_launcher_windows
 )
