@@ -11,11 +11,22 @@ import 'package:vedika_healthcare/features/HealthRecords/presentation/view/Healt
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 
 class HealthRecordItem extends StatefulWidget {
   final HealthRecord record;
+  final bool isSelected;
+  final VoidCallback onSelect;
+  final bool isSelectionMode;
 
-  const HealthRecordItem(this.record, {Key? key}) : super(key: key);
+  const HealthRecordItem(
+    this.record, {
+    Key? key,
+    this.isSelected = false,
+    required this.onSelect,
+    required this.isSelectionMode,
+  }) : super(key: key);
 
   @override
   State<HealthRecordItem> createState() => _HealthRecordItemState();
@@ -26,6 +37,7 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
   bool _isLoadingPreview = true;
+  late HealthRecordViewModel _viewModel;
 
   @override
   void initState() {
@@ -38,6 +50,7 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     _isLoadingPreview = true;
+    _viewModel = Provider.of<HealthRecordViewModel>(context, listen: false);
   }
 
   @override
@@ -182,135 +195,357 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
     }
   }
 
+  void _showDoctorSelectionDialog(BuildContext context, HealthRecordViewModel healthRecordVM) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.9,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Doctor to Share',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (healthRecordVM.isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (healthRecordVM.ongoingMeetings.isNotEmpty)
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: healthRecordVM.ongoingMeetings.length,
+                          itemBuilder: (context, index) {
+                            final appointment = healthRecordVM.ongoingMeetings[index];
+                            final doctor = appointment.doctor;
+                            if (doctor == null) return const SizedBox.shrink();
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.grey[200]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.pop(context); // Close doctor selection dialog
+                                    _showShareConfirmation(context, doctor, appointment);
+                                  },
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 50,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: ColorPalette.primaryColor.withOpacity(0.2),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(25),
+                                            child: Image.network(
+                                              doctor.profilePicture,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey[200],
+                                                  child: Icon(
+                                                    Icons.person,
+                                                    size: 25,
+                                                    color: Colors.grey[400],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                doctor.doctorName,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                doctor.specializations.join(', '),
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          size: 16,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No ongoing appointments found',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showShareConfirmation(BuildContext context, DoctorClinicProfile doctor, ClinicAppointment appointment) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text('Share Health Record'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Share with Dr. ${doctor.doctorName}?'),
+              const SizedBox(height: 8),
+              Text(
+                'Appointment: ${appointment.date.toString().split(' ')[0]} at ${appointment.time}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: Implement sharing functionality
+                Navigator.pop(context); // Close share confirmation
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Health record shared successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColorPalette.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Share'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showBottomSheet(BuildContext context, HealthRecordViewModel healthRecordVM) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.45,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.45,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // File Details Header
-                      Row(
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: ColorPalette.primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              _getFileIcon(),
-                              color: ColorPalette.primaryColor,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.record.name,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          // File Details Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  widget.record.type,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
+                                child: Icon(
+                                  _getFileIcon(),
+                                  color: ColorPalette.primaryColor,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.record.name,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.record.type,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // File Info Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
+                            child: Column(
+                              children: [
+                                _buildInfoRow(
+                                  icon: Icons.calendar_today,
+                                  title: 'Uploaded On',
+                                  value: _formatDate(widget.record.uploadedAt),
+                                ),
+                                const Divider(height: 24),
+                                _buildInfoRow(
+                                  icon: Icons.description,
+                                  title: 'File Type',
+                                  value: _getFileExtension(),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                      // File Info Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildInfoRow(
-                              icon: Icons.calendar_today,
-                              title: 'Uploaded On',
-                              value: _formatDate(widget.record.uploadedAt),
-                            ),
-                            const Divider(height: 24),
-                            _buildInfoRow(
-                              icon: Icons.description,
-                              title: 'File Type',
-                              value: _getFileExtension(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Action Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildOutlinedButton(
-                              icon: Icons.download_rounded,
-                              label: "Download",
-                              color: Colors.green,
-                              onTap: () async {
-                                Navigator.pop(context);
-                                await _downloadFile(context);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildOutlinedButton(
-                              icon: Icons.delete_rounded,
-                              label: "Delete",
-                              color: Colors.red,
-                              onTap: () => _deleteRecord(context, healthRecordVM),
-                            ),
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildOutlinedButton(
+                                  icon: Icons.download_rounded,
+                                  label: "Download",
+                                  color: Colors.green,
+                                  onTap: () async {
+                                    Navigator.pop(context);
+                                    await _downloadFile(context);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildOutlinedButton(
+                                  icon: Icons.delete_rounded,
+                                  label: "Delete",
+                                  color: Colors.red,
+                                  onTap: () => _deleteRecord(context, healthRecordVM),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -436,6 +671,36 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
     }
   }
 
+  void _handleTap() {
+    if (widget.isSelectionMode) {
+      // In selection mode, tap toggles selection
+      widget.onSelect();
+    } else {
+      // Not in selection mode, tap opens preview
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HealthRecordPreviewScreen(record: widget.record),
+        ),
+      );
+    }
+  }
+
+  void _handleLongPress() {
+    if (widget.isSelectionMode) {
+      // In selection mode, long press opens preview
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HealthRecordPreviewScreen(record: widget.record),
+        ),
+      );
+    } else {
+      // Not in selection mode, long press starts selection
+      widget.onSelect();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final healthRecordVM = Provider.of<HealthRecordViewModel>(context, listen: false);
@@ -453,14 +718,8 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
         setState(() => _isPressed = false);
         _controller.reverse();
       },
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HealthRecordPreviewScreen(record: widget.record),
-          ),
-        );
-      },
+      onTap: _handleTap,
+      onLongPress: _handleLongPress,
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
@@ -475,98 +734,165 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
                 offset: const Offset(0, 4),
               ),
             ],
+            border: widget.isSelected
+                ? Border.all(
+                    color: ColorPalette.primaryColor,
+                    width: 2,
+                  )
+                : null,
           ),
-          child: Column(
+          child: Stack(
             children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Hero(
-                      tag: 'record-${widget.record.healthRecordId}',
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                        child: _buildFilePreview(),
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _showBottomSheet(context, healthRecordVM),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.more_vert,
-                              color: Colors.grey[700],
-                              size: 20,
-                            ),
+              Column(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Hero(
+                          tag: 'record-${widget.record.healthRecordId}',
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            child: _buildFilePreview(),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      spreadRadius: 1,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.record.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          _getFileIcon(),
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.record.type,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        if (widget.isSelected)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: ColorPalette.primaryColor.withOpacity(0.1),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: ColorPalette.primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    print('🔍 Share icon tapped');
+                                    _showShareBottomSheet(context);
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.share_rounded,
+                                      color: ColorPalette.primaryColor,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _showBottomSheet(context, healthRecordVM),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.more_vert,
+                                      color: Colors.grey[700],
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          spreadRadius: 1,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.record.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              _getFileIcon(),
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              widget.record.type,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -677,16 +1003,285 @@ class _HealthRecordItemState extends State<HealthRecordItem> with SingleTickerPr
     }
     return Center(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.insert_drive_file, size: 60, color: ColorPalette.primaryColor),
-          const SizedBox(height: 8),
+          Icon(Icons.insert_drive_file, size: 40, color: ColorPalette.primaryColor),
+          const SizedBox(height: 4),
           Text(
             "Preview not available",
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+
+  void _showShareBottomSheet(BuildContext context) {
+    print('🔄 Building bottom sheet content');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Share with Doctor',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: FutureBuilder(
+                      future: Future.delayed(Duration.zero, () {
+                        return _viewModel.loadOngoingMeetings();
+                      }),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        final meetings = context.watch<HealthRecordViewModel>().ongoingMeetings;
+                        if (meetings.isEmpty) {
+                          return const Center(
+                            child: Text('No ongoing appointments found'),
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: meetings.length,
+                          itemBuilder: (context, index) {
+                            final meeting = meetings[index];
+                            print('👨‍⚕️ Building doctor card for: ${meeting.doctor?.doctorName}');
+                            
+                            // Format date and time
+                            final date = meeting.date;
+                            final formattedDate = '${date.day}/${date.month}/${date.year}';
+                            final time = meeting.time.split(':');
+                            final formattedTime = '${time[0]}:${time[1]} ${int.parse(time[0]) >= 12 ? 'PM' : 'AM'}';
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    spreadRadius: 0,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () async {
+                                    print('👆 Doctor selected: ${meeting.doctor?.doctorName}');
+                                    final success = await _viewModel.shareHealthRecordsWithDoctor(
+                                      clinicAppointmentId: meeting.clinicAppointmentId,
+                                      healthRecordIds: [widget.record.healthRecordId],
+                                    );
+
+                                    if (success) {
+                                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Shared with Dr. ${meeting.doctor?.doctorName}',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                      Navigator.pop(dialogContext);
+                                    } else {
+                                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Failed to share health record'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      children: [
+                                        // Doctor's Profile Picture
+                                        Container(
+                                          width: 60,
+                                          height: 60,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: ColorPalette.primaryColor.withOpacity(0.2),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(30),
+                                            child: meeting.doctor?.profilePicture != null
+                                                ? Image.network(
+                                                    meeting.doctor!.profilePicture!,
+                                                    fit: BoxFit.cover,
+                                                    loadingBuilder: (context, child, loadingProgress) {
+                                                      if (loadingProgress == null) return child;
+                                                      return Container(
+                                                        color: Colors.grey[100],
+                                                        child: Center(
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                                              ColorPalette.primaryColor,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        color: Colors.grey[100],
+                                                        child: Icon(
+                                                          Icons.person,
+                                                          size: 30,
+                                                          color: Colors.grey[400],
+                                                        ),
+                                                      );
+                                                    },
+                                                  )
+                                                : Container(
+                                                    color: Colors.grey[100],
+                                                    child: Icon(
+                                                      Icons.person,
+                                                      size: 30,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        // Doctor's Information
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                meeting.doctor?.doctorName ?? 'Unknown Doctor',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF2D3142),
+                                                ),
+                                              ),
+                                              if (meeting.doctor?.specializations != null) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  meeting.doctor!.specializations.join(', '),
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                              const SizedBox(height: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.calendar_today,
+                                                      size: 14,
+                                                      color: ColorPalette.primaryColor,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Flexible(
+                                                      child: Text(
+                                                        '$formattedDate at $formattedTime',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: ColorPalette.primaryColor,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Share Icon
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: ColorPalette.primaryColor.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.share_rounded,
+                                            size: 20,
+                                            color: ColorPalette.primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

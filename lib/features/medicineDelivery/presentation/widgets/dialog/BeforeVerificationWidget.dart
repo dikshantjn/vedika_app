@@ -9,7 +9,7 @@ class BeforeVerificationWidget extends StatefulWidget {
   const BeforeVerificationWidget({
     Key? key,
     required this.initialTime,
-    required this.onTimeExpired, // Added this
+    required this.onTimeExpired,
   }) : super(key: key);
 
   @override
@@ -34,64 +34,104 @@ class _BeforeVerificationWidgetState extends State<BeforeVerificationWidget> {
           _remainingTime--;
         });
       } else {
-        timer.cancel(); // Stop timer when countdown ends
-        widget.onTimeExpired(); // Call the callback when time expires
+        timer.cancel();
+        widget.onTimeExpired();
       }
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Cancel timer when widget is disposed
+    _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Lottie Animation
-        Lottie.asset(
-          'assets/animations/scanPrescription.json',
-          height: 120,
-          width: 120,
-          fit: BoxFit.cover,
-        ),
-        const SizedBox(height: 12),
-
-        // Title Text
-        const Text(
-          'Verifying Prescription...',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Lottie Animation Container
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Lottie.asset(
+              'assets/animations/scanPrescription.json',
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
-        // Live Countdown Timer Text
-        Text(
-          'Time Remaining: ${_remainingTime ~/ 60}:${(_remainingTime % 60).toString().padLeft(2, '0')} minutes',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[700],
+          // Title Text with Gradient
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [Colors.blue, Colors.blue.shade700],
+            ).createShader(bounds),
+            child: const Text(
+              'Searching Nearest Medical Shops...',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
-        // Information Text for Verification Process
-        const Text(
-          'It will take up to 5 minutes to verify. You can leave.',
-          style: TextStyle(
-            fontSize: 14,
-            fontStyle: FontStyle.italic,
-            color: Colors.grey,
+          // Timer Container
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Icon(
+                  Icons.timer_rounded,
+                  size: 18,
+                  color: Colors.grey.shade700,
+                ),
+                Text(
+                  '${_remainingTime ~/ 60}:${(_remainingTime % 60).toString().padLeft(2, '0')} min',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 16),
+
+          // Information Text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Text(
+              'It will take up to 5 minutes to search. You can leave.',
+              style: TextStyle(
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -29,6 +29,8 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
   IO.Socket? _socket;
   bool _disposed = false;
   BuildContext? _context;
+  String? _currentPrescriptionId;
+  double _currentSearchRadius = 0.5; // Default radius in kilometers
 
   PrescriptionUploadViewModel(BuildContext context)
       : _medicineOrderService = MedicineOrderService(context) {
@@ -310,7 +312,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
                 FindMoreMedicalShopsWidget(
                   onFindMore: () {
                     debugPrint("🔍 Finding more shops");
-                    Navigator.pop(context);
+                    searchMoreVendors(context);
                   },
                   onCancel: () {
                     debugPrint("❌ Cancelled finding more shops");
@@ -335,12 +337,116 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       debugPrint("✅ Prescription sent to medical stores successfully");
       _uploadStatus = 'Prescription uploaded successfully!';
       _isRequestBeingProcessed = true;
+      // Store the prescription ID from the response
+      if (response['data'] != null && response['data']['prescription'] != null) {
+        _currentPrescriptionId = response['data']['prescription']['prescriptionId'];
+      }
       _safeNotifyListeners();
     } else {
       debugPrint("❌ Failed to send prescription to medical stores: ${response['message']}");
       _uploadStatus = 'Failed to upload prescription: ${response['message']}';
       if (context.mounted) {
         LoadingDialog.hide(context);
+      }
+    }
+
+    _isUploading = false;
+    _safeNotifyListeners();
+  }
+
+  Future<void> searchMoreVendors(BuildContext context) async {
+    if (_disposed || _currentPrescriptionId == null) return;
+
+    _isUploading = true;
+    _uploadStatus = 'Searching for more medical stores...';
+    _safeNotifyListeners();
+
+    // First close the FindMoreMedicalShopsWidget and show BeforeVerificationWidget
+    if (context.mounted) {
+      Navigator.pop(context);
+      LoadingDialog.show(context, "Searching for medical stores...");
+      LoadingDialog.update(
+        context,
+        BeforeVerificationWidget(
+          initialTime: 300, // Fresh 10-second countdown
+          onTimeExpired: () {
+            if (_disposed) return;
+            debugPrint("⏰ Time expired, showing FindMoreMedicalShopsWidget");
+            if (context.mounted) {
+              LoadingDialog.update(
+                context,
+                FindMoreMedicalShopsWidget(
+                  onFindMore: () {
+                    debugPrint("🔍 Finding more shops");
+                    searchMoreVendors(context);
+                  },
+                  onCancel: () {
+                    debugPrint("❌ Cancelled finding more shops");
+                    Navigator.pop(context);
+                  },
+                ),
+              );
+            }
+          },
+        ),
+      );
+    }
+
+    LocationProvider locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    await locationProvider.fetchLocation();
+
+    double? latitude = locationProvider.latitude;
+    double? longitude = locationProvider.longitude;
+
+    if (latitude == null || longitude == null) {
+      debugPrint("❌ Failed to get user location");
+      _uploadStatus = 'Failed to get user location';
+      _isUploading = false;
+      _safeNotifyListeners();
+      return;
+    }
+
+    // Increase the search radius by 0.5 km
+    _currentSearchRadius += 0.5;
+
+    var response = await _prescriptionService.searchMoreVendors(
+      prescriptionId: _currentPrescriptionId!,
+      latitude: latitude,
+      longitude: longitude,
+      searchRadius: _currentSearchRadius,
+    );
+
+    if (response['success']) {
+      debugPrint("✅ Search for more vendors completed");
+      _uploadStatus = response['message'];
+      
+      if (response['moreVendorsAvailable'] == false) {
+        // No more vendors available, show FindMoreMedicalShopsWidget with noMoreVendors state
+        if (context.mounted) {
+          LoadingDialog.update(
+            context,
+            FindMoreMedicalShopsWidget(
+              onFindMore: () {
+                debugPrint("🔍 Finding more shops");
+                searchMoreVendors(context);
+              },
+              onCancel: () {
+                debugPrint("❌ Cancelled finding more shops");
+                Navigator.pop(context);
+              },
+              noMoreVendors: true,
+            ),
+          );
+        }
+      }
+      // Keep BeforeVerificationWidget showing with countdown if more vendors are available
+    } else {
+      debugPrint("❌ Failed to search for more vendors: ${response['message']}");
+      _uploadStatus = 'Failed to search for more vendors: ${response['message']}';
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'])),
+        );
       }
     }
 

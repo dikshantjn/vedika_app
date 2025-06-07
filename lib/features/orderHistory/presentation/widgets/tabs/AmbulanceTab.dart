@@ -89,34 +89,70 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
 
           SizedBox(height: 12),
 
+          // Vehicle Type and Distance Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.directions_car,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    booking.vehicleType,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.straighten,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${booking.totalDistance.toStringAsFixed(2)} km',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           // Location Row
           Row(
             children: [
-              Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-              SizedBox(width: 4),
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   '${booking.pickupLocation} → ${booking.dropLocation}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
 
           SizedBox(height: 10),
-
-          // Vehicle & Distance
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Vehicle: ${booking.vehicleType}',
-                  style: TextStyle(fontSize: 14)),
-              Text('Distance: ${booking.totalDistance.toStringAsFixed(2)} km',
-                  style: TextStyle(fontSize: 14)),
-            ],
-          ),
-
-          SizedBox(height: 8),
 
           // Total Amount & Date
           Row(

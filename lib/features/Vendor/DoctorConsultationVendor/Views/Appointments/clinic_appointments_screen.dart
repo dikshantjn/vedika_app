@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/HealthRecords/health_record_preview_screen.dart';
 
 
 class ClinicAppointmentsScreen extends StatefulWidget {
@@ -601,6 +602,28 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                         ),
                       ),
                     ],
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Health Records Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showHealthRecords(context, appointment, viewModel),
+                      icon: const Icon(Icons.medical_services_outlined, size: 16),
+                      label: const Text('View Shared Health Records'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: DoctorConsultationColorPalette.secondaryTeal,
+                        side: BorderSide(
+                          color: DoctorConsultationColorPalette.secondaryTeal,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1741,5 +1764,237 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
         ],
       ),
     );
+  }
+
+  void _showHealthRecords(
+    BuildContext context,
+    ClinicAppointment appointment,
+    ClinicAppointmentViewModel viewModel,
+  ) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          color: DoctorConsultationColorPalette.primaryBlue,
+        ),
+      ),
+    );
+
+    // Fetch health records
+    final records = await viewModel.fetchHealthRecords(appointment.clinicAppointmentId);
+
+    // Close loading dialog
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
+
+    if (records == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to fetch health records'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show bottom sheet with health records
+    if (context.mounted) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              
+              // Header
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.backgroundCard.withOpacity(0.5),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: DoctorConsultationColorPalette.borderLight,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: DoctorConsultationColorPalette.secondaryTeal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.medical_services_outlined,
+                            color: DoctorConsultationColorPalette.secondaryTeal,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Shared Health Records',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: DoctorConsultationColorPalette.textSecondary),
+                      onPressed: () => Navigator.pop(context),
+                      splashRadius: 20,
+                    ),
+                  ],
+                ),
+              ),
+              
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (records['healthRecords'] != null && (records['healthRecords'] as List).isNotEmpty)
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: (records['healthRecords'] as List).length,
+                            itemBuilder: (context, index) {
+                              final record = records['healthRecords'][index];
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: DoctorConsultationColorPalette.borderLight,
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: DoctorConsultationColorPalette.shadowLight,
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.all(16),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: DoctorConsultationColorPalette.secondaryTeal.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      record['type'] == 'PDF' ? Icons.picture_as_pdf : Icons.image,
+                                      color: DoctorConsultationColorPalette.secondaryTeal,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    record['name'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: DoctorConsultationColorPalette.textPrimary,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Uploaded on ${DateFormat('MMM d, yyyy').format(DateTime.parse(record['uploadedAt']))}',
+                                    style: TextStyle(
+                                      color: DoctorConsultationColorPalette.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(context); // Close bottom sheet
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => HealthRecordPreviewScreen(
+                                          record: record,
+                                          patientName: appointment.user?.name ?? 'Unknown Patient',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          )
+                        else
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.medical_services_outlined,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No health records shared',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'The patient has not shared any health records yet',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 } 

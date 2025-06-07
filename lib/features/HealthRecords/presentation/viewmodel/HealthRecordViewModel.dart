@@ -9,15 +9,25 @@ import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'dart:typed_data';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
+
 // import service class here (to be created)
 
 class HealthRecordViewModel extends ChangeNotifier {
   final HealthRecordService _service = HealthRecordService();
   List<HealthRecord> _records = [];
+  List<ClinicAppointment> _ongoingMeetings = [];
   bool _isLoading = false;
+  String? _error;
 
   List<HealthRecord> get records => _records;
+  List<ClinicAppointment> get ongoingMeetings => _ongoingMeetings;
   bool get isLoading => _isLoading;
+
+  void setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
 
   Future<void> loadRecords() async {
     _isLoading = true;
@@ -196,6 +206,121 @@ class HealthRecordViewModel extends ChangeNotifier {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error uploading record: $e'), backgroundColor: Colors.red),
       );
+    }
+  }
+
+  Future<void> loadOngoingMeetings() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        _ongoingMeetings = [];
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final meetings = await _service.getOngoingMeetings(userId);
+      _ongoingMeetings = meetings;
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<bool> shareHealthRecordsWithDoctor({
+    required String clinicAppointmentId,
+    required List<String> healthRecordIds,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      final response = await _service.shareHealthRecords(
+        clinicAppointmentId: clinicAppointmentId,
+        userId: userId,
+        healthRecordIds: healthRecordIds,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      print('❌ Error sharing health records: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> checkHealthRecordPasswordSet() async {
+    try {
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      return await _service.checkHealthRecordPasswordSet(userId);
+    } catch (e) {
+      print('❌ Error checking health record password: $e');
+      return false;
+    }
+  }
+
+  Future<bool> setHealthRecordPassword(String password) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      final success = await _service.setHealthRecordPassword(userId, password);
+      
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      print('❌ Error setting health record password: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyPassword(String password) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final userId = await StorageService.getUserId();
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      final success = await _service.verifyHealthRecordPassword(userId, password);
+      
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      print('❌ Error verifying health record password: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

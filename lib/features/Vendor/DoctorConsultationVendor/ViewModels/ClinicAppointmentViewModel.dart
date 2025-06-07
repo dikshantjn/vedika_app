@@ -32,6 +32,10 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   String _searchQuery = '';
   DateTime? _selectedDate;
 
+  // Health records state
+  Map<String, dynamic>? _healthRecords;
+  bool _isLoadingHealthRecords = false;
+
   // Getters
   List<ClinicAppointment> get appointments => _filteredAppointments;
   ClinicAppointmentFetchState get fetchState => _fetchState;
@@ -41,6 +45,8 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   DateTime? get selectedDate => _selectedDate;
   DoctorClinicProfile? get doctorProfile => _doctorProfile;
+  Map<String, dynamic>? get healthRecords => _healthRecords;
+  bool get isLoadingHealthRecords => _isLoadingHealthRecords;
 
   ClinicAppointmentViewModel() {
     initSocketConnection();
@@ -368,6 +374,31 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  // Fetch health records for an appointment
+  Future<Map<String, dynamic>?> fetchHealthRecords(String appointmentId) async {
+    _isLoadingHealthRecords = true;
+    notifyListeners();
+
+    try {
+      final records = await _doctorClinicService.getHealthRecordsByAppointmentId(appointmentId);
+      _healthRecords = records;
+      _isLoadingHealthRecords = false;
+      notifyListeners();
+      return records;
+    } catch (e) {
+      _errorMessage = 'Failed to fetch health records: ${e.toString()}';
+      _isLoadingHealthRecords = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Clear health records
+  void clearHealthRecords() {
+    _healthRecords = null;
+    notifyListeners();
   }
 
   @override

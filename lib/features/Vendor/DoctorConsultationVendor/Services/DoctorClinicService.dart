@@ -369,4 +369,34 @@ class DoctorClinicService {
       return null;
     }
   }
+
+  /// Fetch health records for a specific appointment
+  Future<Map<String, dynamic>?> getHealthRecordsByAppointmentId(String appointmentId) async {
+    try {
+      _logger.i('📝 Fetching health records for appointment: $appointmentId');
+      
+      final response = await _dio.get(
+        '${ApiEndpoints.getHealthRecordsByAppointmentId}/$appointmentId',
+      );
+      
+      if (response.statusCode == 200) {
+        _logger.i('✅ Health records fetched successfully!');
+        return response.data;
+      }
+      
+      _logger.e('❌ Failed to fetch health records. Status code: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      _logger.e('❌ Error fetching health records: $e');
+      
+      if (e is DioException) {
+        if (e.response != null) {
+          _logger.e('Response data: ${e.response?.data}');
+          _logger.e('Response status code: ${e.response?.statusCode}');
+        }
+      }
+      
+      return null;
+    }
+  }
 }

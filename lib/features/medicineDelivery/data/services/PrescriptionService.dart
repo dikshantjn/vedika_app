@@ -28,6 +28,7 @@ class PrescriptionService {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
+      print("Response : $response");
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Prescription uploaded successfully', 'data': response.data};
       } else {
@@ -57,4 +58,48 @@ class PrescriptionService {
     }
   }
 
+  /// Search for more vendors with an increased radius
+  Future<Map<String, dynamic>> searchMoreVendors({
+    required String prescriptionId,
+    required double latitude,
+    required double longitude,
+    required double searchRadius,
+  }) async {
+    try {
+      Map<String, dynamic> requestData = {
+        'userLocation': {
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+        'searchRadius': searchRadius,
+      };
+
+      Response response = await _dio.post(
+        '${ApiEndpoints.searchMoreVendors}/$prescriptionId/search-more-vendors',
+        data: requestData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'],
+          'newVendors': response.data['newVendors'],
+          'moreVendorsAvailable': response.data['moreVendorsAvailable'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to search for more vendors',
+          'error': response.data,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An error occurred while searching for more vendors',
+        'error': e.toString(),
+      };
+    }
+  }
 }
