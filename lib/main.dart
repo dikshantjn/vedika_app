@@ -9,7 +9,6 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/AI/presentation/viewmodel/MicViewModel.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
@@ -84,6 +83,7 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ScannerViewModel.dart';
+import 'package:vedika_healthcare/features/ai/presentation/viewmodel/AIViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -211,7 +211,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserLoginViewModel(navigatorKey: navigatorKey)),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => UserViewModel()),
-        ChangeNotifierProvider(create: (_) => MicViewModel()),
         ChangeNotifierProvider(create: (_) => VendorRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => MedicalStoreRegistrationViewModel()),
         ChangeNotifierProvider(create: (_) => VendorLoginViewModel()),
@@ -261,6 +260,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => LabTestOrderViewModel()),
 
         ChangeNotifierProvider(create: (context) => ProductPartnerViewModel()),
+        ChangeNotifierProvider(create: (_) => AIViewModel()),
 
       ],
       child: Builder(

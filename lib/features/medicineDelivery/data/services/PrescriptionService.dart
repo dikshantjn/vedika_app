@@ -102,4 +102,50 @@ class PrescriptionService {
       };
     }
   }
+
+  /// Verify prescription text before uploading
+  Future<Map<String, dynamic>> verifyPrescriptionText(String text) async {
+    try {
+      // Hardcoded text for testing
+      Map<String, dynamic> requestData = {
+        'text': "dr mehta rx : rams kumr, male, 40y, tab amoxcillin 500mg, 1-0-1, 5 dyas. signatuer + stmp presnt."
+      };
+      
+      print("Text to verify : ${requestData['text']}");
+      Response response = await _dio.post(
+        ApiEndpoints.verifyPrescription,
+        data: requestData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'verified': response.data['verified'],
+          'reason': response.data['reason'],
+          'patientDetails': {
+            'name': response.data['patient_name'],
+            'age': response.data['patient_age'],
+            'gender': response.data['patient_gender'],
+          },
+          'doctorName': response.data['doctor_name'],
+          'medicines': response.data['medicines'],
+          'signatureFound': response.data['signature_found'],
+          'stampFound': response.data['stamp_found'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to verify prescription',
+          'error': response.data,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An error occurred while verifying the prescription',
+        'error': e.toString(),
+      };
+    }
+  }
 }

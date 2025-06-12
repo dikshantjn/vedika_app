@@ -21,6 +21,8 @@ import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchVie
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescriptionView.dart';
 import 'package:logger/logger.dart';
+import 'package:vedika_healthcare/features/AI/presentation/view/AIChatScreen.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -29,7 +31,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -37,6 +39,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   late AnimationController _placeholderAnimationController;
   late Animation<double> _opacityAnimation;
+  late AnimationController _gradientController;
+  late Animation<double> _gradientAnimation;
   int _currentPlaceholderIndex = 0;
   final List<String> _placeholders = [
     'Search medicines...',
@@ -63,6 +67,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       if (_searchController.text.isEmpty) {
         context.read<SearchViewModel>().clearSearch();
       }
+      setState(() {}); // Force rebuild when text changes
     });
   }
 
@@ -75,6 +80,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _initializeAnimations() {
+    // Initialize placeholder animation
     _placeholderAnimationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 800),
@@ -97,6 +103,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       curve: Curves.easeInOut,
     ));
 
+    // Initialize gradient animation
+    _gradientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
+    _gradientAnimation = Tween<double>(begin: 0, end: 1).animate(_gradientController);
+
+    // Start the placeholder animation
     _placeholderAnimationController.forward();
   }
 
@@ -113,9 +128,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    _searchController.removeListener(() {});
     _searchController.dispose();
     _scrollController.dispose();
     _placeholderAnimationController.dispose();
+    _gradientController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
@@ -147,7 +164,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       drawer: DrawerMenu(),
       body: GestureDetector(
         onTap: () {
-          // Clear focus when tapping outside
           FocusScope.of(context).unfocus();
           if (_searchController.text.isEmpty) {
             context.read<SearchViewModel>().clearSearch();
@@ -192,7 +208,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ],
               ),
               _buildFloatingSearchBar(),
-              _buildSearchSuggestions(),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 104,
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildSearchSuggestions(),
+                ),
+              ),
               Positioned(
                 bottom: -10,
                 left: 0,
@@ -304,93 +328,200 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return Consumer<SearchViewModel>(
       builder: (context, searchViewModel, child) {
         if (searchViewModel.suggestions.isEmpty) {
+          if (_searchController.text.isNotEmpty) {
+            return Container(
+              margin: EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF8E2DE2), // Vibrant Purple
+                    Color(0xFF4A00E0), // Deep Indigo
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF8E2DE2).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.psychology,
+                    color: Colors.white,
+                  ),
+                ),
+                title: Text(
+                  'Search with Vedika AI',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Text(
+                  'Get intelligent search results powered by AI',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AIChatScreen(
+                        initialQuery: _searchController.text,
+                      ),
+                    ),
+                  );
+                  searchViewModel.clearSearch();
+                  _searchController.clear();
+                  FocusScope.of(context).unfocus();
+                },
+              ),
+            );
+          }
           return SizedBox.shrink();
         }
 
-        return Positioned(
-          top: MediaQuery.of(context).padding.top + 56,
-          left: 0,
-          right: 0,
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.4,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: searchViewModel.isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: searchViewModel.suggestions.length,
-                    itemBuilder: (context, index) {
-                      final suggestion = searchViewModel.suggestions[index];
-                      return ListTile(
-                        leading: Icon(
-                          suggestion['icon'] as IconData,
-                          color: ColorPalette.primaryColor,
-                        ),
-                        title: Text(
-                          suggestion['name'],
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: suggestion['type'] == 'subcategory'
-                            ? Text(
-                                'in ${suggestion['parentCategory']}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              )
-                            : null,
-                        onTap: () {
-                          if (suggestion['type'] == 'service') {
-                            Navigator.pushNamed(context, suggestion['route']);
-                          } else if (suggestion['type'] == 'category' || suggestion['type'] == 'subcategory') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductListScreen(
-                                  category: suggestion['params']['category'],
-                                  subCategory: suggestion['params']['subCategory'],
-                                ),
-                              ),
-                            );
-                          }
-                          searchViewModel.clearSearch();
-                          _searchController.clear();
-                          FocusScope.of(context).unfocus();
-                        },
-                      );
-                    },
-                  ),
+        return Container(
+          margin: EdgeInsets.only(top: 8),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.4,
           ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: searchViewModel.isLoading
+              ? _buildShimmerLoading()
+              : ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  itemCount: searchViewModel.suggestions.length,
+                  itemBuilder: (context, index) {
+                    final suggestion = searchViewModel.suggestions[index];
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: Icon(
+                        suggestion['icon'] as IconData,
+                        color: ColorPalette.primaryColor,
+                        size: 20,
+                      ),
+                      title: Text(
+                        suggestion['name'],
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: suggestion['type'] == 'subcategory'
+                          ? Text(
+                              'in ${suggestion['parentCategory']}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            )
+                          : null,
+                      onTap: () {
+                        if (suggestion['type'] == 'service') {
+                          Navigator.pushNamed(context, suggestion['route']);
+                        } else if (suggestion['type'] == 'category' || suggestion['type'] == 'subcategory') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductListScreen(
+                                category: suggestion['params']['category'],
+                                subCategory: suggestion['params']['subCategory'],
+                              ),
+                            ),
+                          );
+                        }
+                        searchViewModel.clearSearch();
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus();
+                      },
+                    );
+                  },
+                ),
         );
       },
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        shrinkWrap: true,
+        padding: EdgeInsets.symmetric(vertical: 4),
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          return ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            title: Container(
+              width: double.infinity,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            subtitle: Container(
+              width: 100,
+              height: 12,
+              margin: EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildSearchBox(bool isCollapsed) {
     return GestureDetector(
       onTap: () {
-        // Open keyboard when tapping anywhere on the search box
-        FocusScope.of(context).requestFocus(FocusNode());
-        Future.delayed(Duration(milliseconds: 100), () {
-          FocusScope.of(context).requestFocus(_searchFocusNode);
-        });
+        FocusScope.of(context).requestFocus(_searchFocusNode);
       },
       child: Container(
         height: 48,
@@ -458,7 +589,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       context.read<SearchViewModel>().search(value);
                     },
                     onEditingComplete: () {
-                      // Handle search completion
                       FocusScope.of(context).unfocus();
                     },
                     textInputAction: TextInputAction.search,
@@ -492,34 +622,69 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 },
               ),
             Container(
-              width: 40,
+              width: 80,
               height: 40,
               margin: EdgeInsets.only(right: 4),
               decoration: BoxDecoration(
                 color: ColorPalette.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () async {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ScanPrescriptionView(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AIChatScreen(
+                              initialQuery: _searchController.text,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Tooltip(
+                        message: 'Ask Vedika AI',
+                        child: Image.asset(
+                          'assets/ai.png',
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                    );
-                  },
-                  child: Tooltip(
-                    message: 'Scan prescription',
-                    child: Icon(
-                      Icons.camera_alt_outlined,
-                      color: ColorPalette.primaryColor,
-                      size: 20,
                     ),
                   ),
-                ),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: ColorPalette.primaryColor.withOpacity(0.2),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () async {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ScanPrescriptionView(),
+                          ),
+                        );
+                      },
+                      child: Tooltip(
+                        message: 'Scan prescription',
+                        child: Icon(
+                          Icons.camera_alt_outlined,
+                          color: ColorPalette.primaryColor,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

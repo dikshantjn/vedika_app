@@ -161,24 +161,24 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
   Future<void> _handlePrescriptionStatusUpdate(dynamic data) async {
     try {
       debugPrint('📝 Processing prescription status update: $data');
-      
+
       Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
       debugPrint('📝 Parsed data: $orderData');
-      
+
       final orderId = orderData['orderId'];
       final status = orderData['status'];
-      
+
       if (orderId != null && status != null) {
         debugPrint('📝 Processing status: $status for order: $orderId');
-        
+
         // Update status flags
         _isPrescriptionVerifiedStatus = status == 'PrescriptionVerified';
         _isRequestAccepted = true;
-        
+
         // If status is PrescriptionVerified, show AfterVerificationWidget immediately
         if (status == 'PrescriptionVerified' && !_disposed && _context != null && _context!.mounted) {
           debugPrint('📝 Prescription verified, showing AfterVerificationWidget');
-          
+
           // Fetch vendor details if available
           String? vendorId = orderData['vendorId'];
           if (vendorId != null) {
@@ -203,7 +203,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
             ),
           );
         }
-        
+
         _safeNotifyListeners();
       } else {
         debugPrint('❌ Missing orderId or status in data: $orderData');
@@ -236,7 +236,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
   Future<void> pickPrescription(BuildContext context) async {
     if (_disposed) return;
-    
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null) {
       _prescription = File(result.files.single.path!);
@@ -250,7 +250,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
   Future<void> uploadPrescription(BuildContext context) async {
     if (_disposed) return;
-    
+
     String? userId = await StorageService.getUserId();
     if (_prescription == null) return;
 
@@ -419,7 +419,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
     if (response['success']) {
       debugPrint("✅ Search for more vendors completed");
       _uploadStatus = response['message'];
-      
+
       if (response['moreVendorsAvailable'] == false) {
         // No more vendors available, show FindMoreMedicalShopsWidget with noMoreVendors state
         if (context.mounted) {
@@ -456,7 +456,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
   Future<bool> enableLocation(BuildContext context) async {
     if (_disposed) return false;
-    
+
     print('enableLocation: Started');
     Location location = Location();
 
@@ -492,7 +492,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
   Future<bool> checkPrescriptionStatus(BuildContext context) async {
     if (_disposed) return false;
-    
+
     String? userId = await StorageService.getUserId();
     if (userId == null) return false;
 
@@ -501,7 +501,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
     if (acceptedByVendorId != null) {
       VendorMedicalStoreProfile? vendor =
-          await MedicalStoreVendorService().fetchVendorById(acceptedByVendorId);
+      await MedicalStoreVendorService().fetchVendorById(acceptedByVendorId);
 
       if (vendor != null) {
         String vendorName = vendor.name;

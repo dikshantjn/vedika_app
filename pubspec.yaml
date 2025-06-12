@@ -97,6 +97,7 @@ flutter:
     - assets/animations/
     - assets/logo/
     - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
+    - assets/ai.png
 
   uses-material-design: true
 

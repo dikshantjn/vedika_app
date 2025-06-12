@@ -1,9 +1,9 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String socketUrl = "http://192.168.1.49:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.1.49:5000/api";  // Current IP address
-  static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
-  static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
+  static const String socketUrl = "http://192.168.1.42:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.42:5000/api";  // Current IP address
+  // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
+  // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://192.168.218.210:5000";  // Current IP address
   // static const String baseUrl = "http://192.168.218.210:5000/api";  // Current IP address
 
@@ -58,6 +58,7 @@ class ApiEndpoints {
   static const String checkPrescriptionAcceptanceStatus = '$baseUrl/prescription/check-prescription-acceptance';
   static const String getPrescritionRequests = '$baseUrl/prescription/requests';
   static const String searchMoreVendors = '$baseUrl/prescription'; // Base URL for prescription endpoints
+  static const String verifyPrescription = '$baseUrl/prescription/verify-prescription'; // New endpoint for prescription verification
 
   static const String acceptPrescriptionStatus = '$baseUrl/prescription/accept-status';
   static const String getOrders = '$baseUrl/orders/getOrders';
@@ -201,6 +202,7 @@ class ApiEndpoints {
 
   // 📌 AI Prescription Scanning API
   static const String scanPrescription = '$baseUrl/ai/scanPrescription';
+  static const String interpretSymptoms = '$baseUrl/ai/symptoms/interpret';  // NEW: endpoint for AI symptoms interpretation
 
   // 📌 Health Record APIs
   static const String addHealthRecord = '$baseUrl/health-record/add-health-record';
