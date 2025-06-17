@@ -128,8 +128,14 @@ class HospitalProfile {
       address: json['address'],
       landmark: json['landmark'],
       ownerName: json['ownerName'],
-      certifications: List<Map<String, String>>.from(json['certifications']),
-      licenses: List<Map<String, String>>.from(json['licenses']),
+      certifications: (json['certifications'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(
+              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList() ?? [],
+      licenses: (json['licenses'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(
+              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList() ?? [],
       specialityTypes: List<String>.from(json['specialityTypes']),
       servicesOffered: List<String>.from(json['servicesOffered']),
       bedsAvailable: json['bedsAvailable'],
@@ -148,7 +154,10 @@ class HospitalProfile {
       feesRange: json['feesRange'],
       otherFacilities: List<String>.from(json['otherFacilities']),
       insuranceCompanies: List<String>.from(json['insuranceCompanies']),
-      photos: List<Map<String, String>>.from(json['photos']),
+      photos: (json['photos'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(
+              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
+          .toList() ?? [],
       state: json['state'],
       city: json['city'],
       pincode: json['pincode'],

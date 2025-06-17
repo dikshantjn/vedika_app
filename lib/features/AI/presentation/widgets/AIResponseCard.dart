@@ -10,13 +10,18 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductCartViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/ProductCartService.dart';
 import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 
 class AIResponseCard extends StatelessWidget {
   final AIChatResponse response;
+  final bool showOrderButton;
+  final Widget? navigationScreen;
 
   const AIResponseCard({
     Key? key,
     required this.response,
+    this.showOrderButton = false,
+    this.navigationScreen,
   }) : super(key: key);
 
   // Common Styles
@@ -30,6 +35,52 @@ class AIResponseCard extends StatelessWidget {
   static final _primaryBorderColor = _primaryColor.withOpacity(0.2);
   static final _textColor = Colors.grey[800];
   static final _secondaryTextColor = Colors.grey[600];
+
+  Widget _buildFormattedText(String text, {Color? color, double? fontSize}) {
+    final List<TextSpan> spans = [];
+    final RegExp boldPattern = RegExp(r'\*\*(.*?)\*\*');
+    int lastIndex = 0;
+
+    for (Match match in boldPattern.allMatches(text)) {
+      // Add text before the bold section
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(
+            color: color ?? _textColor,
+            fontSize: fontSize ?? 16,
+          ),
+        ));
+      }
+
+      // Add the bold text
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: TextStyle(
+          color: color ?? _textColor,
+          fontSize: fontSize ?? 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+
+      lastIndex = match.end;
+    }
+
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(
+          color: color ?? _textColor,
+          fontSize: fontSize ?? 16,
+        ),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
 
   Widget _buildSectionTitle(String title, IconData icon) {
     return Padding(
@@ -184,14 +235,17 @@ class AIResponseCard extends StatelessWidget {
                             color: _primaryLightColor,
                             width: 1,
                         ),
-                        image: doctor.profilePicture.isNotEmpty
+                        image: doctor.profilePicture.isNotEmpty && doctor.profilePicture.startsWith('http')
                             ? DecorationImage(
                                 image: NetworkImage(doctor.profilePicture),
                                 fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {
+                                  print('Error loading image: $exception');
+                                },
                               )
                             : null,
                       ),
-                      child: doctor.profilePicture.isEmpty
+                      child: doctor.profilePicture.isEmpty || !doctor.profilePicture.startsWith('http')
                             ? Icon(Icons.person, color: Colors.white, size: 32)
                           : null,
                     ),
@@ -604,6 +658,121 @@ class AIResponseCard extends StatelessWidget {
     );
   }
 
+  Widget _buildHospitalsList(BuildContext context) {
+    if (response.hospitals == null || response.hospitals!.isEmpty) return SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Recommended Hospitals', Icons.local_hospital),
+        ...response.hospitals!.map((hospital) => _buildHospitalBox(context, hospital)),
+      ],
+    );
+  }
+
+  Widget _buildHospitalBox(BuildContext context, hospital) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_cardBorderRadius),
+        border: Border.all(
+          color: _primaryBorderColor,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(_contentPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hospital photo (if available)
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _primaryLightColor,
+                      width: 1,
+                    ),
+                    image: hospital.photos.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(hospital.photos.first['url'] ?? ''),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: hospital.photos.isEmpty
+                      ? Icon(Icons.local_hospital, color: _primaryColor, size: 32)
+                      : null,
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hospital.name,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      _buildInfoRow(Icons.location_on_outlined, hospital.address + ', ' + hospital.city),
+                      SizedBox(height: 4),
+                      _buildInfoRow(Icons.phone, hospital.contactNumber),
+                      SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildFeatureChip('${hospital.bedsAvailable} Beds', Icons.hotel, color: Colors.teal),
+                          if (hospital.hasParking) _buildFeatureChip('Parking', Icons.local_parking),
+                          if (hospital.hasLiftAccess) _buildFeatureChip('Lift', Icons.elevator),
+                          if (hospital.hasWheelchairAccess) _buildFeatureChip('Wheelchair', Icons.accessible),
+                          if (hospital.providesAmbulanceService) _buildFeatureChip('Ambulance', Icons.local_shipping, color: Colors.red),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(_contentPadding),
+            decoration: BoxDecoration(
+              color: _primaryLightColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(_cardBorderRadius),
+                bottomRight: Radius.circular(_cardBorderRadius),
+              ),
+            ),
+            child: _buildActionButton('Book Bed', () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookAppointmentPage(hospital: hospital),
+                ),
+              );
+            }, isPrimary: true),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -621,19 +790,65 @@ class AIResponseCard extends StatelessWidget {
                 width: 1.5,
               ),
             ),
-            child: Text(
+            child: _buildFormattedText(
               response.reply,
-              style: TextStyle(
-                fontSize: 15,
-                color: _primaryColor,
-                height: 1.5,
-              ),
+              color: _primaryColor,
+              fontSize: 15,
             ),
           ),
           SizedBox(height: 20),
           if (response.intent == AIIntent.doctorSearch) _buildDoctorsList(),
           if (response.intent == AIIntent.labSearch) _buildLabsList(),
           if (response.intent == AIIntent.productSearch) _buildProductsList(),
+          if (response.intent == AIIntent.hospitalSearch) _buildHospitalsList(context),
+          if (showOrderButton && navigationScreen != null) ...[
+            SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _primaryColor,
+                    _primaryColor.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: _primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => navigationScreen!,
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(25),
+                  child: const Center(
+                    child: Text(
+                      "Order Medicines",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

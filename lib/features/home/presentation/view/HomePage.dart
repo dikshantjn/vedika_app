@@ -23,6 +23,7 @@ import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescripti
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/AI/presentation/view/AIChatScreen.dart';
 import 'package:shimmer/shimmer.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -38,7 +39,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _isCollapsed = false;
 
   late AnimationController _placeholderAnimationController;
-  late Animation<double> _opacityAnimation;
   late AnimationController _gradientController;
   late Animation<double> _gradientAnimation;
   int _currentPlaceholderIndex = 0;
@@ -48,6 +48,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     'Search hospitals...',
     'Search lab tests...',
   ];
+  String _typedPlaceholder = '';
+  int _typedCharIndex = 0;
+  Duration _typingSpeed = const Duration(milliseconds: 60);
+  Duration _pauseDuration = const Duration(milliseconds: 1200);
+  Timer? _typingTimer;
+  bool _isErasing = false;
 
   late FocusNode _searchFocusNode;
   final Logger _logger = Logger();
@@ -68,6 +74,45 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         context.read<SearchViewModel>().clearSearch();
       }
       setState(() {}); // Force rebuild when text changes
+    });
+    _startTypingPlaceholder();
+  }
+
+  void _startTypingPlaceholder() {
+    _typedPlaceholder = '';
+    _typedCharIndex = 0;
+    _typingTimer?.cancel();
+    _isErasing = false;
+    _typingTimer = Timer.periodic(_typingSpeed, (timer) {
+      if (!_isErasing) {
+        // Typing forward
+        if (_typedCharIndex < _placeholders[_currentPlaceholderIndex].length) {
+          setState(() {
+            _typedPlaceholder += _placeholders[_currentPlaceholderIndex][_typedCharIndex];
+            _typedCharIndex++;
+          });
+        } else {
+          // Pause, then start erasing
+          timer.cancel();
+          Future.delayed(_pauseDuration, () {
+            _isErasing = true;
+            _typingTimer = Timer.periodic(_typingSpeed, (timer) {
+              if (_typedCharIndex > 0) {
+                setState(() {
+                  _typedPlaceholder = _typedPlaceholder.substring(0, _typedCharIndex - 1);
+                  _typedCharIndex--;
+                });
+              } else {
+                timer.cancel();
+                setState(() {
+                  _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
+                });
+                _startTypingPlaceholder();
+              }
+            });
+          });
+        }
+      }
     });
   }
 
@@ -94,14 +139,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           _placeholderAnimationController.forward();
         }
       });
-
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _placeholderAnimationController,
-      curve: Curves.easeInOut,
-    ));
 
     // Initialize gradient animation
     _gradientController = AnimationController(
@@ -132,6 +169,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _searchController.dispose();
     _scrollController.dispose();
     _placeholderAnimationController.dispose();
+    _typingTimer?.cancel();
     _gradientController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -596,16 +634,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     textCapitalization: TextCapitalization.sentences,
                   ),
                   if (_searchController.text.isEmpty)
-                    FadeTransition(
-                      opacity: _opacityAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.only(left: 12),
-                        child: Text(
-                          _placeholders[_currentPlaceholderIndex],
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 14,
-                          ),
+                    Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Text(
+                        _placeholders[_currentPlaceholderIndex],
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
                         ),
                       ),
                     ),

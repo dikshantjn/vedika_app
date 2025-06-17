@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:logger/logger.dart';
+import 'package:app_settings/app_settings.dart';
 
 class VoiceRecognitionOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -688,25 +689,64 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
                 const SizedBox(height: 24),
                 // Error message
                 if (_showError && _errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 14,
-                          height: 1.5,
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.red.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
+                      if (_errorMessage != null && _errorMessage!.toLowerCase().contains('permission'))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: FutureBuilder<PermissionStatus>(
+                            future: Permission.microphone.status,
+                            builder: (context, snapshot) {
+                              final status = snapshot.data;
+                              final isPermanentlyDenied = status == PermissionStatus.permanentlyDenied;
+                              return ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                ),
+                                icon: Icon(Icons.mic, size: 20),
+                                label: Text(
+                                  isPermanentlyDenied
+                                    ? 'Open App Settings'
+                                    : 'Grant Microphone Permission',
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                                ),
+                                onPressed: () async {
+                                  if (isPermanentlyDenied) {
+                                    await openAppSettings();
+                                  } else {
+                                    _checkPermissions();
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   ),
                 const SizedBox(height: 16),
                 // Spoken text or suggestions

@@ -42,6 +42,7 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/fallDetection/fall_detection_test_screen.dart';
 
 class AppRoutes {
   // Auth Routes
@@ -104,6 +105,9 @@ class AppRoutes {
   static const String VendorDeliveryPartnerDashBoard = '/VendorDeliveryPartnerDashBoard';
   static const String VendorProductPartnerDashBoard = '/VendorProductPartnerDashBoard';
   static const String bloodBankBooking = '/bloodBankBooking';
+
+  // New route
+  static const String fallDetectionTest = '/fall-detection-test';
 
   static Map<String, WidgetBuilder> getRoutes() {
     final vendorLoginService = VendorLoginService();
@@ -184,6 +188,7 @@ class AppRoutes {
         },
       ),
       // VendorDeliveryPartnerDashBoard: (context) => VendorDeliveryPartnerDashBoardScreen(),
+      fallDetectionTest: (context) => const FallDetectionTestScreen(),
     };
   }
 

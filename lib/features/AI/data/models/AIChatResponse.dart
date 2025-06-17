@@ -1,11 +1,13 @@
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 
 enum AIIntent {
   doctorSearch,
   labSearch,
   productSearch,
+  hospitalSearch,
   generalHelp,
 }
 
@@ -18,6 +20,7 @@ class AIChatResponse {
   final List<DoctorClinicProfile>? doctors;
   final List<DiagnosticCenter>? labs;
   final List<VendorProduct>? products;
+  final List<HospitalProfile>? hospitals;
 
   AIChatResponse({
     required this.intent,
@@ -28,6 +31,7 @@ class AIChatResponse {
     this.doctors,
     this.labs,
     this.products,
+    this.hospitals,
   });
 
   factory AIChatResponse.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,8 @@ class AIChatResponse {
           return AIIntent.labSearch;
         case 'product_search':
           return AIIntent.productSearch;
+        case 'hospital_search':
+          return AIIntent.hospitalSearch;
         case 'general_help':
         default:
           return AIIntent.generalHelp;
@@ -70,6 +76,14 @@ class AIChatResponse {
           .toList();
     }
 
+    // Parse hospitals list
+    List<HospitalProfile>? parseHospitals(List<dynamic>? hospitalsList) {
+      if (hospitalsList == null) return null;
+      return hospitalsList
+          .map((hospital) => HospitalProfile.fromJson(hospital))
+          .toList();
+    }
+
     return AIChatResponse(
       intent: parseIntent(json['intent'] ?? 'general_help'),
       searchTerms: List<String>.from(json['searchTerms'] ?? []),
@@ -79,6 +93,7 @@ class AIChatResponse {
       doctors: parseDoctors(json['doctors']),
       labs: parseLabs(json['labs']),
       products: parseProducts(json['products']),
+      hospitals: parseHospitals(json['hospitals']),
     );
   }
 
@@ -91,6 +106,8 @@ class AIChatResponse {
           return 'lab_search';
         case AIIntent.productSearch:
           return 'product_search';
+        case AIIntent.hospitalSearch:
+          return 'hospital_search';
         case AIIntent.generalHelp:
           return 'general_help';
       }
@@ -105,6 +122,7 @@ class AIChatResponse {
       'doctors': doctors?.map((d) => d.toJson()).toList(),
       'labs': labs?.map((l) => l.toJson()).toList(),
       'products': products?.map((p) => p.toJson()).toList(),
+      'hospitals': hospitals?.map((h) => h.toJson()).toList(),
     };
   }
 } 

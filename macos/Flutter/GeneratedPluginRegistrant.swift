@@ -5,6 +5,7 @@
 import FlutterMacOS
 import Foundation
 
+import app_settings
 import cloud_firestore
 import connectivity_plus
 import desktop_webview_auth
@@ -34,6 +35,7 @@ import syncfusion_pdfviewer_macos
 import url_launcher_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  AppSettingsPlugin.register(with: registry.registrar(forPlugin: "AppSettingsPlugin"))
   FLTFirebaseFirestorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseFirestorePlugin"))
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
   DesktopWebviewAuthPlugin.register(with: registry.registrar(forPlugin: "DesktopWebviewAuthPlugin"))
