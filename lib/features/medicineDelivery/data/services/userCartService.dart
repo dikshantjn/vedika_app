@@ -223,6 +223,8 @@ class UserCartService {
       debugPrint("- Discount Amount: ${order.discountAmount}");
       debugPrint("- Subtotal: ${order.subtotal}");
       debugPrint("- Total Amount: ${order.totalAmount}");
+      debugPrint("- Delivery Charge: ${order.deliveryCharge}");
+      debugPrint("- Platform Fee: ${order.platformFee}");
       debugPrint("- Order Status: ${order.orderStatus}");
       debugPrint("- Payment Method: ${order.paymentMethod}");
       debugPrint("- Transaction ID: ${order.transactionId}");
@@ -235,6 +237,8 @@ class UserCartService {
         "discountAmount": order.discountAmount,
         "subtotal": order.subtotal,
         "totalAmount": order.totalAmount,
+        "deliveryCharge": order.deliveryCharge,
+        "platformFee": order.platformFee,
         "orderStatus": order.orderStatus,
         "paymentMethod": order.paymentMethod,
         "transactionId": order.transactionId,

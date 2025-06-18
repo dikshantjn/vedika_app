@@ -53,6 +53,12 @@ class MedicineOrderViewModel extends ChangeNotifier {
   String get orderStatus => _orderStatus;
   bool isOrderAccepted = false;
 
+  // Self delivery related variables
+  bool _isEnablingSelfDelivery = false;
+  bool get isEnablingSelfDelivery => _isEnablingSelfDelivery;
+  bool _isSelfDeliveryEnabled = false;
+  bool get isSelfDeliveryEnabled => _isSelfDeliveryEnabled;
+
   bool _disposed = false;
 
   // Add callbacks
@@ -514,6 +520,48 @@ class MedicineOrderViewModel extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("Error updating order status: $e");
+    }
+  }
+
+  // ✅ Method to enable self delivery
+  Future<void> enableSelfDelivery(String orderId) async {
+    if (_disposed) return;
+    
+    try {
+      _isEnablingSelfDelivery = true;
+      _safeNotifyListeners();
+
+      bool result = await _orderService.enableSelfDelivery(orderId);
+
+      if (result) {
+        _isSelfDeliveryEnabled = true;
+        // Fetch updated orders list
+        await fetchOrders();
+        // Notify about orders list update
+        if (onOrdersListUpdate != null) {
+          onOrdersListUpdate!();
+        }
+      } else {
+        throw Exception("Failed to enable self delivery");
+      }
+    } catch (e) {
+      debugPrint("Error enabling self delivery: $e");
+    } finally {
+      if (!_disposed) {
+        _isEnablingSelfDelivery = false;
+        _safeNotifyListeners();
+      }
+    }
+  }
+
+  // Fetch self delivery status for an order
+  Future<void> getAndSetSelfDeliveryStatus(String orderId) async {
+    try {
+      _isSelfDeliveryEnabled = await _orderService.getSelfDeliveryStatus(orderId);
+      print("getAndSetSelfDeliveryStatus : ${_isSelfDeliveryEnabled}");
+      _safeNotifyListeners();
+    } catch (e) {
+      debugPrint("Error fetching self delivery status: $e");
     }
   }
 }

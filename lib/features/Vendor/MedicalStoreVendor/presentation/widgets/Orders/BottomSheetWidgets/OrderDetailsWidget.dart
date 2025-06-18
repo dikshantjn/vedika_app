@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/PrescriptionPreviewScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 
 class OrderDetailsWidget extends StatefulWidget {
   final String orderId;
   final String customerName;
   final String orderDate;
   final String prescriptionUrl;
+  final bool selfDelivery;
   final VoidCallback onOrderConfirmed;
 
   const OrderDetailsWidget({
@@ -16,6 +19,7 @@ class OrderDetailsWidget extends StatefulWidget {
     required this.customerName,
     required this.orderDate,
     required this.prescriptionUrl,
+    required this.selfDelivery,
     required this.onOrderConfirmed,
   }) : super(key: key);
 
@@ -40,7 +44,8 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
           });
         }
       });
-
+      // Fetch self delivery status
+      _viewModel?.getAndSetSelfDeliveryStatus(widget.orderId);
       // Set up the callback for order status updates
       _viewModel?.onOrderStatusUpdate = (prescriptionId) {
         if (mounted) {
@@ -51,6 +56,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
               });
             }
           });
+          _viewModel?.getAndSetSelfDeliveryStatus(widget.orderId);
         }
       };
     });
@@ -83,6 +89,83 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     }
   }
 
+  // Helper method to get color for status
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "Pending":
+        return Colors.orange;
+      case "PrescriptionVerified":
+        return Colors.blue;
+      case "Accepted":
+        return Colors.green;
+      case "PaymentConfirmed":
+        return Colors.teal;
+      case "AddedItemsInCart":
+        return Colors.indigo;
+      case "ReadyForPickup":
+        return Colors.purple;
+      case "OutForDelivery":
+        return Colors.cyan;
+      case "Delivered":
+        return Colors.green.shade600;
+      case "ReturnRequested":
+        return Colors.orange.shade600;
+      case "ReturnAccepted":
+        return Colors.blue.shade600;
+      case "ReturnPickupPending":
+        return Colors.amber;
+      case "ReturnInTransit":
+        return Colors.cyan.shade600;
+      case "Returned":
+        return Colors.red.shade600;
+      case "RefundProcessed":
+        return Colors.grey.shade600;
+      case "Cancelled":
+        return Colors.red;
+      case "Failed":
+        return Colors.red.shade800;
+      case "Expired":
+        return Colors.grey;
+      case "Processing":
+        return Colors.blue.shade800;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Helper method to format status text
+  String _formatStatus(String status) {
+    switch (status) {
+      case "Accepted":
+        return "Order Confirmed";
+      case "PrescriptionVerified":
+        return "Prescription Verified";
+      case "PaymentConfirmed":
+        return "Payment Confirmed";
+      case "AddedItemsInCart":
+        return "Items Added to Cart";
+      case "ReadyForPickup":
+        return "Ready for Pickup";
+      case "OutForDelivery":
+        return "Out for Delivery";
+      case "ReturnRequested":
+        return "Return Requested";
+      case "ReturnAccepted":
+        return "Return Accepted";
+      case "ReturnPickupPending":
+        return "Return Pickup Pending";
+      case "ReturnInTransit":
+        return "Return in Transit";
+      case "RefundProcessed":
+        return "Refund Processed";
+      default:
+        return status.replaceAllMapped(
+          RegExp(r'([a-z])([A-Z])'),
+          (match) => '${match.group(1)} ${match.group(2)}',
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MedicineOrderViewModel>(context);
@@ -91,6 +174,33 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     if (_currentStatus != viewModel.orderStatus) {
       _currentStatus = viewModel.orderStatus;
     }
+
+    // Debug print to verify the value
+    print('isSelfDeliveryEnabled: [32m${viewModel.isSelfDeliveryEnabled}[0m');
+
+    // Check if this specific order has self-delivery enabled
+    final currentOrder = viewModel.orders.firstWhere(
+      (order) => order.orderId == widget.orderId,
+      orElse: () => MedicineOrderModel(
+        orderId: widget.orderId,
+        prescriptionId: '',
+        userId: '',
+        vendorId: '',
+        discountAmount: 0.0,
+        subtotal: 0.0,
+        totalAmount: 0.0,
+        orderStatus: _currentStatus ?? 'Loading...',
+        paymentStatus: 'Unpaid',
+        deliveryStatus: 'Pending',
+        selfDelivery: widget.selfDelivery,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        user: UserModel.empty(),
+        orderItems: [],
+        deliveryCharge: 0,
+        platformFee: 0
+      ),
+    );
 
     return Container(
       width: double.infinity,
@@ -140,7 +250,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   ],
                 ),
               ),
-              // Dropdown Menu Button (Top Right)
+              // Dropdown Menu Button (Top Right) - Only show when self delivery is enabled
               PopupMenuButton<String>(
                 icon: Icon(Icons.more_vert, color: Colors.grey[700]),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -157,7 +267,6 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                       newStatus = "Delivered";
                       break;
                   }
-                  
                   if (newStatus.isNotEmpty) {
                     await viewModel.updateOrderStatus(widget.orderId, newStatus);
                     if (mounted) {
@@ -167,59 +276,102 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                     }
                   }
                 },
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: "Ready to Pickup",
-                    child: Row(
-                      children: [
-                        Icon(Icons.local_shipping, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Ready to Pickup",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green,
-                          ),
+                itemBuilder: (BuildContext context) {
+                  if (viewModel.isSelfDeliveryEnabled) {
+                    // If self delivery is enabled, do not show 'Ready to Pickup'
+                    return [
+                      PopupMenuItem<String>(
+                        value: "Out for Delivery",
+                        child: Row(
+                          children: [
+                            Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Out for Delivery",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: "Out for Delivery",
-                    child: Row(
-                      children: [
-                        Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Out for Delivery",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue,
-                          ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: "Delivered",
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Delivered",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: "Delivered",
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.orange, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Delivered",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.orange,
-                          ),
+                      ),
+                    ];
+                  } else {
+                    // If self delivery is not enabled, show all three options
+                    return [
+                      PopupMenuItem<String>(
+                        value: "Ready to Pickup",
+                        child: Row(
+                          children: [
+                            Icon(Icons.local_shipping, color: Colors.green, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Ready to Pickup",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                      PopupMenuItem<String>(
+                        value: "Out for Delivery",
+                        child: Row(
+                          children: [
+                            Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Out for Delivery",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: "Delivered",
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.orange, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Delivered",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ];
+                  }
+                },
                 offset: const Offset(0, 8),
                 color: Colors.white,
                 elevation: 5,
@@ -289,20 +441,21 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                   ),
                 )
               else
+                // Show current status when order is in other states
                 Expanded(
                   flex: 1,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.3)),
                     ),
                     child: Text(
-                      _currentStatus == "Accepted" ? "Order Confirmed" : _currentStatus ?? "Loading...",
+                      _formatStatus(_currentStatus ?? "Loading..."),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.green,
+                        color: _getStatusColor(_currentStatus ?? "Loading..."),
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -332,7 +485,82 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
                 ),
               ),
             ],
-          )
+          ),
+
+          // Self Delivery Button Row
+          if ((_currentStatus == "Accepted" && !viewModel.isSelfDeliveryEnabled) ||
+              (viewModel.isSelfDeliveryEnabled))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: viewModel.isSelfDeliveryEnabled
+                        ? OutlinedButton(
+                            onPressed: null,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              side: const BorderSide(color: Colors.purple, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text(
+                              "Self Delivery Enabled",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.purple,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
+                        : OutlinedButton(
+                            onPressed: viewModel.isEnablingSelfDelivery
+                                ? null
+                                : () async {
+                                    await viewModel.enableSelfDelivery(widget.orderId);
+                                    if (context.mounted) {
+                                      setState(() {
+                                        // No status change here
+                                      });
+                                      widget.onOrderConfirmed();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Self delivery enabled successfully"),
+                                          backgroundColor: Colors.purple,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              side: const BorderSide(color: Colors.purple, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: viewModel.isEnablingSelfDelivery
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.purple,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Enable Self Delivery",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                          ),
+                  ),
+                ],
+              ),
+            )
         ],
       ),
     );

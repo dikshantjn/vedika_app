@@ -184,6 +184,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                     order.orderId,
                     order.user.name!,
                     DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt),
+                    order.selfDelivery,
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -211,6 +212,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       String orderId,
       String customerName,
       String orderDate,
+      bool selfDelivery,
       ) async {
     String? prescriptionUrl = await viewModel.fetchPrescriptionUrl(prescriptionId);
 
@@ -223,6 +225,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
             customerName: customerName,
             orderDate: orderDate,
             orderId: orderId,
+            selfDelivery: selfDelivery,
           ),
         ),
       );

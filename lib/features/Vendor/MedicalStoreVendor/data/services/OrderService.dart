@@ -157,4 +157,56 @@ class OrderService {
     }
   }
 
+  // ✅ Method to enable self delivery
+  Future<bool> enableSelfDelivery(String orderId) async {
+    try {
+      final response = await _dio.patch(
+        '${ApiEndpoints.enableSelfDelivery}/$orderId/self-delivery',
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+
+      if (response.statusCode == 200) {
+        print("Self delivery enabled successfully: ${response.data}");
+        return true; // Self delivery enabled successfully
+      } else {
+        print("Failed to enable self delivery: ${response.data}");
+        return false; // Failed to enable self delivery
+      }
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response != null) {
+          print("Error response data: ${e.response?.data}");
+          print("Error status code: ${e.response?.statusCode}");
+        } else {
+          print("Error message: ${e.message}");
+        }
+      } else {
+        print("Error enabling self delivery: $e");
+      }
+      return false; // Return false if an error occurred
+    }
+  }
+
+  // ✅ Method to get self delivery status
+  Future<bool> getSelfDeliveryStatus(String orderId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getSelfDeliveryStatus}/$orderId/self-delivery',
+        options: Options(headers: {"Content-Type": "application/json"}),
+      );
+      if (response.statusCode == 200) {
+        // The response is { orderId: ..., selfDelivery: true/false }
+        print("self delivery status: ${response.data}");
+
+        return response.data['selfDelivery'] == true;
+      } else {
+        print("Failed to get self delivery status: \\${response.data}");
+        return false;
+      }
+    } catch (e) {
+      print("Error getting self delivery status: $e");
+      return false;
+    }
+  }
+
 }

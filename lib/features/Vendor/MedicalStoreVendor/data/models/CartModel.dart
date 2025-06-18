@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 import 'package:vedika_healthcare/features/home/data/models/Product.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineProduct.dart';
 
 class CartModel {
   final String cartId;
@@ -12,6 +13,7 @@ class CartModel {
   final String? imageUrl;   // For product items
   final String? category;   // For product items
   final bool isProduct;     // To distinguish between product and medicine items
+  final MedicineProduct? medicineProduct;
 
   // Constructor
   CartModel({
@@ -25,6 +27,7 @@ class CartModel {
     this.imageUrl,
     this.category,
     this.isProduct = false,
+    this.medicineProduct,
   });
 
   // Factory constructor to create CartModel from JSON
@@ -40,6 +43,9 @@ class CartModel {
       imageUrl: json['imageUrl'] ?? '',
       category: json['category'] ?? '',
       isProduct: json['isProduct'] ?? false,
+      medicineProduct: json['MedicineProduct'] != null
+          ? MedicineProduct.fromJson(json['MedicineProduct'])
+          : null,
     );
   }
 
@@ -56,6 +62,7 @@ class CartModel {
       'imageUrl': imageUrl,
       'category': category,
       'isProduct': isProduct,
+      'MedicineProduct': medicineProduct?.toJson(),
     };
   }
 
@@ -71,6 +78,7 @@ class CartModel {
     String? imageUrl,
     String? category,
     bool? isProduct,
+    MedicineProduct? medicineProduct,
   }) {
     return CartModel(
       cartId: cartId ?? this.cartId,
@@ -83,13 +91,14 @@ class CartModel {
       imageUrl: imageUrl ?? this.imageUrl,
       category: category ?? this.category,
       isProduct: isProduct ?? this.isProduct,
+      medicineProduct: medicineProduct ?? this.medicineProduct,
     );
   }
 
   // Override toString method for better debugging
   @override
   String toString() {
-    return 'CartModel(cartId: $cartId, orderId: $orderId, name: $name, price: $price, quantity: $quantity, productId: $productId, medicineId: $medicineId, imageUrl: $imageUrl, category: $category, isProduct: $isProduct)';
+    return 'CartModel(cartId: $cartId, orderId: $orderId, name: $name, price: $price, quantity: $quantity, productId: $productId, medicineId: $medicineId, imageUrl: $imageUrl, category: $category, isProduct: $isProduct, medicineProduct: $medicineProduct)';
   }
 
   factory CartModel.fromProduct(Product product, {required String cartId, required String orderId}) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart'; // Added for keyboard handling
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
@@ -11,12 +12,16 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmod
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/OrderPlacedBottomSheet.dart';
 import 'package:vedika_healthcare/features/home/data/models/ProductCart.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
+import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 
 class OrderSummarySheet extends StatefulWidget {
   final CartAndPlaceOrderViewModel cartViewModel;
   final addressId;
+  final bool? forceShowDeliveryPartner;
 
-  const OrderSummarySheet({Key? key, required this.cartViewModel, required this.addressId}) : super(key: key);
+  const OrderSummarySheet({Key? key, required this.cartViewModel, required this.addressId, this.forceShowDeliveryPartner}) : super(key: key);
 
   @override
   _OrderSummarySheetState createState() => _OrderSummarySheetState();
@@ -24,6 +29,7 @@ class OrderSummarySheet extends StatefulWidget {
 
 class _OrderSummarySheetState extends State<OrderSummarySheet> {
   bool _showOrderSummary = false;
+  bool _loadingSelfDeliveryCheck = true;
   DeliveryPartner? _selectedPartner;
   double _deliveryCharge = 0.0;
   double _discount = 0.0;
@@ -45,9 +51,64 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
     // Use addPostFrameCallback to set address ID after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.cartViewModel.setAddressId(widget.addressId);
+      if (widget.forceShowDeliveryPartner != null) {
+        if (widget.forceShowDeliveryPartner!) {
+          _fetchNearbyDeliveryPartners();
+        } else {
+          setState(() {
+            _showOrderSummary = true;
+          });
+        }
+        setState(() {
+          _loadingSelfDeliveryCheck = false;
+        });
+        return;
+      }
+      // Check selfDelivery for all orders in cart using the correct user orders
+      final orderIds = widget.cartViewModel.cartItems.map((item) => item.orderId).toSet();
+      final orders = widget.cartViewModel.orders;
+      print('Order IDs in cart: $orderIds');
+      for (var order in orders) {
+        print('Order: \'${order.orderId}\', selfDelivery: ${order.selfDelivery}');
+      }
+      final hasAnyOrderWithSelfDeliveryFalse = orderIds.any((orderId) {
+        final order = orders.firstWhere(
+          (o) => o.orderId == orderId,
+          orElse: () => MedicineOrderModel(
+            orderId: '',
+            prescriptionId: '',
+            userId: '',
+            vendorId: '',
+            discountAmount: 0.0,
+            subtotal: 0.0,
+            totalAmount: 0.0,
+            orderStatus: '',
+            paymentStatus: '',
+            deliveryStatus: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            user: UserModel.empty(),
+            orderItems: [],
+            platformFee: 0,
+            deliveryCharge: 0
+          ),
+        );
+        print('Checking orderId: $orderId, found orderId: ${order.orderId}, selfDelivery: ${order.selfDelivery}');
+        return order.orderId.isNotEmpty && order.selfDelivery == false;
+      });
+      print("hasAnyOrderWithSelfDeliveryFalse $hasAnyOrderWithSelfDeliveryFalse");
+      if (hasAnyOrderWithSelfDeliveryFalse) {
+        _fetchNearbyDeliveryPartners();
+      } else {
+        // All orders are self delivery, skip finding delivery partner
+        setState(() {
+          _showOrderSummary = true;
+        });
+      }
+      setState(() {
+        _loadingSelfDeliveryCheck = false;
+      });
     });
-    
-    _fetchNearbyDeliveryPartners();
     _setupKeyboardListeners();
   }
 
@@ -270,6 +331,9 @@ class _OrderSummarySheetState extends State<OrderSummarySheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingSelfDeliveryCheck) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return SingleChildScrollView(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard

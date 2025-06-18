@@ -3,6 +3,9 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseAddressSheet.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/OrderSummarySheet.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
 
 class CheckoutSection extends StatelessWidget {
   final CartAndPlaceOrderViewModel cartViewModel;
@@ -113,7 +116,18 @@ class CheckoutSection extends StatelessWidget {
     }
   }
 
-  void _showOrderSummaryBottomSheet(BuildContext context, String addressId) {
+  void _showOrderSummaryBottomSheet(BuildContext context, String addressId) async {
+    // Use OrderService to check selfDelivery status for all orderIds in the cart
+    final orderService = OrderService();
+    final orderIds = cartViewModel.cartItems.map((item) => item.orderId).toSet();
+    bool hasAnyOrderWithSelfDeliveryFalse = false;
+    for (final orderId in orderIds) {
+      final isSelfDelivery = await orderService.getSelfDeliveryStatus(orderId);
+      if (!isSelfDelivery) {
+        hasAnyOrderWithSelfDeliveryFalse = true;
+        break;
+      }
+    }
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -122,7 +136,11 @@ class CheckoutSection extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return OrderSummarySheet(cartViewModel: cartViewModel, addressId: addressId);
+        return OrderSummarySheet(
+          cartViewModel: cartViewModel,
+          addressId: addressId,
+          forceShowDeliveryPartner: hasAnyOrderWithSelfDeliveryFalse,
+        );
       },
     );
   }

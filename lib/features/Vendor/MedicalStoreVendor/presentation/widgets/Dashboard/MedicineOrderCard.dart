@@ -144,6 +144,7 @@ class OrderCard extends StatelessWidget {
                         order.orderId,
                         order.user.name!,
                         DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt), // ✅ Use createdAt instead of orderDate
+                        order.selfDelivery, // NEW: pass self delivery
                       );
                     },
                     style: OutlinedButton.styleFrom(
@@ -218,6 +219,7 @@ class OrderCard extends StatelessWidget {
       String orderId,
       String customerName,
       String orderDate,
+      bool selfDelivery, // NEW: self delivery parameter
       ) async {
     String? prescriptionUrl = await viewModel.fetchPrescriptionUrl(prescriptionId);
 
@@ -230,6 +232,7 @@ class OrderCard extends StatelessWidget {
             customerName: customerName,
             orderDate: orderDate,
             orderId: orderId,
+            selfDelivery: selfDelivery, // NEW: pass self delivery
           ),
         ),
       );

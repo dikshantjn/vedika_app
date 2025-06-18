@@ -1,11 +1,11 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.43:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.43:5000/api";  // Current IP address
+  // static const String socketUrl = "http://192.168.1.54:5000";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.54:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
-  // static const String socketUrl = "http://192.168.218.210:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.218.210:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.218.210:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.218.210:5000/api";  // Current IP address
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -89,6 +89,8 @@ class ApiEndpoints {
   static const String updateOrderStatus = '$baseUrl/orders';
   static const String trackOrder = '$baseUrl/orders';
   static const String updatePrescriptionStatus = '$baseUrl/orders';
+  static const String enableSelfDelivery = '$baseUrl/orders';  // PATCH to enable self delivery
+  static const String getSelfDeliveryStatus = '$baseUrl/orders';  // GET to check self delivery status
 
 
   static const String saveFcmToken = '$baseUrl/fcm/save-token';

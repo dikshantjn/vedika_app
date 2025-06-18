@@ -14,6 +14,7 @@ class ProcessOrderScreen extends StatefulWidget {
   final String customerName;
   final String orderDate;
   final String orderId;
+  final bool selfDelivery;
 
   const ProcessOrderScreen({
     Key? key,
@@ -21,6 +22,7 @@ class ProcessOrderScreen extends StatefulWidget {
     required this.customerName,
     required this.orderDate,
     required this.orderId,
+    required this.selfDelivery,
   }) : super(key: key);
 
   @override
@@ -156,6 +158,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                         customerName: widget.customerName,
                         orderDate: widget.orderDate,
                         prescriptionUrl: widget.prescriptionUrl,
+                        selfDelivery: widget.selfDelivery,
                         onOrderConfirmed: () {
                           if (mounted) {
                             final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);

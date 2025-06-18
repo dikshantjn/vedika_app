@@ -431,34 +431,44 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       debugPrint("🔄 Processing medicine orders...");
       debugPrint("📦 Total orders to process: ${_orders.length}");
-      
+
+      // Calculate per-order charges
+      int orderCount = _orders.length;
+      double perOrderDeliveryCharge = orderCount > 0 ? (_deliveryCharge / orderCount) : 0.0;
+      double perOrderPlatformFee = orderCount > 0 ? (_platformFee / orderCount) : 0.0;
+      double perOrderDiscount = orderCount > 0 ? (_discount / orderCount) : 0.0;
+
+      // Group cart items by orderId for subtotal calculation
+      Map<String, List<CartModel>> itemsByOrder = {};
+      for (var item in _cartItems) {
+        itemsByOrder.putIfAbsent(item.orderId, () => []).add(item);
+      }
+
       // Handle medicine orders
       for (var order in _orders) {
         try {
           debugPrint("📦 Processing order: ${order.orderId}");
-          debugPrint("📦 Current order data:");
-          debugPrint("- Order ID: ${order.orderId}");
-          debugPrint("- Address ID: ${order.addressId}");
-          debugPrint("- Applied Coupon: ${order.appliedCoupon}");
-          debugPrint("- Discount Amount: $_discount");
-          debugPrint("- Subtotal: $_subtotal");
-          debugPrint("- Total Amount: $_total");
-          debugPrint("- Order Status: ${order.orderStatus}");
-          debugPrint("- Payment Method: ${order.paymentMethod}");
-          debugPrint("- Transaction ID: ${order.transactionId}");
-          debugPrint("- Payment Status: ${order.paymentStatus}");
-          
+
+          // Calculate subtotal for this order
+          double orderSubtotal = 0.0;
+          if (itemsByOrder.containsKey(order.orderId)) {
+            for (var item in itemsByOrder[order.orderId]!) {
+              orderSubtotal += item.price * item.quantity;
+            }
+          }
+
+          double orderTotal = orderSubtotal + perOrderDeliveryCharge + perOrderPlatformFee - perOrderDiscount;
+
           // Update order with payment details while preserving original data
           final updatedOrder = order.copyWith(
-            // Preserve original order data
             addressId: order.addressId,
             appliedCoupon: _isCouponApplied ? "TEST10" : "",
-            discountAmount: _discount,
-            subtotal: _subtotal,
-            totalAmount: _total,
+            discountAmount: perOrderDiscount,
+            subtotal: orderSubtotal,
+            totalAmount: orderTotal,
+            deliveryCharge: perOrderDeliveryCharge,
+            platformFee: perOrderPlatformFee,
             trackingId: order.trackingId,
-            
-            // Update payment-related fields
             orderStatus: "PaymentConfirmed",
             paymentMethod: paymentMethod,
             transactionId: transactionId,
@@ -466,23 +476,19 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
             estimatedDeliveryDate: DateTime.now().add(const Duration(days: 3)),
             updatedAt: DateTime.now(),
           );
-          
+
           debugPrint("📦 Updated order details:");
-          debugPrint("- Address ID: ${updatedOrder.addressId}");
-          debugPrint("- Applied Coupon: ${updatedOrder.appliedCoupon}");
-          debugPrint("- Discount Amount: ${updatedOrder.discountAmount}");
           debugPrint("- Subtotal: ${updatedOrder.subtotal}");
+          debugPrint("- Delivery Charge: ${updatedOrder.deliveryCharge}");
+          debugPrint("- Platform Fee: ${updatedOrder.platformFee}");
+          debugPrint("- Discount: ${updatedOrder.discountAmount}");
           debugPrint("- Total Amount: ${updatedOrder.totalAmount}");
-          debugPrint("- Order Status: ${updatedOrder.orderStatus}");
-          debugPrint("- Payment Method: ${updatedOrder.paymentMethod}");
-          debugPrint("- Transaction ID: ${updatedOrder.transactionId}");
-          debugPrint("- Payment Status: ${updatedOrder.paymentStatus}");
-          
+
           // Update order in backend
           debugPrint("🔄 Calling updateOrder for order: ${order.orderId}");
           final success = await _userCartService.updateOrder(updatedOrder);
           debugPrint("✅ Order update result: $success");
-          
+
           if (!success) {
             debugPrint("❌ Failed to update order: ${order.orderId}");
           }
@@ -507,12 +513,12 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
           // Call placeProductOrder to create the order
           final orderResponse = await _productOrderService.placeProductOrder();
           debugPrint("✅ Product order placed successfully: $orderResponse");
-          
+
           // Clear the product cart after successful order placement
           _productCartItems.clear();
           _totalItemCount = 0; // Reset total count since both carts are empty
           notifyListeners();
-          
+
           debugPrint("🛒 Product cart cleared after successful order");
         } catch (e) {
           debugPrint("❌ Error placing product order: $e");
@@ -526,7 +532,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         _onPaymentSuccess!(transactionId);
         debugPrint("✅ External payment success callback executed");
       }
-      
+
       // Notify about cart count update
       if (onCartCountUpdate != null) {
         onCartCountUpdate!();
