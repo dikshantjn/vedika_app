@@ -36,7 +36,7 @@ class UserViewModel extends ChangeNotifier {
     // List of all fields to check if they are filled
     List<bool> requiredFields = [
       _user!.name != null && _user!.name!.isNotEmpty,
-      _user!.phoneNumber.isNotEmpty,
+      _user!.phoneNumber != null,
       _user!.abhaId != null && _user!.abhaId!.isNotEmpty,
       _user!.emailId != null && _user!.emailId!.isNotEmpty,
       _user!.dateOfBirth != null,

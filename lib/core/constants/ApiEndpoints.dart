@@ -1,11 +1,11 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String socketUrl = "http://192.168.1.54:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.1.54:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
-  static const String socketUrl = "http://192.168.218.210:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.218.210:5000/api";  // Current IP address
+  // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
+  // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -216,4 +216,7 @@ class ApiEndpoints {
   static const String verifyHealthRecordPassword = '$baseUrl/health-record/user';
 
   static const String fallAlert = '$baseUrl/emergency/fall-alert';
+
+  // 📌 Medicine Order Invoice API
+  static const String generateMedicineOrderInvoice = '$baseUrl/orders/medicine-order-generate-invoice';  // NEW: endpoint for generating medicine order invoice
 }

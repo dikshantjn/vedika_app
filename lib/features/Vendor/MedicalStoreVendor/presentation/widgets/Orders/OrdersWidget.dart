@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/ProcessOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/reports/invoice_pdf.dart';
 
 class OrdersWidget extends StatefulWidget {
   final MedicineOrderViewModel viewModel;
@@ -153,7 +154,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
           ),
           SizedBox(height: 10),
 
-          // Order Status & Process Button
+          // Order Status & Process/Download Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -165,7 +166,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  _formatStatus(order.orderStatus), // Format status text
+                  _formatStatus(order.orderStatus),
                   style: TextStyle(
                     color: _getStatusColor(order.orderStatus),
                     fontWeight: FontWeight.bold,
@@ -174,8 +175,44 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                 ),
               ),
 
-              // Process Order Button (Hide for "Delivered" orders)
-              if (showProcessButton)
+              // Show either Process Order or Download Invoice button
+              if (order.orderStatus == "Delivered")
+                OutlinedButton(
+                  onPressed: widget.viewModel.isGeneratingInvoiceForOrder(order.orderId)
+                    ? null 
+                    : () => _generateInvoice(context, order.orderId),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    side: BorderSide(color: Colors.green),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: widget.viewModel.isGeneratingInvoiceForOrder(order.orderId)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Generating...",
+                            style: TextStyle(fontSize: 14, color: Colors.green),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        "Download Invoice",
+                        style: TextStyle(fontSize: 14, color: Colors.green),
+                      ),
+                )
+              else if (showProcessButton)
                 OutlinedButton(
                   onPressed: () => _showProcessOrderScreen(
                     context,
@@ -237,6 +274,20 @@ class _OrdersWidgetState extends State<OrdersWidget> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Prescription not found!")),
+      );
+    }
+  }
+
+  // Function to handle invoice generation
+  void _generateInvoice(BuildContext context, String orderId) async {
+    try {
+      await widget.viewModel.generateInvoice(orderId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invoice downloaded successfully!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to generate invoice: ${e.toString()}")),
       );
     }
   }

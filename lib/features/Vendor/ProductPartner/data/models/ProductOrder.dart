@@ -8,7 +8,7 @@ class ProductOrder {
   final double totalAmount;
   final String status;
   final DateTime placedAt;
-  final List<ProductOrderItem>? orderItems;
+  final List<ProductOrderItem>? items;
   final UserModel? user;
 
   ProductOrder({
@@ -17,7 +17,7 @@ class ProductOrder {
     required this.totalAmount,
     this.status = 'pending',
     DateTime? placedAt,
-    this.orderItems,
+    this.items,
     this.user,
   }) : 
     orderId = orderId ?? const Uuid().v4(),
@@ -32,22 +32,11 @@ class ProductOrder {
       placedAt: json['placedAt'] != null 
           ? DateTime.parse(json['placedAt'])
           : DateTime.now(),
-      orderItems: json['items'] != null
+      items: json['items'] != null
           ? List<ProductOrderItem>.from(
               json['items'].map((x) => ProductOrderItem.fromJson(x)))
           : null,
-      user: json['User'] != null ? UserModel.fromJson({
-        'userId': json['User']['userId'],
-        'name': json['User']['name'],
-        'photo': json['User']['photo'],
-        'phone_number': json['User']['phone_number'],
-        'emailId': json['User']['emailId'],
-        'gender': json['User']['gender'],
-        'city': json['User']['city'],
-        'location': json['User']['location'],
-        'status': true,
-        'createdAt': DateTime.now().toIso8601String(),
-      }) : null,
+      user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
     );
   }
 
@@ -58,8 +47,8 @@ class ProductOrder {
       'totalAmount': totalAmount,
       'status': status,
       'placedAt': placedAt.toIso8601String(),
-      'items': orderItems?.map((x) => x.toJson()).toList(),
-      'User': user?.toJson(),
+      'items': items?.map((x) => x.toJson()).toList(),
+      'user': user?.toJson(),
     };
   }
 
@@ -69,7 +58,7 @@ class ProductOrder {
     double? totalAmount,
     String? status,
     DateTime? placedAt,
-    List<ProductOrderItem>? orderItems,
+    List<ProductOrderItem>? items,
     UserModel? user,
   }) {
     return ProductOrder(
@@ -78,7 +67,7 @@ class ProductOrder {
       totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,
       placedAt: placedAt ?? this.placedAt,
-      orderItems: orderItems ?? this.orderItems,
+      items: items ?? this.items,
       user: user ?? this.user,
     );
   }

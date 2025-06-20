@@ -209,4 +209,82 @@ class OrderService {
     }
   }
 
+  // ✅ Method to fetch invoice data
+  Future<MedicineOrderModel> fetchInvoiceData(String orderId) async {
+    try {
+      final response = await _dio.get('${ApiEndpoints.generateMedicineOrderInvoice}/$orderId');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          final orderData = data['order'];
+          print("📦 Original carts data: ${orderData['carts']}");
+          
+          // First, map the carts array to CartModel structure
+          final List<Map<String, dynamic>> cartItems = List<Map<String, dynamic>>.from(orderData['carts'].map((cart) {
+            // Keep the exact structure and keys from the API response
+            return {
+              'cartId': cart['cartId'],
+              'orderId': cart['orderId'],
+              'productId': cart['productId'],
+              'name': cart['name'],
+              'price': cart['price'],
+              'quantity': cart['quantity'],
+              'MedicineProduct': cart['MedicineProduct'],  // Keep exact key casing
+              'isProduct': false,
+              'createdAt': cart['createdAt'],
+              'updatedAt': cart['updatedAt']
+            };
+          }));
+
+          print("📝 All mapped cart items: $cartItems");
+
+          // Create the final order data structure
+          final Map<String, dynamic> mappedOrderData = {
+            'orderId': orderData['orderId'],
+            'prescriptionId': orderData['prescriptionId'],
+            'userId': orderData['userId'],
+            'vendorId': orderData['vendorId'],
+            'addressId': orderData['addressId'],
+            'appliedCoupon': orderData['appliedCoupon'],
+            'discountAmount': orderData['discountAmount'] ?? 0.0,
+            'subtotal': orderData['subtotal'] ?? 0.0,
+            'totalAmount': orderData['totalAmount'] ?? 0.0,
+            'deliveryCharge': orderData['deliveryCharge'] ?? 0.0,
+            'platformFee': orderData['platformFee'] ?? 0.0,
+            'orderStatus': orderData['orderStatus'],
+            'paymentMethod': orderData['paymentMethod'],
+            'transactionId': orderData['transactionId'],
+            'paymentStatus': orderData['paymentStatus'],
+            'deliveryStatus': orderData['deliveryStatus'],
+            'estimatedDeliveryDate': orderData['estimatedDeliveryDate'],
+            'trackingId': orderData['trackingId'],
+            'selfDelivery': orderData['selfDelivery'] ?? false,
+            'createdAt': orderData['createdAt'],
+            'updatedAt': orderData['updatedAt'],
+            'User': orderData['user'],
+            'Carts': cartItems  // This matches the key expected in MedicineOrderModel.fromJson
+          };
+
+          print("📋 Final mapped order data structure: $mappedOrderData");
+
+          final orderModel = MedicineOrderModel.fromJson(mappedOrderData);
+          print("🔍 Final order model items count: ${orderModel.orderItems.length}");
+          if (orderModel.orderItems.isNotEmpty) {
+            print("🔍 First order item details: ${orderModel.orderItems.first.toJson()}");
+            print("🔍 First order item medicine product: ${orderModel.orderItems.first.medicineProduct?.toJson()}");
+          }
+
+          return orderModel;
+        } else {
+          throw Exception('Failed to fetch invoice data');
+        }
+      } else {
+        throw Exception('Failed to fetch invoice data');
+      }
+    } catch (e) {
+      print("❌ Error fetching invoice data: $e");
+      throw Exception("Error fetching invoice data");
+    }
+  }
 }

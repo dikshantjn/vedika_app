@@ -5,6 +5,7 @@ import '../viewModel/BloodBankBookingViewModel.dart';
 import '../../data/model/BloodBankBooking.dart';
 import '../../../../../core/auth/data/models/UserModel.dart';
 import 'ProcessBloodBankBookingScreen.dart';
+import '../../../../../features/orderHistory/data/reports/blood_bank_invoice_pdf.dart';
 
 class BloodBankBookingScreen extends StatefulWidget {
   const BloodBankBookingScreen({Key? key}) : super(key: key);
@@ -200,9 +201,282 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
         
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: _buildBookingCard(booking, user, bloodRequestDetails),
+          child: GestureDetector(
+            onTap: () {
+              if (_tabController.index == 1) { // Completed tab
+                _showBookingDetailsBottomSheet(context, booking, user, bloodRequestDetails);
+              }
+            },
+            child: _buildBookingCard(booking, user, bloodRequestDetails),
+          ),
         );
       },
+    );
+  }
+
+  void _showBookingDetailsBottomSheet(BuildContext context, BloodBankBooking booking, UserModel user, Map<String, dynamic>? bloodRequestDetails) {
+    bool isGeneratingInvoice = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(25.0),
+              topRight: Radius.circular(25.0),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.purple[50],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.bloodtype,
+                              color: Colors.purple[700],
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Blood Bank Booking',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple[700],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '#${booking.bookingId?.substring(0, 8) ?? 'N/A'}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildStatusChip(booking.status),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Booking Details Section
+                      _buildBottomSheetSection(
+                        'Booking Details',
+                        Icons.event_note,
+                        [
+                          _buildDetailRow('Date', DateFormat('dd MMM yyyy, hh:mm a').format(booking.createdAt)),
+                          _buildDetailRow('Blood Type', bloodRequestDetails?['bloodTypes']?.join(", ") ?? 'N/A'),
+                          _buildDetailRow('Units', '${bloodRequestDetails?['units'] ?? 'N/A'} Units'),
+                          _buildDetailRow('Delivery Type', booking.deliveryType ?? 'N/A'),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Patient Details Section
+                      _buildBottomSheetSection(
+                        'Patient Details',
+                        Icons.person,
+                        [
+                          _buildDetailRow('Name', user.name ?? 'N/A'),
+                          _buildDetailRow('Phone', user.phoneNumber ?? 'N/A'),
+                          if (user.emailId != null && user.emailId!.isNotEmpty)
+                            _buildDetailRow('Email', user.emailId!),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Agency Details Section
+                      _buildBottomSheetSection(
+                        'Blood Bank Details',
+                        Icons.local_hospital,
+                        [
+                          _buildDetailRow('Name', booking.agency?.agencyName ?? 'N/A'),
+                          _buildDetailRow('Address', '${booking.agency?.completeAddress ?? ''}, ${booking.agency?.city ?? ''}, ${booking.agency?.state ?? ''}'),
+                          _buildDetailRow('Contact', booking.agency?.phoneNumber ?? 'N/A'),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Payment Details Section
+                      _buildBottomSheetSection(
+                        'Payment Details',
+                        Icons.payment,
+                        [
+                          _buildDetailRow('Status', booking.paymentStatus),
+                          _buildDetailRow('Amount', '₹${booking.totalAmount.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Download Invoice Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isGeneratingInvoice
+                              ? null
+                              : () async {
+                                  setState(() => isGeneratingInvoice = true);
+                                  try {
+                                    await generateAndDownloadBloodBankInvoicePDF(booking);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Invoice downloaded successfully!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to generate invoice: ${e.toString()}'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (context.mounted) {
+                                      setState(() => isGeneratingInvoice = false);
+                                    }
+                                  }
+                                },
+                          icon: isGeneratingInvoice
+                              ? Container(
+                                  width: 24,
+                                  height: 24,
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : const Icon(Icons.download),
+                          label: Text(
+                            isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple[700],
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetSection(String title, IconData icon, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: Colors.purple[700]),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          Text(
+            ': ',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

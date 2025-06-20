@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/viewmodel/product_partner_viewmodel.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/viewmodels/product_partner_viewmodel.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 
 class AddressSection extends StatefulWidget {

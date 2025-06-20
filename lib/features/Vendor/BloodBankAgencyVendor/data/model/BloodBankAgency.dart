@@ -223,4 +223,37 @@ class BloodBankAgency {
       generatedId: id,
     );
   }
+
+  // Factory constructor for creating a minimal agency object from API response
+  factory BloodBankAgency.fromMinimalJson(Map<String, dynamic> json) {
+    return BloodBankAgency(
+      agencyName: json['agencyName'] ?? '',
+      gstNumber: json['gstNumber'] ?? '',
+      panNumber: json['panNumber'] ?? '',
+      ownerName: json['ownerName'] ?? '',
+      completeAddress: json['completeAddress'] ?? '',
+      nearbyLandmark: json['nearbyLandmark'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      state: json['state'] ?? '',
+      city: json['city'] ?? '',
+      pincode: json['pincode'] ?? '',
+      email: json['email'] ?? '',
+      website: json['website'],
+      languageProficiency: '',
+      deliveryOperationalAreas: [],
+      distanceLimitations: 0,
+      is24x7Operational: false,
+      isAllDaysWorking: false,
+      bloodServicesProvided: [],
+      plateletServicesProvided: [],
+      otherServicesProvided: [],
+      acceptsOnlinePayment: false,
+      agencyPhotos: [],
+      licenseFiles: [],
+      registrationCertificateFiles: [],
+      googleMapsLocation: '',
+      vendorId: json['vendorId'],
+      generatedId: json['generatedId'],
+    );
+  }
 }

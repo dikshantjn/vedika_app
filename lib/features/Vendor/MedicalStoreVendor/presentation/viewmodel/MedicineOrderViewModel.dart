@@ -14,6 +14,8 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/servic
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'dart:convert';
 
+import 'package:vedika_healthcare/features/orderHistory/data/reports/invoice_pdf.dart';
+
 class MedicineOrderViewModel extends ChangeNotifier {
   final PrescriptionRequestService _prescriptionService = PrescriptionRequestService();
   final OrderService _orderService = OrderService();
@@ -65,6 +67,11 @@ class MedicineOrderViewModel extends ChangeNotifier {
   Function(String)? onOrderUpdate;
   Function(String)? onOrderStatusUpdate;
   Function()? onOrdersListUpdate;  // New callback for orders list updates
+
+  bool _isGeneratingInvoice = false;
+  String _generatingInvoiceForOrderId = '';  // Add this line to track specific order
+  bool get isGeneratingInvoice => _isGeneratingInvoice;
+  bool isGeneratingInvoiceForOrder(String orderId) => _isGeneratingInvoice && _generatingInvoiceForOrderId == orderId;
 
   MedicineOrderViewModel() {
     initSocketConnection();
@@ -562,6 +569,33 @@ class MedicineOrderViewModel extends ChangeNotifier {
       _safeNotifyListeners();
     } catch (e) {
       debugPrint("Error fetching self delivery status: $e");
+    }
+  }
+
+  // ✅ Method to generate invoice
+  Future<void> generateInvoice(String orderId) async {
+    if (_disposed) return;
+    
+    try {
+      _isGeneratingInvoice = true;
+      _generatingInvoiceForOrderId = orderId;  // Set the current order ID
+      _safeNotifyListeners();
+
+      // Fetch the invoice data
+      final orderData = await _orderService.fetchInvoiceData(orderId);
+      
+      // Generate and download the PDF
+      await generateAndDownloadInvoicePDF(orderData);
+
+    } catch (e) {
+      debugPrint("Error generating invoice: $e");
+      rethrow; // Rethrow to handle in UI
+    } finally {
+      if (!_disposed) {
+        _isGeneratingInvoice = false;
+        _generatingInvoiceForOrderId = '';  // Clear the order ID
+        _safeNotifyListeners();
+      }
     }
   }
 }

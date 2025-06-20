@@ -1,6 +1,8 @@
+import 'product_partner_model.dart';
+
 class VendorProduct {
   final String productId;
-  final String vendorId;
+  final String? vendorId;
   final String name;
   final String category;
   final String? subCategory;
@@ -22,15 +24,16 @@ class VendorProduct {
   final int stock;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ProductPartner? productPartner;
 
   VendorProduct({
     required this.productId,
-    required this.vendorId,
+    this.vendorId,
     required this.name,
     required this.category,
     this.subCategory,
-    required this.description,
-    required this.howItWorks,
+    this.description = '',
+    this.howItWorks = '',
     required this.usp,
     required this.price,
     required this.images,
@@ -47,12 +50,13 @@ class VendorProduct {
     required this.stock,
     required this.createdAt,
     required this.updatedAt,
+    this.productPartner,
   });
 
   factory VendorProduct.fromJson(Map<String, dynamic> json) {
     return VendorProduct(
       productId: json['productId'] ?? '',
-      vendorId: json['vendorId'] ?? '',
+      vendorId: json['vendorId'],
       name: json['name'] ?? '',
       category: json['category'] ?? '',
       subCategory: json['subCategory'],
@@ -82,6 +86,9 @@ class VendorProduct {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
+      productPartner: json['productPartner'] != null 
+          ? ProductPartner.fromJson(json['productPartner'])
+          : null,
     );
   }
 
@@ -110,6 +117,7 @@ class VendorProduct {
       'stock': stock,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'productPartner': productPartner?.toJson(),
     };
   }
 }

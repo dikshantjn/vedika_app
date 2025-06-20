@@ -561,7 +561,7 @@ class TrackOrderViewModel extends ChangeNotifier {
 
       for (var order in _productOrders) {
         debugPrint("📦 Order ID: ${order.orderId}, Status: ${order.status}");
-        debugPrint("📦 Order Items: ${order.orderItems?.length ?? 0} items");
+        debugPrint("📦 Order Items: ${order.items?.length ?? 0} items");
       }
 
       _error = null;

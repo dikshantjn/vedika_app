@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../../../core/constants/colorpalette/ProductPartnerColorPalette.dart';
 import '../viewmodels/ProductPartnerOrdersViewModel.dart';
 import '../../data/models/ProductOrder.dart';
+import 'package:printing/printing.dart';
+import '../../../../../features/orderHistory/data/reports/product_order_invoice_pdf.dart';
 
 class ProductPartnerOrdersPage extends StatefulWidget {
   final String vendorId;
@@ -337,7 +339,7 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${order.orderItems?.length ?? 0}',
+                              '${order.items?.length ?? 0}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -473,6 +475,10 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
                         order.status == 'out_for_delivery') ...[
                       _buildActionButtons(order, viewModel),
                     ],
+                    // Show download invoice button for delivered orders
+                    if (order.status == 'delivered') ...[
+                      _buildInvoiceButton(order, context),
+                    ],
                   ],
                 ),
               ),
@@ -523,7 +529,7 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
           const SizedBox(height: 16),
           _buildDetailRow('Name', user.name ?? 'N/A'),
           const SizedBox(height: 8),
-          _buildDetailRow('Phone', user.phoneNumber),
+          _buildDetailRow('Phone', user.phoneNumber!),
           const SizedBox(height: 8),
           _buildDetailRow('Email', user.emailId ?? 'N/A'),
           const SizedBox(height: 8),
@@ -576,7 +582,7 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
           ),
         ),
         const SizedBox(height: 16),
-        ...order.orderItems!.map((item) {
+        ...order.items!.map((item) {
           final product = item.vendorProduct;
           if (product == null) return const SizedBox.shrink();
 
@@ -852,6 +858,95 @@ class _ProductPartnerOrdersPageState extends State<ProductPartnerOrdersPage> wit
                       Icon(icon),
                       const SizedBox(width: 8),
                       Text(buttonText),
+                    ],
+                  ),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildInvoiceButton(ProductOrder order, BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isGenerating = false;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Invoice',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: ProductPartnerColorPalette.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: isGenerating
+                ? null
+                : () async {
+                    try {
+                      setState(() => isGenerating = true);
+                      
+                      // Generate and download invoice
+                      final pdfBytes = await ProductOrderInvoicePdf.generate(order);
+                      
+                      if (!context.mounted) return;
+                      
+                      setState(() => isGenerating = false);
+                      
+                      // Share the generated PDF
+                      await Printing.sharePdf(
+                        bytes: pdfBytes,
+                        filename: 'order_invoice_${order.orderId}.pdf',
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      
+                      setState(() => isGenerating = false);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to generate invoice: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ProductPartnerColorPalette.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                disabledBackgroundColor: ProductPartnerColorPalette.primary.withOpacity(0.7),
+              ),
+              child: isGenerating
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Generating Invoice...'),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.download),
+                      const SizedBox(width: 8),
+                      Text('Download Invoice'),
                     ],
                   ),
             ),

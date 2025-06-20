@@ -26,7 +26,7 @@ class BookingDetailsCard extends StatelessWidget {
       child: Column(
         children: [
           _buildDetailRow("Customer Name", booking.user.name ?? "-"),
-          _buildDetailRow("Phone", booking.user.phoneNumber),
+          _buildDetailRow("Phone", booking.user.phoneNumber!),
           _buildDetailRow("Requested On",
               DateFormat('d MMM yyyy, h:mm a').format(booking.timestamp)),
           _buildStatusRow("Status", booking.status),

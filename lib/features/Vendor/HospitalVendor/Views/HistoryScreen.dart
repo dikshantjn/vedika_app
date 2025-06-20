@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/reports/bed_booking_invoice_pdf.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -106,9 +108,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 ),
                 child: InkWell(
-                  onTap: () {
-                    // TODO: Navigate to booking details screen
-                  },
+                  onTap: () => _showBookingDetailsBottomSheet(context, booking),
                   borderRadius: BorderRadius.circular(16),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -235,6 +235,301 @@ class _HistoryScreenState extends State<HistoryScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  void _showBookingDetailsBottomSheet(BuildContext context, BedBooking booking) {
+    bool isGeneratingInvoice = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(25.0),
+              topRight: Radius.circular(25.0),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.bed,
+                              color: HospitalVendorColorPalette.primaryBlue,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Bed Booking',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: HospitalVendorColorPalette.primaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '#${booking.bedBookingId?.substring(0, 8) ?? 'N/A'}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: HospitalVendorColorPalette.successGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: HospitalVendorColorPalette.successGreen,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'COMPLETED',
+                                  style: TextStyle(
+                                    color: HospitalVendorColorPalette.successGreen,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Booking Details Section
+                      _buildBottomSheetSection(
+                        'Booking Details',
+                        Icons.event_note,
+                        [
+                          _buildDetailRow('Date', DateFormat('dd MMM yyyy').format(booking.bookingDate)),
+                          _buildDetailRow('Time Slot', booking.timeSlot),
+                          _buildDetailRow('Bed Type', booking.bedType),
+                          _buildDetailRow('Status', booking.status),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Patient Details Section
+                      _buildBottomSheetSection(
+                        'Patient Details',
+                        Icons.person,
+                        [
+                          _buildDetailRow('Name', booking.user.name ?? 'N/A'),
+                          _buildDetailRow('Phone', booking.user.phoneNumber ?? 'N/A'),
+                          if (booking.user.emailId != null && booking.user.emailId!.isNotEmpty)
+                            _buildDetailRow('Email', booking.user.emailId!),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Hospital Details Section
+                      _buildBottomSheetSection(
+                        'Hospital Details',
+                        Icons.local_hospital,
+                        [
+                          _buildDetailRow('Name', booking.hospital.name),
+                          _buildDetailRow('Address', '${booking.hospital.address}, ${booking.hospital.city}, ${booking.hospital.state}'),
+                          _buildDetailRow('Contact', booking.hospital.contactNumber),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Payment Details Section
+                      _buildBottomSheetSection(
+                        'Payment Details',
+                        Icons.payment,
+                        [
+                          _buildDetailRow('Status', booking.paymentStatus),
+                          _buildDetailRow('Amount', '₹${booking.price.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Download Invoice Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isGeneratingInvoice
+                              ? null
+                              : () async {
+                                  setState(() => isGeneratingInvoice = true);
+                                  try {
+                                    await generateAndDownloadBedBookingInvoicePDF(booking);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Invoice downloaded successfully!'),
+                                          backgroundColor: HospitalVendorColorPalette.successGreen,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to generate invoice: ${e.toString()}'),
+                                          backgroundColor: HospitalVendorColorPalette.errorRed,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (context.mounted) {
+                                      setState(() => isGeneratingInvoice = false);
+                                    }
+                                  }
+                                },
+                          icon: isGeneratingInvoice
+                              ? Container(
+                                  width: 24,
+                                  height: 24,
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : const Icon(Icons.download),
+                          label: Text(
+                            isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: HospitalVendorColorPalette.primaryBlue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetSection(String title, IconData icon, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: HospitalVendorColorPalette.primaryBlue),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: HospitalVendorColorPalette.primaryBlue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          Text(
+            ': ',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: HospitalVendorColorPalette.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

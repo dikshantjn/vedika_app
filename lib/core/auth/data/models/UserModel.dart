@@ -2,7 +2,7 @@ class UserModel {
   final String userId;
   final String? name;
   final String? photo;
-  final String phoneNumber;
+  final String? phoneNumber;
   final String? abhaId;
   final String? emailId;
   final DateTime? dateOfBirth;
@@ -22,7 +22,7 @@ class UserModel {
     required this.userId,
     this.name,
     this.photo,
-    required this.phoneNumber,
+    this.phoneNumber,
     this.abhaId,
     this.emailId,
     this.dateOfBirth,
@@ -45,7 +45,7 @@ class UserModel {
       userId: '',
       name: 'Unknown',
       photo: null,
-      phoneNumber: '',
+      phoneNumber: null,
       abhaId: null,
       emailId: null,
       dateOfBirth: null,
@@ -69,7 +69,7 @@ class UserModel {
       userId: json['userId'] ?? '',
       name: json['name'],
       photo: json['photo'],
-      phoneNumber: json['phone_number'] ?? '', // Ensures phoneNumber is not null
+      phoneNumber: json['phone_number'],
       abhaId: json['ABHA_ID'],
       emailId: json['emailId'],
       dateOfBirth: json['dateOfBirth'] != null ? DateTime.tryParse(json['dateOfBirth']) : null,

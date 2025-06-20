@@ -38,7 +38,7 @@ class ProductOrderItem {
       'productId': productId,
       'quantity': quantity,
       'priceAtPurchase': priceAtPurchase,
-      'VendorProduct': vendorProduct?.toJson(),
+      'product': vendorProduct?.toJson(),
     };
   }
 

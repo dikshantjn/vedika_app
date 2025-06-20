@@ -251,9 +251,9 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
 
   Widget _buildOrderDetails(ProductOrder order) {
     debugPrint('📦 Building order details for order: ${order.orderId}');
-    debugPrint('📦 Order items count: ${order.orderItems?.length ?? 0}');
+    debugPrint('📦 Order items count: ${order.items?.length ?? 0}');
     
-    if (order.orderItems == null || order.orderItems!.isEmpty) {
+    if (order.items == null || order.items!.isEmpty) {
       debugPrint('❌ No order items found');
       return const SizedBox.shrink();
     }
@@ -266,7 +266,7 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        ...order.orderItems!.map((item) {
+        ...order.items!.map((item) {
           debugPrint('📦 Processing order item: ${item.orderItemId}');
           debugPrint('📦 Vendor product: ${item.vendorProduct?.name}');
           

@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/C
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/ErrorState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomClinicAppointmentInfoDialog.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/reports/clinic_appointment_invoice_pdf.dart';
 
 class ClinicAppointmentTab extends StatefulWidget {
   const ClinicAppointmentTab({Key? key}) : super(key: key);
@@ -19,6 +20,7 @@ class ClinicAppointmentTab extends StatefulWidget {
 
 class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
   late ClinicAppointmentViewModel _viewModel;
+  bool _isGeneratingInvoice = false;
 
   @override
   void initState() {
@@ -388,11 +390,337 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
   }
 
   void _showAppointmentDetails(ClinicAppointment appointment) {
-    showDialog(
+    final formattedDate = DateFormat('EEEE, MMMM d, yyyy').format(appointment.date);
+    final doctorName = appointment.doctor?.doctorName ?? 'Unknown Doctor';
+    final specialization = appointment.doctor?.specializations.isNotEmpty == true
+        ? appointment.doctor!.specializations.first
+        : 'Specialist';
+    final consultationType = appointment.isOnline ? 'Online Consultation' : 'In-clinic Visit';
+    
+    showModalBottomSheet(
       context: context,
-      builder: (context) => CustomClinicAppointmentInfoDialog(
-        appointment: appointment,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 10),
+              height: 4,
+              width: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with Status
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Appointment Details',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                        _buildStatusChip(appointment.status),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+
+                    // Doctor Info Card
+                    Container(
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: DoctorConsultationColorPalette.backgroundCard,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                            backgroundImage: appointment.doctor?.profilePicture != null && 
+                                          appointment.doctor!.profilePicture.isNotEmpty
+                                ? NetworkImage(appointment.doctor!.profilePicture)
+                                : null,
+                            child: appointment.doctor?.profilePicture == null || 
+                                  appointment.doctor!.profilePicture.isEmpty
+                                ? Icon(
+                                    Icons.person, 
+                                    size: 35, 
+                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                  )
+                                : null,
+                          ),
+                          SizedBox(width: 15),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  doctorName,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: DoctorConsultationColorPalette.textPrimary,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  specialization,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: DoctorConsultationColorPalette.textSecondary,
+                                  ),
+                                ),
+                                if (appointment.doctor?.experienceYears != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      '${appointment.doctor!.experienceYears} years of experience',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: DoctorConsultationColorPalette.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                if (appointment.doctor?.address != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      '${appointment.doctor!.address}, ${appointment.doctor!.city}, ${appointment.doctor!.state} ${appointment.doctor!.pincode}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: DoctorConsultationColorPalette.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20),
+
+                    // Appointment Info Card
+                    Container(
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: DoctorConsultationColorPalette.backgroundCard,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildInfoRow('Appointment ID', appointment.clinicAppointmentId.substring(0, 8)),
+                          Divider(height: 20),
+                          _buildInfoRow('Date', formattedDate),
+                          Divider(height: 20),
+                          _buildInfoRow('Time', appointment.time),
+                          Divider(height: 20),
+                          _buildInfoRow('Type', consultationType),
+                          Divider(height: 20),
+                          _buildInfoRow('Fee', '₹${appointment.paidAmount.toStringAsFixed(2)}', isTotal: true),
+                          Divider(height: 20),
+                          _buildInfoRow('Payment Status', appointment.paymentStatus.toUpperCase()),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20),
+
+                    // Patient Info Card
+                    Container(
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: DoctorConsultationColorPalette.backgroundCard,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Patient Information',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: DoctorConsultationColorPalette.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 15),
+                          _buildInfoRow('Name', appointment.user?.name ?? 'N/A'),
+                          Divider(height: 20),
+                          _buildInfoRow('Phone', appointment.user?.phoneNumber ?? 'N/A'),
+                          if (appointment.user?.emailId != null) ...[
+                            Divider(height: 20),
+                            _buildInfoRow('Email', appointment.user?.emailId ?? ''),
+                          ],
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 30),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        if (appointment.isOnline && 
+                            appointment.meetingUrl != null && 
+                            appointment.meetingUrl!.isNotEmpty &&
+                            (appointment.status.toLowerCase() == 'confirmed'))
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: Icon(Icons.video_call),
+                              label: Text('Join Meeting'),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _joinMeeting(appointment.meetingUrl!);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (appointment.isOnline && 
+                            appointment.meetingUrl != null && 
+                            appointment.meetingUrl!.isNotEmpty)
+                          SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: _isGeneratingInvoice 
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(Icons.download),
+                            label: Text(_isGeneratingInvoice ? 'Generating...' : 'Download Invoice'),
+                            onPressed: _isGeneratingInvoice 
+                              ? null 
+                              : () async {
+                                  try {
+                                    setState(() {
+                                      _isGeneratingInvoice = true;
+                                    });
+                                    await generateAndDownloadClinicAppointmentInvoicePDF(appointment);
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Invoice downloaded successfully'),
+                                          backgroundColor: DoctorConsultationColorPalette.successGreen,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to download invoice'),
+                                          backgroundColor: DoctorConsultationColorPalette.errorRed,
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isGeneratingInvoice = false;
+                                      });
+                                    }
+                                  }
+                                },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (appointment.status.toLowerCase() == 'pending' || 
+                        appointment.status.toLowerCase() == 'confirmed')
+                      Padding(
+                        padding: EdgeInsets.only(top: 10),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: Icon(Icons.cancel_outlined),
+                            label: Text('Cancel Appointment'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _confirmCancelAppointment(appointment.clinicAppointmentId);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: DoctorConsultationColorPalette.errorRed,
+                              side: BorderSide(color: DoctorConsultationColorPalette.errorRed),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isTotal = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: DoctorConsultationColorPalette.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+            color: isTotal 
+                ? DoctorConsultationColorPalette.primaryBlue 
+                : DoctorConsultationColorPalette.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 

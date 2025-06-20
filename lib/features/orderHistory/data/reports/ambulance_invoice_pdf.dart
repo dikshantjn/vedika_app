@@ -11,21 +11,30 @@ Future<void> generateAndDownloadAmbulanceInvoicePDF(AmbulanceBooking booking) as
   final indiaFormat = DateFormat('dd MMM yyyy, hh:mm a');
   final generatedDate = DateTime.now();
 
+  // Define custom colors
+  final primaryColor = PdfColor.fromHex('#1a237e'); // Deep Blue
+  final secondaryColor = PdfColor.fromHex('#f5f5f5'); // Light Grey
+  final accentColor = PdfColor.fromHex('#4caf50'); // Green
+  final textColor = PdfColor.fromHex('#424242'); // Dark Grey
+  final lightTextColor = PdfColor.fromHex('#757575'); // Medium Grey
+  final primaryColorBorder = PdfColor.fromInt(0x331A237E); // primaryColor with 20% opacity
+  final lightTextColorBorder = PdfColor.fromInt(0x33757575); // lightTextColor with 20% opacity
+
   pdf.addPage(
     pw.Page(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(0),
       build: (pw.Context context) {
         return pw.Container(
-          color: PdfColors.grey50,
+          width: double.infinity,
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               // Header
               pw.Container(
                 width: double.infinity,
-                color: PdfColors.blue800,
-                padding: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 22),
+                color: primaryColor,
+                padding: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 40),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -33,202 +42,221 @@ Future<void> generateAndDownloadAmbulanceInvoicePDF(AmbulanceBooking booking) as
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('VEDIKA HEALTHCARE', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.white, letterSpacing: 1.2)),
-                        pw.SizedBox(height: 4),
-                        pw.Text('AMBULANCE INVOICE', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                        pw.Text(
+                          'VEDIKA',
+                          style: pw.TextStyle(
+                            fontSize: 32,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        pw.Text(
+                          'HEALTHCARE',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            color: PdfColors.white,
+                            letterSpacing: 5,
+                          ),
+                        ),
                       ],
                     ),
                     pw.Container(
-                      padding: const pw.EdgeInsets.all(10),
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: pw.BoxDecoration(
                         color: PdfColors.white,
-                        borderRadius: pw.BorderRadius.circular(10),
-                        border: pw.Border.all(color: PdfColors.blue100, width: 1.2),
+                        borderRadius: pw.BorderRadius.circular(8),
                       ),
-                      child: pw.Text('Booking #${booking.requestId}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.blue800, fontSize: 12)),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            'INVOICE',
+                            style: pw.TextStyle(
+                              color: primaryColor,
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            '#${booking.requestId}',
+                            style: pw.TextStyle(
+                              color: lightTextColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              pw.SizedBox(height: 18),
+
+              pw.SizedBox(height: 30),
+
+              // Content
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 32),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    // Booking & User Info
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(16),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.white,
-                        borderRadius: pw.BorderRadius.circular(12),
-                        boxShadow: [
-                          pw.BoxShadow(
-                            color: PdfColors.blue50,
-                            blurRadius: 2,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                        border: pw.Border.all(color: PdfColors.blue100),
-                      ),
-                      child: pw.Row(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Booking Date:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: PdfColors.blueGrey800)),
-                              pw.Text(indiaFormat.format(booking.timestamp), style: pw.TextStyle(fontSize: 11)),
-                              pw.SizedBox(height: 6),
-                              pw.Text('Status:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: PdfColors.blueGrey800)),
-                              pw.Text(booking.status, style: pw.TextStyle(fontSize: 11)),
-                            ],
-                          ),
-                          pw.SizedBox(width: 24),
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.end,
-                            children: [
-                              pw.Text('Customer', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12, color: PdfColors.blue800)),
-                              pw.SizedBox(height: 4),
-                              pw.Text(booking.user.name ?? '-', style: pw.TextStyle(fontSize: 12)),
-                              if (booking.user.emailId != null && booking.user.emailId!.isNotEmpty)
-                                pw.Text(booking.user.emailId!, style: pw.TextStyle(fontSize: 10, color: PdfColors.blueGrey)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(height: 18),
-                    // Agency Info
-                    pw.Text('Agency', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15, color: PdfColors.blue800, letterSpacing: 0.5)),
-                    pw.SizedBox(height: 8),
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(14),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.blue50,
-                        borderRadius: pw.BorderRadius.circular(10),
-                        border: pw.Border.all(color: PdfColors.blue100),
-                      ),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(booking.agency?.agencyName ?? 'Unknown Agency', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
-                          if (booking.agency?.contactNumber != null)
-                            pw.Text('Contact: ${booking.agency!.contactNumber}', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                          if (booking.agency?.address != null)
-                            pw.Text('Address: ${booking.agency!.address}', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(height: 18),
-                    // Vehicle Info
-                    pw.Text('Vehicle', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15, color: PdfColors.blue800, letterSpacing: 0.5)),
-                    pw.SizedBox(height: 8),
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(14),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.white,
-                        borderRadius: pw.BorderRadius.circular(10),
-                        border: pw.Border.all(color: PdfColors.blue100),
-                      ),
-                      child: pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Type: ${booking.vehicleType}', style: pw.TextStyle(fontSize: 13)),
-                              pw.Text('Distance: ${booking.totalDistance.toStringAsFixed(2)} km', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                            ],
-                          ),
-                          pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.end,
-                            children: [
-                              pw.Text('Cost per km: ${booking.costPerKm.toStringAsFixed(2)} INR', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                              pw.Text('Base Charge: ${booking.baseCharge.toStringAsFixed(2)} INR', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(height: 18),
-                    // Route Info
-                    pw.Text('Route', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15, color: PdfColors.blue800, letterSpacing: 0.5)),
-                    pw.SizedBox(height: 8),
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(14),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.blue50,
-                        borderRadius: pw.BorderRadius.circular(10),
-                        border: pw.Border.all(color: PdfColors.blue100),
-                      ),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text('Pickup: ${booking.pickupLocation}', style: pw.TextStyle(fontSize: 13)),
-                          pw.Text('Drop: ${booking.dropLocation}', style: pw.TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(height: 18),
-                    // Cost Breakdown
-                    pw.Text('Cost Breakdown', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 15, color: PdfColors.blue800, letterSpacing: 0.5)),
-                    pw.SizedBox(height: 8),
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(18),
-                      decoration: pw.BoxDecoration(
-                        color: PdfColors.white,
-                        borderRadius: pw.BorderRadius.circular(12),
-                        border: pw.Border.all(color: PdfColors.blue100),
-                        boxShadow: [
-                          pw.BoxShadow(
-                            color: PdfColors.blue50,
-                            blurRadius: 2,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          _receiptRow('Base Charge', booking.baseCharge),
-                          pw.SizedBox(height: 8),
-                          _receiptRow('Distance Charge', booking.totalDistance * booking.costPerKm),
-                          pw.Divider(height: 24, color: PdfColors.blueGrey),
-                          pw.Row(
-                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                            children: [
-                              pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16, color: PdfColors.blue800)),
-                              pw.Text('${booking.totalAmount.toStringAsFixed(2)} INR', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18, color: PdfColors.blue800)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(height: 28),
-                    pw.Divider(),
-                    // Footer
+                    // Booking Details & Customer Info
                     pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text('Thank you for choosing Vedika Healthcare!', style: pw.TextStyle(fontSize: 13, color: PdfColors.blueGrey)),
-                            pw.Text('For support, contact us at support@vedikahealthcare.com', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                          ],
+                        pw.Expanded(
+                          child: _buildInfoSection(
+                            'BOOKING DETAILS',
+                            [
+                              _buildInfoRow('Date', indiaFormat.format(booking.timestamp)),
+                              _buildInfoRow('Status', booking.status),
+                              _buildInfoRow('Booking ID', booking.requestId),
+                            ],
+                            backgroundColor: secondaryColor,
+                          ),
                         ),
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.end,
-                          children: [
-                            pw.Text('Invoice Generated:', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                            pw.Text(indiaFormat.format(generatedDate), style: pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
-                          ],
+                        pw.SizedBox(width: 20),
+                        pw.Expanded(
+                          child: _buildInfoSection(
+                            'CUSTOMER INFORMATION',
+                            [
+                              _buildInfoRow('Name', booking.user.name ?? '-'),
+                              _buildInfoRow('Phone', booking.user.phoneNumber ?? '-'),
+                              if (booking.user.emailId != null)
+                                _buildInfoRow('Email', booking.user.emailId!),
+                            ],
+                            backgroundColor: secondaryColor,
+                          ),
                         ),
                       ],
                     ),
-                    pw.SizedBox(height: 8),
+
+                    pw.SizedBox(height: 25),
+
+                    // Journey Details
+                    _buildInfoSection(
+                      'JOURNEY DETAILS',
+                      [
+                        _buildInfoRow('Vehicle Type', booking.vehicleType),
+                        _buildInfoRow('From', booking.pickupLocation),
+                        _buildInfoRow('To', booking.dropLocation),
+                        _buildInfoRow('Distance', '${booking.totalDistance.toStringAsFixed(1)} km'),
+                      ],
+                      backgroundColor: PdfColors.white,
+                      borderColor: primaryColorBorder,
+                    ),
+
+                    pw.SizedBox(height: 25),
+
+                    // Cost Breakdown
+                    pw.Container(
+                      padding: const pw.EdgeInsets.all(20),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.white,
+                        borderRadius: pw.BorderRadius.circular(8),
+                        border: pw.Border.all(color: primaryColorBorder),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            'COST BREAKDOWN',
+                            style: pw.TextStyle(
+                              color: primaryColor,
+                              fontSize: 14,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: 15),
+                          _buildCostRow('Base Charge', booking.baseCharge),
+                          _buildCostRow('Distance Charge (${booking.costPerKm} INR/km)', 
+                                      booking.totalDistance * booking.costPerKm),
+                          pw.SizedBox(height: 15),
+                          pw.Divider(color: lightTextColor),
+                          pw.SizedBox(height: 15),
+                          pw.Row(
+                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            children: [
+                              pw.Text(
+                                'TOTAL AMOUNT',
+                                style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 16,
+                                  color: primaryColor,
+                                ),
+                              ),
+                              pw.Text(
+                                '${booking.totalAmount.toStringAsFixed(2)} INR',
+                                style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                  fontSize: 20,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    pw.SizedBox(height: 40),
+
+                    // Footer
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 20),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border(
+                          top: pw.BorderSide(color: lightTextColorBorder),
+                        ),
+                      ),
+                      child: pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'Thank you for choosing Vedika Healthcare',
+                                style: pw.TextStyle(
+                                  color: primaryColor,
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                'For support: support@vedikahealthcare.com',
+                                style: pw.TextStyle(
+                                  color: lightTextColor,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.end,
+                            children: [
+                              pw.Text(
+                                'Generated on',
+                                style: pw.TextStyle(
+                                  color: lightTextColor,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              pw.Text(
+                                indiaFormat.format(generatedDate),
+                                style: pw.TextStyle(
+                                  color: textColor,
+                                  fontSize: 10,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -239,19 +267,98 @@ Future<void> generateAndDownloadAmbulanceInvoicePDF(AmbulanceBooking booking) as
     ),
   );
 
-  // Save PDF to file and trigger download/print
+  // Save and share PDF
   final output = await getTemporaryDirectory();
   final file = File('${output.path}/ambulance_invoice_${booking.requestId}.pdf');
   await file.writeAsBytes(await pdf.save());
   await Printing.sharePdf(bytes: await pdf.save(), filename: 'ambulance_invoice_${booking.requestId}.pdf');
 }
 
-pw.Widget _receiptRow(String label, double value) {
-  return pw.Row(
-    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-    children: [
-      pw.Text(label, style: pw.TextStyle(fontSize: 12, color: PdfColors.blueGrey, fontWeight: pw.FontWeight.normal)),
-      pw.Text('${value.toStringAsFixed(2)} INR', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey)),
-    ],
+// Helper function to build info sections
+pw.Widget _buildInfoSection(String title, List<pw.Widget> content, {
+  PdfColor backgroundColor = PdfColors.white,
+  PdfColor borderColor = PdfColors.grey200,
+}) {
+  return pw.Container(
+    padding: const pw.EdgeInsets.all(20),
+    decoration: pw.BoxDecoration(
+      color: backgroundColor,
+      borderRadius: pw.BorderRadius.circular(15),
+      border: pw.Border.all(color: borderColor),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(
+            color: PdfColor.fromHex('#1a237e'),
+            fontSize: 14,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 15),
+        ...content,
+      ],
+    ),
+  );
+}
+
+// Helper function to build info rows
+pw.Widget _buildInfoRow(String label, String value) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 8),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(
+          width: 100,
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(
+              color: PdfColor.fromHex('#757575'),
+              fontSize: 10,
+            ),
+          ),
+        ),
+        pw.Expanded(
+          child: pw.Text(
+            value,
+            style: pw.TextStyle(
+              color: PdfColor.fromHex('#424242'),
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Helper function to build cost rows
+pw.Widget _buildCostRow(String label, double amount) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.only(bottom: 10),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            color: PdfColor.fromHex('#757575'),
+            fontSize: 12,
+          ),
+        ),
+        pw.Text(
+          '${amount.toStringAsFixed(2)} INR',
+          style: pw.TextStyle(
+            color: PdfColor.fromHex('#424242'),
+            fontSize: 12,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
   );
 } 
