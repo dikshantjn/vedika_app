@@ -15,7 +15,7 @@ class UserViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners(); // Start loading
 
-      UserModel? fetchedUser = await UserService().getUserDetails(userId);
+      UserModel? fetchedUser = await UserService().getUserById(userId);
       if (fetchedUser != null) {
         _user = fetchedUser;
       }

@@ -119,6 +119,7 @@ class HospitalService {
     required String vendorId,
     required String userId,
     required String hospitalId,
+    required String wardId,
     required String bedType,
     required double price,
     required double paidAmount,
@@ -126,7 +127,7 @@ class HospitalService {
     required DateTime bookingDate,
     required String timeSlot,
     String? selectedDoctorId,
-    String status = 'pending',
+    required String status,
   }) async {
     try {
       final response = await _dio.post(
@@ -135,6 +136,7 @@ class HospitalService {
           'vendorId': vendorId,
           'userId': userId,
           'hospitalId': hospitalId,
+          'wardId': wardId,
           'bedType': bedType,
           'price': price,
           'paidAmount': paidAmount,

@@ -161,7 +161,7 @@ Future<void> generateAndDownloadAmbulanceInvoicePDF(AmbulanceBooking booking) as
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           pw.Text(
-                            'COST BREAKDOWN',
+                            booking.isPaymentBypassed ? 'PAYMENT STATUS' : 'COST BREAKDOWN',
                             style: pw.TextStyle(
                               color: primaryColor,
                               fontSize: 14,
@@ -169,33 +169,79 @@ Future<void> generateAndDownloadAmbulanceInvoicePDF(AmbulanceBooking booking) as
                             ),
                           ),
                           pw.SizedBox(height: 15),
-                          _buildCostRow('Base Charge', booking.baseCharge),
-                          _buildCostRow('Distance Charge (${booking.costPerKm} INR/km)', 
-                                      booking.totalDistance * booking.costPerKm),
-                          pw.SizedBox(height: 15),
-                          pw.Divider(color: lightTextColor),
-                          pw.SizedBox(height: 15),
-                          pw.Row(
-                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                            children: [
-                              pw.Text(
-                                'TOTAL AMOUNT',
-                                style: pw.TextStyle(
-                                  fontWeight: pw.FontWeight.bold,
-                                  fontSize: 16,
-                                  color: primaryColor,
+                          if (booking.isPaymentBypassed) ...[
+                            pw.Row(
+                              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                              children: [
+                                pw.Text(
+                                  'Payment Waived',
+                                  style: pw.TextStyle(
+                                    fontWeight: pw.FontWeight.bold,
+                                    fontSize: 16,
+                                    color: primaryColor,
+                                  ),
                                 ),
-                              ),
+                                if (booking.bypassReason != null && booking.bypassReason!.isNotEmpty)
+                                  pw.Text(
+                                    'Reason: ${booking.bypassReason}',
+                                    style: pw.TextStyle(
+                                      fontSize: 12,
+                                      color: lightTextColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (booking.bypassApprovedBy != null && booking.bypassApprovedBy!.isNotEmpty) ...[
+                              pw.SizedBox(height: 10),
                               pw.Text(
-                                '${booking.totalAmount.toStringAsFixed(2)} INR',
+                                'Approved By: ${booking.bypassApprovedBy}',
                                 style: pw.TextStyle(
-                                  fontWeight: pw.FontWeight.bold,
-                                  fontSize: 20,
-                                  color: accentColor,
+                                  fontSize: 12,
+                                  color: lightTextColor,
                                 ),
                               ),
                             ],
-                          ),
+                          ] else ...[
+                            _buildCostRow('Base Charge', booking.baseCharge),
+                            _buildCostRow('Distance Charge (${booking.costPerKm} INR/km)', 
+                                      booking.totalDistance * booking.costPerKm),
+                            pw.SizedBox(height: 15),
+                            pw.Divider(color: lightTextColor),
+                            pw.SizedBox(height: 15),
+                            pw.Row(
+                              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                              children: [
+                                pw.Text(
+                                  'TOTAL AMOUNT',
+                                  style: pw.TextStyle(
+                                    fontWeight: pw.FontWeight.bold,
+                                    fontSize: 16,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                pw.Row(
+                                  children: [
+                                    pw.Text(
+                                      '${booking.totalAmount.toStringAsFixed(2)} INR',
+                                      style: pw.TextStyle(
+                                        fontWeight: pw.FontWeight.bold,
+                                        fontSize: 20,
+                                        color: accentColor,
+                                      ),
+                                    ),
+                                    pw.SizedBox(width: 8),
+                                    pw.Text(
+                                      '(Paid)',
+                                      style: pw.TextStyle(
+                                        fontSize: 12,
+                                        color: accentColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),

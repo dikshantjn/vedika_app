@@ -8,6 +8,7 @@ import 'package:vedika_healthcare/core/auth/data/repositories/UserLoginRepositor
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class UserLoginViewModel extends ChangeNotifier {
   final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey
@@ -66,7 +67,7 @@ class UserLoginViewModel extends ChangeNotifier {
   }
 
 
-  Future<void> verifyOtp(String otp) async {
+  Future<void> verifyOtp(String otp, BuildContext context) async {
     if (_verificationId == null) {
       _setError("Verification ID not found. Please request OTP again.");
       return;
@@ -76,6 +77,9 @@ class UserLoginViewModel extends ChangeNotifier {
     _resetError();
 
     try {
+      // Get LocationProvider early while context is still valid
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+
       await _signupRepository.verifyOtp(
         verificationId: _verificationId!,
         otp: otp,
@@ -115,10 +119,20 @@ class UserLoginViewModel extends ChangeNotifier {
             print("⚠️ User already exists or registration failed.");
           }
 
-          // Navigate to home
+          // Store user ID first
+          await StorageService.storeUserId(user.uid);
+          
+          // Update location before navigation
+          await locationProvider.updateLocationAfterLogin();
+
+          // Get FCM token and send
+          String? userId = await StorageService.getUserId();
+          if (userId != null) {
+            await FCMService().getTokenAndSend(userId);
+          }
+
+          // Navigate to home only if navigator is still valid
           if (navigatorKey.currentState != null) {
-            String? userId = await StorageService.getUserId();
-            await FCMService().getTokenAndSend(userId!);
             print("🚀 Navigating to Home Page...");
             navigatorKey.currentState!.pushReplacementNamed(AppRoutes.home);
           } else {

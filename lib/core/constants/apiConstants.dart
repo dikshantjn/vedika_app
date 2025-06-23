@@ -14,4 +14,5 @@ class ApiConstants {
   // Google Vision API
   static const String googleVisionApiKey = "AIzaSyDIFRThseqk53zAOQ6hEv-meLn0B4SIVmM";
   static const String googleVisionApiEndpoint = "https://vision.googleapis.com/v1/images:annotate";
+  static const String GOOGLE_MAPS_API_KEY = "AIzaSyAPbU5HX04forjDEfpkrhofAyna0cUfboI";
 }

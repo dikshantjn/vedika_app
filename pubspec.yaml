@@ -82,6 +82,7 @@ dependencies:
   app_settings: ^5.1.1
   pdf: ^3.11.3
   printing: ^5.14.2
+  flutter_polyline_points: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -102,6 +103,8 @@ flutter:
     - assets/logo/
     - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
     - assets/ai.png
+    - assets/ThirdPartyLogo/
+
 
   uses-material-design: true
 

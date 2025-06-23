@@ -26,68 +26,138 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: HospitalVendorColorPalette.backgroundPrimary,
+      backgroundColor: Colors.grey[100],
       body: Consumer<AppointmentViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.error != null) {
             return Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: HospitalVendorColorPalette.errorRed,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      viewModel.error!,
+                      style: const TextStyle(
+                        color: HospitalVendorColorPalette.errorRed,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => viewModel.fetchAppointments(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: HospitalVendorColorPalette.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (viewModel.isLoading) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: HospitalVendorColorPalette.errorRed,
-                    size: 48,
+                  const CircularProgressIndicator(
+                    color: HospitalVendorColorPalette.primaryBlue,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    viewModel.error!,
-                    style: const TextStyle(
-                      color: HospitalVendorColorPalette.errorRed,
-                      fontSize: 16,
+                    'Loading booking history...',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => viewModel.fetchAppointments(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: HospitalVendorColorPalette.primaryBlue,
-                      foregroundColor: HospitalVendorColorPalette.textInverse,
-                    ),
-                    child: const Text('Retry'),
                   ),
                 ],
               ),
             );
           }
 
-          if (viewModel.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
           final completedBookings = viewModel.completedAppointments;
           if (completedBookings.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.history,
-                    color: HospitalVendorColorPalette.textSecondary,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No completed bookings found',
-                    style: TextStyle(
-                      color: HospitalVendorColorPalette.textSecondary,
-                      fontSize: 16,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.history,
+                        size: 48,
+                        color: HospitalVendorColorPalette.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No Completed Bookings',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: HospitalVendorColorPalette.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your completed booking history will appear here',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -97,32 +167,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
             itemCount: completedBookings.length,
             itemBuilder: (context, index) {
               final booking = completedBookings[index];
-              return Card(
+              return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: HospitalVendorColorPalette.borderLight,
-                    width: 1,
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: InkWell(
                   onTap: () => _showBookingDetailsBottomSheet(context, booking),
                   borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.05),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.1),
+                                color: Colors.white,
                                 shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: HospitalVendorColorPalette.primaryBlue.withOpacity(0.2),
+                                  width: 2,
+                                ),
                               ),
                               child: Center(
                                 child: Text(
@@ -130,12 +213,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   style: const TextStyle(
                                     color: HospitalVendorColorPalette.primaryBlue,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 20,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +226,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   Text(
                                     booking.user.name ?? 'Unknown User',
                                     style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: HospitalVendorColorPalette.textPrimary,
                                     ),
@@ -152,8 +235,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   Text(
                                     'Booking #${booking.bedBookingId?.substring(0, 8) ?? 'N/A'}',
                                     style: TextStyle(
-                                      color: HospitalVendorColorPalette.textSecondary,
-                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ],
@@ -166,18 +249,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: HospitalVendorColorPalette.successGreen.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.check_circle,
                                     size: 16,
                                     color: HospitalVendorColorPalette.successGreen,
                                   ),
-                                  SizedBox(width: 4),
-                                  Text(
+                                  const SizedBox(width: 4),
+                                  const Text(
                                     'COMPLETED',
                                     style: TextStyle(
                                       color: HospitalVendorColorPalette.successGreen,
@@ -190,45 +273,81 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Row(
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                           children: [
-                            _buildInfoItem(
+                            _buildInfoRow(
                               Icons.bed,
                               'Bed Type',
                               booking.bedType,
+                              Colors.blue,
                             ),
-                            const SizedBox(width: 16),
-                            _buildInfoItem(
-                              Icons.access_time,
-                              'Date',
-                              '${booking.bookingDate.toString().split(' ')[0]} - ${booking.timeSlot}',
+                            const SizedBox(height: 12),
+                            _buildInfoRow(
+                              Icons.calendar_today,
+                              'Date & Time',
+                              '${DateFormat('dd MMM yyyy').format(booking.bookingDate)} - ${booking.timeSlot}',
+                              Colors.orange,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '₹${booking.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: HospitalVendorColorPalette.textPrimary,
-                              ),
-                            ),
-                            Text(
+                            const SizedBox(height: 12),
+                            _buildInfoRow(
+                              Icons.location_on,
+                              'Location',
                               '${booking.hospital.name}, ${booking.hospital.city}',
-                              style: TextStyle(
-                                color: HospitalVendorColorPalette.textSecondary,
-                                fontSize: 12,
-                              ),
+                              Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Total Amount',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '₹${booking.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: HospitalVendorColorPalette.primaryBlue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: () => _showBookingDetailsBottomSheet(context, booking),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: HospitalVendorColorPalette.primaryBlue,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.visibility, size: 20),
+                                  label: const Text(
+                                    'View Details',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -534,41 +653,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value) {
-    return Expanded(
-      child: Row(
-        children: [
-          Icon(
+  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
             icon,
-            size: 16,
-            color: HospitalVendorColorPalette.textSecondary,
+            size: 20,
+            color: color,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: HospitalVendorColorPalette.textSecondary,
-                    fontSize: 12,
-                  ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: HospitalVendorColorPalette.textPrimary,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: HospitalVendorColorPalette.textPrimary,
                 ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 } 

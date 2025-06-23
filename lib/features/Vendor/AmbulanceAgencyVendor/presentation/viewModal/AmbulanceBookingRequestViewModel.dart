@@ -24,6 +24,11 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
   bool _isAccepted = false;
   bool get isAccepted => _isAccepted;
 
+  // Add new controllers for bypass fields
+  final TextEditingController bypassReasonController = TextEditingController();
+  final TextEditingController bypassApprovedByController = TextEditingController();
+  bool isPaymentBypassed = false;
+
   AmbulanceBookingRequestViewModel() {
     initSocketConnection();
   }
@@ -267,15 +272,34 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     }
   }
 
+  void setPaymentBypassed(bool value) {
+    isPaymentBypassed = value;
+    notifyListeners();
+  }
+
   Future<bool> addOrUpdateServiceDetails(String requestId) async {
+    // Validate bypass data if payment is bypassed
+    if (isPaymentBypassed) {
+      if (bypassReasonController.text.trim().isEmpty) {
+        debugPrint('❌ addOrUpdateServiceDetails - Bypass reason is required');
+        return false;
+      }
+      if (bypassApprovedByController.text.trim().isEmpty) {
+        debugPrint('❌ addOrUpdateServiceDetails - Bypass approver is required');
+        return false;
+      }
+    }
+
     final pickup = pickupLocationController.text;
     final drop = dropLocationController.text;
     final distance = double.tryParse(totalDistanceController.text) ?? 0.0;
     final costPerKm = double.tryParse(costPerKmController.text) ?? 0.0;
     final baseCharge = double.tryParse(baseChargeController.text) ?? 0.0;
     final vehicleType = selectedVehicleType ?? '';
+    final bypassReason = isPaymentBypassed ? bypassReasonController.text.trim() : null;
+    final bypassApprovedBy = isPaymentBypassed ? bypassApprovedByController.text.trim() : null;
 
-    final totalAmount = (distance * costPerKm) + baseCharge;
+    final totalAmount = isPaymentBypassed ? 0.0 : (distance * costPerKm) + baseCharge;
 
     debugPrint('🔍 addOrUpdateServiceDetails - Starting update for requestId: $requestId');
     debugPrint('🔍 addOrUpdateServiceDetails - Input data:');
@@ -286,6 +310,9 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     debugPrint('  baseCharge: $baseCharge');
     debugPrint('  vehicleType: $vehicleType');
     debugPrint('  totalAmount: $totalAmount');
+    debugPrint('  isPaymentBypassed: $isPaymentBypassed');
+    debugPrint('  bypassReason: $bypassReason');
+    debugPrint('  bypassApprovedBy: $bypassApprovedBy');
 
     try {
       final updatedBooking = await _bookingService.updateServiceDetails(
@@ -297,6 +324,9 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
         baseCharge: baseCharge,
         vehicleType: vehicleType,
         totalAmount: totalAmount,
+        isPaymentBypassed: isPaymentBypassed,
+        bypassReason: bypassReason,
+        bypassApprovedBy: bypassApprovedBy,
       );
 
       debugPrint('🔍 addOrUpdateServiceDetails - API call successful');
@@ -364,6 +394,8 @@ class AmbulanceBookingRequestViewModel extends ChangeNotifier {
     totalDistanceController.dispose();
     costPerKmController.dispose();
     baseChargeController.dispose();
+    bypassReasonController.dispose();
+    bypassApprovedByController.dispose();
     super.dispose();
   }
 }

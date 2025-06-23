@@ -6,6 +6,7 @@ class BedBooking {
   final String? vendorId;
   final String? userId;
   final String? hospitalId;
+  final String? wardId;
   final String bedType;
   final double price;
   final double paidAmount;
@@ -24,6 +25,7 @@ class BedBooking {
     this.vendorId,
     this.userId,
     this.hospitalId,
+    this.wardId,
     required this.bedType,
     required this.price,
     required this.paidAmount,
@@ -44,6 +46,7 @@ class BedBooking {
       vendorId: json['vendorId']?.toString(),
       userId: json['userId']?.toString(),
       hospitalId: json['hospitalId']?.toString(),
+      wardId: json['wardId']?.toString(),
       bedType: json['bedType']?.toString() ?? 'Unknown',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0.0,
@@ -65,6 +68,7 @@ class BedBooking {
       'vendorId': vendorId,
       'userId': userId,
       'hospitalId': hospitalId,
+      'wardId': wardId,
       'bedType': bedType,
       'price': price,
       'paidAmount': paidAmount,
@@ -85,6 +89,7 @@ class BedBooking {
     String? vendorId,
     String? userId,
     String? hospitalId,
+    String? wardId,
     String? bedType,
     double? price,
     double? paidAmount,
@@ -103,6 +108,7 @@ class BedBooking {
       vendorId: vendorId ?? this.vendorId,
       userId: userId ?? this.userId,
       hospitalId: hospitalId ?? this.hospitalId,
+      wardId: wardId ?? this.wardId,
       bedType: bedType ?? this.bedType,
       price: price ?? this.price,
       paidAmount: paidAmount ?? this.paidAmount,

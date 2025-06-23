@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 
 class LocationProvider with ChangeNotifier {
   double? latitude;
   double? longitude;
   bool isLocationLoaded = false;
   bool isInitialized = false;
+  final UserService _userService = UserService();
+  bool _shouldUpdateBackend = false;
 
   LocationProvider() {
     print("Initializing LocationProvider...");
   }
 
   /// **Initialize Location**
-  Future<void> initializeLocation() async {
-    if (isInitialized) return;
+  Future<void> initializeLocation({bool updateBackend = false}) async {
+    if (isInitialized && !updateBackend) return;
+    
+    _shouldUpdateBackend = updateBackend;
     
     try {
       // First check if location services are enabled
@@ -55,6 +61,11 @@ class LocationProvider with ChangeNotifier {
         isLocationLoaded = true;
         notifyListeners();
         print("✅ Location initialized: ($latitude, $longitude)");
+
+        // Update user coordinates in backend only if requested
+        if (_shouldUpdateBackend) {
+          await _updateUserCoordinatesInBackend();
+        }
       } catch (e) {
         print("⚠️ Error getting current position: $e");
         // Try to get last known position as fallback
@@ -65,6 +76,11 @@ class LocationProvider with ChangeNotifier {
           isLocationLoaded = true;
           notifyListeners();
           print("✅ Using last known position: ($latitude, $longitude)");
+
+          // Update user coordinates in backend only if requested
+          if (_shouldUpdateBackend) {
+            await _updateUserCoordinatesInBackend();
+          }
         }
       }
     } catch (e) {
@@ -99,7 +115,7 @@ class LocationProvider with ChangeNotifier {
   }
 
   /// **Fetch Fresh Location and Update Values**
-  Future<void> fetchLocation() async {
+  Future<void> fetchLocation({bool updateBackend = false}) async {
     try {
       if (!await requestLocationPermission()) {
         print("❌ Location permission denied.");
@@ -126,6 +142,11 @@ class LocationProvider with ChangeNotifier {
         isLocationLoaded = true;
         notifyListeners();
         print("✅ Fresh location retrieved: ($latitude, $longitude)");
+
+        // Update user coordinates in backend only if requested
+        if (updateBackend) {
+          await _updateUserCoordinatesInBackend();
+        }
       } else {
         print("❌ Unable to fetch location.");
       }
@@ -135,9 +156,9 @@ class LocationProvider with ChangeNotifier {
   }
 
   /// **Load Saved Location**
-  Future<void> loadSavedLocation() async {
+  Future<void> loadSavedLocation({bool updateBackend = false}) async {
     print("🔄 Loading saved location...");
-    await fetchLocation();
+    await fetchLocation(updateBackend: updateBackend);
   }
 
   /// **Get Current Location**
@@ -146,5 +167,43 @@ class LocationProvider with ChangeNotifier {
       return LatLng(latitude!, longitude!);
     }
     return null;
+  }
+
+  /// **Update User Coordinates in Backend**
+  Future<void> _updateUserCoordinatesInBackend() async {
+    try {
+      if (latitude == null || longitude == null) {
+        print("⚠️ No coordinates available to update");
+        return;
+      }
+
+      String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        print("⚠️ User ID not found, skipping backend update");
+        return;
+      }
+
+      String coordinates = "$latitude,$longitude";
+      bool success = await _userService.updateUserCoordinates(userId, coordinates);
+      if (success) {
+        print("✅ User coordinates updated in backend: $coordinates");
+      } else {
+        print("❌ Failed to update user coordinates in backend");
+      }
+    } catch (e) {
+      print("❌ Error updating user coordinates in backend: $e");
+    }
+  }
+
+  /// **Update Location After Login**
+  Future<void> updateLocationAfterLogin() async {
+    _shouldUpdateBackend = true;
+    if (isLocationLoaded) {
+      // If we already have location, just update the backend
+      await _updateUserCoordinatesInBackend();
+    } else {
+      // If we don't have location yet, fetch it and update the backend
+      await fetchLocation(updateBackend: true);
+    }
   }
 }

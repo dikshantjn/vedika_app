@@ -1,11 +1,17 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.50:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.50:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
+
+  // Debug function to print actual URL
+  static void printEndpointUrl(String endpoint) {
+    print('🔗 Full API URL: $endpoint');
+    print('🌐 Base URL: $baseUrl');
+  }
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -16,6 +22,8 @@ class ApiEndpoints {
   static const String getUserProfile = '$baseUrl/user';
   static const String saveUserProfile = '$baseUrl/user/save';
   static const String editUserProfile = '$baseUrl/user/edit';
+  static const String updateUserProfile = '$baseUrl/user/update-profile';  // Added new endpoint
+  static const String updateUserCoordinates = '$baseUrl/user/update-coordinates';  // NEW: endpoint for updating user coordinates
 
   // 📌 Medical Profile APIs
   static const String medicalProfile = '$baseUrl/medical-profile';
@@ -174,6 +182,9 @@ class ApiEndpoints {
   static const String getCompletedBookingsByVendor = "$baseUrl/hospitals/appointment/completed/vendor";
   static const String getCompletedAppointmentsByUser = "$baseUrl/hospitals/appointment/completed/user";
   static const String updateBedAvailability = "$baseUrl/hospitals/updateBed";
+  // Add ward management endpoints
+  static const String addWard = "$baseUrl/hospitals/wards";
+  static const String editWard = "$baseUrl/hospitals/wards";
 
   // 📌 Lab Test APIs
   static const String uploadFile = '$baseUrl/lab-test/upload-file';

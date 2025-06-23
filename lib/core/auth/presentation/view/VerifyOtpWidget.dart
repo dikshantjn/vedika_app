@@ -66,7 +66,7 @@ class _VerifyOtpWidgetState extends State<VerifyOtpWidget> {
           onPressed: () async {
             // Pass OTP directly to verifyOtp
             if (_otpController.text.length == 6) {
-              await signupViewModel.verifyOtp(_otpController.text);
+              await signupViewModel.verifyOtp(_otpController.text, context);
             } else {
               // Show some validation message if OTP is invalid
               ScaffoldMessenger.of(context).showSnackBar(

@@ -2,27 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/Ward.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/WardService.dart';
 
 class BookAppointmentViewModel extends ChangeNotifier {
+  final WardService _wardService = WardService();
+  
   HospitalProfile? hospital;
-  BedType? selectedBedType;
+  Ward? selectedWard;
   DateTime? selectedDate;
   String? selectedTimeSlot;
   String selectedPatientType = "Self";
   String? selectedDoctorId;
+  
+  List<Ward> _wards = [];
+  bool _isLoading = false;
+  String? _error;
 
-  // Getter for total available beds
+  // Getters
+  List<Ward> get wards => _wards;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
   int get totalAvailableBeds => hospital?.bedsAvailable ?? 0;
 
-  // Method to update selected hospital
-  void selectHospital(HospitalProfile hospital) {
+  // Method to update selected hospital and fetch wards
+  Future<void> selectHospital(HospitalProfile hospital) async {
     this.hospital = hospital;
+    await fetchWards();
     notifyListeners();
   }
 
-  // Method to update selected bed type
-  void selectBedType(BedType bedType) {
-    selectedBedType = bedType;
+  // Method to fetch wards
+  Future<void> fetchWards() async {
+    if (hospital?.vendorId == null && hospital?.generatedId == null) return;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final vendorId = hospital!.vendorId ?? hospital!.generatedId!;
+      _wards = await _wardService.getWards(vendorId);
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to load wards: $e';
+      _wards = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Method to update selected ward
+  void selectWard(Ward ward) {
+    selectedWard = ward;
     notifyListeners();
   }
 
@@ -53,7 +86,7 @@ class BookAppointmentViewModel extends ChangeNotifier {
   // Method to check if all required fields are filled
   bool isFormComplete() {
     return hospital != null && 
-           selectedBedType != null && 
+           selectedWard != null && 
            selectedDate != null && 
            selectedTimeSlot != null;
   }
@@ -89,14 +122,15 @@ class BookAppointmentViewModel extends ChangeNotifier {
       vendorId: hospital!.vendorId ?? hospital!.generatedId ?? '',
       userId: userId,
       hospital: hospitalData,
-      bedType: selectedBedType!.type,
-      price: selectedBedType!.price,
-      paidAmount: 0.0, // Initial paid amount is 0
-      paymentStatus: 'pending', // Initial payment status is pending
+      wardId: selectedWard!.wardId,
+      bedType: selectedWard!.wardType,
+      price: selectedWard!.pricePerDay,
+      paidAmount: 0.0,
+      paymentStatus: 'pending',
       bookingDate: selectedDate!,
       timeSlot: selectedTimeSlot!,
       selectedDoctorId: selectedDoctorId,
-      status: 'pending', // Initial booking status is pending
+      status: 'pending',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

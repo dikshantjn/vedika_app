@@ -161,13 +161,27 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total: ₹${booking.totalAmount.toStringAsFixed(2)}',
+              booking.isPaymentBypassed
+                  ? Text(
+                      'Payment Waived',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    )
+                  : Text(
+                      'Total: ₹${booking.totalAmount.toStringAsFixed(2)}',
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[700])),
-              Text(formattedDate,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        color: Colors.green[700],
+                      ),
+                    ),
+              Text(
+                formattedDate,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
             ],
           ),
         ],
@@ -311,9 +325,9 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
                     margin: const EdgeInsets.only(bottom: 20),
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: booking.isPaymentBypassed ? Colors.blue[50] : Colors.blue[50],
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.blue[100]!),
+                      border: Border.all(color: booking.isPaymentBypassed ? Colors.blue[100]! : Colors.blue[100]!),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.blue.withOpacity(0.06),
@@ -322,7 +336,72 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
                         ),
                       ],
                     ),
-                    child: Column(
+                    child: booking.isPaymentBypassed
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Payment Status',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                  Text(
+                                    'Payment Waived',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (booking.bypassReason != null && booking.bypassReason!.isNotEmpty) ...[
+                                SizedBox(height: 12),
+                                Text(
+                                  'Reason:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  booking.bypassReason!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.blueGrey[700],
+                                  ),
+                                ),
+                              ],
+                              if (booking.bypassApprovedBy != null && booking.bypassApprovedBy!.isNotEmpty) ...[
+                                SizedBox(height: 12),
+                                Text(
+                                  'Approved By:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  booking.bypassApprovedBy!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.blueGrey[700],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          )
+                        : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _receiptRow('Base Charge', booking.baseCharge),
@@ -332,10 +411,21 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue)),
+                                  const Text(
+                                    'Total',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
                             Text(
                               '₹${booking.totalAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Colors.blue,
+                                    ),
                             ),
                           ],
                         ),

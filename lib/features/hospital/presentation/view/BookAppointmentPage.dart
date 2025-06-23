@@ -144,8 +144,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
         vendorId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
         userId: userId!,
         hospitalId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
-        bedType: viewModel.selectedBedType!.type,
-        price: viewModel.selectedBedType!.price,
+        wardId: viewModel.selectedWard!.wardId,
+        bedType: viewModel.selectedWard!.wardType,
+        price: viewModel.selectedWard!.pricePerDay,
         paidAmount: 0.0,
         paymentStatus: 'pending',
         bookingDate: viewModel.selectedDate!,
@@ -286,7 +287,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<BookAppointmentViewModel>(context);
     final razorpayService = HospitalBookingPaymentService();
-    final bedTypes = BedType.getBedTypes();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -295,7 +295,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
         slivers: [
           _buildSliverAppBar(),
           SliverToBoxAdapter(
-            child: _buildBody(context, viewModel, bedTypes, razorpayService),
+            child: _buildBody(context, viewModel, razorpayService),
           ),
         ],
       ),
@@ -498,7 +498,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, BookAppointmentViewModel viewModel, List<BedType> bedTypes, HospitalBookingPaymentService razorpayService) {
+  Widget _buildBody(BuildContext context, BookAppointmentViewModel viewModel, HospitalBookingPaymentService razorpayService) {
     return Container(
       padding: EdgeInsets.only(top: 16),
       child: Column(
@@ -506,7 +506,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
         children: [
           _buildQuickInfoCards(),
           _buildHospitalInfo(),
-          _buildBookingSection(context, viewModel, bedTypes, razorpayService),
+          _buildBookingSection(context, viewModel, razorpayService),
           SizedBox(height: 100),
         ],
       ),
@@ -770,7 +770,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
     );
   }
 
-  Widget _buildBookingSection(BuildContext context, BookAppointmentViewModel viewModel, List<BedType> bedTypes, HospitalBookingPaymentService razorpayService) {
+  Widget _buildBookingSection(BuildContext context, BookAppointmentViewModel viewModel, HospitalBookingPaymentService razorpayService) {
     return Container(
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
@@ -814,194 +814,381 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
           ),
           SizedBox(height: 16),
           Text(
-            "Select Bed Type",
+            "Select Ward",
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+          SizedBox(height: 12),
+          if (viewModel.isLoading)
+            Center(
+              child: CircularProgressIndicator(
+                color: ColorPalette.primaryColor,
+              ),
+            )
+          else if (viewModel.error != null)
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  SizedBox(height: 8),
+                  Text(
+                    viewModel.error!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => viewModel.fetchWards(),
+                    child: Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorPalette.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (viewModel.wards.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.bed_outlined, color: Colors.grey, size: 48),
+                  SizedBox(height: 8),
+                  Text(
+                    'No wards available',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: viewModel.wards.length,
+              itemBuilder: (context, index) {
+                final ward = viewModel.wards[index];
+                final isSelected = ward.wardId == viewModel.selectedWard?.wardId;
+                
+                return InkWell(
+                  onTap: () => viewModel.selectWard(ward),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? ColorPalette.primaryColor.withOpacity(0.1)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected 
+                            ? ColorPalette.primaryColor 
+                            : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? ColorPalette.primaryColor.withOpacity(0.1)
+                                      : Colors.grey.shade50,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.bed_outlined,
+                                  color: isSelected 
+                                      ? ColorPalette.primaryColor
+                                      : Colors.grey[600],
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Flexible(
+                                child: Text(
+                                  ward.name,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected 
+                                        ? ColorPalette.primaryColor
+                                        : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Flexible(
+                                child: Text(
+                                  ward.wardType,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Flexible(
+                                child: Text(
+                                  '₹${ward.pricePerDay.toStringAsFixed(0)}/day',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected 
+                                        ? ColorPalette.primaryColor
+                                        : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: ward.availableBeds > 0 
+                                      ? Colors.green.withOpacity(0.1)
+                                      : Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  ward.availableBeds > 0 
+                                      ? '${ward.availableBeds} Available'
+                                      : 'Full',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: ward.availableBeds > 0 
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-            child: DropdownButtonHideUnderline(
-              child: ButtonTheme(
-                alignedDropdown: true,
-                child: DropdownButton<BedType>(
-                  value: viewModel.selectedBedType,
-                  isExpanded: true,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  hint: Text('Select a bed type'),
-                  items: bedTypes.map((bedType) {
-                    return DropdownMenuItem<BedType>(
-                      key: ValueKey(bedType.id),
-                      value: bedType,
-                      child: Container(
-                        constraints: BoxConstraints(maxHeight: 60),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              bedType.type,
-                              style: TextStyle(fontSize: 16),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              "₹${bedType.price.toStringAsFixed(2)} - ${bedType.description}",
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+          
+          SizedBox(height: 20),
+          if (viewModel.selectedWard != null) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.calendar_today,
+                          color: ColorPalette.primaryColor,
+                          size: 20,
                         ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (BedType? value) {
-                    if (value != null) {
-                      viewModel.selectBedType(value);
-                    }
-                  },
-                ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Select Date & Time",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "Select Date",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  DatePickerWidget(
+                    selectedDate: viewModel.selectedDate,
+                    onDatePicked: viewModel.selectDate,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    "Select Time Slot",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  TimeSlotSelection(
+                    timeSlots: ["Morning", "Afternoon", "Evening", "Night"],
+                    selectedTimeSlot: viewModel.selectedTimeSlot,
+                    onTimeSlotSelected: viewModel.selectTimeSlot,
+                  ),
+                ],
               ),
-            ),
-          ),
-          SizedBox(height: 20),
-          Text(
-            "Select Date",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 8),
-          DatePickerWidget(
-            selectedDate: viewModel.selectedDate,
-            onDatePicked: viewModel.selectDate,
-          ),
-          SizedBox(height: 20),
-          if (viewModel.selectedDate != null) ...[
-            Text(
-              "Select Time Slot",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            SizedBox(height: 8),
-            TimeSlotSelection(
-              timeSlots: ["Morning", "Afternoon", "Evening", "Night"],
-              selectedTimeSlot: viewModel.selectedTimeSlot,
-              onTimeSlotSelected: viewModel.selectTimeSlot,
             ),
           ],
-          SizedBox(height: 20),
-          Text(
-            "Patient Details",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: EdgeInsets.all(4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => viewModel.selectPatientType("Self"),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: viewModel.selectedPatientType == "Self" 
-                            ? ColorPalette.primaryColor 
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Self",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: viewModel.selectedPatientType == "Self" 
-                                  ? Colors.white 
-                                  : ColorPalette.primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => _showInfoPopup(context),
-                            child: Icon(
-                              Icons.info_outline,
-                              color: viewModel.selectedPatientType == "Self" 
-                                  ? Colors.white 
-                                  : ColorPalette.primaryColor,
-                              size: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => viewModel.selectPatientType("Other"),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: viewModel.selectedPatientType == "Other" 
-                            ? ColorPalette.primaryColor 
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Other",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: viewModel.selectedPatientType == "Other" 
-                                ? Colors.white 
-                                : ColorPalette.primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+
+          if (viewModel.selectedWard != null && viewModel.selectedDate != null && viewModel.selectedTimeSlot != null) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.person,
+                          color: ColorPalette.primaryColor,
+                          size: 20,
                         ),
                       ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Patient Details",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => viewModel.selectPatientType("Self"),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: viewModel.selectedPatientType == "Self" 
+                                    ? ColorPalette.primaryColor 
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Self",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: viewModel.selectedPatientType == "Self" 
+                                          ? Colors.white 
+                                          : ColorPalette.primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () => _showInfoPopup(context),
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      color: viewModel.selectedPatientType == "Self" 
+                                          ? Colors.white 
+                                          : ColorPalette.primaryColor,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => viewModel.selectPatientType("Other"),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: viewModel.selectedPatientType == "Other" 
+                                    ? ColorPalette.primaryColor 
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "Other",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: viewModel.selectedPatientType == "Other" 
+                                        ? Colors.white 
+                                        : ColorPalette.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  if (viewModel.selectedPatientType == "Other") ...[
+                    SizedBox(height: 16),
+                    PatientDetailsForm(formKey: _patientFormKey),
+                  ],
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 10),
-          if (viewModel.selectedPatientType == "Other")
-            PatientDetailsForm(formKey: _patientFormKey),
-          if (viewModel.selectedBedType != null) ...[
-            SizedBox(height: 20),
+          ],
+
+          if (viewModel.selectedWard != null && viewModel.selectedDate != null && viewModel.selectedTimeSlot != null) ...[
+            const SizedBox(height: 24),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1021,7 +1208,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     ),
                   ),
                   Text(
-                    "₹${viewModel.selectedBedType!.price.toStringAsFixed(2)}",
+                    "₹${viewModel.selectedWard!.pricePerDay.toStringAsFixed(2)}",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1031,69 +1218,69 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 ],
               ),
             ),
-          ],
-          SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isBookingPending
-                  ? null
-                  : () {
-                      if (_bookingStatus == 'accepted') {
-                        razorpayService.openPaymentGateway(
-                          viewModel.selectedBedType!.price.toInt(),
-                          ApiConstants.razorpayApiKey,
-                          'Bed Booking\n${viewModel.selectedBedType!.type}',
-                          'Bed booking for ${viewModel.selectedBedType!.type}',
-                        );
-                      } else {
-                        _handleBookingConfirmation(context);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.primaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_isBookingPending)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  else
-                    Icon(
-                      _bookingStatus == 'accepted' 
-                          ? Icons.payment 
-                          : Icons.check_circle,
-                      size: 20,
-                    ),
-                  SizedBox(width: 12),
-                  Text(
-                    _isBookingPending
-                        ? "Processing..."
-                        : _bookingStatus == 'accepted'
-                            ? "Make Payment"
-                            : "Confirm Booking",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isBookingPending
+                    ? null
+                    : () {
+                        if (_bookingStatus == 'accepted') {
+                          razorpayService.openPaymentGateway(
+                            viewModel.selectedWard!.pricePerDay.toInt(),
+                            ApiConstants.razorpayApiKey,
+                            'Bed Booking\n${viewModel.selectedWard!.wardType}',
+                            'Bed booking for ${viewModel.selectedWard!.wardType}',
+                          );
+                        } else {
+                          _handleBookingConfirmation(context);
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorPalette.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isBookingPending)
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    else
+                      Icon(
+                        _bookingStatus == 'accepted' 
+                            ? Icons.payment 
+                            : Icons.check_circle,
+                        size: 20,
+                      ),
+                    SizedBox(width: 12),
+                    Text(
+                      _isBookingPending
+                          ? "Processing..."
+                          : _bookingStatus == 'accepted'
+                              ? "Make Payment"
+                              : "Confirm Booking",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

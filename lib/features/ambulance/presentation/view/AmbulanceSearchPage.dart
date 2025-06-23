@@ -22,6 +22,7 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
   bool _isLoading = false;
   late AmbulanceSearchViewModel _viewModel;
   GoogleMapController? _mapController;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
@@ -34,12 +35,17 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
     // Initialize view model
     _viewModel = AmbulanceSearchViewModel(context);
     _viewModel.initialize();
+    _scrollController = ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrentStep();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _viewModel.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -418,21 +424,41 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
               _buildTimeline(steps, currentStepIndex),
               SizedBox(height: 20),
 
-              if (hasPaymentInfo && (isWaitingForPayment || isPaymentCompleted))
+              if (hasPaymentInfo && (isWaitingForPayment || isPaymentCompleted || booking.isPaymentBypassed))
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: booking.isPaymentBypassed ? Colors.blue.shade50 : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: booking.isPaymentBypassed ? Colors.blue.shade200 : Colors.grey.shade300),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (booking.isPaymentBypassed)
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Your payment has been waived for this ambulance service.",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
                       Row(
                         children: [
-                          Text("Payment Receipt", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text(
+                              "Payment Receipt",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                            ),
                           Spacer(),
                           if (isPaymentCompleted)
                             Container(
@@ -457,6 +483,7 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
                       _buildReceiptRow("Rate per km", "₹${booking.costPerKm!.toStringAsFixed(2)}"),
                       Divider(height: 24, thickness: 1),
                       _buildReceiptRow("Total Amount", "₹${booking.totalAmount!.toStringAsFixed(2)}", bold: true),
+                      ],
                     ],
                   ),
                 ),
@@ -691,5 +718,29 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
         },
       ),
     );
+  }
+
+  void _scrollToCurrentStep() {
+    if (_scrollController.hasClients) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final stepWidth = screenWidth / 4;
+      final booking = _viewModel.ambulanceBookings.firstOrNull;
+      if (booking != null) {
+        final currentStepIndex = _viewModel.getCurrentStepIndex(booking.status);
+        // Calculate scroll position to center the current step
+        double scrollPosition;
+        if (currentStepIndex >= 3) { // From "On the Way" onwards
+          scrollPosition = (currentStepIndex * stepWidth) - (screenWidth / 2) + (stepWidth / 2);
+        } else {
+          scrollPosition = 0; // Keep at start for earlier steps
+        }
+        
+        _scrollController.animateTo(
+          scrollPosition,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
   }
 }

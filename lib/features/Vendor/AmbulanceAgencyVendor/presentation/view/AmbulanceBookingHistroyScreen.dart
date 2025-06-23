@@ -159,15 +159,25 @@ class _AmbulanceBookingHistoryScreenState extends State<AmbulanceBookingHistoryS
             children: [
               Expanded(
                 flex: 1,
-                child: Text(
-                  "Total: ₹${booking.totalAmount.toStringAsFixed(2)}",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[700],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: booking.isPaymentBypassed
+                    ? Text(
+                        "Payment Waived",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : Text(
+                        "Total: ₹${booking.totalAmount.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
               ),
               Expanded(
                 flex: 1,
@@ -283,9 +293,14 @@ class _BookingDetailsBottomSheet extends StatelessWidget {
           _buildDetailSection(
             'Payment Details',
             [
-              _buildDetailRow('Base Fare', '₹${booking.baseCharge.toStringAsFixed(2)}'),
-
-              _buildDetailRow('Total Amount', '₹${booking.totalAmount.toStringAsFixed(2)}', isHighlighted: true),
+              if (!booking.isPaymentBypassed) ...[
+                _buildDetailRow('Base Fare', '₹${booking.baseCharge.toStringAsFixed(2)}'),
+                _buildDetailRow('Total Amount', '₹${booking.totalAmount.toStringAsFixed(2)}', isHighlighted: true),
+              ] else
+                _buildDetailRow('Payment Status', 'Payment Waived', 
+                  isHighlighted: true, 
+                  highlightColor: Colors.blue[700]
+                ),
             ],
           ),
           SizedBox(height: 24),
@@ -365,7 +380,10 @@ class _BookingDetailsBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isHighlighted = false}) {
+  Widget _buildDetailRow(String label, String value, {
+    bool isHighlighted = false, 
+    Color? highlightColor
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -383,7 +401,7 @@ class _BookingDetailsBottomSheet extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-              color: isHighlighted ? Colors.green[700] : Colors.grey[800],
+              color: isHighlighted ? (highlightColor ?? Colors.green[700]) : Colors.grey[800],
             ),
           ),
         ],

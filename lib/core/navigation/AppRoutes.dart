@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/auth/data/services/ProfileCompletionService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
+import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyDashboardScreen.dart';
@@ -114,39 +116,137 @@ class AppRoutes {
     
     return {
       home: (context) => HomePage(),
-      bloodBank: (context) => BloodBankMapScreen(),
-      ambulanceSearch: (context) => AmbulanceSearchPage(),
-      clinic: (context) => ClinicSearchPage(),
-      hospital: (context) => HospitalSearchPage(),
+      bloodBank: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: BloodBankMapScreen(),
+          serviceType: ServiceType.bloodBank,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in bloodBank route: ${snapshot.error}');
+            return BloodBankMapScreen();
+          }
+          return snapshot.data ?? BloodBankMapScreen();
+        },
+      ),
+      ambulanceSearch: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: AmbulanceSearchPage(),
+          serviceType: ServiceType.ambulance,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in ambulance route: ${snapshot.error}');
+            return AmbulanceSearchPage();
+          }
+          return snapshot.data ?? AmbulanceSearchPage();
+        },
+      ),
+      medicineOrder: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: MedicineOrderScreen(),
+          serviceType: ServiceType.medicineDelivery,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in medicine route: ${snapshot.error}');
+            return MedicineOrderScreen();
+          }
+          return snapshot.data ?? MedicineOrderScreen();
+        },
+      ),
+      hospital: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: HospitalSearchPage(),
+          serviceType: ServiceType.hospital,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in hospital route: ${snapshot.error}');
+            return HospitalSearchPage();
+          }
+          return snapshot.data ?? HospitalSearchPage();
+        },
+      ),
+      clinicConsultationType: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: ClinicConsultationTypePage(),
+          serviceType: ServiceType.clinic,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in clinic route: ${snapshot.error}');
+            return ClinicConsultationTypePage();
+          }
+          return snapshot.data ?? ClinicConsultationTypePage();
+        },
+      ),
+      labTest: (context) => FutureBuilder<Widget>(
+        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
+          destination: LabSearchPage(),
+          serviceType: ServiceType.labTest,
+          context: context,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasError) {
+            print('Error in lab route: ${snapshot.error}');
+            return LabSearchPage();
+          }
+          return snapshot.data ?? LabSearchPage();
+        },
+      ),
       donorRegistration: (context) => DonorRegistrationPage(),
-      orderHistory: (context) => OrderHistoryPage(), // Added route for EnableLocationPage
-      enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(), // Added route for EnableLocationPage
-      doctorAppointments: (context) => ClinicAppointmentsScreen(), // Route for doctor appointments
-      clinicConsultationType: (context) => ClinicConsultationTypePage(),
-      onlineDoctorConsultation: (context) => OnlineDoctorConsultationPage(),
-      hospitalSearch: (context) => HospitalSearchPage(),
+      orderHistory: (context) => OrderHistoryPage(),
+      enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(),
+      doctorAppointments: (context) => ClinicAppointmentsScreen(),
+      clinic: (context) => ClinicSearchPage(),
       clinicSearch: (context) => ClinicSearchPage(),
-
-      medicineOrder: (context) => MedicineOrderScreen(), // Added route for EnableLocationPage
-      goToCart: (context) => CartScreen(), // Added route for EnableLocationPage
-
-      labTest: (context) => LabSearchPage(), // Added route for EnableLocationPage
-      notification: (context) => NotificationPage(), // Added route for EnableLocationPage
-      userProfile: (context) => UserProfilePage(), // Added route for EnableLocationPage
-      healthRecords: (context) => HealthRecordsPage(), // Added route for EnableLocationPage
-      login: (context) => UserLoginScreen(), // Added route for EnableLocationPage
-      vendorLogin: (context) => VendorRegistrationPage(), // Added route for EnableLocationPage
-
-      logout: (context) => LogoutPage(), // Added route for EnableLocationPage
-
-      bloodBankBooking: (context) => BloodBankBookingScreen(), // Added route for EnableLocationPage
-
-      //vendor
-      vendor: (context) => VendorRegistrationPage(), // Added route for EnableLocationPage
-      VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(), // Added route for EnableLocationPage
-      trackOrderScreen: (context) => TrackOrderScreen(), // Added route for EnableLocationPage
-
-      // // Vendor Dashboards
+      goToCart: (context) => CartScreen(),
+      notification: (context) => NotificationPage(),
+      userProfile: (context) => UserProfilePage(),
+      healthRecords: (context) => HealthRecordsPage(),
+      login: (context) => UserLoginScreen(),
+      vendorLogin: (context) => VendorRegistrationPage(),
+      logout: (context) => LogoutPage(),
+      bloodBankBooking: (context) => BloodBankBookingScreen(),
+      vendor: (context) => VendorRegistrationPage(),
+      VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(),
+      trackOrderScreen: (context) => TrackOrderScreen(),
       VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
       VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
@@ -187,7 +287,6 @@ class AppRoutes {
           );
         },
       ),
-      // VendorDeliveryPartnerDashBoard: (context) => VendorDeliveryPartnerDashBoardScreen(),
       fallDetectionTest: (context) => const FallDetectionTestScreen(),
     };
   }

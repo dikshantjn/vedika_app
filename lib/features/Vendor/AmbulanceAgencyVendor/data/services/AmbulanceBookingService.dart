@@ -81,32 +81,62 @@ class AmbulanceBookingService {
     required double baseCharge,
     required String vehicleType,
     required double totalAmount,
+    bool isPaymentBypassed = false,
+    String? bypassReason,
+    String? bypassApprovedBy,
   }) async {
     try {
+      print("Sending request with data:");
+      print("isPaymentBypassed: $isPaymentBypassed");
+      print("bypassReason: $bypassReason");
+      print("bypassApprovedBy: $bypassApprovedBy");
+
+      final Map<String, dynamic> requestData = {
+        'pickupLocation': pickupLocation,
+        'dropLocation': dropLocation,
+        'totalDistance': totalDistance,
+        'costPerKm': costPerKm,
+        'baseCharge': baseCharge,
+        'vehicleType': vehicleType,
+        'totalAmount': totalAmount,
+        'isPaymentBypassed': isPaymentBypassed,
+        if (isPaymentBypassed) ...<String, dynamic>{
+          'bypassReason': bypassReason,
+          'bypassApprovedBy': bypassApprovedBy,
+          'bypassDate': DateTime.now().toIso8601String(),
+          'status': 'PaymentWaived', // Automatically mark as completed if payment is bypassed
+        },
+      };
+
+      print("Full request data: $requestData");
+
       final response = await _dio.patch(
         '${ApiEndpoints.updateAmbulanceServiceDetails}/$requestId',
-        data: {
-          'pickupLocation': pickupLocation,
-          'dropLocation': dropLocation,
-          'totalDistance': totalDistance,
-          'costPerKm': costPerKm,
-          'baseCharge': baseCharge,
-          'vehicleType': vehicleType,
-          'totalAmount': totalAmount,
-        },
+        data: requestData,
       );
 
+      print("Service Details Update Response : ${response.data}");
+
       if (response.statusCode == 200 && response.data['success']) {
-        return AmbulanceBooking.fromJson(response.data['data']);
+        final responseData = response.data['data'];
+        // Ensure bypass data is preserved in the response
+        if (isPaymentBypassed) {
+          responseData['isPaymentBypassed'] = true;
+          responseData['bypassReason'] = bypassReason;
+          responseData['bypassApprovedBy'] = bypassApprovedBy;
+          responseData['bypassDate'] = DateTime.now().toIso8601String();
+        }
+        return AmbulanceBooking.fromJson(responseData);
       } else {
         throw Exception(response.data['message'] ?? 'Failed to update service details');
       }
     } on DioError catch (e) {
+      print("Error in updateServiceDetails: ${e.response?.data}");
       throw Exception(e.response?.data['message'] ?? e.message);
     }
   }
 
-  // 👇 NEW METHOD: Update Payment Completed Status
+  // �� NEW METHOD: Update Payment Completed Status
   Future<void> updatePaymentCompleted(String requestId) async {
     try {
       final response = await _dio.put(

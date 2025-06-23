@@ -10,6 +10,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/Err
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomClinicAppointmentInfoDialog.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/clinic_appointment_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CabBookingBottomSheet.dart';
 
 class ClinicAppointmentTab extends StatefulWidget {
   const ClinicAppointmentTab({Key? key}) : super(key: key);
@@ -294,6 +295,22 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            if (!isOnline)
+                              OutlinedButton.icon(
+                                icon: Icon(Icons.local_taxi_rounded),
+                                label: Text('Book Cab'),
+                                onPressed: () => _showCabBookingOptions(appointment),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: DoctorConsultationColorPalette.primaryBlue,
+                                  side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                              ),
+                            if (!isOnline)
+                              SizedBox(width: 12),
                             if (isOnline && appointment.meetingUrl != null && appointment.meetingUrl!.isNotEmpty)
                               OutlinedButton.icon(
                                 icon: Icon(Icons.video_call),
@@ -308,7 +325,6 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                                   ),
                                 ),
                               ),
-                            SizedBox(width: 12),
                           ],
                         ),
                       ),
@@ -869,5 +885,30 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
         ),
       );
     }
+  }
+
+  void _showCabBookingOptions(ClinicAppointment appointment) {
+    // Format complete address using all available fields
+    final doctor = appointment.doctor!;
+    final List<String> addressParts = [
+      if (doctor.address.isNotEmpty) doctor.address,
+      if (doctor.floor.isNotEmpty) 'Floor: ${doctor.floor}',
+      if (doctor.nearbyLandmark.isNotEmpty) 'Near ${doctor.nearbyLandmark}',
+      if (doctor.city.isNotEmpty) doctor.city,
+      if (doctor.state.isNotEmpty) doctor.state,
+      if (doctor.pincode.isNotEmpty) doctor.pincode,
+    ];
+    
+    final formattedAddress = addressParts.where((part) => part.isNotEmpty).join(', ');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => CabBookingBottomSheet(
+        destinationAddress: formattedAddress,
+        doctor: doctor,
+      ),
+    );
   }
 } 

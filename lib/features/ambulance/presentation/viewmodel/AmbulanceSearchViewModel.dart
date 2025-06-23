@@ -594,9 +594,18 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       "Patient Picked Up",
       "Reached Hospital",
     ];
-// If status is paymentCompleted, update the step in the timeline
-    if (status == "paymentCompleted") {
-      steps[2] = "Payment Completed";  // Modify step 2 if status is "PaymentCompleted"
+
+    // Update the payment step based on status and isPaymentBypassed
+    final booking = _ambulanceBookings
+        .where((b) => b.status == status)
+        .firstOrNull;
+
+    if (booking != null && booking.isPaymentBypassed) {
+      steps[2] = "Payment Waived";
+    } else if (status == "paymentCompleted") {
+      steps[2] = "Payment Completed";
+    } else if (status == "WaitingForPayment") {
+      steps[2] = "Waiting For Payment";
     }
 
     return steps;
@@ -606,8 +615,9 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
     final Map<String, int> statusMap = {
       "pending": 0,
       "accepted": 1,
-      "WaitingForPayment": 2, // Both 'WaitingForPayment' and 'paymentCompleted' will point to the same step
-      "paymentCompleted": 2,   // Both statuses will point to index 2
+      "WaitingForPayment": 2,
+      "paymentCompleted": 2,
+      "PaymentWaived": 2,  // Add PaymentWaived status
       "OnTheWay": 3,
       "PickedUp": 4,
       "Completed": 5,

@@ -17,6 +17,10 @@ class AmbulanceBooking {
   final DateTime requiredDateTime;
   final UserModel user;
   final AmbulanceAgency? agency;
+  final bool isPaymentBypassed;
+  final String? bypassReason;
+  final String? bypassApprovedBy;
+  final DateTime? bypassDate;
 
   AmbulanceBooking({
     required this.requestId,
@@ -34,8 +38,10 @@ class AmbulanceBooking {
     required this.requiredDateTime,
     required this.user,
     this.agency, // Optional field
-
-
+    this.isPaymentBypassed = false,
+    this.bypassReason,
+    this.bypassApprovedBy,
+    this.bypassDate,
   });
 
   factory AmbulanceBooking.fromJson(Map<String, dynamic> json) {
@@ -57,6 +63,10 @@ class AmbulanceBooking {
       agency: json['agencyProfile'] != null
           ? AmbulanceAgency.fromJson(json['agencyProfile'])
           : null,  // Map agencyProfile here
+      isPaymentBypassed: json['isPaymentBypassed'] ?? false,
+      bypassReason: json['bypassReason'],
+      bypassApprovedBy: json['bypassApprovedBy'],
+      bypassDate: json['bypassDate'] != null ? DateTime.tryParse(json['bypassDate']) : null,
     );
   }
 
@@ -77,6 +87,10 @@ class AmbulanceBooking {
       'requiredDateTime': requiredDateTime.toIso8601String(),
       'user': user.toJson(),
       'agency': agency?.toJson(), // Optional
+      'isPaymentBypassed': isPaymentBypassed,
+      'bypassReason': bypassReason,
+      'bypassApprovedBy': bypassApprovedBy,
+      'bypassDate': bypassDate?.toIso8601String(),
     };
   }
 
@@ -97,6 +111,10 @@ class AmbulanceBooking {
     DateTime? requiredDateTime,
     UserModel? user,
     AmbulanceAgency? agency,
+    bool? isPaymentBypassed,
+    String? bypassReason,
+    String? bypassApprovedBy,
+    DateTime? bypassDate,
   }) {
     return AmbulanceBooking(
       requestId: requestId ?? this.requestId,
@@ -114,6 +132,10 @@ class AmbulanceBooking {
       requiredDateTime: requiredDateTime ?? this.requiredDateTime,
       user: user ?? this.user,
       agency: agency ?? this.agency,
+      isPaymentBypassed: isPaymentBypassed ?? this.isPaymentBypassed,
+      bypassReason: bypassReason ?? this.bypassReason,
+      bypassApprovedBy: bypassApprovedBy ?? this.bypassApprovedBy,
+      bypassDate: bypassDate ?? this.bypassDate,
     );
   }
 }

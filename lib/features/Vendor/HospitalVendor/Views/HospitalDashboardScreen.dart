@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/HospitalDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/AppointmentScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HistoryScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/ProfileScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/WardDetailsScreen.dart';
 import 'dart:math' as math;
 
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
@@ -21,6 +23,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
   int _currentIndex = 0;
   final List<Widget> _pages = [
     const DashboardPage(),
+    const WardDetailsScreen(),
     const AppointmentScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
@@ -105,6 +108,10 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.bed),
+            label: 'Wards',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Appointments',
           ),
@@ -126,10 +133,12 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
       case 0:
         return 'Dashboard';
       case 1:
-        return 'Appointments';
+        return 'Ward Details';
       case 2:
-        return 'History';
+        return 'Appointments';
       case 3:
+        return 'History';
+      case 4:
         return 'Profile';
       default:
         return 'Dashboard';
@@ -196,11 +205,21 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
             },
           ),
           ListTile(
+            leading: Icon(Icons.bed, color: HospitalVendorColorPalette.primaryBlue),
+            title: const Text('Ward Details'),
+            onTap: () {
+              setState(() {
+                _currentIndex = 1;
+              });
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.calendar_today, color: HospitalVendorColorPalette.primaryBlue),
             title: const Text('Appointments'),
             onTap: () {
               setState(() {
-                _currentIndex = 1;
+                _currentIndex = 2;
               });
               Navigator.pop(context);
             },
@@ -210,7 +229,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
             title: const Text('History'),
             onTap: () {
               setState(() {
-                _currentIndex = 2;
+                _currentIndex = 3;
               });
               Navigator.pop(context);
             },
@@ -220,7 +239,7 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
             title: const Text('Profile'),
             onTap: () {
               setState(() {
-                _currentIndex = 3;
+                _currentIndex = 4;
               });
               Navigator.pop(context);
             },
@@ -280,8 +299,28 @@ class DashboardPage extends StatelessWidget {
     return Consumer<HospitalDashboardViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeaderShimmer(),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildTimePeriodSelectorShimmer(),
+                      const SizedBox(height: 24),
+                      _buildStatsRowShimmer(),
+                      const SizedBox(height: 24),
+                      _buildAppointmentsSectionShimmer(),
+                      const SizedBox(height: 24),
+                      _buildFootfallSectionShimmer(),
+                      const SizedBox(height: 24),
+                      _buildDemographicsSectionShimmer(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -1233,6 +1272,376 @@ class DashboardPage extends StatelessWidget {
           }).toList(),
         ],
       ),
+    );
+  }
+
+  Widget _buildShimmerContainer({
+    required double width,
+    required double height,
+    BorderRadius? borderRadius,
+  }) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: borderRadius ?? BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderShimmer() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: HospitalVendorColorPalette.primaryBlue,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildShimmerContainer(
+                    width: 100,
+                    height: 16,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildShimmerContainer(
+                    width: 200,
+                    height: 24,
+                  ),
+                ],
+              ),
+              _buildShimmerContainer(
+                width: 44,
+                height: 44,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildShimmerContainer(
+            width: 150,
+            height: 36,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimePeriodSelectorShimmer() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: HospitalVendorColorPalette.backgroundSecondary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(
+          4,
+          (index) => _buildShimmerContainer(
+            width: 80,
+            height: 32,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsRowShimmer() {
+    return Row(
+      children: List.generate(
+        3,
+        (index) => Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: index < 2 ? 16 : 0),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: HospitalVendorColorPalette.backgroundSecondary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: HospitalVendorColorPalette.shadowLight,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildShimmerContainer(
+                  width: 40,
+                  height: 40,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                const SizedBox(height: 12),
+                _buildShimmerContainer(
+                  width: 60,
+                  height: 24,
+                ),
+                const SizedBox(height: 4),
+                _buildShimmerContainer(
+                  width: 80,
+                  height: 12,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsSectionShimmer() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildShimmerContainer(
+              width: 120,
+              height: 24,
+            ),
+            _buildShimmerContainer(
+              width: 80,
+              height: 20,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(
+            2,
+            (index) => Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index == 0 ? 16 : 0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HospitalVendorColorPalette.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: HospitalVendorColorPalette.shadowLight,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerContainer(
+                      width: 80,
+                      height: 20,
+                    ),
+                    const SizedBox(height: 12),
+                    ...List.generate(
+                      3,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildShimmerContainer(
+                          width: double.infinity,
+                          height: 60,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFootfallSectionShimmer() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerContainer(
+          width: 150,
+          height: 24,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(
+            2,
+            (index) => Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index == 0 ? 16 : 0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HospitalVendorColorPalette.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: HospitalVendorColorPalette.shadowLight,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildShimmerContainer(
+                      width: 40,
+                      height: 40,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildShimmerContainer(
+                      width: 60,
+                      height: 20,
+                    ),
+                    const SizedBox(height: 4),
+                    _buildShimmerContainer(
+                      width: 80,
+                      height: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: HospitalVendorColorPalette.backgroundSecondary,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: HospitalVendorColorPalette.shadowLight,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildShimmerContainer(
+                    width: 100,
+                    height: 20,
+                  ),
+                  _buildShimmerContainer(
+                    width: 60,
+                    height: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(
+                    12,
+                    (index) => _buildShimmerContainer(
+                      width: 20,
+                      height: 100 + (index * 5),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDemographicsSectionShimmer() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildShimmerContainer(
+          width: 120,
+          height: 24,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: List.generate(
+            2,
+            (index) => Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: index == 0 ? 16 : 0),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HospitalVendorColorPalette.backgroundSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: HospitalVendorColorPalette.shadowLight,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerContainer(
+                      width: 100,
+                      height: 20,
+                    ),
+                    const SizedBox(height: 16),
+                    ...List.generate(
+                      4,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildShimmerContainer(
+                                  width: 80,
+                                  height: 12,
+                                ),
+                                _buildShimmerContainer(
+                                  width: 30,
+                                  height: 12,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            _buildShimmerContainer(
+                              width: double.infinity,
+                              height: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 } 
