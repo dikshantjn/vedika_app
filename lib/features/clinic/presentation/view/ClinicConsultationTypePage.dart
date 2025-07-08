@@ -60,11 +60,11 @@ class ClinicConsultationTypePage extends StatelessWidget {
                   if (clinic != null) {
                     Navigator.pushNamed(
                       context,
-                      AppRoutes.bookClinicAppointment,
+                      AppRoutes.clinicSearch,
                       arguments: clinic,
                     );
                   } else {
-                    Navigator.pushNamed(context, AppRoutes.clinic);
+                    Navigator.pushNamed(context, AppRoutes.clinicSearch);
                   }
                 },
               ),

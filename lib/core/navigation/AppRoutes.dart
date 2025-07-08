@@ -72,6 +72,7 @@ class AppRoutes {
   static const String labSearch = '/lab-search';
   static const String labTest = '/labTest';
   static const String clinic = '/clinic';
+  static const String onlineDoctorConsultation = '/onlineDoctorConsultation';
   static const String hospital = '/hospital';
 
   // Booking Routes
@@ -79,7 +80,6 @@ class AppRoutes {
   static const String bookClinicAppointment = '/book-clinic-appointment';
   static const String bookLabTestAppointment = '/book-lab-test-appointment';
   static const String clinicConsultationType = '/clinic/consultationType';
-  static const String onlineDoctorConsultation = '/clinic/onlineConsultation';
   static const String onlineDoctorDetail = '/clinic/onlineConsultation/doctor';
   static const String doctorAppointments = '/doctor/appointments';
 
@@ -236,6 +236,7 @@ class AppRoutes {
       doctorAppointments: (context) => ClinicAppointmentsScreen(),
       clinic: (context) => ClinicSearchPage(),
       clinicSearch: (context) => ClinicSearchPage(),
+      onlineDoctorConsultation: (context) => OnlineDoctorConsultationPage(),
       goToCart: (context) => CartScreen(),
       notification: (context) => NotificationPage(),
       userProfile: (context) => UserProfilePage(),
