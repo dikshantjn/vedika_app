@@ -68,14 +68,7 @@ class _BrandSectionState extends State<BrandSection> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            HealthConcernColorPalette.primaryMint,
-            Colors.white,
-          ],
-        ),
+        color: const Color(0xFFE0F7FA),
       ),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Column(

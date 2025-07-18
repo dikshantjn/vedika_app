@@ -282,6 +282,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
           countdown: 300,
         );
         final verificationResponse = await _prescriptionService.verifyPrescriptionTextAI(extractedText);
+        print("Prescription Verification Response : $verificationResponse");
         if (verificationResponse['verified'] == true) {
           _lastVerificationResponse = verificationResponse;
           _uploadStatus = 'Prescription is verified!';

@@ -55,7 +55,7 @@ class AIViewModel extends ChangeNotifier {
               searchTerms: [],
               extractedSymptoms: [],
               addressSearch: [],
-              reply: _prescriptionAnalysis!['analysis'],
+              reply: _prescriptionAnalysis!['analysisAndRecommendations'] ?? _prescriptionAnalysis!['analysis'] ?? 'No analysis available.',
             ),
             'timestamp': DateTime.now(),
             'isPrescriptionAnalysis': true,

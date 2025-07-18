@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 
 class MedicalStoreVendorDrawerMenu extends StatelessWidget {
   final Function(int) onItemSelected;
@@ -29,24 +30,35 @@ class MedicalStoreVendorDrawerMenu extends StatelessWidget {
                   bottomRight: Radius.circular(20),
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.store, size: 40, color: MedicalStoreVendorColorPalette.primaryColor),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Vighnaharta",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const Text(
-                    "vighnaharta@example.com",
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
-                  ),
-                ],
+              child: Consumer<MedicalStoreVendorDashboardViewModel>(
+                builder: (context, viewModel, child) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 35,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.store, size: 40, color: MedicalStoreVendorColorPalette.primaryColor),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        viewModel.storeName ?? "Medical Store",
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        viewModel.storeEmail ?? "No Email available",
+                        style: const TextStyle(fontSize: 14, color: Colors.white70),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -63,8 +75,6 @@ class MedicalStoreVendorDrawerMenu extends StatelessWidget {
                 _buildDrawerItem(context, Icons.inventory, "Inventory", 2),
                 _buildDrawerItem(context, Icons.assignment_return, "Returns", 3),
                 _buildDrawerItem(context, Icons.person, "Profile", 4),
-                _buildDrawerItem(context, Icons.pie_chart, "Reports & Analytics", 5),
-                _buildDrawerItem(context, Icons.settings, "Settings", 6),
 
                 const Divider(),
 

@@ -45,6 +45,7 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/Diagnostic
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/fallDetection/fall_detection_test_screen.dart';
+import 'package:vedika_healthcare/features/blog/presentation/view/BlogListPage.dart';
 
 class AppRoutes {
   // Auth Routes
@@ -62,6 +63,7 @@ class AppRoutes {
   static const String userProfile = '/userProfile';
   static const String healthRecords = '/healthRecords';
   static const String vedikaPlus = '/vedikaPlus';
+  static const String blogs = '/blogs';
 
   // Service Routes
   static const String ambulanceSearch = '/ambulance-search';
@@ -289,6 +291,7 @@ class AppRoutes {
         },
       ),
       fallDetectionTest: (context) => const FallDetectionTestScreen(),
+      blogs: (context) => const BlogListPage(),
     };
   }
 

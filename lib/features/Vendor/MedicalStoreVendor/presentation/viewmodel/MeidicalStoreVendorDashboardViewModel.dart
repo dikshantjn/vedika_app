@@ -21,12 +21,14 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   String? _storeName;
   String? _storeAddress;
   String? _storePhone;
+  String? _storeEmail;
   VendorMedicalStoreProfile? _storeProfile;
 
   // Getters for store information
   String? get storeName => _storeProfile?.name ?? _storeName;
   String? get storeAddress => _storeProfile?.address ?? _storeAddress;
   String? get storePhone => _storeProfile?.contactNumber ?? _storePhone;
+  String? get storeEmail => _storeProfile?.emailId ?? _storeEmail;
 
   // ✅ List to hold fetched orders and return requests
   List<MedicineOrderModel> orders = [];

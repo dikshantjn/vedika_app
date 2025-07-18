@@ -30,7 +30,7 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
           "Prescription Preview",
@@ -57,18 +57,18 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
             width: double.infinity,
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Image.network(
@@ -108,13 +108,13 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black12,
-                          blurRadius: 10,
+                          blurRadius: 20,
                           spreadRadius: 2,
                         ),
                       ],
@@ -126,46 +126,71 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
                         // Drag Handle
                         Center(
                           child: Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(top: 12, bottom: 8),
+                            width: 50,
+                            height: 5,
+                            margin: const EdgeInsets.only(top: 16, bottom: 12),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                           ),
                         ),
-                        // Title
+                        // Header with actions
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           child: Row(
                             children: [
-                              const Icon(Icons.medical_services, color: Colors.blue),
-                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.medical_services,
+                                  color: Colors.blue.shade700,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               const Text(
-                                'Medicines',
+                                'Prescription Details',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
                               ),
                               const Spacer(),
                               if (_draggableController.isAttached && _draggableController.size < 0.3) ...[
-                                IconButton(
-                                  onPressed: () => FileOpenHelper.openFile(context, widget.prescriptionUrl),
-                                  icon: const Icon(Icons.open_in_new, color: Colors.blue),
-                                  tooltip: 'Open in Viewer',
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    onPressed: () => FileOpenHelper.openFile(context, widget.prescriptionUrl),
+                                    icon: Icon(Icons.open_in_new, color: Colors.blue.shade600, size: 20),
+                                    tooltip: 'Open in Viewer',
+                                  ),
                                 ),
-                                IconButton(
-                                  onPressed: _isDownloading ? null : _downloadPrescription,
-                                  icon: _isDownloading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.download_rounded, color: Colors.green),
-                                  tooltip: 'Download',
+                                const SizedBox(width: 8),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    onPressed: _isDownloading ? null : _downloadPrescription,
+                                    icon: _isDownloading
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : Icon(Icons.download_rounded, color: Colors.green.shade600, size: 20),
+                                    tooltip: 'Download',
+                                  ),
                                 ),
                               ],
                             ],
@@ -173,22 +198,57 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
                         ),
                         // Medicines List
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: _buildPrescriptionDetails(),
                         ),
                         // Add to User Cart Button
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                          child: SizedBox(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                          child: Container(
                             width: double.infinity,
-                            child: OutlinedButton(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.blue.shade600, Colors.blue.shade700],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
                               onPressed: () {
                                 // TODO: Implement add to user cart logic
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Add to User Cart pressed!')),
                                 );
                               },
-                              child: const Text('Add to User Cart'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Add to User Cart',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -202,18 +262,16 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 24),
               child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      spreadRadius: 2,
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
@@ -225,7 +283,7 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
                         icon: const Icon(Icons.open_in_new),
                         label: const Text('Open in Viewer'),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -250,7 +308,7 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -363,81 +421,133 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Medicines',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue,
-          ),
-        ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
           ),
           child: Column(
             children: List.generate(medicines.length, (index) {
               final med = medicines[index] as Map<String, dynamic>;
+              final isSelected = _selectedMedicineIndexes.contains(index);
+              
               return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 1),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedMedicineIndexes.remove(index);
+                        } else {
+                          _selectedMedicineIndexes.add(index);
+                        }
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            med['name'] ?? 'Unknown Medicine',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                          // Modern Checkbox
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue.shade600 : Colors.transparent,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isSelected ? Colors.blue.shade600 : Colors.grey.shade400,
+                                width: 2,
+                              ),
+                            ),
+                            child: isSelected
+                                ? Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  med['name'] ?? 'Unknown Medicine',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    color: isSelected ? Colors.blue.shade700 : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (med['dosage'] != null) ...[
+                                  _buildMedicineDetail('Dosage', med['dosage']),
+                                ],
+                                if (med['frequency'] != null) ...[
+                                  _buildMedicineDetail('Frequency', med['frequency']),
+                                ],
+                                if (med['duration'] != null) ...[
+                                  _buildMedicineDetail('Duration', med['duration']),
+                                ],
+                              ],
                             ),
                           ),
-                          if (med['dosage'] != null) ...[
-                            const SizedBox(height: 4),
-                            Text('Dosage: 9${med['dosage']}'),
-                          ],
-                          if (med['frequency'] != null) ...[
-                            const SizedBox(height: 2),
-                            Text('Frequency: ${med['frequency']}'),
-                          ],
-                          if (med['duration'] != null) ...[
-                            const SizedBox(height: 2),
-                            Text('Duration: ${med['duration']}'),
-                          ],
                         ],
                       ),
                     ),
-                    Checkbox(
-                      value: _selectedMedicineIndexes.contains(index),
-                      onChanged: (bool? selected) {
-                        setState(() {
-                          if (selected == true) {
-                            _selectedMedicineIndexes.add(index);
-                          } else {
-                            _selectedMedicineIndexes.remove(index);
-                          }
-                        });
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               );
             }),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMedicineDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

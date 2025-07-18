@@ -8,13 +8,38 @@ class MedicineProductViewModel extends ChangeNotifier {
   final MedicineProductService _medicineService = MedicineProductService();
 
   List<MedicineProduct> _products = [];
+  List<MedicineProduct> _filteredProducts = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String _searchQuery = '';
 
-  List<MedicineProduct> get products => _products;
+  List<MedicineProduct> get products => _searchQuery.isEmpty ? _products : _filteredProducts;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String get searchQuery => _searchQuery;
 
+  // ✅ Search Products
+  void searchProducts(String query) {
+    _searchQuery = query;
+    if (query.isEmpty) {
+      _filteredProducts = [];
+    } else {
+      _filteredProducts = _products.where((product) {
+        return product.name.toLowerCase().contains(query.toLowerCase()) ||
+               product.manufacturer.toLowerCase().contains(query.toLowerCase()) ||
+               product.type.toLowerCase().contains(query.toLowerCase()) ||
+               product.shortComposition.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    }
+    notifyListeners();
+  }
+
+  // ✅ Clear Search
+  void clearSearch() {
+    _searchQuery = '';
+    _filteredProducts = [];
+    notifyListeners();
+  }
 
   // ✅ Fetch All Products
   Future<void> fetchProducts() async {
@@ -35,6 +60,7 @@ class MedicineProductViewModel extends ChangeNotifier {
       if (token == null) throw Exception("Failed to retrieve token");
 
       _products = await _medicineService.getAllProducts(token, vendorId);
+      _filteredProducts = [];
     } catch (e) {
       _errorMessage = "Error fetching products: ${e.toString()}";
     }

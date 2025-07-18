@@ -14,114 +14,128 @@ class AfterVerificationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Success Animation Container
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Lottie.asset(
-              'assets/animations/verified.json',
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Success Title with Gradient
-          ShaderMask(
-            shaderCallback: (bounds) => LinearGradient(
-              colors: [Colors.green, Colors.green.shade700],
-            ).createShader(bounds),
-            child: const Text(
-              'Prescription Accepted By Medical Store!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Store Name with Icon
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.store_rounded,
-                  size: 20,
-                  color: Colors.grey.shade700,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  medicalStoreName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Success Animation Container with enhanced styling
+        Container(
+          width: 160,
+          height: 160,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.green.withOpacity(0.1),
+                Colors.green.withOpacity(0.05),
               ],
             ),
-          ),
-          const SizedBox(height: 32),
-
-          // Track Order Button
-          Container(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onTrackOrder,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.local_shipping_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Track Your Order',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+          child: Lottie.asset(
+            'assets/animations/verified.json',
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Success Title with enhanced gradient
+        ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              Colors.green.shade600,
+              Colors.green.shade800,
+            ],
+          ).createShader(bounds),
+          child: const Text(
+            'Prescription Accepted by Medical Store!',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              height: 1.3,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Medical Store Name with simple styling
+        Text(
+          medicalStoreName,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue.shade800,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+
+        // Information note
+        Text(
+          'Please wait while the medical store adds the mentioned medicines from your prescription to your cart.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.orange.shade800,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+
+        // Track Order Button with outlined style
+        Container(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onTrackOrder,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: ColorPalette.primaryColor,
+              side: BorderSide(
+                color: ColorPalette.primaryColor,
+                width: 2,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              backgroundColor: Colors.transparent,
+            ),
+            icon: Icon(
+              Icons.local_shipping_rounded,
+              color: ColorPalette.primaryColor,
+              size: 22,
+            ),
+            label: const Text(
+              'Track Your Order',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+
+        // Additional note below button
+        Text(
+          'Click here to track your order',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontStyle: FontStyle.italic,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

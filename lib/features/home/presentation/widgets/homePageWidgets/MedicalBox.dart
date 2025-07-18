@@ -56,6 +56,14 @@ class MedicalBoxRow extends StatelessWidget {
         "textColor": MedicalBoxColors.labTestText,
         "route": "/labTest"
       },
+      {
+        "title": "Blog",
+        "subtitle": "Health",
+        "icon": Icons.article_rounded,
+        "bgColor": Colors.orange.shade50,
+        "textColor": Colors.deepOrange,
+        "route": "/blogs"
+      },
     ];
 
     return Container(
