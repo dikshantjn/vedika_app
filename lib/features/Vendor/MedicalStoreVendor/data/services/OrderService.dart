@@ -10,17 +10,20 @@ class OrderService {
     try {
       final response = await _dio.get('${ApiEndpoints.getOrders}/$vendorId');
 
-      if (response.statusCode == 200) {
-        List<dynamic> data = response.data['orders'];
-        return data.map((order) => MedicineOrderModel.fromJson(order)).toList();
+      if (response.statusCode == 200 && response.data['orders'] != null) {
+        final List<dynamic> data = response.data['orders'];
+        return data
+            .map((order) => MedicineOrderModel.fromJson(order as Map<String, dynamic>))
+            .toList();
       } else if (response.statusCode == 404) {
         // No orders found
         return [];
       } else {
         throw Exception('Failed to load orders');
       }
-    } catch (e) {
-      print("Error fetching orders: $e");
+    } catch (e, stackTrace) {
+      print("🛑 Error fetching orders: $e");
+      print("📍 StackTrace: $stackTrace");
       throw Exception("Error fetching orders");
     }
   }
@@ -206,6 +209,30 @@ class OrderService {
     } catch (e) {
       print("Error getting self delivery status: $e");
       return false;
+    }
+  }
+
+  // ✅ Method to fetch prescription data
+  Future<Map<String, dynamic>?> fetchPrescriptionData(String orderId) async {
+    try {
+      final response = await _dio.get('${ApiEndpoints.getPrescriptionData}/$orderId/prescription');
+        print("prescriptionData prescriptionData $response");
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['message'] == 'Prescription fetched successfully' && data['jsonPrescription'] != null) {
+          print("📋 Prescription data fetched successfully: ${data['jsonPrescription']}");
+          return data['jsonPrescription'] as Map<String, dynamic>;
+        } else {
+          print("❌ No prescription data found or invalid response");
+          return null;
+        }
+      } else {
+        print("❌ Failed to fetch prescription data: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("❌ Error fetching prescription data: $e");
+      return null;
     }
   }
 

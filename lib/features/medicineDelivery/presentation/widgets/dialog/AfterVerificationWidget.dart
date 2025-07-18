@@ -45,7 +45,7 @@ class AfterVerificationWidget extends StatelessWidget {
               colors: [Colors.green, Colors.green.shade700],
             ).createShader(bounds),
             child: const Text(
-              'Prescription Verified!',
+              'Prescription Accepted By Medical Store!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

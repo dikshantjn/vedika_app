@@ -11,6 +11,7 @@ class PrescriptionService {
     required String userId,
     required double latitude,
     required double longitude,
+    required Map<String, dynamic> jsonPrescription,
   }) async {
     try {
       Map<String, dynamic> requestData = {
@@ -19,7 +20,8 @@ class PrescriptionService {
         'userLocation': {
           'latitude': latitude,
           'longitude': longitude,
-        }
+        },
+        'jsonPrescription': jsonPrescription,
       };
 
       Response response = await _dio.post(
@@ -133,6 +135,35 @@ class PrescriptionService {
           'signatureFound': response.data['signature_found'],
           'stampFound': response.data['stamp_found'],
         };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to verify prescription',
+          'error': response.data,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An error occurred while verifying the prescription',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Verifies prescription text using AI
+  Future<Map<String, dynamic>> verifyPrescriptionTextAI(String prescriptionText) async {
+    try {
+      final requestData = {
+        'prescriptionText': prescriptionText,
+      };
+      final response = await _dio.post(
+        ApiEndpoints.verifyPrescriptionText,
+        data: requestData,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (response.statusCode == 200) {
+        return response.data;
       } else {
         return {
           'success': false,

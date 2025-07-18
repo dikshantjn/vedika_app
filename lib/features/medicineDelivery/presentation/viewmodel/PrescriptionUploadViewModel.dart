@@ -21,6 +21,8 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/FindMoreMedicalShopsWidget.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/PrescriptionUploadLoadingDialog.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/dialog/PrescriptionFlowBottomSheet.dart';
 
 class PrescriptionUploadViewModel extends ChangeNotifier {
   final MedicineOrderService _medicineOrderService;
@@ -31,10 +33,14 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
   BuildContext? _context;
   String? _currentPrescriptionId;
   double _currentSearchRadius = 0.5; // Default radius in kilometers
+  PrescriptionFlowController? _flowController;
+  Map<String, dynamic>? _lastVerificationResponse;
+  ScaffoldMessengerState? _scaffoldMessenger;
 
   PrescriptionUploadViewModel(BuildContext context)
       : _medicineOrderService = MedicineOrderService(context) {
     _context = context;
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
     debugPrint("🏗️ PrescriptionUploadViewModel initialized");
     // Initialize socket connection immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,6 +70,12 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
   List<MedicalStore> get nearbyStores => _nearbyStores;
 
   bool get isRequestBeingProcessed => _isRequestBeingProcessed;
+
+  void updateScaffoldMessenger(BuildContext context) {
+    if (context.mounted) {
+      _scaffoldMessenger = ScaffoldMessenger.of(context);
+    }
+  }
 
   void initSocketConnection() async {
     debugPrint("🚀 Starting socket initialization...");
@@ -244,33 +256,99 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
 
       print('pickPrescription: Prescription file selected, path: ${_prescription?.path}');
 
-      await uploadPrescription(context);
+      // Step 1: Extract text from prescription using google_mlkit_text_recognition
+      _isUploading = true;
+      _uploadStatus = 'Extracting text from prescription...';
+      _safeNotifyListeners();
+      _flowController = PrescriptionFlowController(
+        PrescriptionFlowState.loading,
+        message: 'Extracting text from prescription...'
+      );
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => PrescriptionFlowBottomSheet(controller: _flowController!),
+      );
+      try {
+        final inputImage = InputImage.fromFile(_prescription!);
+        final textRecognizer = TextRecognizer();
+        RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+        await textRecognizer.close();
+        String extractedText = recognizedText.text;
+        _flowController?.update(
+          state: PrescriptionFlowState.verifying,
+          message: 'Verifying prescription...',
+          countdown: 300,
+        );
+        final verificationResponse = await _prescriptionService.verifyPrescriptionTextAI(extractedText);
+        if (verificationResponse['verified'] == true) {
+          _lastVerificationResponse = verificationResponse;
+          _uploadStatus = 'Prescription is verified!';
+          _safeNotifyListeners();
+          // Step 3: Call uploadPrescription (DB call) and show searching bottom sheet
+          await uploadPrescription(context, showSearchingDialog: true);
+        } else {
+          String reason = verificationResponse['reason'] ?? verificationResponse['message'] ?? 'Prescription verification failed.';
+          _uploadStatus = 'Prescription verification failed: $reason';
+          _isUploading = false;
+          _safeNotifyListeners();
+          _flowController?.update(
+            state: PrescriptionFlowState.notVerified,
+            message: 'Prescription not verified',
+            lottieAsset: 'assets/animations/paymentfailed.json',
+            onClose: () {
+              if (context.mounted && Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            },
+            countdown: 300,
+          );
+          _scaffoldMessenger?.showSnackBar(
+            SnackBar(content: Text(_uploadStatus)),
+          );
+        }
+      } catch (e, st) {
+        print('Error in pickPrescription: $e');
+        print(st);
+        if (context.mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        _scaffoldMessenger?.showSnackBar(
+          SnackBar(content: Text('Failed to extract or verify prescription.')),
+        );
+        _isUploading = false;
+        _safeNotifyListeners();
+        return;
+      }
     }
   }
 
-  Future<void> uploadPrescription(BuildContext context) async {
+  Future<void> uploadPrescription(BuildContext context, {bool showSearchingDialog = true}) async {
     if (_disposed) return;
 
     String? userId = await StorageService.getUserId();
     if (_prescription == null) return;
 
     _isUploading = true;
-    _uploadStatus = 'Uploading prescription...';
+    _uploadStatus = 'Prescription is Verified and Uploading prescription...';
     _safeNotifyListeners();
 
-    debugPrint("📤 Starting prescription upload...");
-    LoadingDialog.show(context, "Uploading prescription...");
+    if (showSearchingDialog && _flowController != null) {
+      _flowController!.update(
+        state: PrescriptionFlowState.loading,
+        message: 'Prescription is Verified and Uploading prescription...'
+      );
+    }
 
     FirebasePrescriptionUploadService uploadService = FirebasePrescriptionUploadService();
     String? prescriptionUrl = await uploadService.uploadPrescription(_prescription!);
 
     if (prescriptionUrl == null) {
-      debugPrint("❌ Failed to upload prescription");
-      _uploadStatus = 'Failed to upload prescription';
-      _isUploading = false;
+      debugPrint("❌ Failed to upload prescription to Firebase, proceeding to call backend API anyway.");
+      _uploadStatus = 'Failed to upload prescription image, sending request to backend...';
       _safeNotifyListeners();
-      LoadingDialog.hide(context);
-      return;
+      // Do NOT return here; proceed to call backend API with prescriptionUrl as null or empty string
     }
 
     debugPrint("✅ Prescription uploaded successfully. URL: $prescriptionUrl");
@@ -288,7 +366,9 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       _uploadStatus = 'Failed to get user location';
       _isUploading = false;
       _safeNotifyListeners();
-      LoadingDialog.hide(context);
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
       return;
     }
 
@@ -296,41 +376,37 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
     _uploadStatus = 'Sending prescription to nearby medical stores...';
     _safeNotifyListeners();
 
-    // Show BeforeVerificationWidget immediately after location is fetched
-    if (!_disposed && context.mounted) {
-      debugPrint("🔄 Showing BeforeVerificationWidget immediately");
-      LoadingDialog.update(
-        context,
-        BeforeVerificationWidget(
-          initialTime: 300, // 5-minute countdown
-          onTimeExpired: () {
-            if (_disposed) return;
-            debugPrint("⏰ Time expired, showing FindMoreMedicalShopsWidget");
-            if (context.mounted) {
-              LoadingDialog.update(
-                context,
-                FindMoreMedicalShopsWidget(
-                  onFindMore: () {
-                    debugPrint("🔍 Finding more shops");
-                    searchMoreVendors(context);
-                  },
-                  onCancel: () {
-                    debugPrint("❌ Cancelled finding more shops");
-                    Navigator.pop(context);
-                  },
-                ),
-              );
-            }
-          },
-        ),
+    if (!_disposed && context.mounted && showSearchingDialog && _flowController != null) {
+      _flowController!.update(
+        state: PrescriptionFlowState.searching,
+        message: 'Your prescription is verified!\nSearching Nearest Medical Shops...',
+        countdown: 300,
+        lottieAsset: 'assets/animations/scanPrescription.json',
+        onCancel: () {
+          if (context.mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
+        onFindMore: () {
+          if (context.mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          searchMoreVendors(context);
+        },
+        onClose: () {
+          if (context.mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
       );
     }
 
     var response = await _prescriptionService.uploadPrescription(
-      prescriptionUrl: prescriptionUrl,
+      prescriptionUrl: prescriptionUrl ?? '',
       userId: userId!,
       latitude: latitude,
       longitude: longitude,
+      jsonPrescription: _lastVerificationResponse ?? {},
     );
 
     if (response['success']) {
@@ -345,8 +421,8 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
     } else {
       debugPrint("❌ Failed to send prescription to medical stores: ${response['message']}");
       _uploadStatus = 'Failed to upload prescription: ${response['message']}';
-      if (context.mounted) {
-        LoadingDialog.hide(context);
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.pop(context); // Close bottom sheet
       }
     }
 
@@ -360,35 +436,30 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
     _isUploading = true;
     _uploadStatus = 'Searching for more medical stores...';
     _safeNotifyListeners();
-
-    // First close the FindMoreMedicalShopsWidget and show BeforeVerificationWidget
-    if (context.mounted) {
-      Navigator.pop(context);
-      LoadingDialog.show(context, "Searching for medical stores...");
-      LoadingDialog.update(
-        context,
-        BeforeVerificationWidget(
-          initialTime: 300, // Fresh 10-second countdown
-          onTimeExpired: () {
-            if (_disposed) return;
-            debugPrint("⏰ Time expired, showing FindMoreMedicalShopsWidget");
-            if (context.mounted) {
-              LoadingDialog.update(
-                context,
-                FindMoreMedicalShopsWidget(
-                  onFindMore: () {
-                    debugPrint("🔍 Finding more shops");
-                    searchMoreVendors(context);
-                  },
-                  onCancel: () {
-                    debugPrint("❌ Cancelled finding more shops");
-                    Navigator.pop(context);
-                  },
-                ),
-              );
-            }
-          },
-        ),
+    if (_flowController != null) {
+      _flowController!.update(
+        state: PrescriptionFlowState.searching,
+        message: 'Searching Nearest Medical Shops...',
+        countdown: 300,
+        lottieAsset: 'assets/animations/scanPrescription.json',
+        onFindMore: () async {
+          // When user clicks 'Search More', restart countdown and call API
+          _flowController!.update(
+            state: PrescriptionFlowState.searching,
+            message: 'Searching Nearest Medical Shops...',
+            countdown: 300,
+            lottieAsset: 'assets/animations/scanPrescription.json',
+            onFindMore: _flowController!.onFindMore, // keep the same callback
+          );
+          await Future.delayed(const Duration(milliseconds: 500)); // allow UI to update
+          searchMoreVendors(context);
+        },
+        onCancel: () {
+          if (context.mounted && Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
+        noMoreVendors: false,
       );
     }
 
@@ -403,6 +474,9 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       _uploadStatus = 'Failed to get user location';
       _isUploading = false;
       _safeNotifyListeners();
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
       return;
     }
 
@@ -420,31 +494,31 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       debugPrint("✅ Search for more vendors completed");
       _uploadStatus = response['message'];
 
-      if (response['moreVendorsAvailable'] == false) {
+      if (response['moreVendorsAvailable'] == false && _flowController != null) {
         // No more vendors available, show FindMoreMedicalShopsWidget with noMoreVendors state
-        if (context.mounted) {
-          LoadingDialog.update(
-            context,
-            FindMoreMedicalShopsWidget(
-              onFindMore: () {
-                debugPrint("🔍 Finding more shops");
-                searchMoreVendors(context);
-              },
-              onCancel: () {
-                debugPrint("❌ Cancelled finding more shops");
-                Navigator.pop(context);
-              },
-              noMoreVendors: true,
-            ),
-          );
-        }
+        _flowController!.update(
+          state: PrescriptionFlowState.findMore,
+          onFindMore: () {
+            if (context.mounted && Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            searchMoreVendors(context);
+          },
+          onCancel: () {
+            if (context.mounted && Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+          noMoreVendors: true,
+        );
       }
-      // Keep BeforeVerificationWidget showing with countdown if more vendors are available
+      // If more vendors are available, do nothing (countdown will show again)
     } else {
       debugPrint("❌ Failed to search for more vendors: ${response['message']}");
       _uploadStatus = 'Failed to search for more vendors: ${response['message']}';
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (context.mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+        _scaffoldMessenger?.showSnackBar(
           SnackBar(content: Text(response['message'])),
         );
       }
@@ -466,7 +540,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       serviceEnabled = await location.requestService();
       if (!serviceEnabled) {
         print('enableLocation: Location service not enabled');
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessenger?.showSnackBar(
           SnackBar(content: Text("Location services are required to proceed.")),
         );
         return false;
@@ -479,7 +553,7 @@ class PrescriptionUploadViewModel extends ChangeNotifier {
       permissionGranted = await location.requestPermission();
       if (permissionGranted != PermissionStatus.granted) {
         print('enableLocation: Location permission not granted');
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessenger?.showSnackBar(
           SnackBar(content: Text("Location permission is required.")),
         );
         return false;

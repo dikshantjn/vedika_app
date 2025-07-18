@@ -15,6 +15,7 @@ class ProcessOrderScreen extends StatefulWidget {
   final String orderDate;
   final String orderId;
   final bool selfDelivery;
+  final Map<String, dynamic>? jsonPrescription;
 
   const ProcessOrderScreen({
     Key? key,
@@ -23,6 +24,7 @@ class ProcessOrderScreen extends StatefulWidget {
     required this.orderDate,
     required this.orderId,
     required this.selfDelivery,
+    this.jsonPrescription,
   }) : super(key: key);
 
   @override
@@ -55,15 +57,16 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
           viewModel.fetchCartItems(widget.orderId);
           // Show a snackbar to notify the user
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Order updated. Refreshing...'),
-              duration: Duration(seconds: 2),
+              backgroundColor: MedicalStoreVendorColorPalette.successColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           );
         }
       };
     });
-
     _scrollController.addListener(_scrollListener);
   }
 
@@ -93,21 +96,27 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     _previousOffset = currentOffset;
   }
 
-  void _viewPrescription() {
+  void _viewPrescription() async {
     if (widget.prescriptionUrl.isNotEmpty) {
+      // Fetch prescription data from API
+      final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+      final prescriptionData = await viewModel.fetchPrescriptionData(widget.orderId);
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PrescriptionPreviewScreen(
             prescriptionUrl: widget.prescriptionUrl,
+            jsonPrescription: prescriptionData,
           ),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text("No prescription file available"),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
@@ -116,18 +125,27 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MedicalStoreVendorColorPalette.backgroundColor,
+      backgroundColor: Colors.grey[50],
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        elevation: 0,
         foregroundColor: Colors.white,
         centerTitle: true,
-        title: const Text("Process Order"),
+        title: Text(
+          "Process Order",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.medical_services),
-            onPressed: _viewPrescription,
-            tooltip: 'View Prescription',
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ],
       ),
@@ -135,60 +153,94 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         builder: (context, viewModel, child) {
           return Column(
             children: [
-              // Medicine Search and Order Details
+              // Header Section with Medicine Search
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: [
-                    MedicineSearchWidget(
-                      orderId: widget.orderId,
-                      searchController: _searchController,
-                      onMedicineSelected: (medicine) {
-                        setState(() {
-                          selectedMedicine = medicine;
-                          _searchController.text = medicine.name;
-                        });
-                      },
-                    ),
-
-                    // Order Details (Show/Hide based on scroll)
-                    if (_showOrderDetails)
-                      OrderDetailsWidget(
+                    // Medicine Search Section
+                    Container(
+                      padding: EdgeInsets.zero,
+                      child: MedicineSearchWidget(
                         orderId: widget.orderId,
-                        customerName: widget.customerName,
-                        orderDate: widget.orderDate,
-                        prescriptionUrl: widget.prescriptionUrl,
-                        selfDelivery: widget.selfDelivery,
-                        onOrderConfirmed: () {
-                          if (mounted) {
-                            final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
-                            viewModel.fetchOrders();
-                          }
+                        searchController: _searchController,
+                        onMedicineSelected: (medicine) {
+                          setState(() {
+                            selectedMedicine = medicine;
+                            _searchController.text = medicine.name;
+                          });
                         },
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // Order Details Section
+                    if (_showOrderDetails)
+                      AnimatedContainer(
+                        duration: Duration(milliseconds: 300),
+                        child: OrderDetailsWidget(
+                          orderId: widget.orderId,
+                          customerName: widget.customerName,
+                          orderDate: widget.orderDate,
+                          prescriptionUrl: widget.prescriptionUrl,
+                          selfDelivery: widget.selfDelivery,
+                          jsonPrescription: widget.jsonPrescription,
+                          onOrderConfirmed: () {
+                            if (mounted) {
+                              final viewModel = Provider.of<MedicineOrderViewModel>(context, listen: false);
+                              viewModel.fetchOrders();
+                            }
+                          },
+                        ),
                       )
                     else
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 10, right: 16),
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _showOrderDetails = true;
-                              });
-                            },
-                            icon: const Icon(Icons.visibility, color: Colors.blue, size: 18),
-                            label: const Text(
-                              "Show Details",
-                              style: TextStyle(color: Colors.blue, fontSize: 14),
+                      AnimatedContainer(
+                        duration: Duration(milliseconds: 300),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
                             ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.blue, width: 1),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              minimumSize: const Size(10, 10),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () {
+                                  setState(() {
+                                    _showOrderDetails = true;
+                                  });
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.visibility, color: Colors.blue[600], size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "Show Details",
+                                        style: TextStyle(
+                                          color: Colors.blue[600],
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -198,100 +250,171 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
                 ),
               ),
 
-              // Tab Bar below Order Details
+              // Modern Tab Bar
               Container(
-                color: Colors.white,
+                margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: TabBar(
                   controller: _tabController,
-                  indicatorColor: MedicalStoreVendorColorPalette.primaryColor,
-                  labelColor: MedicalStoreVendorColorPalette.primaryColor,
-                  unselectedLabelColor: Colors.grey,
-                  tabs: const [
-                    Tab(text: "New Cart Items"),
-                    Tab(text: "Past Cart Items"),
+                  indicator: BoxDecoration(
+                    color: MedicalStoreVendorColorPalette.primaryColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey[600],
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_shopping_cart, size: 16),
+                          SizedBox(width: 6),
+                          Text("New Items"),
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.history, size: 16),
+                          SizedBox(width: 6),
+                          Text("Past Items"),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
 
-              // Tab View for Cart Items
+              // Tab View Content
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
                     // New Cart Items Tab
-                    SingleChildScrollView(
-                      controller: _scrollController,
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: viewModel.cart.isEmpty
-                          ? _emptyCartWidget()
-                          : Column(
-                              children: viewModel.cart.map((cartItem) {
-                                return SelectedMedicineWidget(
-                                  cartItem: cartItem,
-                                  onQuantityChanged: (newQuantity) {
-                                    setState(() {
-                                      int index = viewModel.cart.indexWhere(
-                                          (item) => item.productId == cartItem.productId);
-                                      if (index != -1) {
-                                        viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
-                                      }
-                                    });
-                                  },
-                                  onDelete: () {
-                                    setState(() {
-                                      viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
-                                    });
-                                  },
-                                  quantityController: _quantityController,
-                                );
-                              }).toList(),
-                            ),
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 20),
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: BouncingScrollPhysics(),
+                        child: viewModel.cart.isEmpty
+                            ? _buildEmptyStateWidget()
+                            : Column(
+                                children: viewModel.cart.map((cartItem) {
+                                  return Container(
+                                    margin: EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: SelectedMedicineWidget(
+                                      cartItem: cartItem,
+                                      onQuantityChanged: (newQuantity) {
+                                        setState(() {
+                                          int index = viewModel.cart.indexWhere(
+                                              (item) => item.productId == cartItem.productId);
+                                          if (index != -1) {
+                                            viewModel.cart[index] = viewModel.cart[index].copyWith(quantity: newQuantity);
+                                          }
+                                        });
+                                      },
+                                      onDelete: () {
+                                        setState(() {
+                                          viewModel.cart.removeWhere((item) => item.productId == cartItem.productId);
+                                        });
+                                      },
+                                      quantityController: _quantityController,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
                     ),
 
                     // Past Cart Items Tab
-                    SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: viewModel.fetchedCartItems.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: Text(
-                                  "No items have been added to the cart yet.",
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                                ),
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 20),
+                      child: SingleChildScrollView(
+                        physics: BouncingScrollPhysics(),
+                        child: viewModel.fetchedCartItems.isEmpty
+                            ? _buildEmptyStateWidget()
+                            : Column(
+                                children: viewModel.fetchedCartItems.map((cartItem) {
+                                  return Container(
+                                    margin: EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: FetchedCartItemsWidget(
+                                      fetchedCartItems: [cartItem],
+                                      onDelete: (cartId) async {
+                                        bool isDeleted = await viewModel.deleteCartItem(cartId);
+
+                                        if (isDeleted) {
+                                          setState(() {
+                                            viewModel.fetchedCartItems.removeWhere((item) => item.cartId == cartId);
+                                            viewModel.cart.removeWhere((item) => item.cartId == cartId);
+                                          });
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Cart item deleted successfully!'),
+                                              backgroundColor: MedicalStoreVendorColorPalette.successColor,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Failed to delete cart item.'),
+                                              backgroundColor: Colors.red,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
                               ),
-                            )
-                          : FetchedCartItemsWidget(
-                              fetchedCartItems: viewModel.fetchedCartItems,
-                              onDelete: (cartId) async {
-                                bool isDeleted = await viewModel.deleteCartItem(cartId);
-
-                                if (isDeleted) {
-                                  setState(() {
-                                    viewModel.fetchedCartItems.removeWhere((item) => item.cartId == cartId);
-                                    viewModel.cart.removeWhere((item) => item.cartId == cartId);
-                                  });
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Cart item deleted successfully!'),
-                                      backgroundColor: Colors.green,
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Failed to delete cart item.'),
-                                      backgroundColor: Colors.red,
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -301,68 +424,84 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
         },
       ),
 
-      // Keep button fixed at the bottom
+      // Enhanced Bottom Button
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey.shade300,
-              width: 1,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, -2),
             ),
-          ),
+          ],
         ),
         child: Consumer<MedicineOrderViewModel>(
           builder: (context, viewModel, child) {
-            return OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
+            return Container(
+              height: 56,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
                     color: MedicalStoreVendorColorPalette.successColor,
-                    width: 2
+                    width: 2,
+                  ),
+                  foregroundColor: MedicalStoreVendorColorPalette.successColor,
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                backgroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                if (viewModel.cart.isEmpty) {
+                onPressed: () async {
+                  if (viewModel.cart.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Your cart is empty. Please add medicines."),
+                        backgroundColor: MedicalStoreVendorColorPalette.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    );
+                    return;
+                  }
+
+                  final resultMessage = await viewModel.addToCartDB(widget.orderId);
+
+                  if (!mounted) return;
+
+                  // Determine success/error based on message content
+                  bool isSuccess = resultMessage.toLowerCase().contains('success') || 
+                                 resultMessage.toLowerCase().contains('added') ||
+                                 resultMessage.toLowerCase().contains('updated');
+                  
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text("❌ Your cart is empty. Please add medicines."),
-                      backgroundColor: MedicalStoreVendorColorPalette.errorColor,
+                      content: Text(resultMessage),
+                      backgroundColor: isSuccess
+                          ? MedicalStoreVendorColorPalette.successColor
+                          : MedicalStoreVendorColorPalette.errorColor,
                       behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   );
-                  return;
-                }
 
-                final resultMessage = await viewModel.addToCartDB(widget.orderId);
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(resultMessage),
-                    backgroundColor: resultMessage.startsWith("✅")
-                        ? MedicalStoreVendorColorPalette.successColor
-                        : MedicalStoreVendorColorPalette.errorColor,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-
-                if (resultMessage.startsWith("✅")) {
-                  await viewModel.fetchCartItems(widget.orderId);
-                  viewModel.clearCarts();
-                }
-              },
-              child: const Text(
-                "Add to User Cart",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: MedicalStoreVendorColorPalette.successColor,
+                  if (isSuccess) {
+                    await viewModel.fetchCartItems(widget.orderId);
+                    viewModel.clearCarts();
+                  }
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shopping_cart, size: 20),
+                    SizedBox(width: 8),
+                    Text("Add to User Cart"),
+                  ],
                 ),
               ),
             );
@@ -372,17 +511,40 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     );
   }
 
-  Widget _emptyCartWidget() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+  Widget _buildEmptyStateWidget() {
+    return Container(
+      padding: EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.shopping_cart_outlined, size: 50, color: Colors.grey),
-          const SizedBox(height: 10),
-          const Text(
-            "Your cart is empty. Search and add medicines!",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_cart_outlined,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            "Your cart is empty",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Search and add medicines to get started!",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
             textAlign: TextAlign.center,
           ),
         ],

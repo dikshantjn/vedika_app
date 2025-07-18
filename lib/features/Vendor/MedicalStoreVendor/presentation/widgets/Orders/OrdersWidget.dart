@@ -252,26 +252,36 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       bool selfDelivery,
       ) async {
     String? prescriptionUrl = await viewModel.fetchPrescriptionUrl(prescriptionId);
+    final prescriptionData = await viewModel.fetchPrescriptionData(orderId);
 
-    if (prescriptionUrl != null && prescriptionUrl.isNotEmpty) {
-      final bool? orderConfirmed = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProcessOrderScreen(
-            prescriptionUrl: prescriptionUrl,
-            customerName: customerName,
-            orderDate: orderDate,
-            orderId: orderId,
-            selfDelivery: selfDelivery,
-          ),
+    // Find the order to get jsonPrescription
+    final order = viewModel.orders.firstWhere(
+      (order) => order.orderId == orderId,
+      orElse: () => MedicineOrderModel.empty(),
+    );
+    
+
+    final bool? orderConfirmed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProcessOrderScreen(
+          prescriptionUrl: prescriptionUrl ?? '', // Pass empty string if not found
+          customerName: customerName,
+          orderDate: orderDate,
+          orderId: orderId,
+          selfDelivery: selfDelivery,
+          jsonPrescription:prescriptionData ,
         ),
-      );
+      ),
+    );
 
-      // If order was confirmed, refresh the orders list
-      if (orderConfirmed == true) {
-        await viewModel.fetchOrders();
-      }
-    } else {
+    // If order was confirmed, refresh the orders list
+    if (orderConfirmed == true) {
+      await viewModel.fetchOrders();
+    }
+
+    // Show a warning after navigation if prescription was missing
+    if (prescriptionUrl == null || prescriptionUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Prescription not found!")),
       );

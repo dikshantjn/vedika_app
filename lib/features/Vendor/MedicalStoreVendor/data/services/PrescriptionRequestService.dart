@@ -46,7 +46,7 @@ class PrescriptionRequestService {
   }
 
 
-  Future<bool> acceptPrescription(String prescriptionId, String vendorId) async {
+  Future<bool> acceptPrescription(String prescriptionId, String vendorId, Map<String, dynamic>? jsonPrescription) async {
     try {
       if (prescriptionId.isEmpty || vendorId.isEmpty) {
         throw Exception("❌ Prescription ID or Vendor ID is missing");
@@ -55,13 +55,22 @@ class PrescriptionRequestService {
       // API URL
       print("📡 Sending Accept Prescription Request to: ${ApiEndpoints.acceptPrescriptionStatus}");
 
+      // Prepare request data
+      Map<String, dynamic> requestData = {
+        "prescriptionId": prescriptionId,
+        "vendorId": vendorId,
+      };
+
+      // Add jsonPrescription if provided
+      if (jsonPrescription != null) {
+        requestData["jsonPrescription"] = jsonPrescription;
+        print("📝 Including jsonPrescription in request");
+      }
+
       // Sending POST request
       Response response = await _dio.post(
         ApiEndpoints.acceptPrescriptionStatus,
-        data: {
-          "prescriptionId": prescriptionId,
-          "vendorId": vendorId, // ✅ Added vendorId
-        },
+        data: requestData,
       );
 
       if (response.statusCode == 200) {

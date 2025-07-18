@@ -171,6 +171,7 @@ class _OrderRequestsWidgetState extends State<OrderRequestsWidget> {
                         MaterialPageRoute(
                           builder: (context) => PrescriptionPreviewScreen(
                             prescriptionUrl: request.prescriptionUrl,
+                            jsonPrescription: request.jsonPrescription,
                           ),
                         ),
                       );
@@ -207,8 +208,11 @@ class _OrderRequestsWidgetState extends State<OrderRequestsWidget> {
                       });
                       
                       try {
-                        // Accept the prescription
-                        await widget.viewModel.acceptPrescription(request.prescriptionId);
+                        // Accept the prescription with jsonPrescription data
+                        await widget.viewModel.acceptPrescription(
+                          request.prescriptionId,
+                          jsonPrescription: request.jsonPrescription,
+                        );
                         
                         // Refresh the parent page using the callback
                         await widget.onRequestAccepted();

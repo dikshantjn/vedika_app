@@ -7,10 +7,12 @@ import 'package:permission_handler/permission_handler.dart';
 
 class PrescriptionPreviewScreen extends StatefulWidget {
   final String prescriptionUrl;
+  final Map<String, dynamic>? jsonPrescription;
 
   const PrescriptionPreviewScreen({
     Key? key,
     required this.prescriptionUrl,
+    this.jsonPrescription,
   }) : super(key: key);
 
   @override
@@ -20,6 +22,10 @@ class PrescriptionPreviewScreen extends StatefulWidget {
 class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
   bool _isLoading = false;
   bool _isDownloading = false;
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
+
+  // Add state to track selected medicines
+  Set<int> _selectedMedicineIndexes = {};
 
   @override
   Widget build(BuildContext context) {
@@ -45,120 +51,393 @@ class _PrescriptionPreviewScreenState extends State<PrescriptionPreviewScreen> {
       ),
       body: Column(
         children: [
-          // Preview Container
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
+          // Image area (fixed height)
+          Container(
+            height: 220,
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Image.network(
+                      widget.prescriptionUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.white,
+                          height: 220,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                                const SizedBox(height: 16),
+                                Text('Failed to load prescription',
+                                    style: TextStyle(color: Colors.red.shade300, fontSize: 16)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+          // DraggableScrollableSheet (always at bottom)
+          if (widget.jsonPrescription != null)
+            Expanded(
+              child: DraggableScrollableSheet(
+                controller: _draggableController,
+                initialChildSize: 0.4,
+                minChildSize: 0.2,
+                maxChildSize: 0.8,
+                expand: false,
+                builder: (context, scrollController) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.zero,
+                      children: [
+                        // Drag Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(top: 12, bottom: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        // Title
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.medical_services, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Medicines',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (_draggableController.isAttached && _draggableController.size < 0.3) ...[
+                                IconButton(
+                                  onPressed: () => FileOpenHelper.openFile(context, widget.prescriptionUrl),
+                                  icon: const Icon(Icons.open_in_new, color: Colors.blue),
+                                  tooltip: 'Open in Viewer',
+                                ),
+                                IconButton(
+                                  onPressed: _isDownloading ? null : _downloadPrescription,
+                                  icon: _isDownloading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Icon(Icons.download_rounded, color: Colors.green),
+                                  tooltip: 'Download',
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Medicines List
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _buildPrescriptionDetails(),
+                        ),
+                        // Add to User Cart Button
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                // TODO: Implement add to user cart logic
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Add to User Cart pressed!')),
+                                );
+                              },
+                              child: const Text('Add to User Cart'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    : InteractiveViewer(
-                        minScale: 0.5,
-                        maxScale: 4.0,
-                        child: Image.network(
-                          widget.prescriptionUrl,
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 48,
-                                    color: Colors.red.shade300,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Failed to load prescription',
-                                    style: TextStyle(
-                                      color: Colors.red.shade300,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+            ),
+          if (widget.jsonPrescription == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => FileOpenHelper.openFile(context, widget.prescriptionUrl),
+                        icon: const Icon(Icons.open_in_new),
+                        label: const Text('Open in Viewer'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isDownloading ? null : _downloadPrescription,
+                        icon: _isDownloading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.download_rounded),
+                        label: Text(_isDownloading ? 'Downloading...' : 'Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Debug: Print JSON prescription data
+    if (widget.jsonPrescription != null) {
+      print('📋 JSON Prescription Data Available: ${widget.jsonPrescription!.keys.toList()}');
+    } else {
+      print('❌ No JSON Prescription Data Available');
+    }
+  }
+
+  @override
+  void dispose() {
+    _draggableController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildPrescriptionDetails() {
+    if (widget.jsonPrescription == null) {
+      return const Center(
+        child: Text('No prescription details available'),
+      );
+    }
+
+    final data = widget.jsonPrescription!;
+    // Only show medicines section
+    if (data['medicines'] != null && (data['medicines'] as List).isNotEmpty) {
+      return _buildMedicinesSection(data['medicines'] as List);
+    } else {
+      return const Center(child: Text('No medicines found in prescription'));
+    }
+  }
+
+  Widget _buildInfoSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isMultiline = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
               ),
             ),
           ),
-
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => FileOpenHelper.openFile(context, widget.prescriptionUrl),
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open in Viewer'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isDownloading ? null : _downloadPrescription,
-                    icon: _isDownloading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.download_rounded),
-                    label: Text(_isDownloading ? 'Downloading...' : 'Download'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.black87,
+              ),
+              maxLines: isMultiline ? null : 1,
+              overflow: isMultiline ? null : TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMedicinesSection(List medicines) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Medicines',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Column(
+            children: List.generate(medicines.length, (index) {
+              final med = medicines[index] as Map<String, dynamic>;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            med['name'] ?? 'Unknown Medicine',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (med['dosage'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Dosage: 9${med['dosage']}'),
+                          ],
+                          if (med['frequency'] != null) ...[
+                            const SizedBox(height: 2),
+                            Text('Frequency: ${med['frequency']}'),
+                          ],
+                          if (med['duration'] != null) ...[
+                            const SizedBox(height: 2),
+                            Text('Duration: ${med['duration']}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Checkbox(
+                      value: _selectedMedicineIndexes.contains(index),
+                      onChanged: (bool? selected) {
+                        setState(() {
+                          if (selected == true) {
+                            _selectedMedicineIndexes.add(index);
+                          } else {
+                            _selectedMedicineIndexes.remove(index);
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 

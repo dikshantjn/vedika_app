@@ -12,6 +12,8 @@ class OrderDetailsWidget extends StatefulWidget {
   final String prescriptionUrl;
   final bool selfDelivery;
   final VoidCallback onOrderConfirmed;
+  final Map<String, dynamic>? jsonPrescription;
+
 
   const OrderDetailsWidget({
     Key? key,
@@ -21,6 +23,7 @@ class OrderDetailsWidget extends StatefulWidget {
     required this.prescriptionUrl,
     required this.selfDelivery,
     required this.onOrderConfirmed,
+    this.jsonPrescription
   }) : super(key: key);
 
   @override
@@ -70,12 +73,14 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
   }
 
   void _viewPrescription(BuildContext context) {
+    print("_viewPrescription called and the ${widget.jsonPrescription}");
     if (widget.prescriptionUrl.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PrescriptionPreviewScreen(
             prescriptionUrl: widget.prescriptionUrl,
+            jsonPrescription: widget.jsonPrescription,
           ),
         ),
       );
@@ -176,7 +181,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
     }
 
     // Debug print to verify the value
-    print('isSelfDeliveryEnabled: [32m${viewModel.isSelfDeliveryEnabled}[0m');
+    print('isSelfDeliveryEnabled: ${viewModel.isSelfDeliveryEnabled}');
 
     // Check if this specific order has self-delivery enabled
     final currentOrder = viewModel.orders.firstWhere(
@@ -204,282 +209,344 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            spreadRadius: 1,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔹 Order Details
+          // Header Section with Order ID and Actions
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Order ID and Customer Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Order ID: #${widget.orderId}",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.blueGrey[900],
-                      ),
+                    // Order ID and Status Row - Fixed overflow
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: Text(
+                            "#${widget.orderId}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            _formatStatus(_currentStatus ?? "Loading..."),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _getStatusColor(_currentStatus ?? "Loading..."),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            widget.customerName,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      "Customer: ${widget.customerName}",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[800]),
-                    ),
-                    Text(
-                      "Date: ${widget.orderDate}",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            widget.orderDate,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              // Dropdown Menu Button (Top Right) - Only show when self delivery is enabled
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, color: Colors.grey[700]),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onSelected: (value) async {
-                  String newStatus = "";
-                  switch (value) {
-                    case "Ready to Pickup":
-                      newStatus = "ReadyForPickup";
-                      break;
-                    case "Out for Delivery":
-                      newStatus = "OutForDelivery";
-                      break;
-                    case "Delivered":
-                      newStatus = "Delivered";
-                      break;
-                  }
-                  if (newStatus.isNotEmpty) {
-                    await viewModel.updateOrderStatus(widget.orderId, newStatus);
-                    if (mounted) {
-                      setState(() {
-                        _currentStatus = newStatus;
-                      });
+              // Action Menu
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz, color: Colors.grey[700], size: 20),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onSelected: (value) async {
+                    String newStatus = "";
+                    switch (value) {
+                      case "Ready to Pickup":
+                        newStatus = "ReadyForPickup";
+                        break;
+                      case "Out for Delivery":
+                        newStatus = "OutForDelivery";
+                        break;
+                      case "Delivered":
+                        newStatus = "Delivered";
+                        break;
                     }
-                  }
-                },
-                itemBuilder: (BuildContext context) {
-                  if (viewModel.isSelfDeliveryEnabled) {
-                    // If self delivery is enabled, do not show 'Ready to Pickup'
-                    return [
-                      PopupMenuItem<String>(
-                        value: "Out for Delivery",
-                        child: Row(
-                          children: [
-                            Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Out for Delivery",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue,
+                    if (newStatus.isNotEmpty) {
+                      await viewModel.updateOrderStatus(widget.orderId, newStatus);
+                      if (mounted) {
+                        setState(() {
+                          _currentStatus = newStatus;
+                        });
+                      }
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    if (viewModel.isSelfDeliveryEnabled) {
+                      return [
+                        PopupMenuItem<String>(
+                          value: "Out for Delivery",
+                          child: Row(
+                            children: [
+                              Icon(Icons.delivery_dining, color: Colors.blue[600], size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Out for Delivery",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.blue[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: "Delivered",
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.orange, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Delivered",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange,
+                        PopupMenuItem<String>(
+                          value: "Delivered",
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline, color: Colors.green[600], size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Delivered",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ];
-                  } else {
-                    // If self delivery is not enabled, show all three options
-                    return [
-                      PopupMenuItem<String>(
-                        value: "Ready to Pickup",
-                        child: Row(
-                          children: [
-                            Icon(Icons.local_shipping, color: Colors.green, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Ready to Pickup",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green,
+                      ];
+                    } else {
+                      return [
+                        PopupMenuItem<String>(
+                          value: "Ready to Pickup",
+                          child: Row(
+                            children: [
+                              Icon(Icons.local_shipping_outlined, color: Colors.green[600], size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Ready to Pickup",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: "Out for Delivery",
-                        child: Row(
-                          children: [
-                            Icon(Icons.delivery_dining, color: Colors.blue, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Out for Delivery",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue,
+                        PopupMenuItem<String>(
+                          value: "Out for Delivery",
+                          child: Row(
+                            children: [
+                              Icon(Icons.delivery_dining, color: Colors.blue[600], size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Out for Delivery",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.blue[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: "Delivered",
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.orange, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Delivered",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange,
+                        PopupMenuItem<String>(
+                          value: "Delivered",
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline, color: Colors.green[600], size: 18),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Delivered",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green[600],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ];
-                  }
-                },
-                offset: const Offset(0, 8),
-                color: Colors.white,
-                elevation: 5,
-              )
+                      ];
+                    }
+                  },
+                  offset: const Offset(0, 8),
+                  color: Colors.white,
+                  elevation: 8,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 6),
 
-          // Order Status Section
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
 
-          // Buttons Row
+          // Action Buttons Section
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Show Status or Accept Order button based on order status
+              // Confirm Order Button - Only show when not already accepted
               if (_currentStatus == "PrescriptionVerified" || _currentStatus == "Pending")
                 Expanded(
-                  flex: 1,
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      await viewModel.acceptOrder(widget.orderId);
-                      if (context.mounted) {
-                        if (viewModel.isOrderAccepted) {
-                          setState(() {
-                            _currentStatus = "Accepted";
-                          });
-                          // Refresh the order status to ensure consistency
-                          await viewModel.fetchOrderStatus(widget.orderId);
-                          // Call the callback to refresh orders list without navigating back
-                          widget.onOrderConfirmed();
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(viewModel.acceptMessage),
-                            backgroundColor: viewModel.isOrderAccepted 
-                                ? Colors.green 
-                                : Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      side: const BorderSide(color: Colors.green, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: viewModel.isAccepting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.green,
-                            ),
-                          )
-                        : const Text(
-                            "Confirm Order",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.green,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                  ),
-                )
-              else
-                // Show current status when order is in other states
-                Expanded(
-                  flex: 1,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _getStatusColor(_currentStatus ?? "Loading...").withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      _formatStatus(_currentStatus ?? "Loading..."),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _getStatusColor(_currentStatus ?? "Loading..."),
-                        fontWeight: FontWeight.w500,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await viewModel.acceptOrder(widget.orderId);
+                        if (context.mounted) {
+                          if (viewModel.isOrderAccepted) {
+                            setState(() {
+                              _currentStatus = "Accepted";
+                            });
+                            await viewModel.fetchOrderStatus(widget.orderId);
+                            widget.onOrderConfirmed();
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    viewModel.isOrderAccepted ? Icons.check_circle : Icons.error_outline,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(viewModel.acceptMessage),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: viewModel.isOrderAccepted ? Colors.green : Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600],
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                      child: viewModel.isAccepting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text("Confirm Order"),
                     ),
                   ),
                 ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
 
-              // 🔍 View Prescription Button (always at the right side)
+              // View Prescription Button
               Expanded(
-                flex: 1,
-                child: OutlinedButton.icon(
-                  onPressed: () => _viewPrescription(context),
-                  icon: const Icon(Icons.visibility, size: 16),
-                  label: const Text(
-                    "View Prescription",
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  height: 44,
+                  child: OutlinedButton(
+                    onPressed: () => _viewPrescription(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.blue[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "View Prescription",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue[600],
+                      ),
                     ),
                   ),
                 ),
@@ -487,80 +554,81 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
             ],
           ),
 
-          // Self Delivery Button Row
+          // Self Delivery Section - Fixed overflow
           if ((_currentStatus == "Accepted" && !viewModel.isSelfDeliveryEnabled) ||
               (viewModel.isSelfDeliveryEnabled))
             Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: viewModel.isSelfDeliveryEnabled
-                        ? OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              side: const BorderSide(color: Colors.purple, width: 1.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: const Text(
-                              "Self Delivery Enabled",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.purple,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          )
-                        : OutlinedButton(
-                            onPressed: viewModel.isEnablingSelfDelivery
-                                ? null
-                                : () async {
-                                    await viewModel.enableSelfDelivery(widget.orderId);
-                                    if (context.mounted) {
-                                      setState(() {
-                                        // No status change here
-                                      });
-                                      widget.onOrderConfirmed();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Self delivery enabled successfully"),
-                                          backgroundColor: Colors.purple,
-                                        ),
-                                      );
-                                    }
-                                  },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              side: const BorderSide(color: Colors.purple, width: 1.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: viewModel.isEnablingSelfDelivery
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.purple,
-                                    ),
-                                  )
-                                : const Text(
-                                    "Enable Self Delivery",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.purple,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+              padding: const EdgeInsets.only(top: 16),
+              child: Container(
+                width: double.infinity,
+                height: 44,
+                child: viewModel.isSelfDeliveryEnabled
+                    ? OutlinedButton(
+                        onPressed: null,
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.purple[300]!),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                  ),
-                ],
+                        ),
+                        child: Text(
+                          "Self Delivery Enabled",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.purple[600],
+                          ),
+                        ),
+                      )
+                    : OutlinedButton(
+                        onPressed: viewModel.isEnablingSelfDelivery
+                            ? null
+                            : () async {
+                                await viewModel.enableSelfDelivery(widget.orderId);
+                                if (context.mounted) {
+                                  setState(() {});
+                                  widget.onOrderConfirmed();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: const Text("Self delivery enabled successfully"),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.purple[600],
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  );
+                                }
+                              },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.purple[300]!),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: viewModel.isEnablingSelfDelivery
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                viewModel.isEnablingSelfDelivery ? "Enabling..." : "Enable Self Delivery",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.purple[600],
+                                ),
+                              ),
+                      ),
               ),
-            )
+            ),
         ],
       ),
     );

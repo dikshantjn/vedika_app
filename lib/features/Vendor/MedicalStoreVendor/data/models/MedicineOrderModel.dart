@@ -6,25 +6,27 @@ class MedicineOrderModel {
   final String prescriptionId;
   final String userId;
   final String vendorId;
-  final String? addressId; // ✅ Added Address ID
-  final String? appliedCoupon; // ✅ Added Coupon
-  final double discountAmount; // ✅ Added Discount Amount
-  final double subtotal; // ✅ Added Subtotal
+  final String? addressId;
+  final String? appliedCoupon;
+  final double discountAmount;
+  final double subtotal;
   final double totalAmount;
-  final double deliveryCharge; // ✅ Delivery Charge
-  final double platformFee; // ✅ Platform Fee
-   String orderStatus;
-  final String? paymentMethod; // ✅ Added Payment Method
-  final String? transactionId; // ✅ Added Transaction ID
-  final String paymentStatus; // ✅ Payment Status (Paid, Unpaid, Failed, Refunded)
-  final String deliveryStatus; // ✅ Delivery Status (Pending, Out for Delivery, Delivered, Returned)
-  final DateTime? estimatedDeliveryDate; // ✅ Estimated Delivery Date
-  final String? trackingId; // ✅ Tracking ID for shipment
-  final bool selfDelivery; // ✅ Self delivery flag
+  final double deliveryCharge;
+  final double platformFee;
+  String orderStatus;
+  final String? paymentMethod;
+  final String? transactionId;
+  final String paymentStatus;
+  final String deliveryStatus;
+  final DateTime? estimatedDeliveryDate;
+  final String? trackingId;
+  final bool selfDelivery;
   final DateTime createdAt;
   final DateTime updatedAt;
   final UserModel user;
   final List<CartModel> orderItems;
+
+  final Map<String, dynamic>? jsonPrescription; // ✅ Added field
 
   MedicineOrderModel({
     required this.orderId,
@@ -50,9 +52,15 @@ class MedicineOrderModel {
     required this.orderItems,
     required this.deliveryCharge,
     required this.platformFee,
+    this.jsonPrescription, // ✅ Add to constructor
   });
 
   factory MedicineOrderModel.fromJson(Map<String, dynamic> json) {
+    print("🔍 Parsing order with ID: ${json['orderId']}");
+    print("📦 jsonPrescription = ${json['prescription']?['jsonPrescription']}");
+    print("👤 User = ${json['User']}");
+    print("🛒 Carts = ${json['Carts']}");
+
     return MedicineOrderModel(
       orderId: json['orderId'] ?? 'ORD-UNKNOWN',
       prescriptionId: json['prescriptionId'] ?? '',
@@ -80,12 +88,10 @@ class MedicineOrderModel {
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
       user: json['User'] != null ? UserModel.fromJson(json['User']) : UserModel.empty(),
-      orderItems: (json['Carts'] as List?)
-          ?.map((e) => CartModel.fromJson(e))
-          .toList() ??
-          [],
+      orderItems: (json['Carts'] as List?)?.map((e) => CartModel.fromJson(e)).toList() ?? [],
       deliveryCharge: (json['deliveryCharge'] as num?)?.toDouble() ?? 0.0,
       platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
+      jsonPrescription: json['jsonPrescription'] as Map<String, dynamic>?, // Check this print
     );
   }
 
@@ -114,10 +120,10 @@ class MedicineOrderModel {
       "orderItems": orderItems.map((e) => e.toJson()).toList(),
       "deliveryCharge": deliveryCharge,
       "platformFee": platformFee,
+      "jsonPrescription": jsonPrescription, // ✅ Include in toJson
     };
   }
 
-  /// ✅ **Add `copyWith` method**
   MedicineOrderModel copyWith({
     String? orderId,
     String? prescriptionId,
@@ -142,6 +148,7 @@ class MedicineOrderModel {
     List<CartModel>? orderItems,
     double? deliveryCharge,
     double? platformFee,
+    Map<String, dynamic>? jsonPrescription, // ✅ copyWith support
   }) {
     return MedicineOrderModel(
       orderId: orderId ?? this.orderId,
@@ -167,6 +174,30 @@ class MedicineOrderModel {
       orderItems: orderItems ?? this.orderItems,
       deliveryCharge: deliveryCharge ?? this.deliveryCharge,
       platformFee: platformFee ?? this.platformFee,
+      jsonPrescription: jsonPrescription ?? this.jsonPrescription,
+    );
+  }
+
+  // ✅ Add empty factory method
+  factory MedicineOrderModel.empty() {
+    return MedicineOrderModel(
+      orderId: '',
+      prescriptionId: '',
+      userId: '',
+      vendorId: '',
+      discountAmount: 0.0,
+      subtotal: 0.0,
+      totalAmount: 0.0,
+      orderStatus: 'Pending',
+      paymentStatus: 'Unpaid',
+      deliveryStatus: 'Pending',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      user: UserModel.empty(),
+      orderItems: [],
+      deliveryCharge: 0.0,
+      platformFee: 0.0,
+      jsonPrescription: null,
     );
   }
 }

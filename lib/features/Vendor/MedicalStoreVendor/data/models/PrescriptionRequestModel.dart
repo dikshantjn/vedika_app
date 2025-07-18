@@ -9,6 +9,7 @@ class PrescriptionRequestModel {
   final String prescriptionAcceptedStatus;
   final String prescriptionUrl;
   final DateTime createdAt;
+  final Map<String, dynamic>? jsonPrescription; // ✅ New field
 
   PrescriptionRequestModel({
     required this.prescriptionId,
@@ -19,12 +20,13 @@ class PrescriptionRequestModel {
     required this.prescriptionAcceptedStatus,
     required this.prescriptionUrl,
     required this.createdAt,
+    this.jsonPrescription, // ✅ Add to constructor
   });
 
   factory PrescriptionRequestModel.fromJson(Map<String, dynamic> json) {
     return PrescriptionRequestModel(
       prescriptionId: json["prescriptionId"].toString(),
-      user: json["User"] != null ? UserModel.fromJson(json["User"]) : UserModel.empty(), // ✅ Corrected User Mapping
+      user: json["User"] != null ? UserModel.fromJson(json["User"]) : UserModel.empty(),
       requestedVendors: (json["requestedVendors"] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
@@ -33,9 +35,9 @@ class PrescriptionRequestModel {
       prescriptionAcceptedStatus: json["prescriptionAcceptedStatus"] ?? "Pending",
       prescriptionUrl: json["prescriptionUrl"].toString(),
       createdAt: _parseDate(json["createdAt"]),
+      jsonPrescription: json["jsonPrescription"] as Map<String, dynamic>?, // ✅ Parse new field
     );
   }
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -47,10 +49,10 @@ class PrescriptionRequestModel {
       "prescriptionAcceptedStatus": prescriptionAcceptedStatus,
       "prescriptionUrl": prescriptionUrl,
       "createdAt": createdAt.toIso8601String(),
+      "jsonPrescription": jsonPrescription, // ✅ Serialize new field
     };
   }
 
-  /// **✅ Add copyWith Method**
   PrescriptionRequestModel copyWith({
     String? prescriptionId,
     UserModel? user,
@@ -60,6 +62,7 @@ class PrescriptionRequestModel {
     String? prescriptionAcceptedStatus,
     String? prescriptionUrl,
     DateTime? createdAt,
+    Map<String, dynamic>? jsonPrescription, // ✅ Add to copyWith
   }) {
     return PrescriptionRequestModel(
       prescriptionId: prescriptionId ?? this.prescriptionId,
@@ -70,6 +73,7 @@ class PrescriptionRequestModel {
       prescriptionAcceptedStatus: prescriptionAcceptedStatus ?? this.prescriptionAcceptedStatus,
       prescriptionUrl: prescriptionUrl ?? this.prescriptionUrl,
       createdAt: createdAt ?? this.createdAt,
+      jsonPrescription: jsonPrescription ?? this.jsonPrescription,
     );
   }
 

@@ -1,15 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class BeforeVerificationWidget extends StatefulWidget {
   final int initialTime; // Time in seconds
   final VoidCallback onTimeExpired; // Callback when time runs out
+  final String? message;
+  final String? lottieAsset;
+  final VoidCallback? onClose;
 
   const BeforeVerificationWidget({
     Key? key,
     required this.initialTime,
     required this.onTimeExpired,
+    this.message,
+    this.lottieAsset,
+    this.onClose,
   }) : super(key: key);
 
   @override
@@ -54,17 +61,17 @@ class _BeforeVerificationWidgetState extends State<BeforeVerificationWidget> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Lottie Animation Container
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Lottie.asset(
-              'assets/animations/scanPrescription.json',
-              fit: BoxFit.cover,
+          // Lottie Animation (no background)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Center(
+              child: Lottie.asset(
+                widget.lottieAsset ?? 'assets/animations/scanPrescription.json',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+                repeat: true,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -74,12 +81,12 @@ class _BeforeVerificationWidgetState extends State<BeforeVerificationWidget> {
             shaderCallback: (bounds) => LinearGradient(
               colors: [Colors.blue, Colors.blue.shade700],
             ).createShader(bounds),
-            child: const Text(
-              'Searching Nearest Medical Shops...',
+            child: Text(
+              widget.message ?? 'Searching Nearest Medical Shops...',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: ColorPalette.primaryColor,
               ),
               textAlign: TextAlign.center,
             ),
@@ -130,6 +137,25 @@ class _BeforeVerificationWidgetState extends State<BeforeVerificationWidget> {
               textAlign: TextAlign.center,
             ),
           ),
+          if (widget.onClose != null) ...[
+            const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: widget.onClose,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                foregroundColor: ColorPalette.primaryColor,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              child: const Text('Close'),
+            ),
+          ],
         ],
       ),
     );

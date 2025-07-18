@@ -262,7 +262,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Accept Prescription**
-  Future<void> acceptPrescription(String prescriptionId) async {
+  Future<void> acceptPrescription(String prescriptionId, {Map<String, dynamic>? jsonPrescription}) async {
     if (_disposed) return;
     
     _setProcessingOrder(true);
@@ -270,7 +270,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
       String? vendorId = await _loginService.getVendorId();
       if (vendorId?.isEmpty ?? true) throw Exception("Vendor ID not found.");
 
-      bool success = await _prescriptionService.acceptPrescription(prescriptionId, vendorId!);
+      bool success = await _prescriptionService.acceptPrescription(prescriptionId, vendorId!, jsonPrescription);
 
       if (success) {
         bool statusUpdated = await _orderService.updatePrescriptionStatus(prescriptionId);
@@ -346,14 +346,14 @@ class MedicineOrderViewModel extends ChangeNotifier {
     if (_disposed) return;
     
     if (quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("❌ Quantity should be greater than zero")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Quantity should be greater than zero")));
       return;
     }
 
     int existingIndex = _cart.indexWhere((item) => item.productId == medicine.productId);
     if (existingIndex != -1) {
       _cart[existingIndex].quantity += quantity;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ Quantity updated for ${medicine.name}")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Quantity updated for ${medicine.name}")));
     } else {
       _cart.add(CartModel(
         cartId: '',
@@ -363,7 +363,7 @@ class MedicineOrderViewModel extends ChangeNotifier {
         quantity: quantity,
         orderId: orderId,
       ));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ ${medicine.name} added to cart")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${medicine.name} added to cart")));
     }
 
     _safeNotifyListeners();
@@ -374,20 +374,22 @@ class MedicineOrderViewModel extends ChangeNotifier {
     try {
       for (var item in _cart) {
         String message = await _cartService.addToCart(item);
-        if (message.startsWith("❌")) return message; // Stop if there's an error
+        if (message.toLowerCase().contains('error') || message.toLowerCase().contains('failed')) {
+          return message; // Stop if there's an error
+        }
       }
 
-      // ✅ Clear the cart after adding items
+      // Clear the cart after adding items
       _cart.clear();
       notifyListeners();
 
-      // ✅ Update order status after adding items to cart
+      // Update order status after adding items to cart
       await updateOrderStatus(orderId, "AddedItemsInCart");
 
-      return "✅ All items added to cart successfully and order status updated";
+      return "All items added to cart successfully and order status updated";
     } catch (e) {
       debugPrint("Error adding to cart DB: $e");
-      return "❌ Error adding to cart DB: $e";
+      return "Error adding to cart DB: $e";
     }
   }
 
@@ -420,12 +422,12 @@ class MedicineOrderViewModel extends ChangeNotifier {
       String message = await _cartService.deleteCartItem(cartId);
       debugPrint(message);
 
-      if (message.startsWith("✅")) {
+      if (message.toLowerCase().contains('success') || message.toLowerCase().contains('deleted')) {
         _cart.removeWhere((item) => item.cartId == cartId); // Remove item from local list
         notifyListeners(); // Update UI
         return true; // Deletion successful
       } else {
-        debugPrint("❌ Failed to delete cart item: $message");
+        debugPrint("Failed to delete cart item: $message");
         return false; // Deletion failed
       }
     } catch (e) {
@@ -569,6 +571,18 @@ class MedicineOrderViewModel extends ChangeNotifier {
       _safeNotifyListeners();
     } catch (e) {
       debugPrint("Error fetching self delivery status: $e");
+    }
+  }
+
+  // ✅ Method to fetch prescription data
+  Future<Map<String, dynamic>?> fetchPrescriptionData(String orderId) async {
+    if (_disposed) return null;
+    
+    try {
+      return await _orderService.fetchPrescriptionData(orderId);
+    } catch (e) {
+      debugPrint("Error fetching prescription data: $e");
+      return null;
     }
   }
 
