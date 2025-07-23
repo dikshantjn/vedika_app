@@ -86,6 +86,7 @@ import 'package:vedika_healthcare/features/home/presentation/viewmodel/ScannerVi
 import 'package:vedika_healthcare/features/ai/presentation/viewmodel/AIViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/WardViewModel.dart';
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
+import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -264,6 +265,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ProductPartnerViewModel()),
         ChangeNotifierProvider(create: (_) => AIViewModel()),
         ChangeNotifierProvider(create: (_) => WardViewModel()),
+        ChangeNotifierProvider(create: (context) => BlogViewModel()),
 
       ],
       child: Builder(

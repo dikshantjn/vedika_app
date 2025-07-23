@@ -1,81 +1,57 @@
 class BlogModel {
-  final String id;
-  final String title;
-  final String content;
-  final String author;
+  final String blogPostId;
+  final String message;
+  final String link;
   final String imageUrl;
-  final DateTime publishedDate;
-  final List<String> tags;
-  final int readTime; // in minutes
-  final String category;
-  final bool isFeatured;
+
+  // Social fields
+  final bool postedToFacebook;
+  final String? facebookPostId;
+  final bool postedToLinkedIn;
+  final String? linkedInPostId;
+  final bool postedToBlogger;
+  final String? bloggerPostId;
 
   BlogModel({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.author,
+    required this.blogPostId,
+    required this.message,
+    required this.link,
     required this.imageUrl,
-    required this.publishedDate,
-    required this.tags,
-    required this.readTime,
-    required this.category,
-    this.isFeatured = false,
+    this.postedToFacebook = false,
+    this.facebookPostId,
+    this.postedToLinkedIn = false,
+    this.linkedInPostId,
+    this.postedToBlogger = false,
+    this.bloggerPostId,
   });
 
   factory BlogModel.fromJson(Map<String, dynamic> json) {
     return BlogModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      author: json['author'] ?? '',
+      blogPostId: json['blogPostId'] ?? '',
+      message: json['message'] ?? '',
+      link: json['link'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
-      publishedDate: DateTime.parse(json['publishedDate'] ?? DateTime.now().toIso8601String()),
-      tags: List<String>.from(json['tags'] ?? []),
-      readTime: json['readTime'] ?? 5,
-      category: json['category'] ?? 'Health',
-      isFeatured: json['isFeatured'] ?? false,
+      postedToFacebook: json['postedToFacebook'] ?? false,
+      facebookPostId: json['facebookPostId'],
+      postedToLinkedIn: json['postedToLinkedIn'] ?? false,
+      linkedInPostId: json['linkedInPostId'],
+      postedToBlogger: json['postedToBlogger'] ?? false,
+      bloggerPostId: json['bloggerPostId'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'title': title,
-      'content': content,
-      'author': author,
+      'blogPostId': blogPostId,
+      'message': message,
+      'link': link,
       'imageUrl': imageUrl,
-      'publishedDate': publishedDate.toIso8601String(),
-      'tags': tags,
-      'readTime': readTime,
-      'category': category,
-      'isFeatured': isFeatured,
+      'postedToFacebook': postedToFacebook,
+      'facebookPostId': facebookPostId,
+      'postedToLinkedIn': postedToLinkedIn,
+      'linkedInPostId': linkedInPostId,
+      'postedToBlogger': postedToBlogger,
+      'bloggerPostId': bloggerPostId,
     };
-  }
-
-  BlogModel copyWith({
-    String? id,
-    String? title,
-    String? content,
-    String? author,
-    String? imageUrl,
-    DateTime? publishedDate,
-    List<String>? tags,
-    int? readTime,
-    String? category,
-    bool? isFeatured,
-  }) {
-    return BlogModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      author: author ?? this.author,
-      imageUrl: imageUrl ?? this.imageUrl,
-      publishedDate: publishedDate ?? this.publishedDate,
-      tags: tags ?? this.tags,
-      readTime: readTime ?? this.readTime,
-      category: category ?? this.category,
-      isFeatured: isFeatured ?? this.isFeatured,
-    );
   }
 } 

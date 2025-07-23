@@ -5,6 +5,9 @@ import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/widgets/BlogCard.dart';
 import 'package:vedika_healthcare/features/blog/presentation/widgets/FeaturedBlogCard.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/blog/presentation/view/BlogDetailPage.dart';
 
 class BlogListPage extends StatefulWidget {
   const BlogListPage({Key? key}) : super(key: key);
@@ -20,7 +23,7 @@ class _BlogListPageState extends State<BlogListPage> {
   void initState() {
     super.initState();
     _viewModel = BlogViewModel();
-    _viewModel.initialize();
+    _viewModel.loadAllBlogs();
   }
 
   @override
@@ -30,6 +33,17 @@ class _BlogListPageState extends State<BlogListPage> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
+          leading: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
           title: const Text(
             'Health Blog',
             style: TextStyle(
@@ -43,13 +57,12 @@ class _BlogListPageState extends State<BlogListPage> {
         ),
         body: Consumer<BlogViewModel>(
           builder: (context, viewModel, child) {
-            if (viewModel.isLoading && viewModel.blogs.isEmpty) {
+            if (viewModel.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-
-            if (viewModel.error != null && viewModel.blogs.isEmpty) {
+            if (viewModel.error != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -78,7 +91,7 @@ class _BlogListPageState extends State<BlogListPage> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => viewModel.initialize(),
+                      onPressed: () => viewModel.loadAllBlogs(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ColorPalette.primaryColor,
                       ),
@@ -88,155 +101,26 @@ class _BlogListPageState extends State<BlogListPage> {
                 ),
               );
             }
-
-            return RefreshIndicator(
-              onRefresh: () => viewModel.initialize(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Featured Blogs Section
-                    if (viewModel.featuredBlogs.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Featured Articles',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 200,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: viewModel.featuredBlogs.length,
-                                itemBuilder: (context, index) {
-                                  final blog = viewModel.featuredBlogs[index];
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 16),
-                                    child: FeaturedBlogCard(blog: blog),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+            final blogs = viewModel.blogs;
+            if (blogs.isEmpty) {
+              return const Center(child: Text('No blogs found.'));
+            }
+            return ListView.builder(
+              itemCount: blogs.length,
+              itemBuilder: (context, index) {
+                final blog = blogs[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlogDetailPage(blog: blog),
                       ),
-                      const Divider(height: 1, color: Colors.grey),
-                    ],
-
-                    // Category Filter
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Categories',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 40,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: viewModel.categories.length,
-                              itemBuilder: (context, index) {
-                                final category = viewModel.categories[index];
-                                final isSelected = category == viewModel.selectedCategory;
-                                
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: FilterChip(
-                                    label: Text(category),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      if (selected) {
-                                        viewModel.setSelectedCategory(category);
-                                      }
-                                    },
-                                    backgroundColor: Colors.grey[200],
-                                    selectedColor: ColorPalette.primaryColor.withOpacity(0.2),
-                                    labelStyle: TextStyle(
-                                      color: isSelected ? ColorPalette.primaryColor : Colors.grey[700],
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // All Blogs Section
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            viewModel.selectedCategory == 'All' 
-                                ? 'All Articles' 
-                                : '${viewModel.selectedCategory} Articles',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (viewModel.filteredBlogs.isEmpty)
-                            Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.article_outlined,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No articles found',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: viewModel.filteredBlogs.length,
-                              itemBuilder: (context, index) {
-                                final blog = viewModel.filteredBlogs[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: BlogCard(blog: blog),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    );
+                  },
+                  child: BlogCard(blog: blog),
+                );
+              },
             );
           },
         ),

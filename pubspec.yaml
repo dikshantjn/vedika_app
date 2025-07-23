@@ -83,6 +83,9 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   flutter_polyline_points: ^2.1.0
+  flutter_html: ^3.0.0
+  flutter_tts: ^4.2.3
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:

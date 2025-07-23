@@ -1,351 +1,447 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class BlogDetailPage extends StatefulWidget {
-  final String blogId;
-  
-  const BlogDetailPage({
-    Key? key,
-    required this.blogId,
-  }) : super(key: key);
+  final BlogModel blog;
+  const BlogDetailPage({Key? key, required this.blog}) : super(key: key);
 
   @override
   State<BlogDetailPage> createState() => _BlogDetailPageState();
 }
 
 class _BlogDetailPageState extends State<BlogDetailPage> {
-  late BlogViewModel _viewModel;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
+
+  // TTS and highlighting
+  final FlutterTts _flutterTts = FlutterTts();
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  List<String> _paragraphs = [];
+  int _currentParagraph = 0;
+  bool _isPlaying = false;
+  double _progress = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = BlogViewModel();
-    _viewModel.loadBlogById(widget.blogId);
+    _scrollController.addListener(_onScroll);
+    // Split HTML into paragraphs (strip tags for TTS, keep HTML for display)
+    _paragraphs = widget.blog.message.split(RegExp(r'</p>|<br ?/?>', caseSensitive: false))
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+    _flutterTts.setCompletionHandler(_onTtsComplete);
+  }
+
+  Future<void> _startTts() async {
+    setState(() {
+      _isPlaying = true;
+      _currentParagraph = 0;
+      _progress = 0.0;
+    });
+    await _speakCurrentParagraph();
+  }
+
+  Future<void> _speakCurrentParagraph() async {
+    if (_currentParagraph < _paragraphs.length) {
+      final plainText = _paragraphs[_currentParagraph].replaceAll(RegExp(r'<[^>]*>'), '');
+      await _flutterTts.speak(plainText);
+      _itemScrollController.scrollTo(index: _currentParagraph, duration: Duration(milliseconds: 400));
+      setState(() {
+        _progress = (_currentParagraph + 1) / _paragraphs.length;
+      });
+    } else {
+      setState(() {
+        _isPlaying = false;
+        _progress = 1.0;
+      });
+    }
+  }
+
+  void _onTtsComplete() {
+    if (_isPlaying && _currentParagraph < _paragraphs.length - 1) {
+      setState(() {
+        _currentParagraph++;
+        _progress = (_currentParagraph + 1) / _paragraphs.length;
+      });
+      _speakCurrentParagraph();
+    } else {
+      setState(() {
+        _isPlaying = false;
+        _progress = 1.0;
+      });
+    }
+  }
+
+  Future<void> _pauseTts() async {
+    await _flutterTts.pause();
+    setState(() {
+      _isPlaying = false;
+    });
+  }
+
+  Future<void> _stopTts() async {
+    await _flutterTts.stop();
+    setState(() {
+      _isPlaying = false;
+      _currentParagraph = 0;
+      _progress = 0.0;
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.offset > 200 && !_isScrolled) {
+      setState(() => _isScrolled = true);
+    } else if (_scrollController.offset <= 200 && _isScrolled) {
+      setState(() => _isScrolled = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _flutterTts.stop();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text(
-            'Article',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: ColorPalette.primaryColor,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.white),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: () {
-                // TODO: Implement share functionality
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Share feature coming soon!')),
-                );
-              },
-            ),
-          ],
-        ),
-        body: Consumer<BlogViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+    // Extract title from HTML content
+    final titleRegExp = RegExp(r'<h[1-6][^>]*>(.*?)<\/h[1-6]>', caseSensitive: false);
+    final match = titleRegExp.firstMatch(widget.blog.message);
+    final title = match != null ?
+    match.group(1)?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? 'Blog Article' :
+    'Blog Article';
 
-            if (viewModel.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading article',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      viewModel.error!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => viewModel.loadBlogById(widget.blogId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorPalette.primaryColor,
-                      ),
-                      child: const Text('Retry'),
-                    ),
-                  ],
+    // Calculate reading time (assuming 200 words per minute)
+    final plainText = widget.blog.message.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+    final wordCount = plainText.split(RegExp(r'\s+')).length;
+    final readingTime = (wordCount / 200).ceil();
+
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Modern App Bar with Hero Image
+          SliverAppBar(
+            expandedHeight: widget.blog.imageUrl.isNotEmpty ? 300.0 : 120.0,
+            floating: false,
+            pinned: true,
+            stretch: true,
+            backgroundColor: ColorPalette.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            actions: [
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
-            }
-
-            final blog = viewModel.selectedBlog;
-            if (blog == null) {
-              return const Center(
-                child: Text('Article not found'),
-              );
-            }
-
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                child: IconButton(
+                  icon: const Icon(Icons.share_rounded, color: Colors.white),
+                  onPressed: () async {
+                    final url = 'http://localhost:3000/health-blogs/${widget.blog.blogPostId}';
+                    await Share.share(url);
+                  },
+                ),
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                fit: StackFit.expand,
                 children: [
-                  // Hero Image
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                    ),
-                    child: ClipRRect(
-                      child: Image.network(
-                        blog.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title
-                        Text(
-                          blog.title,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Meta information
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: ColorPalette.primaryColor.withOpacity(0.2),
-                              child: Text(
-                                blog.author.split(' ').map((name) => name[0]).join(''),
-                                style: TextStyle(
-                                  color: ColorPalette.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    blog.author,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatDate(blog.publishedDate),
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: ColorPalette.primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 14,
-                                    color: ColorPalette.primaryColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${blog.readTime} min read',
-                                    style: TextStyle(
-                                      color: ColorPalette.primaryColor,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Category
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+                  if (widget.blog.imageUrl.isNotEmpty)
+                    Image.network(
+                      widget.blog.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
                           decoration: BoxDecoration(
-                            color: ColorPalette.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: ColorPalette.primaryColor.withOpacity(0.3),
-                              width: 1,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                ColorPalette.primaryColor,
+                                ColorPalette.primaryColor.withOpacity(0.8),
+                              ],
                             ),
                           ),
-                          child: Text(
-                            blog.category,
-                            style: TextStyle(
-                              color: ColorPalette.primaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Tags
-                        if (blog.tags.isNotEmpty) ...[
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: blog.tags.map((tag) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '#$tag',
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-
-                        // Content
-                        Text(
-                          blog.content,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Featured badge
-                        if (blog.isFeatured)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.amber[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.amber[200]!,
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.star,
-                                  color: Colors.amber[600],
-                                  size: 20,
+                                  Icons.article_outlined,
+                                  size: 64,
+                                  color: Colors.white.withOpacity(0.8),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(height: 16),
                                 Text(
-                                  'Featured Article',
+                                  'Blog Article',
                                   style: TextStyle(
-                                    color: Colors.amber[700],
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                      ],
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            ColorPalette.primaryColor,
+                            ColorPalette.primaryColor.withOpacity(0.8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Gradient overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.4),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  // Article Header
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            height: 1.3,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Article Meta Information
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 18,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$readingTime min read',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Icon(
+                                Icons.visibility_rounded,
+                                size: 18,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Article',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Divider
+                        Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.grey.shade300,
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Audio controls and progress
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: _progress,
+                          backgroundColor: Colors.grey.shade200,
+                          color: ColorPalette.primaryColor,
+                          minHeight: 4,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, size: 36, color: ColorPalette.primaryColor),
+                              onPressed: () {
+                                if (_isPlaying) {
+                                  _pauseTts();
+                                } else {
+                                  _startTts();
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.stop_circle, size: 32, color: Colors.redAccent),
+                              onPressed: _stopTts,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isPlaying ? 'Reading...' : 'Tap play to listen',
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Main HTML content (no highlighting)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Html(
+                      data: widget.blog.message,
+                      style: {
+                        "body": Style(
+                          fontSize: FontSize(16),
+                          lineHeight: LineHeight(1.7),
+                          color: Colors.black87,
+                          margin: Margins.only(bottom: 8),
+                          padding: HtmlPaddings.zero,
+                        ),
+                        "h1": Style(
+                          fontSize: FontSize(24),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          margin: Margins.only(top: 24, bottom: 16),
+                        ),
+                        "h2": Style(
+                          fontSize: FontSize(22),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          margin: Margins.only(top: 20, bottom: 12),
+                        ),
+                        "h3": Style(
+                          fontSize: FontSize(20),
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          margin: Margins.only(top: 18, bottom: 10),
+                        ),
+                        "p": Style(
+                          fontSize: FontSize(16),
+                          lineHeight: LineHeight(1.7),
+                          color: Colors.black87,
+                          margin: Margins.only(bottom: 8),
+                        ),
+                        "a": Style(
+                          color: ColorPalette.primaryColor,
+                          textDecoration: TextDecoration.underline,
+                        ),
+                        "blockquote": Style(
+                          border: Border(
+                            left: BorderSide(
+                              color: ColorPalette.primaryColor,
+                              width: 4,
+                            ),
+                          ),
+                          margin: Margins.only(left: 0, top: 16, bottom: 16),
+                          padding: HtmlPaddings.only(left: 16),
+                          backgroundColor: Colors.grey.shade50,
+                        ),
+                        "ul": Style(
+                          margin: Margins.only(bottom: 16),
+                        ),
+                        "ol": Style(
+                          margin: Margins.only(bottom: 16),
+                        ),
+                        "li": Style(
+                          fontSize: FontSize(16),
+                          lineHeight: LineHeight(1.7),
+                          margin: Margins.only(bottom: 8),
+                        ),
+                      },
+                    ),
+                  ),
+                  // Bottom spacing
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
-} 
+}
