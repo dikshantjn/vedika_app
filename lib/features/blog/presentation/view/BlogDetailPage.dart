@@ -8,6 +8,7 @@ import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:intl/intl.dart';
 
 class BlogDetailPage extends StatefulWidget {
   final BlogModel blog;
@@ -28,6 +29,10 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
   int _currentParagraph = 0;
   bool _isPlaying = false;
   double _progress = 0.0;
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
 
   @override
   void initState() {
@@ -114,13 +119,6 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Extract title from HTML content
-    final titleRegExp = RegExp(r'<h[1-6][^>]*>(.*?)<\/h[1-6]>', caseSensitive: false);
-    final match = titleRegExp.firstMatch(widget.blog.message);
-    final title = match != null ?
-    match.group(1)?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? 'Blog Article' :
-    'Blog Article';
-
     // Calculate reading time (assuming 200 words per minute)
     final plainText = widget.blog.message.replaceAll(RegExp(r'<[^>]*>'), '').trim();
     final wordCount = plainText.split(RegExp(r'\s+')).length;
@@ -254,7 +252,7 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          title,
+                          widget.blog.title,
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -281,7 +279,7 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '$readingTime min read',
+                                _formatDate(widget.blog.createdAt),
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 14,
@@ -290,13 +288,13 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                               ),
                               const SizedBox(width: 24),
                               Icon(
-                                Icons.visibility_rounded,
+                                Icons.timer_rounded,
                                 size: 18,
                                 color: Colors.grey.shade600,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Article',
+                                '$readingTime min read',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 14,

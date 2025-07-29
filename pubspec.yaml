@@ -97,6 +97,7 @@ dev_dependencies:
 
 flutter:
   assets:
+    - assets/
     - assets/health_concern/
     - assets/brands/
     - assets/offers/
@@ -104,10 +105,9 @@ flutter:
     - assets/healthDays/
     - assets/animations/
     - assets/logo/
-    - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
-    - assets/ai.png
     - assets/ThirdPartyLogo/
-
+    - assets/ai.png
+    - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
 
   uses-material-design: true
 

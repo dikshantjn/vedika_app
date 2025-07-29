@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/features/blog/data/services/BlogService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogDetailPage.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:intl/intl.dart';
 
 class FeaturedArticlesSection extends StatefulWidget {
   const FeaturedArticlesSection({Key? key}) : super(key: key);
@@ -20,6 +21,21 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return DateFormat('MMM dd').format(date);
+    }
+  }
 
   @override
   void initState() {
@@ -242,10 +258,10 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
   }
 
   Widget _buildFeaturedArticleCard(BlogModel blog) {
-    // Extract the first header (h1, h2, h3) from the HTML message
-    final headerRegExp = RegExp(r'<h[1-3][^>]*>(.*?)<\/h[1-3]>', caseSensitive: false);
-    final match = headerRegExp.firstMatch(blog.message);
-    final header = match != null ? match.group(1) ?? '' : '';
+    // Calculate reading time (assuming 200 words per minute)
+    final plainText = blog.message.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+    final wordCount = plainText.split(RegExp(r'\s+')).length;
+    final readingTime = (wordCount / 200).ceil();
 
     return GestureDetector(
       onTap: () {
@@ -341,59 +357,60 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Category badge (optional - you can add category field to BlogModel)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: ColorPalette.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Health & Wellness',
-                        style: TextStyle(
-                          color: ColorPalette.primaryColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                    // Date and category row
+                    Row(
+                      children: [
+                        // Date
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 12,
+                              color: Colors.grey[500],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDate(blog.createdAt),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const Spacer(),
+                        // Category badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: ColorPalette.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Health & Wellness',
+                            style: TextStyle(
+                              color: ColorPalette.primaryColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     // Title
                     Flexible(
-                      child: Html(
-                        data: header.isNotEmpty ? header : 'Health Article',
-                        style: {
-                          "h1": Style(
-                            fontSize: FontSize(16),
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                            maxLines: 2,
-                            textOverflow: TextOverflow.ellipsis,
-                            margin: Margins.zero,
-                            padding: HtmlPaddings.zero,
-                            lineHeight: LineHeight(1.3),
-                          ),
-                          "h2": Style(
-                            fontSize: FontSize(16),
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                            maxLines: 2,
-                            textOverflow: TextOverflow.ellipsis,
-                            margin: Margins.zero,
-                            padding: HtmlPaddings.zero,
-                            lineHeight: LineHeight(1.3),
-                          ),
-                          "h3": Style(
-                            fontSize: FontSize(16),
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                            maxLines: 2,
-                            textOverflow: TextOverflow.ellipsis,
-                            margin: Margins.zero,
-                            padding: HtmlPaddings.zero,
-                            lineHeight: LineHeight(1.3),
-                          ),
-                        },
+                      child: Text(
+                        blog.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -401,16 +418,16 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
                     Row(
                       children: [
                         Icon(
-                          Icons.schedule_rounded,
-                          size: 14,
+                          Icons.timer_rounded,
+                          size: 12,
                           color: Colors.grey[500],
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '5 min read',
+                          '$readingTime min read',
                           style: TextStyle(
                             color: Colors.grey[500],
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogDetailPage.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class BlogCard extends StatelessWidget {
   final BlogModel blog;
@@ -13,15 +14,23 @@ class BlogCard extends StatelessWidget {
     required this.blog,
   }) : super(key: key);
 
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return DateFormat('MMM dd, yyyy').format(date);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Extract title from HTML content
-    final titleRegExp = RegExp(r'<h[1-6][^>]*>(.*?)<\/h[1-6]>', caseSensitive: false);
-    final match = titleRegExp.firstMatch(blog.message);
-    final title = match != null ?
-    match.group(1)?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? 'Blog Post' :
-    'Blog Post';
-
     // Extract plain text from HTML for excerpt
     final plainText = blog.message.replaceAll(RegExp(r'<[^>]*>'), '').trim();
     final excerpt = plainText.length > 120 ?
@@ -146,9 +155,31 @@ class BlogCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Date
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 16,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatDate(blog.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
                       // Title
                       Text(
-                        title,
+                        blog.title,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -162,7 +193,7 @@ class BlogCard extends StatelessWidget {
                       const SizedBox(height: 12),
 
                       // Excerpt
-                      if (excerpt.isNotEmpty && excerpt != title)
+                      if (excerpt.isNotEmpty && excerpt != blog.title)
                         Text(
                           excerpt,
                           style: TextStyle(
