@@ -7,6 +7,16 @@ class MedicalBoxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width to determine if it's a tablet
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600; // Common breakpoint for tablets
+    
+    // Calculate responsive dimensions
+    final boxWidth = isTablet ? screenWidth * 0.12 : 85.0; // 12% of screen width for tablets
+    final containerHeight = isTablet ? 120.0 : 100.0;
+    final horizontalPadding = isTablet ? 16.0 : 8.0;
+    final boxPadding = isTablet ? 8.0 : 4.0;
+
     final List<Map<String, dynamic>> items = [
       {
         "title": "Ambulance",
@@ -15,14 +25,6 @@ class MedicalBoxRow extends StatelessWidget {
         "bgColor": MedicalBoxColors.ambulance,
         "textColor": MedicalBoxColors.ambulanceText,
         "route": "/ambulance-search"
-      },
-      {
-        "title": "Blood",
-        "subtitle": "Order",
-        "icon": Icons.bloodtype_rounded,
-        "bgColor": MedicalBoxColors.bloodBank,
-        "textColor": MedicalBoxColors.bloodBankText,
-        "route": "/bloodbank"
       },
       {
         "title": "Medicine",
@@ -57,6 +59,14 @@ class MedicalBoxRow extends StatelessWidget {
         "route": "/labTest"
       },
       {
+        "title": "Blood",
+        "subtitle": "Order",
+        "icon": Icons.bloodtype_rounded,
+        "bgColor": MedicalBoxColors.bloodBank,
+        "textColor": MedicalBoxColors.bloodBankText,
+        "route": "/bloodbank"
+      },
+      {
         "title": "Blog",
         "subtitle": "Health",
         "icon": Icons.article_rounded,
@@ -67,15 +77,15 @@ class MedicalBoxRow extends StatelessWidget {
     ];
 
     return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      height: containerHeight,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: boxPadding),
             child: _buildMedicalBox(
               context: context,
               title: item["title"],
@@ -84,6 +94,8 @@ class MedicalBoxRow extends StatelessWidget {
               bgColor: item["bgColor"],
               textColor: item["textColor"],
               route: item["route"],
+              boxWidth: boxWidth,
+              isTablet: isTablet,
             ),
           );
         },
@@ -99,6 +111,8 @@ class MedicalBoxRow extends StatelessWidget {
     required Color bgColor,
     required Color textColor,
     required String route,
+    required double boxWidth,
+    required bool isTablet,
   }) {
     return Material(
       color: Colors.transparent,
@@ -115,7 +129,7 @@ class MedicalBoxRow extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 85,
+          width: boxWidth,
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(12),
@@ -128,33 +142,45 @@ class MedicalBoxRow extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(isTablet ? 12 : 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: textColor,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  flex: 3,
+                  child: Icon(
+                    icon,
+                    size: isTablet ? 28 : 20,
                     color: textColor,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: textColor.withOpacity(0.8),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: isTablet ? 13 : 11,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  textAlign: TextAlign.center,
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: isTablet ? 11 : 9,
+                      color: textColor.withOpacity(0.8),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),

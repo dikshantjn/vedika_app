@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/core/auth/presentation/view/VerifyOtpWidget.da
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 
 class UserLoginScreen extends StatefulWidget {
   @override
@@ -365,19 +366,85 @@ class _userLoginScreenState extends State<UserLoginScreen> {
   }
 
   Widget _buildBottomActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        TextButton(
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.vendor),
-          child: Text(
-            "Login as Vendor",
-            style: TextStyle(
-              color: ColorPalette.primaryColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+        // Go to Home Page button
+        Container(
+          width: double.infinity,
+          height: 50,
+          margin: EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                Colors.green.shade600,
+                Colors.green.shade500,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.25),
+                blurRadius: 15,
+                offset: Offset(0, 8),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomePage(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.home_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  "Go to Home Page",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
+        // Login as Vendor button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.vendor),
+              child: Text(
+                "Login as Vendor",
+                style: TextStyle(
+                  color: ColorPalette.primaryColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

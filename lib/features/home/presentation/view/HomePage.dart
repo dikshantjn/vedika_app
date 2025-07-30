@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _refreshUserProfile();
     _setupCartCountListener();
     _searchFocusNode = FocusNode();
-    
+
     // Add listener to search controller
     _searchController.addListener(() {
       if (_searchController.text.isEmpty) {
@@ -199,8 +199,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
-      extendBody: true,
       drawer: DrawerMenu(),
+      bottomNavigationBar: BottomNavBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onNavBarItemTapped,
+      ),
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
@@ -241,7 +244,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         CategoryGrid(),
                         BrandSection(),
                         TestimonialSection(),
-                        SizedBox(height: 70),
+                        SizedBox(height: 20), // Reduced bottom padding since we're using standard bottom nav
                       ],
                     ),
                   ),
@@ -257,18 +260,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: _buildSearchSuggestions(),
                 ),
               ),
-              Positioned(
-                bottom: -10,
-                left: 0,
-                right: 0,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BottomNavBar(
-                    selectedIndex: _selectedIndex,
-                    onItemTapped: _onNavBarItemTapped,
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),
@@ -641,7 +633,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       child: Text(
                         _placeholders[_currentPlaceholderIndex],
                         style: TextStyle(
-                          color: Colors.grey.shade500,
+                          color: Colors.grey.shade800,
                           fontSize: 14,
                         ),
                       ),

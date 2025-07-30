@@ -8,6 +8,8 @@ class HealthConcernSection extends StatelessWidget {
     {"title": "Cold", "image": "assets/health_concern/cold.png"},
     {"title": "Diabetes", "image": "assets/health_concern/Diabetes Icon.png"},
     {"title": "Liver Care", "image": "assets/health_concern/Liver care Icon.png"},
+    {"title": "Fatigue & Weakness", "image": "assets/category/Mental Wellness Icon.png"},
+    {"title": "Allergies", "image": "assets/category/Allergy Icon.png"},
   ];
 
   @override

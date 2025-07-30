@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
@@ -91,6 +93,9 @@ import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewM
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
+// Device Preview Configuration
+const bool enableDevicePreview = true; // Set to false to disable device preview
+
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
 }
@@ -171,7 +176,14 @@ void main() async {
   if (userId != null) await fcmService.getTokenAndSend(userId);
   else if (vendorId != null) await fcmService.getVendorTokenAndSend(vendorId);
 
-  runApp(MyApp());
+  runApp(
+    enableDevicePreview && !kReleaseMode
+        ? DevicePreview(
+            enabled: true,
+            builder: (context) => MyApp(), // Wrap your app
+          )
+        : MyApp(),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -280,6 +292,9 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Vedika Healthcare',
             debugShowCheckedModeBanner: false,
+            useInheritedMediaQuery: enableDevicePreview && !kReleaseMode, // Conditional for device preview
+            locale: enableDevicePreview && !kReleaseMode ? DevicePreview.locale(context) : null, // Conditional for device preview
+            builder: enableDevicePreview && !kReleaseMode ? DevicePreview.appBuilder : null, // Conditional for device preview
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,

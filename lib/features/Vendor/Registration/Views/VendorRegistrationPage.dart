@@ -11,6 +11,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Views/clinic_regi
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/delivery_partner_registration_form.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/login_widget.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/pathology_registration_form.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 
 class VendorRegistrationPage extends StatefulWidget {
@@ -48,27 +49,34 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
           stops: [0.0, 1.0],
         ),
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            physics: AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: size.width * 0.05,
-                vertical: size.height * 0.02,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context),
-                  SizedBox(height: size.height * 0.02),
-                  LoginWidget(),
-                  SizedBox(height: size.height * 0.03),
-                  _buildDivider(),
-                  SizedBox(height: size.height * 0.03),
-                  _buildRegistrationSection(size),
-                ],
+      child: WillPopScope(
+        onWillPop: () async {
+          // Navigate back to user login screen when system back button is pressed
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+          return false; // Prevent default back behavior
+        },
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: size.width * 0.05,
+                  vertical: size.height * 0.02,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context),
+                    SizedBox(height: size.height * 0.02),
+                    LoginWidget(),
+                    SizedBox(height: size.height * 0.03),
+                    _buildDivider(),
+                    SizedBox(height: size.height * 0.03),
+                    _buildRegistrationSection(size),
+                  ],
+                ),
               ),
             ),
           ),
@@ -100,7 +108,8 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
             setState(() {
               selectedVendorType = null;
             });
-            Navigator.pop(context);
+            // Navigate back to user login screen
+            Navigator.pushReplacementNamed(context, AppRoutes.login);
           },
         ),
       ],
