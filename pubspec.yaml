@@ -109,6 +109,7 @@ flutter:
     - assets/ThirdPartyLogo/
     - assets/ai.png
     - assets/propane-analogy-453105-b8-dd3d3ffc61b0.json
+    - assets/doctorsPic/
 
   uses-material-design: true
 

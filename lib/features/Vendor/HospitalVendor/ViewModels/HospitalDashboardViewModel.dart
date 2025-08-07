@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalVendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/HospitalAnalysisService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
@@ -28,45 +29,24 @@ class HospitalDashboardViewModel extends ChangeNotifier {
   HospitalProfile? _hospitalProfile;
   HospitalProfile? get hospitalProfile => _hospitalProfile;
   
-  // Appointments Data
-  List<Appointment> _todayAppointments = [];
-  List<Appointment> get todayAppointments => _todayAppointments;
+  // Dynamic Data from Analysis Service
+  Map<String, dynamic> _currentStats = {};
+  Map<String, dynamic> get currentStats => _currentStats;
   
-  List<Appointment> _upcomingAppointments = [];
-  List<Appointment> get upcomingAppointments => _upcomingAppointments;
+  List<Map<String, dynamic>> _currentRequests = [];
+  List<Map<String, dynamic>> get currentRequests => _currentRequests;
   
-  List<Appointment> _pastAppointments = [];
-  List<Appointment> get pastAppointments => _pastAppointments;
+  Map<String, dynamic> _currentFootfall = {};
+  Map<String, dynamic> get currentFootfall => _currentFootfall;
   
-  // Statistics
-  int _totalPatients = 0;
-  int get totalPatients => _totalPatients;
+  Map<String, dynamic> _currentDemographics = {};
+  Map<String, dynamic> get currentDemographics => _currentDemographics;
   
-  int _totalEnquiries = 0;
-  int get totalEnquiries => _totalEnquiries;
+  Map<String, dynamic> _currentBedAnalytics = {};
+  Map<String, dynamic> get currentBedAnalytics => _currentBedAnalytics;
   
-  int _totalBookings = 0;
-  int get totalBookings => _totalBookings;
-  
-  // Footfall Data
-  Map<String, int> _dailyFootfall = {};
-  Map<String, int> get dailyFootfall => _dailyFootfall;
-  
-  Map<String, int> _weeklyFootfall = {};
-  Map<String, int> get weeklyFootfall => _weeklyFootfall;
-  
-  String _peakHour = '';
-  String get peakHour => _peakHour;
-  
-  String _peakDay = '';
-  String get peakDay => _peakDay;
-  
-  // Demographics
-  Map<String, int> _ageGroupDistribution = {};
-  Map<String, int> get ageGroupDistribution => _ageGroupDistribution;
-  
-  Map<String, int> _healthConditions = {};
-  Map<String, int> get healthConditions => _healthConditions;
+  Map<String, dynamic> _currentInsights = {};
+  Map<String, dynamic> get currentInsights => _currentInsights;
   
   // Time Period for Analytics
   String _selectedTimePeriod = 'week';
@@ -79,7 +59,17 @@ class HospitalDashboardViewModel extends ChangeNotifier {
 
   void updateTimePeriod(String period) {
     _selectedTimePeriod = period;
+    _loadDataForTimePeriod(period);
     notifyListeners();
+  }
+
+  void _loadDataForTimePeriod(String timePeriod) {
+    _currentStats = HospitalAnalysisService.getStats(timePeriod);
+    _currentRequests = HospitalAnalysisService.getRequests(timePeriod);
+    _currentFootfall = HospitalAnalysisService.getFootfallData(timePeriod);
+    _currentDemographics = HospitalAnalysisService.getDemographicsData(timePeriod);
+    _currentBedAnalytics = HospitalAnalysisService.getBedAnalyticsData(timePeriod);
+    _currentInsights = HospitalAnalysisService.getInsightsData(timePeriod);
   }
 
   Future<void> fetchDashboardData() async {
@@ -110,92 +100,8 @@ class HospitalDashboardViewModel extends ChangeNotifier {
       print("✅ Hospital Profile Fetched: ${_hospitalProfile?.name}");
       print("✅ Hospital Profile Data: ${_hospitalProfile?.toJson()}");
       
-      // Simulate API calls for other data
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Mock data for demonstration
-      _todayAppointments = [
-        Appointment(
-          id: '1',
-          patientName: 'John Doe',
-          date: '2024-03-20',
-          time: '10:00 AM',
-          status: 'confirmed',
-        ),
-        Appointment(
-          id: '2',
-          patientName: 'Jane Smith',
-          date: '2024-03-20',
-          time: '02:30 PM',
-          status: 'pending',
-        ),
-      ];
-      
-      _upcomingAppointments = [
-        Appointment(
-          id: '3',
-          patientName: 'Robert Johnson',
-          date: '2024-03-21',
-          time: '11:00 AM',
-          status: 'confirmed',
-        ),
-      ];
-      
-      _pastAppointments = [
-        Appointment(
-          id: '4',
-          patientName: 'Emily Davis',
-          date: '2024-03-19',
-          time: '09:00 AM',
-          status: 'completed',
-        ),
-      ];
-      
-      _totalPatients = 150;
-      _totalEnquiries = 45;
-      _totalBookings = 75;
-      
-      _dailyFootfall = {
-        '9 AM': 15,
-        '10 AM': 25,
-        '11 AM': 30,
-        '12 PM': 20,
-        '1 PM': 10,
-        '2 PM': 25,
-        '3 PM': 35,
-        '4 PM': 30,
-        '5 PM': 20,
-      };
-      
-      _weeklyFootfall = {
-        'Mon': 120,
-        'Tue': 150,
-        'Wed': 180,
-        'Thu': 160,
-        'Fri': 140,
-        'Sat': 200,
-        'Sun': 100,
-      };
-      
-      _peakHour = '3 PM';
-      _peakDay = 'Saturday';
-      
-      _ageGroupDistribution = {
-        '0-18': 20,
-        '19-30': 35,
-        '31-45': 45,
-        '46-60': 30,
-        '60+': 20,
-      };
-      
-      _healthConditions = {
-        'Cardiac': 25,
-        'Neurological': 20,
-        'Orthopedic': 30,
-        'Respiratory': 15,
-        'Gastrointestinal': 20,
-        'Other': 40,
-      };
+      // Load initial data for the selected time period
+      _loadDataForTimePeriod(_selectedTimePeriod);
       
       _error = null;
       print("✅ Dashboard Data Loaded Successfully");
@@ -257,25 +163,35 @@ class HospitalDashboardViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> acceptAppointment(String appointmentId) async {
-    final index = _todayAppointments.indexWhere((a) => a.id == appointmentId);
-    if (index != -1) {
-      _todayAppointments[index] = _todayAppointments[index].copyWith(
-        status: 'confirmed',
-      );
-      notifyListeners();
-    }
-  }
-
-  Future<void> completeAppointment(String appointmentId) async {
-    final index = _todayAppointments.indexWhere((a) => a.id == appointmentId);
-    if (index != -1) {
-      _todayAppointments[index] = _todayAppointments[index].copyWith(
-        status: 'completed',
-      );
-      notifyListeners();
-    }
-  }
+  // Helper methods for getting specific data
+  int get totalPatients => _currentStats['totalPatients'] ?? 0;
+  int get totalEnquiries => _currentStats['totalInquiries'] ?? 0;
+  int get totalBookings => _currentStats['totalBookings'] ?? 0;
+  int get totalBedRequests => _currentStats['totalBedRequests'] ?? 0;
+  int get confirmedBedBookings => _currentStats['confirmedBedBookings'] ?? 0;
+  int get totalBedRevenue => _currentStats['totalBedRevenue'] ?? 0;
+  String get avgTimeToConfirm => _currentStats['avgTimeToConfirm'] ?? '0 hrs';
+  int get bedOccupancyRate => _currentStats['bedOccupancyRate'] ?? 0;
+  
+  String get peakHour => _currentFootfall['peakHour'] ?? '';
+  String get peakDay => _currentFootfall['peakDay'] ?? '';
+  List<int> get footfallChartData => List<int>.from(_currentFootfall['chartData'] ?? []);
+  List<String> get footfallChartLabels => List<String>.from(_currentFootfall['chartLabels'] ?? []);
+  
+  Map<String, int> get ageGroupDistribution => Map<String, int>.from(_currentDemographics['ageGroups'] ?? {});
+  Map<String, int> get healthConditions => Map<String, int>.from(_currentDemographics['healthConditions'] ?? {});
+  Map<String, int> get genderDistribution => Map<String, int>.from(_currentDemographics['genderDistribution'] ?? {});
+  
+  Map<String, int> get bedOccupancy => Map<String, int>.from(_currentBedAnalytics['occupancy'] ?? {});
+  Map<String, int> get bedDemand => Map<String, int>.from(_currentBedAnalytics['demand'] ?? {});
+  Map<String, int> get bookingFunnel => Map<String, int>.from(_currentBedAnalytics['funnel'] ?? {});
+  Map<String, dynamic> get bookingOutcomes => Map<String, dynamic>.from(_currentBedAnalytics['outcomes'] ?? {});
+  Map<String, int> get bedRevenue => Map<String, int>.from(_currentBedAnalytics['revenue'] ?? {});
+  Map<String, int> get peakBookingTimes => Map<String, int>.from(_currentBedAnalytics['peakBookingTimes'] ?? {});
+  
+  List<String> get topCancelReasons => List<String>.from(_currentInsights['topCancelReasons'] ?? []);
+  List<String> get highDemandBeds => List<String>.from(_currentInsights['highDemandBeds'] ?? []);
+  String get suggestions => _currentInsights['suggestions'] ?? '';
 
   // Add a method to refresh the hospital profile
   Future<void> refreshHospitalProfile() async {
@@ -316,34 +232,4 @@ class HospitalDashboardViewModel extends ChangeNotifier {
   }
 }
 
-class Appointment {
-  final String id;
-  final String patientName;
-  final String date;
-  final String time;
-  final String status;
-
-  Appointment({
-    required this.id,
-    required this.patientName,
-    required this.date,
-    required this.time,
-    required this.status,
-  });
-
-  Appointment copyWith({
-    String? id,
-    String? patientName,
-    String? date,
-    String? time,
-    String? status,
-  }) {
-    return Appointment(
-      id: id ?? this.id,
-      patientName: patientName ?? this.patientName,
-      date: date ?? this.date,
-      time: time ?? this.time,
-      status: status ?? this.status,
-    );
-  }
-} 
+ 

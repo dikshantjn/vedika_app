@@ -1,5 +1,30 @@
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/upcoming_appointments_card.dart';
+
+enum AppointmentStatus {
+  confirmed,
+  pending,
+  cancelled,
+}
+
+class AppointmentData {
+  final String id;
+  final String patientName;
+  final int age;
+  final String gender;
+  final DateTime dateTime;
+  final String consultationType;
+  final AppointmentStatus status;
+
+  AppointmentData({
+    required this.id,
+    required this.patientName,
+    required this.age,
+    required this.gender,
+    required this.dateTime,
+    required this.consultationType,
+    required this.status,
+  });
+}
 
 /// Utility class to convert between ClinicAppointment and AppointmentData
 class AppointmentAdapter {

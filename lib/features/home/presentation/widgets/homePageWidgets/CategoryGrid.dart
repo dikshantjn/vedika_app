@@ -33,16 +33,9 @@ class _CategoryGridState extends State<CategoryGrid> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Colors.grey.shade50,
-          ],
-        ),
+        color: Color(0xFFF8F9FA), // Light attractive background
       ),
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -58,13 +51,10 @@ class _CategoryGridState extends State<CategoryGrid> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(
+                          color: Colors.teal.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Icon(
                         Icons.category,
@@ -146,7 +136,7 @@ class _CategoryGridState extends State<CategoryGrid> {
                         child: Container(
                           width: 90,
                           margin: EdgeInsets.only(right: 16),
-                          child: _buildCategoryItem(category),
+                          child: _buildCategoryBox(category),
                         ),
                       );
                     },
@@ -160,18 +150,15 @@ class _CategoryGridState extends State<CategoryGrid> {
     );
   }
 
-  Widget _buildCategoryItem(Map<String, dynamic> category) {
+  Widget _buildCategoryBox(Map<String, dynamic> category) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: category['color'],
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: category['color'].withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -180,28 +167,25 @@ class _CategoryGridState extends State<CategoryGrid> {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              color: category['color'],
+              color: Colors.white.withOpacity(0.9),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: (category['color'] as Color).withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: Colors.white.withOpacity(0.5),
+                width: 1,
+              ),
             ),
             child: Padding(
               padding: const EdgeInsets.all(10.0),
               child: Icon(
                 category['icon'],
-                color: Colors.teal,
+                color: _getIconColor(category['color']),
                 size: 24,
               ),
             ),
           ),
-          SizedBox(height: 6),
+          SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
             child: Text(
               category['name'],
               textAlign: TextAlign.center,
@@ -217,6 +201,18 @@ class _CategoryGridState extends State<CategoryGrid> {
         ],
       ),
     );
+  }
+
+  Color _getIconColor(Color backgroundColor) {
+    // Return appropriate icon color based on background
+    if (backgroundColor == Color(0xFFE3F2FD)) return Color(0xFF1976D2); // Blue
+    if (backgroundColor == Color(0xFFE8F5E9)) return Color(0xFF388E3C); // Green
+    if (backgroundColor == Color(0xFFFFF3E0)) return Color(0xFFF57C00); // Orange
+    if (backgroundColor == Color(0xFFF3E5F5)) return Color(0xFF7B1FA2); // Purple
+    if (backgroundColor == Color(0xFFFFEBEE)) return Color(0xFFD32F2F); // Red
+    if (backgroundColor == Color(0xFFE0F2F1)) return Color(0xFF00796B); // Teal
+    if (backgroundColor == Color(0xFFE8EAF6)) return Color(0xFF3F51B5); // Indigo
+    return Colors.teal; // Default
   }
 
   void _showMoreCategoriesSheet(BuildContext context) {
@@ -238,13 +234,12 @@ class _CategoryGridState extends State<CategoryGrid> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.shade200,
+                      width: 1,
                     ),
-                  ],
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,7 +283,7 @@ class _CategoryGridState extends State<CategoryGrid> {
                               Navigator.pop(context); // Close bottom sheet
                               _navigateToProductList(context, category['name']);
                             },
-                            child: _buildCategoryItem(category),
+                            child: _buildCategoryBox(category),
                           );
                         },
                       ),

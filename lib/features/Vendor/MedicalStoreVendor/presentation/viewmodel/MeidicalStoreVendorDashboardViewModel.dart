@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/MedicalStoreAnalyticsService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
@@ -49,9 +50,15 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool _isActive = false; // Default inactive
   String _status = "Offline"; // New status field
 
+  // ✅ Time Filter for Analytics
+  String _selectedTimeFilter = 'Today';
+  List<String> _timeFilterOptions = ['Today', 'Week', 'Month', 'Year'];
+
   bool get isLoading => _isLoading;
   bool get isActive => _isActive;
   String get status => _status;
+  String get selectedTimeFilter => _selectedTimeFilter;
+  List<String> get timeFilterOptions => _timeFilterOptions;
 
   // ✅ Fetch Store Information
   Future<void> fetchStoreInformation() async {
@@ -113,7 +120,13 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Fetch Orders and Return Requests from API
+  // ✅ Update Time Filter
+  Future<void> updateTimeFilter(String timeFilter) async {
+    _selectedTimeFilter = timeFilter;
+    await fetchOrdersAndRequests();
+  }
+
+  // ✅ Fetch Orders and Return Requests from API with Time Filter
   Future<void> fetchOrdersAndRequests() async {
     try {
       String? vendorId = await _loginService.getVendorId();
@@ -121,73 +134,19 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
       // Fetch store information
       await fetchStoreInformation();
 
-      // Fetch orders
-      orders = await _orderService.getOrders(vendorId!);
+      // Fetch orders with time filter
+      orders = await MedicalStoreAnalyticsService.getOrders(_selectedTimeFilter);
 
-      // Fetch return requests
-      returnRequests = await _fetchReturnRequests();
+      // Fetch return requests with time filter
+      returnRequests = await MedicalStoreAnalyticsService.getReturnRequests(_selectedTimeFilter);
 
-      // Update analytics
-      _updateAnalytics();
+      // Update analytics with time filter
+      analytics = await MedicalStoreAnalyticsService.getAnalytics(_selectedTimeFilter);
 
       notifyListeners();
     } catch (e) {
       print("Error fetching orders or return requests: $e");
     }
-  }
-
-  // ✅ Fetching Return Requests (Placeholder, implement this service method)
-  Future<List<MedicineReturnRequestModel>> _fetchReturnRequests() async {
-    await Future.delayed(Duration(seconds: 2));
-    return [
-      MedicineReturnRequestModel(orderId: '006', customerName: 'Mark Lee', status: 'Pending', createdAt: DateTime.now().subtract(Duration(days: 1))),
-      MedicineReturnRequestModel(orderId: '007', customerName: 'Sophia Martinez', status: 'Approved', createdAt: DateTime.now().subtract(Duration(days: 2))),
-      MedicineReturnRequestModel(orderId: '008', customerName: 'Olivia Taylor', status: 'Rejected', createdAt: DateTime.now().subtract(Duration(days: 3))),
-      MedicineReturnRequestModel(orderId: '009', customerName: 'Daniel Harris', status: 'Processing', createdAt: DateTime.now().subtract(Duration(days: 4))),
-      MedicineReturnRequestModel(orderId: '010', customerName: 'James Anderson', status: 'Completed', createdAt: DateTime.now().subtract(Duration(days: 5))),
-    ];
-  }
-
-  // ✅ Update Analytics based on fetched data
-  void _updateAnalytics() {
-    int totalOrders = orders.length;
-    double averageOrderValue = _calculateAverageOrderValue();
-    int ordersToday = _countOrdersToday();
-    int returnsThisWeek = returnRequests.where((request) => _isRequestThisWeek(request)).length;
-
-    analytics = MedicalStoreAnalyticsModel(
-      totalOrders: totalOrders,
-      averageOrderValue: averageOrderValue.toInt(),
-      ordersToday: ordersToday,
-      returnsThisWeek: returnsThisWeek,
-    );
-  }
-
-  // ✅ Calculate Average Order Value
-  double _calculateAverageOrderValue() {
-    double totalValue = orders.fold(0.0, (sum, order) => sum + order.totalAmount);
-    return orders.isNotEmpty ? totalValue / orders.length : 0.0;
-  }
-
-  // ✅ Count orders for today
-  int _countOrdersToday() {
-    DateTime todayStart = DateTime.now().subtract(Duration(days: DateTime.now().day - 1));
-    return orders.where((order) => order.createdAt.isAfter(todayStart)).length;
-  }
-
-  // ✅ Check if the return request is within this week
-  bool _isRequestThisWeek(MedicineReturnRequestModel request) {
-    DateTime requestDate = request.createdAt;
-    DateTime now = DateTime.now();
-    int weekOfYear = _getWeekOfYear(now);
-    int requestWeekOfYear = _getWeekOfYear(requestDate);
-    return weekOfYear == requestWeekOfYear;
-  }
-
-  // ✅ Get Week of the year
-  int _getWeekOfYear(DateTime date) {
-    int dayOfYear = int.parse(DateFormat("D").format(date));
-    return ((dayOfYear - 1) / 7).floor() + 1;
   }
 
   // ✅ Set Vendor Status

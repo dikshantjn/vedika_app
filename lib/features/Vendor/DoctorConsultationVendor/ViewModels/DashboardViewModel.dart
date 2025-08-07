@@ -3,6 +3,7 @@ import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/AppointmentService.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorVendorAnalysisService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 
@@ -11,6 +12,7 @@ class DashboardViewModel extends ChangeNotifier {
   final DoctorClinicService _doctorClinicService = DoctorClinicService();
   final VendorService _vendorService = VendorService();
   final VendorLoginService _loginService = VendorLoginService();
+  final DoctorVendorAnalysisService _analysisService = DoctorVendorAnalysisService();
   
   bool _isLoading = true;
   String? _errorMessage;
@@ -38,13 +40,16 @@ class DashboardViewModel extends ChangeNotifier {
     {'month': 'Jun', 'patients': 80, 'appointments': 95},
   ];
   
+  // Comprehensive analytics data
+  Map<String, dynamic> _comprehensiveAnalytics = {};
+  
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isActive => _isActive;
   bool get isOnline => _isOnline;
   String get selectedTimeFilter => _selectedTimeFilter;
-  List<String> get timeFilters => ['Today', 'Week', 'Month', 'Year'];
+  List<String> get timeFilters => _analysisService.getTimeFilters();
   List<ClinicAppointment> get upcomingAppointments => _upcomingAppointments;
   int get totalPatients => _totalPatients;
   int get totalAppointments => _totalAppointments;
@@ -53,6 +58,7 @@ class DashboardViewModel extends ChangeNotifier {
   int get reviewCount => _reviewCount;
   int get todayAppointments => _todayAppointments;
   List<Map<String, dynamic>> get analyticsData => _analyticsData;
+  Map<String, dynamic> get comprehensiveAnalytics => _comprehensiveAnalytics;
   
   // Initialize and fetch dashboard data
   Future<void> initialize() async {
@@ -152,6 +158,9 @@ class DashboardViewModel extends ChangeNotifier {
       // Fetch analytics data
       await fetchAnalyticsData();
       
+      // Fetch comprehensive analytics
+      await fetchComprehensiveAnalytics();
+      
       // Update today appointments count
       _todayAppointments = _upcomingAppointments.where((appointment) {
         final now = DateTime.now();
@@ -202,14 +211,28 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       if (_vendorId == null) return;
       
-      // This would be an API call in a real app
-      // For now using mock data
-      await Future.delayed(Duration(milliseconds: 500));
+      // Get basic analytics from the analysis service
+      _analyticsData = await _analysisService.getBasicAnalytics();
       
       notifyListeners();
     } catch (e) {
       print('Error fetching analytics data: $e');
       _errorMessage = 'Failed to load analytics data';
+    }
+  }
+  
+  // Fetch comprehensive analytics data
+  Future<void> fetchComprehensiveAnalytics() async {
+    try {
+      if (_vendorId == null) return;
+      
+      // Get comprehensive analytics for the selected time filter
+      _comprehensiveAnalytics = await _analysisService.getAnalyticsData(_selectedTimeFilter);
+      
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching comprehensive analytics: $e');
+      _errorMessage = 'Failed to load comprehensive analytics';
     }
   }
   

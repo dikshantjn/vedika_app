@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWid
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/HealthConcernSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/TestimonialSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/FeaturedArticlesSection.dart';
+import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/JustForYouSection.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
@@ -242,6 +243,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         HealthConcernSection(),
                         FeaturedArticlesSection(),
                         CategoryGrid(),
+                        JustForYouSection(),
                         BrandSection(),
                         TestimonialSection(),
                         SizedBox(height: 20), // Reduced bottom padding since we're using standard bottom nav

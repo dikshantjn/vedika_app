@@ -47,7 +47,19 @@ class Ward {
       isIsolation: json['isIsolation'] ?? false,
       description: json['description'] ?? '',
       vendorId: json['vendorId'] ?? '',
-      facilities: List<String>.from(json['facilities'] ?? []),
+      facilities: (() {
+        final raw = json['facilities'];
+        if (raw is List) {
+          return List<String>.from(raw);
+        } else if (raw is Map) {
+          return raw.entries
+              .where((entry) => entry.value == true)
+              .map((entry) => entry.key.toString())
+              .toList();
+        } else {
+          return <String>[]; // default fallback
+        }
+      })(),
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );

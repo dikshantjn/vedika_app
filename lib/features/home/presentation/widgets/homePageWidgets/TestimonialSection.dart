@@ -6,6 +6,13 @@ class TestimonialSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width to determine if it's a tablet
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600; // Common breakpoint for tablets
+    
+    // Calculate responsive card width
+    final cardWidth = isTablet ? (screenWidth - 80) / 2 : screenWidth - 40; // 2 cards on tablet, 1 on mobile
+
     return Container(
       padding: EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       child: Column(
@@ -40,48 +47,170 @@ class TestimonialSection extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildTestimonialCard(
-                  'Dr. Vishal Bhandari',
-                  'Anesthesiologist',
-                  'MBBS',
-                  '15 yrs exp.',
-                  'Pune',
-                  'Vedika Healthcare has revolutionized patient care in our region. The digital prescription system and seamless medication delivery have significantly improved patient outcomes and accessibility.',
-                ),
-                SizedBox(width: 16),
-                _buildTestimonialCard(
-                  'Dr. Piyush Lodha',
-                  'Endocrinologist',
-                  'MBBS, DM - Endocrinology, MD',
-                  '12 Years Experience',
-                  'Pune',
-                  'As an endocrinologist, I appreciate how Vedika Healthcare streamlines medication management for chronic conditions. Their platform makes it easier for patients to maintain their treatment regimens.',
-                ),
-                SizedBox(width: 16),
-                _buildTestimonialCard(
-                  'Dr. Sachin Lakade',
-                  'Cardiologist',
-                  'MBBS, MD - Cardiology',
-                  '17 Years Experience',
-                  'Pune',
-                  'The integration of digital health records and prescription management has enhanced our clinic\'s efficiency. Vedika Healthcare is truly transforming healthcare delivery in Maharashtra.',
-                ),
-              ],
-            ),
+          isTablet 
+            ? _buildTabletLayout(cardWidth)
+            : _buildMobileLayout(cardWidth),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(double cardWidth) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildTestimonialCard(
+            'Dr. Vishal Bhandari',
+            'Anesthesiologist',
+            'MBBS, MD (Internal Medicine)',
+            '15 years experience',
+            'Pune',
+            'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
+            'assets/doctorsPic/DrVishalBhandari.jpeg',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Piyush Lodha',
+            'Endocrinologist',
+            'MBBS, MD – Medicine, DM – Endocrinology',
+            '12 years experience',
+            'Pune',
+            'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
+            'assets/doctorsPic/Piyush-Lodha.jpg',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Sachin Lakade',
+            'Cardiologist',
+            'MBBS, MD – General Medicine, DNB – Cardiology',
+            '17 years experience',
+            'Pune',
+            'A well-established cardiologist currently consulting at Bhakare Super Speciality and VishwaRaj Hospital. Delivers full suite of cardiac services from preventive care to angioplasty and pacemaker management.',
+            'assets/doctorsPic/Dr.sachin-lakade.png',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Sweta Lunkad',
+            'Haematologist',
+            'MBBS, DNB – General Medicine, DM – Clinical Haematology',
+            '17 years experience',
+            'Pune',
+            'A leading haematologist heading hematology and bone marrow transplant services at Lakshya Cancer Care and Jupiter Hospital. Performs complex BMTs including autologous, allogeneic, MUD and haploidentical transplants.',
+            'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Rajeev Joshi',
+            'Orthopaedic Surgeon',
+            'MBBS, MS – Orthopaedics',
+            '33 years experience',
+            'Pune',
+            'A senior orthopedic surgeon at Sancheti Hospital, renowned for hip and knee replacement surgeries. With over three decades of surgical practice, handles complex reconstructive cases and trauma-related joint repairs.',
+            'assets/doctorsPic/DrRajivJoshi.jpeg',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Amrut Oswal',
+            'Orthopaedic Surgeon',
+            'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
+            '36 years experience',
+            'Pune',
+            'A veteran orthopedic surgeon at KEM Hospital Pune specializing in hip/knee replacements, spinal procedures, and complex fracture care. With broad surgical mastery across joint reconstruction and trauma.',
+            'assets/doctorsPic/Dr.AmrutOswal.jpg',
+            cardWidth,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTestimonialCard(String name, String specialty, String qualification, String experience, String location, String testimonial) {
+  Widget _buildTabletLayout(double cardWidth) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _buildTestimonialCard(
+            'Dr. Vishal Bhandari',
+            'Anesthesiologist',
+            'MBBS, MD (Internal Medicine)',
+            '15 years experience',
+            'Pune',
+            'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
+            'assets/doctorsPic/Dr. Vishal Bhandari.jpg',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Piyush Lodha',
+            'Endocrinologist',
+            'MBBS, MD – Medicine, DM – Endocrinology',
+            '12 years experience',
+            'Pune',
+            'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
+            'assets/doctorsPic/Piyush-Lodha.jpg',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Sachin Lakade',
+            'Cardiologist',
+            'MBBS, MD – General Medicine, DNB – Cardiology',
+            '17 years experience',
+            'Pune',
+            'A well-established cardiologist currently consulting at Bhakare Super Speciality and VishwaRaj Hospital. Delivers full suite of cardiac services from preventive care to angioplasty and pacemaker management.',
+            'assets/doctorsPic/Dr.sachin-lakade.png',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Sweta Lunkad',
+            'Haematologist',
+            'MBBS, DNB – General Medicine, DM – Clinical Haematology',
+            '17 years experience',
+            'Pune',
+            'A leading haematologist heading hematology and bone marrow transplant services at Lakshya Cancer Care and Jupiter Hospital. Performs complex BMTs including autologous, allogeneic, MUD and haploidentical transplants.',
+            'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Rajeev Joshi',
+            'Orthopaedic Surgeon',
+            'MBBS, MS – Orthopaedics',
+            '33 years experience',
+            'Pune',
+            'A senior orthopedic surgeon at Sancheti Hospital, renowned for hip and knee replacement surgeries. With over three decades of surgical practice, handles complex reconstructive cases and trauma-related joint repairs.',
+            'assets/doctorsPic/Dr. Rajeev Joshi.jfif',
+            cardWidth,
+          ),
+          SizedBox(width: 16),
+          _buildTestimonialCard(
+            'Dr. Amrut Oswal',
+            'Orthopaedic Surgeon',
+            'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
+            '36 years experience',
+            'Pune',
+            'A veteran orthopedic surgeon at KEM Hospital Pune specializing in hip/knee replacements, spinal procedures, and complex fracture care. With broad surgical mastery across joint reconstruction and trauma.',
+            'assets/doctorsPic/Dr. Amrut Oswal.jfif',
+            cardWidth,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestimonialCard(String name, String specialty, String qualification, String experience, String location, String testimonial, String imagePath, double cardWidth) {
     return Container(
-      width: 300,
+      width: cardWidth,
+      height: 380, // Fixed height for consistent card sizes
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -109,10 +238,20 @@ class TestimonialSection extends StatelessWidget {
                       width: 2,
                     ),
                   ),
-                  child: Icon(
-                    Icons.person,
-                    size: 30,
-                    color: ColorPalette.primaryColor,
+                  child: ClipOval(
+                    child: Image.asset(
+                      imagePath,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.person,
+                          size: 30,
+                          color: ColorPalette.primaryColor,
+                        );
+                      },
+                    ),
                   ),
                 ),
                 SizedBox(width: 16),
@@ -212,56 +351,44 @@ class TestimonialSection extends StatelessWidget {
             ),
             SizedBox(height: 16),
             
-            // Testimonial Quote
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey[200]!,
-                  width: 1,
+            // Testimonial Quote - Fixed height with Expanded and no ellipsis
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.grey[200]!,
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.format_quote,
-                        size: 20,
-                        color: ColorPalette.primaryColor.withOpacity(0.6),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    testimonial,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      height: 1.5,
-                      fontWeight: FontWeight.w500,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.format_quote,
+                          size: 20,
+                          color: ColorPalette.primaryColor.withOpacity(0.6),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 16),
-            
-            // Star Rating
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                5,
-                (index) => Padding(
-                  padding: EdgeInsets.only(right: index < 4 ? 4 : 0),
-                  child: Icon(
-                    Icons.star,
-                    size: 16,
-                    color: Colors.amber[600],
-                  ),
+                    SizedBox(height: 8),
+                    Expanded(
+                      child: Text(
+                        testimonial,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                          height: 1.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.justify,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

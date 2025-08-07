@@ -14,42 +14,46 @@ class HealthConcernSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4, left: 16, right: 16),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title and View All button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Search by Health Concern",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: HealthConcernColorPalette.textDark,
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  backgroundColor: HealthConcernColorPalette.primaryBlue,
-                ),
-                child: Text(
-                  "View All",
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Search by Health Concern",
                   style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: HealthConcernColorPalette.textDark,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ],
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    backgroundColor: HealthConcernColorPalette.primaryBlue,
+                  ),
+                  child: Text(
+                    "View All",
+                    style: TextStyle(
+                      color: HealthConcernColorPalette.textDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -58,6 +62,7 @@ class HealthConcernSection extends StatelessWidget {
             height: 130,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 20),
               itemCount: categories.length,
               itemBuilder: (context, index) {
                 final gradientColors = HealthConcernColorPalette.getGradientForIndex(index);

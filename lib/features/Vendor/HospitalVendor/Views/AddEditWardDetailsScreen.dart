@@ -591,11 +591,14 @@ class _AddEditWardDetailsScreenState extends State<AddEditWardDetailsScreen> {
               color: value ? HospitalVendorColorPalette.primaryBlue : Colors.grey[600],
             ),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: value ? HospitalVendorColorPalette.primaryBlue : Colors.grey[800],
-                fontWeight: value ? FontWeight.w500 : FontWeight.normal,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: value ? HospitalVendorColorPalette.primaryBlue : Colors.grey[800],
+                  fontWeight: value ? FontWeight.w500 : FontWeight.normal,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

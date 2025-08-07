@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Dashboard/MedicalStoreAnalyticsCard.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Dashboard/MedicineOrderCard.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Dashboard/MedicineReturnRequestCard.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/ProcessOrderScreen.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:shimmer/shimmer.dart';
 
 class DashboardContent extends StatefulWidget {
@@ -54,12 +56,10 @@ class _DashboardContentState extends State<DashboardContent> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildWelcomeCard(viewModel),
+                  const SizedBox(height: 16),
+                  _buildTimeFilterSection(viewModel),
                   const SizedBox(height: 24),
                   _buildAnalyticsSection(viewModel),
-                  const SizedBox(height: 24),
-                  _buildOrdersSection(viewModel),
-                  const SizedBox(height: 24),
-                  _buildReturnRequestsSection(viewModel),
                 ],
               ),
             );
@@ -212,6 +212,75 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
+  Widget _buildTimeFilterSection(MedicalStoreVendorDashboardViewModel viewModel) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Time Period',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: MedicalStoreVendorColorPalette.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: viewModel.timeFilterOptions.map((filter) {
+              bool isSelected = viewModel.selectedTimeFilter == filter;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    await viewModel.updateTimeFilter(filter);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? MedicalStoreVendorColorPalette.primaryColor 
+                          : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected 
+                            ? MedicalStoreVendorColorPalette.primaryColor 
+                            : Colors.grey.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      filter,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isSelected 
+                            ? Colors.white 
+                            : MedicalStoreVendorColorPalette.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalyticsSection(MedicalStoreVendorDashboardViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -227,163 +296,149 @@ class _DashboardContentState extends State<DashboardContent> {
           ),
         ],
       ),
-      child: AnalyticsCard(
-        analytics: viewModel.analytics,
-        onViewAll: () {
-          // Navigate to detailed analytics
-        },
+      child: _buildAnalyticsCard(viewModel.analytics),
+    );
+  }
+
+  Widget _buildAnalyticsCard(MedicalStoreAnalyticsModel analytics) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildAnalyticsHeader(),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.3,
+          children: [
+            _buildAnalyticsBox(
+              title: "Total Orders",
+              value: analytics.totalOrders.toString(),
+              icon: Icons.shopping_cart,
+              color: MedicalStoreVendorColorPalette.primaryColor,
+            ),
+            _buildAnalyticsBox(
+              title: "Average Order Value",
+              value: "₹${analytics.averageOrderValue}",
+              icon: Icons.monetization_on,
+              color: MedicalStoreVendorColorPalette.successColor,
+            ),
+            _buildAnalyticsBox(
+              title: "Returns This Week",
+              value: analytics.returnsThisWeek.toString(),
+              icon: Icons.refresh,
+              color: MedicalStoreVendorColorPalette.errorColor,
+            ),
+            _buildAnalyticsBox(
+              title: "Orders Today",
+              value: analytics.ordersToday.toString(),
+              icon: Icons.today,
+              color: MedicalStoreVendorColorPalette.secondaryColor,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalyticsHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Analytics Overview",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: MedicalStoreVendorColorPalette.textPrimary,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              // Navigate to detailed analytics
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: MedicalStoreVendorColorPalette.primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              "View All",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildOrdersSection(MedicalStoreVendorDashboardViewModel viewModel) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent Orders',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: MedicalStoreVendorColorPalette.textPrimary,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to all orders
-              },
-              child: Text(
-                'View All',
-                style: TextStyle(
-                  color: MedicalStoreVendorColorPalette.primaryColor,
-                  fontWeight: FontWeight.w500,
+  Widget _buildAnalyticsBox({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 0,
-                offset: const Offset(0, 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ],
           ),
-          child: viewModel.orders.isNotEmpty
-              ? OrderCard(
-                  orders: viewModel.orders.take(5).toList(),
-                  viewModel: Provider.of<MedicineOrderViewModel>(context, listen: false),
-                  onViewAll: () {
-                    // Navigate to all orders
-                  },
-                )
-              : _buildEmptyState(
-                  'No orders yet',
-                  Icons.shopping_cart_outlined,
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReturnRequestsSection(MedicalStoreVendorDashboardViewModel viewModel) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Return Requests',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: MedicalStoreVendorColorPalette.textPrimary,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: MedicalStoreVendorColorPalette.textPrimary,
             ),
-            TextButton(
-              onPressed: () {
-                // Navigate to all return requests
-              },
-              child: Text(
-                'View All',
-                style: TextStyle(
-                  color: MedicalStoreVendorColorPalette.primaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 0,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          child: viewModel.returnRequests.isNotEmpty
-              ? ReturnRequestCard(
-                  returnRequests: viewModel.returnRequests,
-                  onViewAll: () {
-                    // Navigate to all return requests
-                  },
-                  onTap: (request) {
-                    // Handle return request tap
-                    return () {};
-                  },
-                )
-              : _buildEmptyState(
-                  'No return requests',
-                  Icons.assignment_return_outlined,
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(String message, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: Colors.grey.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -459,15 +514,15 @@ class _DashboardContentState extends State<DashboardContent> {
             ),
             const SizedBox(height: 24),
             Container(
-              height: 200,
+              height: 100,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             const SizedBox(height: 24),
             Container(
-              height: 300,
+              height: 200,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),

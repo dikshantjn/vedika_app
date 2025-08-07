@@ -52,7 +52,8 @@ class BannerSlider extends StatelessWidget {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: [
               CarouselSlider.builder(
@@ -64,7 +65,7 @@ class BannerSlider extends StatelessWidget {
                   return GestureDetector(
                     onTap: () => _navigateToPage(context, offer, healthDayViewModel),
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         gradient: LinearGradient(
@@ -250,10 +251,11 @@ class BannerSlider extends StatelessWidget {
                 },
                 options: CarouselOptions(
                   height: 180.0,
-                  enlargeCenterPage: false,
+                  enlargeCenterPage: true,
+                  enlargeFactor: 0.1,
                   autoPlay: true,
                   autoPlayInterval: const Duration(seconds: 4),
-                  viewportFraction: 0.95,
+                  viewportFraction: 0.85,
                   enlargeStrategy: CenterPageEnlargeStrategy.scale,
                   aspectRatio: 16 / 9,
                   initialPage: 0,
