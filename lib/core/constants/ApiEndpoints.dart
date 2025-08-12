@@ -1,11 +1,14 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.43:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.43:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
+
+  // static const String socketUrl = "https://f8186641a964.ngrok-free.app";
+  // static const String baseUrl = "https://f8186641a964.ngrok-free.app/api";
 
   // Debug function to print actual URL
   static void printEndpointUrl(String endpoint) {

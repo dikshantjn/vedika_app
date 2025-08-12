@@ -28,14 +28,14 @@ class MedicalProfile {
     return MedicalProfile(
       medicalProfileId: json['medicalProfileId'] ?? '',
       userId: json['userId'] ?? '',
-      isDiabetic: json['isDiabetic'] ?? false,
-      allergies: List<String>.from(json['allergies'] ?? []),
-      eyePower: (json['eyePower'] ?? 0.0).toDouble(),
-      currentMedication: List<String>.from(json['currentMedication'] ?? []),
-      pastMedication: List<String>.from(json['pastMedication'] ?? []),
-      chronicConditions: List<String>.from(json['chronicConditions'] ?? []),
-      injuries: List<String>.from(json['injuries'] ?? []),
-      surgeries: List<String>.from(json['surgeries'] ?? []),
+      isDiabetic: _ensureBool(json['isDiabetic']),
+      allergies: _ensureListOfStrings(json['allergies']),
+      eyePower: _ensureDouble(json['eyePower']),
+      currentMedication: _ensureListOfStrings(json['currentMedication']),
+      pastMedication: _ensureListOfStrings(json['pastMedication']),
+      chronicConditions: _ensureListOfStrings(json['chronicConditions']),
+      injuries: _ensureListOfStrings(json['injuries']),
+      surgeries: _ensureListOfStrings(json['surgeries']),
     );
   }
 
@@ -80,5 +80,44 @@ class MedicalProfile {
       injuries: injuries ?? this.injuries,
       surgeries: surgeries ?? this.surgeries,
     );
+  }
+
+  // Parsing helpers to make the model resilient to backend variations
+  static List<String> _ensureListOfStrings(dynamic value) {
+    if (value == null) return <String>[];
+    if (value is List) {
+      return value
+          .map((item) => item?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return <String>[];
+      // If comma-separated, split; else wrap as single-item list
+      if (trimmed.contains(',')) {
+        return trimmed
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+      return <String>[trimmed];
+    }
+    return <String>[];
+  }
+
+  static double _ensureDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    final parsed = double.tryParse(value.toString());
+    return parsed ?? 0.0;
+  }
+
+  static bool _ensureBool(dynamic value) {
+    if (value is bool) return value;
+    if (value == null) return false;
+    final s = value.toString().toLowerCase();
+    return s == 'true' || s == '1' || s == 'yes';
   }
 }

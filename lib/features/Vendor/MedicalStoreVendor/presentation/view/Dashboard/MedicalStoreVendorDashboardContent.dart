@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/widgets/OrdersRevenueChart.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/ProcessOrderScreen.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
-import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:shimmer/shimmer.dart';
 
 class DashboardContent extends StatefulWidget {
@@ -20,11 +17,105 @@ class DashboardContent extends StatefulWidget {
 class _DashboardContentState extends State<DashboardContent> {
   late Future<void> _fetchDataFuture;
   bool _isLoading = true;
+  bool _showAiSuggestion = true;
 
   @override
   void initState() {
     super.initState();
     _fetchDataFuture = _fetchData();
+  }
+
+  Widget _buildAiSuggestionCard(MedicalStoreVendorDashboardViewModel viewModel) {
+    // AI-styled gradient and subtle neon glow
+    final Color primary = const Color(0xFF6C5CE7); // AI purple
+    final Color secondary = const Color(0xFF00D1FF); // Cyan
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primary.withOpacity(0.15),
+            secondary.withOpacity(0.12),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: primary.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: secondary.withOpacity(0.15),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.psychology_alt_rounded,
+              color: primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'AI Suggestion',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: primary,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => setState(() => _showAiSuggestion = false),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  // Dummy AI message tailored to store operations
+                  'Demand spike predicted 5–7 PM for fever and cold medicines. Consider pre-packing top 3 SKUs and enabling express delivery to reduce fulfillment time by ~18%.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade800,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _fetchData() async {
@@ -58,8 +149,14 @@ class _DashboardContentState extends State<DashboardContent> {
                   _buildWelcomeCard(viewModel),
                   const SizedBox(height: 16),
                   _buildTimeFilterSection(viewModel),
+                  if (_showAiSuggestion) ...[
+                    const SizedBox(height: 16),
+                    _buildAiSuggestionCard(viewModel),
+                  ],
                   const SizedBox(height: 24),
-                  _buildAnalyticsSection(viewModel),
+                  _buildCombinedInsightsSection(viewModel),
+                  const SizedBox(height: 24),
+                  _buildChartsSection(viewModel),
                 ],
               ),
             );
@@ -281,7 +378,109 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
-  Widget _buildAnalyticsSection(MedicalStoreVendorDashboardViewModel viewModel) {
+  Widget _buildCombinedInsightsSection(MedicalStoreVendorDashboardViewModel viewModel) {
+    final insights = viewModel.insights;
+    final analytics = viewModel.analytics;
+    if (insights == null) return const SizedBox.shrink();
+
+    // Build a unified list of cards while removing duplicates
+    // Duplicates mapping:
+    // - Total Orders (analytics.totalOrders) vs Total Orders Received (insights.totalOrdersReceived) -> show once as "Total Orders"
+    // Other items remain unique.
+
+    final List<_InsightItem> items = [];
+
+    // Total Orders (merged)
+    items.add(_InsightItem(
+      icon: Icons.shopping_cart,
+      label: 'Total Orders',
+      value: (analytics.totalOrders > 0
+              ? analytics.totalOrders
+              : insights.totalOrdersReceived)
+          .toString(),
+    ));
+
+    // Average Order Value
+    items.add(_InsightItem(
+      icon: Icons.monetization_on,
+      label: 'Average Order Value',
+      value: '₹${analytics.averageOrderValue}',
+    ));
+
+    // Orders Today
+    items.add(_InsightItem(
+      icon: Icons.today,
+      label: 'Orders Today',
+      value: analytics.ordersToday.toString(),
+    ));
+
+    // Returns This Week
+    items.add(_InsightItem(
+      icon: Icons.refresh,
+      label: 'Returns This Week',
+      value: analytics.returnsThisWeek.toString(),
+    ));
+
+    // Orders Confirmed
+    items.add(_InsightItem(
+      icon: Icons.verified_rounded,
+      label: 'Orders Confirmed',
+      value: insights.ordersConfirmed.toString(),
+    ));
+
+    // Avg Time to Fulfill Prescription
+    items.add(_InsightItem(
+      icon: Icons.schedule_rounded,
+      label: 'Avg Time to Fulfill Prescription',
+      value: insights.avgTimeToFulfillPrescription,
+    ));
+
+    // Most Ordered Medicine
+    items.add(_InsightItem(
+      icon: Icons.medication_rounded,
+      label: 'Most Ordered Medicine',
+      value: insights.mostOrderedMedicine,
+    ));
+
+    // Unavailable Requests This Week
+    items.add(_InsightItem(
+      icon: Icons.remove_shopping_cart_rounded,
+      label: 'Unavailable Requests This Week',
+      value: insights.unavailableRequestsThisWeek.toString(),
+    ));
+
+    // Revenue This Month
+    items.add(_InsightItem(
+      icon: Icons.payments_rounded,
+      label: 'Revenue This Month',
+      value: '₹${insights.revenueThisMonth.toStringAsFixed(2)}',
+    ));
+
+    // Fast-Moving Medicine Count
+    items.add(_InsightItem(
+      icon: Icons.local_hospital_rounded,
+      label: 'Fast-Moving Medicine Count',
+      value: insights.fastMovingMedicineCount.toString(),
+    ));
+
+    // Repeat Buyers (30 Days)
+    items.add(_InsightItem(
+      icon: Icons.repeat_rounded,
+      label: 'Repeat Buyers (30 Days)',
+      value: insights.repeatBuyers30Days.toString(),
+    ));
+
+    // Delivery Completion Rate
+    items.add(_InsightItem(
+      icon: Icons.delivery_dining_rounded,
+      label: 'Delivery Completion Rate',
+      value: '${insights.deliveryCompletionRate.toStringAsFixed(1)}%',
+    ));
+
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+    final crossAxisCount = 2; // Always 2 columns per your requirement
+    final double aspectRatio = isTablet ? 2.6 : 1.2; // Increase tile height further to avoid overflow
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -296,9 +495,338 @@ class _DashboardContentState extends State<DashboardContent> {
           ),
         ],
       ),
-      child: _buildAnalyticsCard(viewModel.analytics),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              'Analytics & Insights',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: MedicalStoreVendorColorPalette.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: aspectRatio,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return _InsightCard(item: item);
+            },
+          ),
+        ],
+      ),
     );
   }
+
+  // Removed old insights builder (merged into combined section)
+
+  // Charts Section
+  Widget _buildChartsSection(MedicalStoreVendorDashboardViewModel viewModel) {
+    final charts = viewModel.charts;
+    if (charts == null) return const SizedBox.shrink();
+
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Orders & Revenue trends
+        _buildSectionTitle('Orders & Revenue Trends'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildLegendItem(color: Colors.blueGrey, label: 'Orders'),
+                  const SizedBox(width: 16),
+                  _buildLegendItem(color: Colors.green.shade600, label: 'Revenue'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 180,
+                child: OrdersRevenueChart(
+                  days: charts.days,
+                  dailyOrders: charts.dailyOrders,
+                  dailyRevenue: charts.dailyRevenue,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Status distribution and completion rate
+        if (isTablet)
+          Row(
+            children: [
+              Expanded(child: _buildStatusDistribution(charts)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildCompletionRate(charts.deliveryCompletionRate)),
+            ],
+          )
+        else ...[
+          _buildStatusDistribution(charts),
+          const SizedBox(height: 12),
+          _buildCompletionRate(charts.deliveryCompletionRate),
+        ],
+
+        const SizedBox(height: 24),
+
+        // Top medicines (Region demand removed per request)
+        _buildSectionTitle('Top Medicines'),
+        const SizedBox(height: 12),
+        _buildTopMedicines(charts.topMedicines),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2C3E50),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendItem({required Color color, required String label}) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(5)),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusDistribution(charts) {
+    final data = charts.orderStatusCounts;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Order Status Distribution'),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: data.entries.map<Widget>((e) {
+              return Column(
+                children: [
+                  Container(
+                    width: 16,
+                    height: (e.value.clamp(0, 20)) * 6.0 + 10,
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey.withOpacity(0.7 - (0.05 * (e.key.hashCode % 5))),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    e.key,
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                  ),
+                  Text(
+                    e.value.toString(),
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade800, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionRate(double percentage) {
+    final color = Colors.green.shade600;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Delivery Completion Rate'),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: (percentage / 100).clamp(0, 1),
+                    minHeight: 12,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${percentage.toStringAsFixed(1)}%',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopMedicines(List<Map<String, dynamic>> topMedicines) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: topMedicines.map((m) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.medication_rounded, size: 18, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        m['name'],
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${m['orders']}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegionDemand(List<Map<String, dynamic>> data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Region Demand'),
+          const SizedBox(height: 12),
+          Column(
+            children: data.map((c) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        c['city'],
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: (c['percentage'] as num).toDouble() / 100,
+                          minHeight: 8,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blueGrey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${c['percentage']}%',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Simple dual-series line/area chart using CustomPainter
 
   Widget _buildAnalyticsCard(MedicalStoreAnalyticsModel analytics) {
     return Column(
@@ -526,6 +1054,113 @@ class _DashboardContentState extends State<DashboardContent> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightItem {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InsightItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+}
+
+class _InsightCard extends StatelessWidget {
+  final _InsightItem item;
+  const _InsightCard({Key? key, required this.item}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 110),
+      child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              item.icon,
+              color: Colors.grey.shade800,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                    maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.value,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Mock sparkline / indicator
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 60,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade400,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                      const Expanded(flex: 40, child: SizedBox()),
+                    ],
+                  ),
+                ),
+              ],
               ),
             ),
           ],

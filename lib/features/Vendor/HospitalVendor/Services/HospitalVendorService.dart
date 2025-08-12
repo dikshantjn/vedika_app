@@ -95,8 +95,6 @@ class HospitalVendorService {
         }),
       );
 
-      print("✅ Fetch Profile Response: ${response.statusCode}, Data: ${response.data}");
-      
       if (response.statusCode == 200) {
         final data = response.data;
         if (data != null && data.containsKey('hospital')) {

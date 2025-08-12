@@ -6,6 +6,8 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/OrderService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/MedicalStoreAnalyticsService.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreInsightsModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreDashboardChartsModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/Service/MedicalStoreVendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
@@ -42,6 +44,12 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     ordersToday: 0,
     returnsThisWeek: 0,
   );
+
+  // ✅ Insights
+  MedicalStoreInsightsModel? insights;
+
+  // ✅ Charts
+  MedicalStoreDashboardChartsModel? charts;
 
   final OrderService _orderService = OrderService();
 
@@ -142,6 +150,12 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
 
       // Update analytics with time filter
       analytics = await MedicalStoreAnalyticsService.getAnalytics(_selectedTimeFilter);
+
+      // Fetch Insights with time filter
+      insights = await MedicalStoreAnalyticsService.getInsights(_selectedTimeFilter);
+
+      // Fetch Charts with time filter
+      charts = await MedicalStoreAnalyticsService.getDashboardCharts(_selectedTimeFilter);
 
       notifyListeners();
     } catch (e) {

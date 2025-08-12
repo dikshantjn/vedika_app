@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLo
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/modals/AmbulanceAgency.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceAgencyService.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/data/services/AmbulanceAgencyAnalyticsService.dart';
 
 class AgencyDashboardViewModel extends ChangeNotifier {
   final _bookingService = AmbulanceBookingService();
@@ -41,6 +42,7 @@ class AgencyDashboardViewModel extends ChangeNotifier {
     fetchDashboardData();
     fetchPendingBookings();
     fetchAgencyProfile();
+    fetchAnalytics();
   }
 
   Future<void> fetchAgencyProfile() async {
@@ -73,6 +75,19 @@ class AgencyDashboardViewModel extends ChangeNotifier {
       }
     } catch (e) {
       print("Error fetching bookings: $e");
+    }
+  }
+
+  // Analytics data holder
+  Map<String, dynamic> _analytics = {};
+  Map<String, dynamic> get analytics => _analytics;
+
+  Future<void> fetchAnalytics({String timeFilter = 'Month'}) async {
+    try {
+      _analytics = await AmbulanceAgencyAnalyticsService.getAnalytics(timeFilter);
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching analytics: $e');
     }
   }
 

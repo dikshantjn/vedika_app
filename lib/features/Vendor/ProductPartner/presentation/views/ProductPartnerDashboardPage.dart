@@ -40,6 +40,8 @@ class ProductPartnerDashboardPage extends StatelessWidget {
                 _buildRecentActivity(context, viewModel),
                 const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
                 _buildPerformanceChart(context, viewModel),
+                const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+                _buildAnalysisSections(context, viewModel),
               ],
             ),
           ),
@@ -74,11 +76,21 @@ class ProductPartnerDashboardPage extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 22,
                   backgroundColor: ProductPartnerColorPalette.background,
-                  backgroundImage: viewModel.profilePicture.isNotEmpty
-                      ? NetworkImage(viewModel.profilePicture)
-                      : null,
-                  child: viewModel.profilePicture.isEmpty
-                      ? Text(
+                  child: viewModel.profilePicture.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            viewModel.profilePicture,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.person,
+                              color: ProductPartnerColorPalette.primary,
+                              size: 24,
+                            ),
+                          ),
+                        )
+                      : Text(
                           viewModel.partnerName.isNotEmpty
                               ? viewModel.partnerName[0].toUpperCase()
                               : 'P',
@@ -87,8 +99,7 @@ class ProductPartnerDashboardPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: ProductPartnerColorPalette.primary,
                           ),
-                        )
-                      : null,
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -255,6 +266,687 @@ class ProductPartnerDashboardPage extends StatelessWidget {
     );
   }
 
+  Widget _buildAnalysisSections(BuildContext context, ProductPartnerDashboardViewModel viewModel) {
+    final analysis = viewModel.analysisData;
+    if (analysis == null) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _analysisCard(
+          context,
+          'Demand & Sales Trends',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('Order volume trend (Weekly)'),
+              const SizedBox(height: 8),
+              SizedBox(height: 140, child: _lineChartFromIntList(analysis.demandSalesTrends.orderVolumeTrendWeekly)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Product category performance'),
+              const SizedBox(height: 8),
+              SizedBox(height: 180, child: _barChartFromDoubleMap(analysis.demandSalesTrends.productCategoryPerformance)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionLabel('First-time vs Repeat buyers'),
+                  const SizedBox(height: 8),
+                  _stackedRatioBar(
+                    firstValue: analysis.demandSalesTrends.firstTimeToRepeatBuyerRatio,
+                    secondValue: 1.0,
+                    firstLabel: 'First-time',
+                    secondLabel: 'Repeat',
+                    colors: [ProductPartnerColorPalette.info, ProductPartnerColorPalette.success],
+                  ),
+                  const SizedBox(height: 16),
+                  _sectionLabel('Bulk vs Single orders'),
+                  const SizedBox(height: 8),
+                  _stackedRatioBar(
+                    firstValue: analysis.demandSalesTrends.bulkToSingleOrderRatio,
+                    secondValue: 1 - analysis.demandSalesTrends.bulkToSingleOrderRatio,
+                    firstLabel: 'Bulk',
+                    secondLabel: 'Single',
+                    colors: [ProductPartnerColorPalette.warning, ProductPartnerColorPalette.primary],
+                  ),
+                ],
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Fast vs Slow moving'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ...analysis.demandSalesTrends.fastMovingProducts.map((p) => _chip(context, 'Fast: $p')),
+                  ...analysis.demandSalesTrends.slowMovingProducts.map((p) => _chip(context, 'Slow: $p')),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+        _analysisCard(
+          context,
+          'Inventory Insights',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('Stock-out frequency'),
+              const SizedBox(height: 8),
+              SizedBox(height: 180, child: _barChartFromIntMap(analysis.inventoryInsights.stockOutFrequencyPerProduct)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _metricTile('Inventory turnover', analysis.inventoryInsights.inventoryTurnoverRate.toStringAsFixed(1))),
+                  const SizedBox(width: 12),
+                  Expanded(child: _metricTile('Overstock items', analysis.inventoryInsights.overstockAlerts.length.toString())),
+                ],
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Days of stock left'),
+              const SizedBox(height: 8),
+              SizedBox(height: 180, child: _barChartFromIntMap(analysis.inventoryInsights.daysOfStockLeft)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Overstock alerts'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.inventoryInsights.overstockAlerts.map((p) => _chip(context, p)).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+        _analysisCard(
+          context,
+          'Operational Efficiency',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _metricTile('Confirm time', '${analysis.operationalEfficiency.averageTimeToConfirmHours.toStringAsFixed(1)} h')),
+                  const SizedBox(width: 12),
+                  Expanded(child: _metricTile('Order → dispatch', '${analysis.operationalEfficiency.averageTimeOrderToDispatchHours.toStringAsFixed(1)} h')),
+                ],
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+               _sectionLabel('Return/Refund reasons'),
+               const SizedBox(height: 8),
+               _horizontalBarsFromIntMap(analysis.operationalEfficiency.returnRefundReasons),
+               _subDivider(),
+               const SizedBox(height: 12),
+               _sectionLabel('Delivery success (1st attempt)'),
+               const SizedBox(height: 8),
+               _stackedRatioBar(
+                 firstValue: analysis.operationalEfficiency.deliverySuccessRateFirstAttempt,
+                 secondValue: 1 - analysis.operationalEfficiency.deliverySuccessRateFirstAttempt,
+                 firstLabel: 'Success',
+                 secondLabel: 'Fail',
+                 colors: [ProductPartnerColorPalette.success, ProductPartnerColorPalette.error],
+               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+        _analysisCard(
+          context,
+          'Customer Behavior & Geography',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('Top customers by order value'),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 200,
+                child: _barChartFromDoubleMap({
+                  for (final c in analysis.customerBehaviorGeography.topCustomersByOrderValue)
+                    c['name'] as String: c['value'] as double
+                }),
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('High-demand regions by product type'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.customerBehaviorGeography.highDemandRegionsByProductType.entries
+                    .expand((e) => e.value.map((r) => _chip(context, '${e.key}: $r')))
+                    .toList(),
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Customer purchase patterns'),
+              const SizedBox(height: 8),
+              ...analysis.customerBehaviorGeography.purchasePatterns.map(_bulletText),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Geographic product preference'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.customerBehaviorGeography.geographicProductPreference.entries
+                    .expand((e) => e.value.map((p) => _chip(context, '${e.key}: $p')))
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+        _analysisCard(
+          context,
+          'Revenue & Profitability',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('Revenue by product'),
+              const SizedBox(height: 8),
+              SizedBox(height: 180, child: _barChartFromDoubleMap(analysis.revenueProfitability.revenueByProduct)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Profit margins by item'),
+              const SizedBox(height: 8),
+              SizedBox(height: 180, child: _barChartFromDoubleMap(analysis.revenueProfitability.profitMarginsByItem.map((k, v) => MapEntry(k, v * 100)))),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Revenue by category & region'),
+              const SizedBox(height: 8),
+              SizedBox(height: 160, child: _barChartFromDoubleMap(analysis.revenueProfitability.revenueByCategory)),
+              const SizedBox(height: 8),
+              SizedBox(height: 160, child: _barChartFromDoubleMap(analysis.revenueProfitability.revenueByRegion)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Seasonal revenue shifts'),
+              const SizedBox(height: 8),
+              SizedBox(height: 140, child: _lineChartFromDoubleMap(analysis.revenueProfitability.seasonalRevenueShifts)),
+            ],
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.largeSpacing),
+        _analysisCard(
+          context,
+          'Predictive & Strategic Insights',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionLabel('Impact of promotions (uplift)'),
+              const SizedBox(height: 8),
+              SizedBox(height: 160, child: _barChartFromDoubleMap(analysis.predictiveStrategicInsights.promotionsImpactUpliftPercent)),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Restock prediction alerts'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.predictiveStrategicInsights.restockPredictionAlerts.map((t) => _chip(context, t)).toList(),
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Cross-selling recommendations'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.predictiveStrategicInsights.crossSellingRecommendations.entries
+                    .expand((e) => e.value.map((v) => _chip(context, '${e.key} → $v')))
+                    .toList(),
+              ),
+              _subDivider(),
+              const SizedBox(height: 12),
+              _sectionLabel('Emerging product demand'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: analysis.predictiveStrategicInsights.emergingProductDemand
+                    .map((p) => _chip(context, p))
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _analysisCard(BuildContext context, String title, Widget child) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: ProductPartnerColorPalette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: ProductPartnerColorPalette.spacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(ProductPartnerColorPalette.spacing),
+          decoration: BoxDecoration(
+            color: ProductPartnerColorPalette.surface,
+            borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+            border: Border.all(color: ProductPartnerColorPalette.border.withOpacity(0.8), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: ProductPartnerColorPalette.border.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+
+  Widget _kvRow(String keyText, String valueText) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              keyText,
+              style: TextStyle(color: ProductPartnerColorPalette.textSecondary),
+            ),
+          ),
+          Text(
+            valueText,
+            style: TextStyle(
+              color: ProductPartnerColorPalette.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: ProductPartnerColorPalette.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: ProductPartnerColorPalette.quickActionBg,
+        border: Border.all(color: ProductPartnerColorPalette.quickActionBorder),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: ProductPartnerColorPalette.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _bulletText(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• '),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: ProductPartnerColorPalette.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Charts and tiles helpers
+  Widget _subDivider() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Divider(color: ProductPartnerColorPalette.divider, height: 1),
+    );
+  }
+
+  Widget _metricTile(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: ProductPartnerColorPalette.quickActionBg,
+        borderRadius: BorderRadius.circular(ProductPartnerColorPalette.cardBorderRadius),
+        border: Border.all(color: ProductPartnerColorPalette.quickActionBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: ProductPartnerColorPalette.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(color: ProductPartnerColorPalette.textSecondary, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lineChartFromIntList(List<int> values) {
+    final spots = [
+      for (int i = 0; i < values.length; i++) FlSpot(i.toDouble(), values[i].toDouble())
+    ];
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: true, drawVerticalLine: false),
+        titlesData: FlTitlesData(
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) => Text('D${value.toInt() + 1}', style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary)),
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 10,
+              reservedSize: 28,
+              getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary)),
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: ProductPartnerColorPalette.primary,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            belowBarData: BarAreaData(show: true, color: ProductPartnerColorPalette.primary.withOpacity(0.15)),
+            dotData: FlDotData(show: false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lineChartFromDoubleMap(Map<String, double> map) {
+    final keys = map.keys.toList();
+    final spots = [
+      for (int i = 0; i < keys.length; i++) FlSpot(i.toDouble(), (map[keys[i]] ?? 0).toDouble())
+    ];
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: true, drawVerticalLine: false),
+        titlesData: FlTitlesData(
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= keys.length) return const SizedBox.shrink();
+                return Text(keys[idx], style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary));
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary)),
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: ProductPartnerColorPalette.info,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            belowBarData: BarAreaData(show: true, color: ProductPartnerColorPalette.info.withOpacity(0.15)),
+            dotData: FlDotData(show: false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _barChartFromDoubleMap(Map<String, double> map) {
+    final keys = map.keys.toList();
+    final maxY = (map.values.isEmpty ? 0 : map.values.reduce((a, b) => a > b ? a : b)) * 1.2;
+    return BarChart(
+      BarChartData(
+        maxY: maxY <= 0 ? 1 : maxY,
+        gridData: FlGridData(show: true, drawVerticalLine: false),
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= keys.length) return const SizedBox.shrink();
+                final label = keys[idx];
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    label.length > 8 ? '${label.substring(0, 8)}…' : label,
+                    style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary),
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: TextStyle(fontSize: 10, color: ProductPartnerColorPalette.textSecondary)),
+            ),
+          ),
+        ),
+        barGroups: [
+          for (int i = 0; i < keys.length; i++)
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: (map[keys[i]] ?? 0).toDouble(),
+                  color: ProductPartnerColorPalette.primary,
+                  width: 14,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+            )
+        ],
+      ),
+    );
+  }
+
+  Widget _barChartFromIntMap(Map<String, int> map) {
+    final asDouble = map.map((k, v) => MapEntry(k, v.toDouble()));
+    return _barChartFromDoubleMap(asDouble);
+  }
+
+  // Removed pie/donut usage per request. Replaced with ratio bars and horizontal bars.
+
+  Widget _stackedRatioBar({
+    required double firstValue,
+    required double secondValue,
+    required String firstLabel,
+    required String secondLabel,
+    required List<Color> colors,
+  }) {
+    final total = (firstValue + secondValue);
+    final a = total == 0 ? 0.0 : firstValue / total;
+    final b = total == 0 ? 0.0 : secondValue / total;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 18,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: ProductPartnerColorPalette.quickActionBg,
+            border: Border.all(color: ProductPartnerColorPalette.quickActionBorder),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: (a * 1000).round(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors[0],
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(10),
+                      bottomLeft: const Radius.circular(10),
+                      topRight: Radius.circular(b == 0 ? 10 : 0),
+                      bottomRight: Radius.circular(b == 0 ? 10 : 0),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: (b * 1000).round(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors[1],
+                    borderRadius: BorderRadius.only(
+                      topRight: const Radius.circular(10),
+                      bottomRight: const Radius.circular(10),
+                      topLeft: Radius.circular(a == 0 ? 10 : 0),
+                      bottomLeft: Radius.circular(a == 0 ? 10 : 0),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _legendDot(colors[0], '$firstLabel ${(a * 100).toStringAsFixed(0)}%'),
+            _legendDot(colors[1], '$secondLabel ${(b * 100).toStringAsFixed(0)}%'),
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _horizontalBarsFromIntMap(Map<String, int> map) {
+    final entries = map.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxVal = entries.isEmpty ? 1 : entries.first.value;
+    return Column(
+      children: [
+        for (final e in entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    e.key,
+                    style: TextStyle(color: ProductPartnerColorPalette.textSecondary, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 3,
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: ProductPartnerColorPalette.quickActionBg,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: ProductPartnerColorPalette.quickActionBorder),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: (e.value / maxVal).clamp(0, 1).toDouble(),
+                        child: Container(
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: ProductPartnerColorPalette.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    e.value.toString(),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(color: ProductPartnerColorPalette.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: ProductPartnerColorPalette.textSecondary, fontSize: 12)),
+      ],
+    );
+  }
   Widget _buildOverviewCards(BuildContext context, ProductPartnerDashboardViewModel viewModel) {
     return GridView.count(
       crossAxisCount: 2,

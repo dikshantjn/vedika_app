@@ -1,15 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'dart:developer' as developer;
-import 'dart:ui';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:vedika_healthcare/shared/services/VoiceCommandService.dart';
-import 'package:translator/translator.dart';
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/shared/services/VoiceCommandService.dart';
+import 'package:vedika_healthcare/shared/services/native_speech.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:logger/logger.dart';
-import 'package:app_settings/app_settings.dart';
 
 class VoiceRecognitionOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -17,42 +12,23 @@ class VoiceRecognitionOverlay extends StatefulWidget {
   const VoiceRecognitionOverlay({Key? key, required this.onClose}) : super(key: key);
 
   @override
-  _VoiceRecognitionOverlayState createState() => _VoiceRecognitionOverlayState();
+  State<VoiceRecognitionOverlay> createState() => _VoiceRecognitionOverlayState();
 }
 
-class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with TickerProviderStateMixin {
-  final SpeechToText _speechToText = SpeechToText();
-  final GoogleTranslator _translator = GoogleTranslator();
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
-  final Logger _logger = Logger(
-    printer: PrettyPrinter(
-        methodCount: 2,
-        errorMethodCount: 8,
-        lineLength: 120,
-        colors: true,
-        printEmojis: true,
-        printTime: true
-    ),
-  );
+class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay>
+    with TickerProviderStateMixin {
   bool _isListening = false;
-  bool _isProcessing = false;
-  String _lastWords = '';
-  String _displayText = '';
-  bool _isInitialized = false;
-  String _currentLocaleId = 'en_US';
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-  late Animation<double> _pulseAnimation;
-  late AnimationController _suggestionController;
-  int _currentSuggestionIndex = 0;
-  String? _errorMessage;
-  bool _showError = false;
-  Timer? _retryTimer;
-  bool _isDisposed = false;
-  bool _hasPermission = false;
+  bool _isStarting = false;
+  String _text = '';
+  String? _error;
+  DateTime? _lastEventTime;
 
-  final List<String> _suggestions = [
+  late final AnimationController _borderController;
+  late final AnimationController _pulseController;
+  StreamSubscription? _nativeSub;
+
+  // Suggestions cycling
+  final List<String> _suggestions = const [
     '"Emergency help"',
     '"Call doctor emergency"',
     '"Call ambulance emergency"',
@@ -61,795 +37,317 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay> with 
     '"Find the nearest hospital"',
     '"Check blood bank availability"',
     '"Schedule a doctor appointment"',
-    '"Get emergency contact numbers"',
-    '"Find nearby pharmacies"',
-    '"Book a lab test"',
-    '"Get ambulance rates"',
-    '"Find specialist doctors"',
-    '"Check hospital facilities"',
-    '"Show dental care products"',
-    '"Open heart care category"',
-    '"Go to baby care section"',
-    '"Show women care products"',
-    '"Open digital health tracker"',
-    '"Go back"',
-    '"Close overlay"',
-    '"Return to previous screen"'
+    '"order medicine"',
   ];
+  int _suggestionIndex = 0;
+  Timer? _suggestionTimer;
+  Timer? _clearTextTimer;
 
   @override
   void initState() {
     super.initState();
-    _initAnimations();
-    _checkPermissions();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_isInitialized && !_isListening && !_isProcessing && mounted) {
-      _startListening();
-    }
-  }
-
-  @override
-  void didUpdateWidget(VoiceRecognitionOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_isInitialized) {
-      _initSpeech();
-    } else if (!_isListening && !_isProcessing && mounted) {
-      _startListening();
-    }
-  }
-
-  void _initAnimations() {
-    _animationController = AnimationController(
+    _borderController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(seconds: 6),
+    )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+      lowerBound: 0.98,
+      upperBound: 1.04,
     )..repeat(reverse: true);
 
-    _suggestionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+    // Cycle suggestions
+    _startSuggestionTimer();
+
+    // Start native continuous recognizer for smoother experience
+    _nativeSub = NativeSpeech.events().listen((event) {
+      final type = event['type'] as String?;
+      final now = DateTime.now();
+      final timeSinceLastEvent = _lastEventTime != null 
+          ? now.difference(_lastEventTime!) 
+          : Duration.zero;
+      _lastEventTime = now;
+
+      if (type == 'status') {
+        final status = event['status'] as String?;
+        if (!mounted) return;
         setState(() {
-          _currentSuggestionIndex = (_currentSuggestionIndex + 1) % _suggestions.length;
+          _isStarting = status == 'starting';
+          _isListening = status == 'listening' || status == 'ready';
+          _error = null;
         });
-        _suggestionController.reset();
-        _suggestionController.forward();
+      } else if (type == 'result') {
+        final text = (event['text'] ?? '') as String;
+        final isFinal = (event['final'] ?? false) as bool;
+        if (!mounted) return;
+        // Pause suggestions while showing recognized text
+        _stopSuggestionTimer();
+        setState(() => _text = text);
+        // Keep recognized text visible for 5 seconds since the last update
+        _clearTextTimer?.cancel();
+        final shownText = text;
+        _clearTextTimer = Timer(const Duration(seconds: 5), () {
+          if (!mounted) return;
+          if (_text == shownText) {
+            setState(() => _text = '');
+            _startSuggestionTimer();
+          }
+        });
+        if (isFinal && text.isNotEmpty) {
+          VoiceCommandService.handleVoiceCommand(context, text, (_) {});
+        }
+      } else if (type == 'error') {
+        final err = (event['error'] ?? '').toString();
+        if (!mounted) return;
+        setState(() {
+          _error = err;
+          _isListening = false;
+        });
       }
     });
+    _ensurePermissionsAndStart();
+  }
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+  void _startSuggestionTimer() {
+    _suggestionTimer?.cancel();
+    _suggestionTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      setState(() {
+        _suggestionIndex = (_suggestionIndex + 1) % _suggestions.length;
+      });
+    });
+  }
 
-    _opacityAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+  void _stopSuggestionTimer() {
+    _suggestionTimer?.cancel();
+    _suggestionTimer = null;
+  }
 
-    _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    _suggestionController.forward();
+  Future<void> _ensurePermissionsAndStart() async {
+    final mic = await Permission.microphone.request();
+    if (mic.isGranted) {
+      // Notification permission for Android 13+
+      final notif = await Permission.notification.status;
+      if (notif.isDenied) {
+        await Permission.notification.request();
+      }
+      if (mounted) setState(() { _isStarting = true; _error = null; });
+      await NativeSpeech.start();
+      } else {
+      setState(() {
+        _error = 'Microphone permission is required';
+        _isListening = false;
+        _isStarting = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
-    _retryTimer?.cancel();
-    _animationController.dispose();
-    _suggestionController.dispose();
-    if (_speechToText.isListening) {
-      _speechToText.stop();
-    }
+    _borderController.dispose();
+    _pulseController.dispose();
+    _nativeSub?.cancel();
+    _stopSuggestionTimer();
+    _clearTextTimer?.cancel();
+    NativeSpeech.stop();
     super.dispose();
-  }
-
-  Future<void> _checkPermissions() async {
-    try {
-      _logger.i('Starting permission check...');
-
-      // Check microphone permission
-      var status = await Permission.microphone.status;
-      _logger.d('Initial microphone permission status: $status');
-
-      if (!status.isGranted) {
-        _logger.i('Requesting microphone permission...');
-        status = await Permission.microphone.request();
-        _logger.d('Microphone permission request result: $status');
-      }
-
-      // Check device info
-      if (Theme.of(context).platform == TargetPlatform.android) {
-        final androidInfo = await _deviceInfo.androidInfo;
-        _logger.i('Device Info:', error: {
-          'brand': androidInfo.brand,
-          'manufacturer': androidInfo.manufacturer,
-          'model': androidInfo.model,
-          'androidVersion': androidInfo.version.release,
-          'sdkInt': androidInfo.version.sdkInt,
-        });
-
-        final isRealme = androidInfo.brand.toLowerCase().contains('realme');
-        _logger.i('Is Realme device: $isRealme');
-
-        if (isRealme) {
-          _logger.w('Realme device detected - showing special instructions');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'For Realme devices: Please ensure "Auto-start" and "Background pop-up" permissions are enabled in device settings.',
-                  style: TextStyle(color: Colors.white),
-                ),
-                duration: Duration(seconds: 5),
-                backgroundColor: Colors.blue,
-              ),
-            );
-          }
-        }
-      }
-
-      if (status.isGranted) {
-        _logger.i('Microphone permission granted');
-        _hasPermission = true;
-        _initSpeech();
-      } else {
-        _logger.e('Microphone permission denied');
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Microphone permission is required for voice recognition';
-            _showError = true;
-          });
-        }
-      }
-    } catch (e, stackTrace) {
-      _logger.e('Error checking permissions', error: e, stackTrace: stackTrace);
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error checking permissions: $e';
-          _showError = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _initSpeech() async {
-    if (_isDisposed || !_hasPermission) {
-      _logger.w('Cannot initialize speech: disposed=$_isDisposed, hasPermission=$_hasPermission');
-      return;
-    }
-
-    try {
-      _logger.i('Starting speech initialization...');
-      if (mounted) {
-        setState(() {
-          _isListening = false;
-          _isInitialized = false;
-          _isProcessing = true;
-        });
-      }
-
-      _retryTimer?.cancel();
-
-      if (_speechToText.isListening) {
-        _logger.i('Stopping existing listening session...');
-        await _speechToText.stop();
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      _logger.i('Initializing speech recognition...');
-      _isInitialized = await _speechToText.initialize(
-        onError: (error) {
-          if (_isDisposed) return;
-          _logger.e('Speech recognition error', error: {
-            'errorMsg': error.errorMsg,
-            'permanent': error.permanent,
-          });
-
-          if (error.errorMsg == 'error_language_unavailable') {
-            _handleLanguageUnavailable();
-          }
-
-          if (mounted) {
-            setState(() {
-              _isListening = false;
-              _errorMessage = 'Error: ${error.errorMsg}';
-              _showError = true;
-            });
-          }
-
-          // Retry starting listening after a short delay
-          Future.delayed(const Duration(seconds: 2), () {
-            if (!_isDisposed && mounted) {
-              _startListening();
-            }
-          });
-        },
-        onStatus: (status) {
-          if (_isDisposed) return;
-          _logger.d('Speech recognition status: $status');
-
-          if (mounted) {
-            setState(() {
-              switch (status) {
-                case 'listening':
-                  _isListening = true;
-                  break;
-                case 'done':
-                case 'notListening':
-                case 'doneNoResult':
-                  _isListening = false;
-                  // Only restart if we're not explicitly stopping
-                  if (!_isDisposed && mounted && !_isProcessing) {
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (!_isDisposed && mounted && !_isProcessing) {
-                        _startListening();
-                      }
-                    });
-                  }
-                  break;
-                default:
-                  _isListening = false;
-              }
-            });
-          }
-        },
-        debugLogging: true,
-      );
-
-      _logger.i('Speech recognition initialized: $_isInitialized');
-
-      if (_isInitialized && !_isDisposed) {
-        // Check available locales
-        final locales = await _speechToText.locales();
-        _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
-
-        // Try to find a suitable locale
-        String? selectedLocale;
-        if (locales.any((locale) => locale.localeId == 'en_US')) {
-          selectedLocale = 'en_US';
-        } else if (locales.any((locale) => locale.localeId == 'en_IN')) {
-          selectedLocale = 'en_IN';
-        } else if (locales.isNotEmpty) {
-          selectedLocale = locales.first.localeId;
-        }
-
-        if (selectedLocale != null) {
-          _currentLocaleId = selectedLocale;
-          _logger.i('Selected locale: $_currentLocaleId');
-        } else {
-          _logger.w('No suitable locale found, using default');
-        }
-
-        if (mounted) {
-          setState(() {
-            _isProcessing = false;
-          });
-
-          await Future.delayed(const Duration(milliseconds: 300));
-          if (!_isDisposed) {
-            _startListening();
-          }
-        }
-      } else {
-        _logger.e('Failed to initialize speech recognition');
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Failed to initialize speech recognition';
-            _showError = true;
-            _isProcessing = false;
-          });
-        }
-      }
-    } catch (e, stackTrace) {
-      _logger.e('Error initializing speech recognition', error: e, stackTrace: stackTrace);
-      if (mounted && !_isDisposed) {
-        setState(() {
-          _errorMessage = 'Error initializing speech recognition: $e';
-          _showError = true;
-          _isInitialized = false;
-          _isProcessing = false;
-          _isListening = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleLanguageUnavailable() async {
-    _logger.w('Handling language unavailable error');
-    try {
-      final locales = await _speechToText.locales();
-      _logger.i('Available locales: ${locales.map((e) => e.localeId).join(', ')}');
-
-      // Try to find a suitable locale
-      String? selectedLocale;
-      if (locales.any((locale) => locale.localeId == 'en_IN')) {
-        selectedLocale = 'en_IN';
-      } else if (locales.any((locale) => locale.localeId == 'en_US')) {
-        selectedLocale = 'en_US';
-      } else if (locales.isNotEmpty) {
-        selectedLocale = locales.first.localeId;
-      }
-
-      if (selectedLocale != null) {
-        _currentLocaleId = selectedLocale;
-        _logger.i('Switched to locale: $_currentLocaleId');
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Switched to ${_currentLocaleId} for speech recognition'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        _logger.e('No suitable locale found');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Speech recognition is not available in your language'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      _logger.e('Error handling language unavailable', error: e);
-    }
-  }
-
-  Future<void> _startListening() async {
-    if (!_isInitialized || !mounted || _isProcessing || _isDisposed) {
-      _logger.w('Cannot start listening', error: {
-        'initialized': _isInitialized,
-        'mounted': mounted,
-        'processing': _isProcessing,
-        'disposed': _isDisposed
-      });
-      return;
-    }
-
-    try {
-      _logger.i('Starting listening session...');
-      if (mounted) {
-        setState(() {
-          _isProcessing = true;
-          _isListening = false;
-          _errorMessage = null;
-          _showError = false;
-        });
-      }
-
-      // Cancel any existing retry timer
-      _retryTimer?.cancel();
-
-      if (_speechToText.isListening) {
-        _logger.i('Stopping existing listening session...');
-        await _speechToText.stop();
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-
-      if (!_speechToText.isListening && !_isDisposed) {
-        _logger.i('Starting new listening session');
-        await _speechToText.listen(
-          onResult: (result) {
-            _logger.i('Speech result received', error: {
-              'recognizedWords': result.recognizedWords,
-              'confidence': result.confidence,
-              'finalResult': result.finalResult,
-            });
-
-            if (mounted && !_isDisposed) {
-              // Only update text if it's different and not empty
-              if (result.recognizedWords.isNotEmpty &&
-                  (result.finalResult || result.recognizedWords != _lastWords)) {
-                setState(() {
-                  _lastWords = result.recognizedWords;
-                  _displayText = result.recognizedWords;
-                });
-
-                if (result.finalResult) {
-                  VoiceCommandService.handleVoiceCommand(context, _lastWords, (error) {
-                    if (mounted && !_isDisposed) {
-                      setState(() {
-                        _errorMessage = error;
-                        _showError = true;
-                      });
-                      Future.delayed(const Duration(seconds: 3), () {
-                        if (mounted && !_isDisposed) {
-                          setState(() {
-                            _showError = false;
-                            _errorMessage = null;
-                          });
-                        }
-                      });
-                    }
-                  });
-                }
-              }
-            }
-          },
-          localeId: _currentLocaleId,
-          partialResults: true,
-          onDevice: true,
-          cancelOnError: false,
-          listenMode: ListenMode.confirmation,
-          onSoundLevelChange: (level) {
-            _logger.v('Sound level: $level');
-            // If we get sound level updates, we know the mic is active
-            if (mounted && !_isDisposed && !_isListening) {
-              setState(() {
-                _isListening = true;
-              });
-            }
-          },
-        );
-
-        if (mounted && !_isDisposed) {
-          setState(() {
-            _isListening = true;
-            _isProcessing = false;
-          });
-          _logger.i('Listening session started successfully');
-
-          // Set up a periodic check to ensure the mic is still active
-          _retryTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-            if (!_speechToText.isListening && mounted && !_isDisposed && !_isProcessing) {
-              _logger.w('Mic stopped unexpectedly, attempting to restart...');
-              _startListening();
-            }
-          });
-        }
-      }
-    } catch (e, stackTrace) {
-      _logger.e('Error starting speech recognition', error: e, stackTrace: stackTrace);
-      if (mounted && !_isDisposed) {
-        setState(() {
-          _isListening = false;
-          _errorMessage = 'Error starting speech recognition: $e';
-          _showError = true;
-          _isProcessing = false;
-        });
-        // Retry starting listening after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && !_isDisposed && !_isListening) {
-            _startListening();
-          }
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF8A2BE2),
-            Color(0xFF4169E1),
-            Color(0xFFAC4A79),
-            Color(0xFF8A2BE2),
-          ],
-        ),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(28),
-                topRight: Radius.circular(28),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
-                // Animated microphone icon with pulsing rings
-                GestureDetector(
-                  onTap: () {
-                    if (!_isListening && !_isProcessing) {
-                      _startListening();
-                    }
-                  },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Pulsing rings
-                      ...List.generate(3, (index) {
-                        return AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _isListening
-                                  ? 1.0 + (_pulseAnimation.value * 0.3 * (index + 1))
-                                  : 1.0,
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _isListening
-                                        ? Colors.blue.withOpacity(0.3 - (index * 0.1))
-                                        : Colors.white.withOpacity(0.3 - (index * 0.1)),
-                                    width: 2,
+    final bool showSuggestions = _error == null && _text.isEmpty;
+    final double cardHeight = _error != null
+        ? 130
+        : (showSuggestions ? 125 : 110);
+
+    final String currentSuggestion = 'say: ${_suggestions[_suggestionIndex]}';
+
+    return Stack(
+      children: [
+        // Transparent background to allow "floating" look
+        Positioned.fill(child: IgnorePointer(ignoring: false, child: Container())),
+
+        // Floating card near bottom center
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 28),
+            child: AnimatedBuilder(
+              animation: _borderController,
+              builder: (context, _) {
+                final angle = _borderController.value * 2 * math.pi;
+                // Blurry gradient glow backdrop
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Glow behind card
+                    ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 280, maxWidth: 360),
+                        height: cardHeight + 12,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          gradient: RadialGradient(
+                            colors: const [
+                              Color(0x668A2BE2),
+                              Color(0x444169E1),
+                              Color(0x338A2BE2),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.2, 0.5, 0.8, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Animated gradient border
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 280, maxWidth: 360),
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        gradient: SweepGradient(
+                          colors: const [
+                            Color(0xFF8A2BE2),
+                            Color(0xFF4169E1),
+                            Color(0xFFAC4A79),
+                            Color(0xFF8A2BE2),
+                          ],
+                          stops: const [0.0, 0.45, 0.75, 1.0],
+                          transform: GradientRotation(angle),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            blurRadius: 14,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        height: cardHeight,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F1115).withOpacity(0.94),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        child: Row(
+                          children: [
+                            // Mic button with gradient icon only
+                            GestureDetector(
+                              onTap: () async {
+                                if (_isStarting) return; // ignore taps while starting
+                                if (_isListening) {
+                                  await NativeSpeech.stop();
+                                  if (!mounted) return;
+                                  setState(() => _isListening = false);
+                                } else {
+                                  await _ensurePermissionsAndStart();
+                                }
+                              },
+                              child: ScaleTransition(
+                                scale: _pulseController,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.08),
+                                    border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                  ),
+                                  child: Center(
+                                    child: ShaderMask(
+                                      shaderCallback: (Rect bounds) {
+                                        return const LinearGradient(
+                                          colors: [Color(0xFF8A2BE2), Color(0xFF4169E1)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ).createShader(bounds);
+                                      },
+                                      blendMode: BlendMode.srcIn,
+                                      child: Icon(
+                                        _isListening ? Icons.mic : Icons.mic_none,
+                                        size: 24,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        );
-                      }),
-                      // Main microphone icon
-                      AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _isListening ? _scaleAnimation.value : 1.0,
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: _isListening
-                                      ? [
-                                    Color(0xFF8A2BE2),
-                                    Color(0xFF4169E1),
-                                    Color(0xFFAC4A79),
-                                    Color(0xFF8A2BE2),
-                                  ]
-                                      : [
-                                    Colors.grey.shade700,
-                                    Colors.grey.shade600,
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _isListening
-                                        ? Colors.blue.withOpacity(0.3)
-                                        : Colors.grey.withOpacity(0.3),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Text(
+                                      _isStarting
+                                          ? 'Starting…'
+                                          : (_isListening ? 'Listening…' : 'Tap the mic to start'),
+                                      key: ValueKey(_isListening),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    transitionBuilder: (child, animation) => FadeTransition(
+                                      opacity: animation,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(0.1, 0),
+                                          end: Offset.zero,
+                                        ).animate(animation),
+                                        child: child,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _error != null
+                                          ? _error!
+                                          : (_text.isNotEmpty ? _text : currentSuggestion),
+                                      key: ValueKey<String>(_error ?? (_text.isNotEmpty ? _text : currentSuggestion)),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _error != null
+                                            ? Colors.redAccent
+                                            : Colors.white.withOpacity(0.85),
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                _isListening ? Icons.mic : Icons.mic_off,
-                                size: 35,
-                                color: Colors.white,
-                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // Status text with modern typography
-                Text(
-                  _isProcessing
-                      ? 'Processing...'
-                      : (_isListening
-                      ? 'Listening...'
-                      : 'Tap the mic to start'),
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                if (!_isListening && !_isProcessing)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Tap the microphone icon to start listening',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white70),
+                              onPressed: () async {
+                                await NativeSpeech.stop();
+                                widget.onClose();
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                const SizedBox(height: 24),
-                // Error message
-                if (_showError && _errorMessage != null)
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withOpacity(0.5)),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                      if (_errorMessage != null && _errorMessage!.toLowerCase().contains('permission'))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: FutureBuilder<PermissionStatus>(
-                            future: Permission.microphone.status,
-                            builder: (context, snapshot) {
-                              final status = snapshot.data;
-                              final isPermanentlyDenied = status == PermissionStatus.permanentlyDenied;
-                              return ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                ),
-                                icon: Icon(Icons.mic, size: 20),
-                                label: Text(
-                                  isPermanentlyDenied
-                                    ? 'Open App Settings'
-                                    : 'Grant Microphone Permission',
-                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                                ),
-                                onPressed: () async {
-                                  if (isPermanentlyDenied) {
-                                    await openAppSettings();
-                                  } else {
-                                    _checkPermissions();
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 16),
-                // Spoken text or suggestions
-                if (_displayText.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        _displayText,
-                        key: ValueKey<String>(_displayText),
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                else
-                  AnimatedBuilder(
-                    animation: _suggestionController,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: _suggestionController.value,
-                        child: Transform.translate(
-                          offset: Offset(0, 10 * (1 - _suggestionController.value)),
-                          child: Text(
-                            _suggestions[_currentSuggestionIndex],
-                            style: GoogleFonts.poppins(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 16,
-                              height: 1.5,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                const SizedBox(height: 32),
-                // Close button
-                _buildActionButton(
-                  icon: Icons.close,
-                  onPressed: () async {
-                    await _speechToText.stop();
-                    widget.onClose();
-                  },
-                  color: Colors.red.shade400,
-                ),
-                const SizedBox(height: 20),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required Color color,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  color.withOpacity(0.8),
-                  color,
-                ],
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
 } 

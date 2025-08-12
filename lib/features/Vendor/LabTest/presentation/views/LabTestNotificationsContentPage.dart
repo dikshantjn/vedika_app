@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/LabTestColorPalette.dart';
 
-class NotificationsContent extends StatelessWidget {
-  const NotificationsContent({Key? key}) : super(key: key);
+class LabTestNotificationsContentPage extends StatelessWidget {
+  const LabTestNotificationsContentPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

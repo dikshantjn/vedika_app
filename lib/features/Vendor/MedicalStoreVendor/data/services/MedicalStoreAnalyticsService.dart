@@ -3,6 +3,8 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreInsightsModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreDashboardChartsModel.dart';
 
 class MedicalStoreAnalyticsService {
   
@@ -217,6 +219,52 @@ class MedicalStoreAnalyticsService {
     );
   }
 
+  // Get dashboard insights based on time filter (mocked)
+  static Future<MedicalStoreInsightsModel> getInsights(String timeFilter) async {
+    await Future.delayed(Duration(milliseconds: 400));
+
+    // Use filtered data to make the dummy insights feel coherent
+    final orders = _filterOrdersByTime(_mockOrders, timeFilter);
+    final returns = _filterReturnsByTime(_mockReturnRequests, timeFilter);
+
+    final int totalOrdersReceived = orders.length;
+    final int ordersConfirmed = orders
+        .where((o) => [
+              'Accepted',
+              'Confirmed',
+              'OutForDelivery',
+              'Delivered',
+            ].contains(o.orderStatus))
+        .length;
+
+    // Dummy but friendly values
+    final String avgTimeToFulfillPrescription = '2h 15m';
+    final String mostOrderedMedicine = 'Paracetamol 500mg';
+    final int unavailableRequestsThisWeek = returns
+        .where((r) => r.status.toLowerCase() == 'rejected')
+        .length;
+    final String topRegionOfDemand = 'Andheri East, Mumbai';
+    final double revenueThisMonth = orders.fold(0.0, (sum, o) => sum + o.totalAmount);
+    final int fastMovingMedicineCount = 8; // dummy
+    final int repeatBuyers30Days = 23; // dummy
+    final double deliveryCompletionRate = totalOrdersReceived == 0
+        ? 0
+        : (orders.where((o) => o.deliveryStatus == 'Delivered').length / totalOrdersReceived) * 100.0;
+
+    return MedicalStoreInsightsModel(
+      totalOrdersReceived: totalOrdersReceived,
+      ordersConfirmed: ordersConfirmed,
+      avgTimeToFulfillPrescription: avgTimeToFulfillPrescription,
+      mostOrderedMedicine: mostOrderedMedicine,
+      unavailableRequestsThisWeek: unavailableRequestsThisWeek,
+      topRegionOfDemand: topRegionOfDemand,
+      revenueThisMonth: double.parse(revenueThisMonth.toStringAsFixed(2)),
+      fastMovingMedicineCount: fastMovingMedicineCount,
+      repeatBuyers30Days: repeatBuyers30Days,
+      deliveryCompletionRate: double.parse(deliveryCompletionRate.toStringAsFixed(1)),
+    );
+  }
+
   // Get orders based on time filter
   static Future<List<MedicineOrderModel>> getOrders(String timeFilter) async {
     await Future.delayed(Duration(milliseconds: 300)); // Simulate API delay
@@ -227,6 +275,56 @@ class MedicalStoreAnalyticsService {
   static Future<List<MedicineReturnRequestModel>> getReturnRequests(String timeFilter) async {
     await Future.delayed(Duration(milliseconds: 300)); // Simulate API delay
     return _filterReturnsByTime(_mockReturnRequests, timeFilter);
+  }
+
+  // Charts and graphs mock data for dashboard
+  static Future<MedicalStoreDashboardChartsModel> getDashboardCharts(String timeFilter) async {
+    await Future.delayed(Duration(milliseconds: 400));
+
+    // Basic mock: last 7 days labels
+    final List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final List<int> dailyOrders = [12, 18, 15, 22, 25, 14, 19];
+    final List<double> dailyRevenue = [2200, 3100, 2800, 3600, 3900, 2500, 3300];
+
+    // Status counts based on filtered orders
+    final orders = _filterOrdersByTime(_mockOrders, timeFilter);
+    final Map<String, int> statusCounts = {
+      'Pending': orders.where((o) => o.orderStatus == 'Pending').length,
+      'Accepted': orders.where((o) => o.orderStatus == 'Accepted').length,
+      'OutForDelivery': orders.where((o) => o.orderStatus == 'OutForDelivery').length,
+      'Delivered': orders.where((o) => o.orderStatus == 'Delivered').length,
+      'Cancelled': orders.where((o) => o.orderStatus == 'Cancelled').length,
+    };
+
+    final regionDemand = [
+      {'city': 'Andheri East', 'percentage': 32},
+      {'city': 'Powai', 'percentage': 24},
+      {'city': 'Bandra', 'percentage': 18},
+      {'city': 'Ghatkopar', 'percentage': 14},
+      {'city': 'Chembur', 'percentage': 12},
+    ];
+
+    final topMedicines = [
+      {'name': 'Paracetamol 500mg', 'orders': 124},
+      {'name': 'Azithromycin 250mg', 'orders': 96},
+      {'name': 'Vitamin C 1000mg', 'orders': 84},
+      {'name': 'Cetirizine 10mg', 'orders': 69},
+      {'name': 'Pantoprazole 40mg', 'orders': 58},
+    ];
+
+    final double deliveryCompletionRate = orders.isEmpty
+        ? 0
+        : (orders.where((o) => o.deliveryStatus == 'Delivered').length / orders.length) * 100.0;
+
+    return MedicalStoreDashboardChartsModel(
+      dailyOrders: dailyOrders,
+      dailyRevenue: dailyRevenue,
+      days: days,
+      orderStatusCounts: statusCounts,
+      regionDemand: regionDemand,
+      topMedicines: topMedicines,
+      deliveryCompletionRate: double.parse(deliveryCompletionRate.toStringAsFixed(1)),
+    );
   }
 
   // Filter orders by time period

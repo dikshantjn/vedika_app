@@ -52,7 +52,6 @@ class AmbulanceAgencyService {
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final data = response.data['data'];
-        print("✅ Get Agency Profile: $data");
 
         return AmbulanceAgency.fromJson(data); // Make sure you have a `fromJson` method
       } else {

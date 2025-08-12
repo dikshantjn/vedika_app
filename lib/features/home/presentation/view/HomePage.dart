@@ -240,10 +240,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         MedicalBoxRow(),
                         SizedBox(height: 8),
                         BannerSlider(),
+                        JustForYouSection(),
                         HealthConcernSection(),
                         FeaturedArticlesSection(),
                         CategoryGrid(),
-                        JustForYouSection(),
                         BrandSection(),
                         TestimonialSection(),
                         SizedBox(height: 20), // Reduced bottom padding since we're using standard bottom nav

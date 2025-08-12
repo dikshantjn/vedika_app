@@ -22,35 +22,53 @@ class HospitalService {
         if (data != null && data.containsKey('hospitals')) {
           final hospitals = data['hospitals'] as List;
           return hospitals.map((hospitalData) {
-            // Convert dynamic lists to the correct type
-            final certifications = (hospitalData['certifications'] as List?)
-                ?.map((cert) => {
-                      'name': cert['name']?.toString() ?? '',
-                      'url': cert['url']?.toString() ?? '',
-                    })
-                .toList() ?? [];
-            
-            final licenses = (hospitalData['licenses'] as List?)
-                ?.map((license) => {
-                      'name': license['name']?.toString() ?? '',
-                      'url': license['url']?.toString() ?? '',
-                    })
-                .toList() ?? [];
-            
-            final photos = (hospitalData['photos'] as List?)
-                ?.map((photo) => {
-                      'name': photo['name']?.toString() ?? '',
-                      'url': photo['url']?.toString() ?? '',
-                    })
-                .toList() ?? [];
-            
-            final doctors = (hospitalData['doctors'] as List?)
-                ?.map((doctor) => {
-                      'name': doctor['name']?.toString() ?? '',
-                      'speciality': doctor['speciality']?.toString() ?? '',
-                      'experience': doctor['experience']?.toString() ?? '',
-                    })
-                .toList() ?? [];
+            // Convert dynamic lists to the correct type with robust guards
+            List<Map<String, String>> parseNamedList(dynamic listDynamic) {
+              final List<Map<String, String>> results = [];
+              if (listDynamic is List) {
+                for (final item in listDynamic) {
+                  if (item is Map) {
+                    results.add({
+                      'name': item['name']?.toString() ?? '',
+                      'url': item['url']?.toString() ?? '',
+                    });
+                  } else if (item is String) {
+                    results.add({'name': item, 'url': ''});
+                  } else {
+                    results.add({'name': item?.toString() ?? '', 'url': ''});
+                  }
+                }
+              }
+              return results;
+            }
+
+            final certifications = parseNamedList(hospitalData['certifications']);
+            final licenses = parseNamedList(hospitalData['licenses']);
+            final photos = parseNamedList(hospitalData['photos']);
+
+            final doctors = (hospitalData['doctors'] is List)
+                ? (hospitalData['doctors'] as List).map((doctor) {
+                    if (doctor is Map) {
+                      return {
+                        'name': doctor['name']?.toString() ?? '',
+                        'speciality': doctor['speciality']?.toString() ?? '',
+                        'experience': doctor['experience']?.toString() ?? '',
+                      };
+                    } else if (doctor is String) {
+                      return {
+                        'name': doctor,
+                        'speciality': '',
+                        'experience': '',
+                      };
+                    } else {
+                      return {
+                        'name': doctor?.toString() ?? '',
+                        'speciality': '',
+                        'experience': '',
+                      };
+                    }
+                  }).toList()
+                : <Map<String, dynamic>>[];
 
             // Convert all string fields to ensure they are strings
             final convertedData = {
@@ -89,10 +107,7 @@ class HospitalService {
               'location': hospitalData['location']?.toString() ?? '',
               'isActive': hospitalData['isActive'] == true,
               'panCardFile': hospitalData['panCardFile'],
-              'businessDocuments': (hospitalData['businessDocuments'] as List?)?.map((doc) => {
-                    'name': doc['name']?.toString() ?? '',
-                    'url': doc['url']?.toString() ?? '',
-                  }).toList() ?? [],
+              'businessDocuments': parseNamedList(hospitalData['businessDocuments'])
             };
 
             return HospitalProfile.fromJson(convertedData);

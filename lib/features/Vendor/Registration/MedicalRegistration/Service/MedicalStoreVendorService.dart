@@ -91,7 +91,6 @@ class MedicalStoreVendorService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ Fetch Profile Response: ${response.data}");
 
         final data = response.data;
 

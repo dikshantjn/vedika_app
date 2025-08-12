@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/ser
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/services/BloodBankAnalyticsService.dart';
 
 class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
   final Logger logger = Logger();
@@ -21,6 +22,10 @@ class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
   int _completedRequests = 0;
   String? _errorMessage;
 
+  // Time filter
+  String _selectedTimeFilter = 'Month';
+  final List<String> _timeFilters = const ['Day', 'Week', 'Month', 'Year'];
+
   // Getters
   BloodBankAgency? get agencyDetails => _agencyDetails;
   List<BloodBankRequest> get recentRequests => _recentRequests;
@@ -29,6 +34,8 @@ class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
   int get pendingRequests => _pendingRequests;
   int get completedRequests => _completedRequests;
   String? get errorMessage => _errorMessage;
+  String get selectedTimeFilter => _selectedTimeFilter;
+  List<String> get timeFilters => _timeFilters;
 
   // Initialize dashboard
   Future<void> initializeDashboard() async {
@@ -61,6 +68,9 @@ class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
       _pendingRequests = _recentRequests.where((request) => request.status.toLowerCase() == 'pending').length;
       _completedRequests = _recentRequests.where((request) => request.status.toLowerCase() == 'completed').length;
       
+      // Fetch analytics mock
+      _analytics = await BloodBankAnalyticsService.getAnalytics(_selectedTimeFilter);
+      
     } catch (e) {
       logger.e('Error initializing dashboard: $e');
       _errorMessage = 'Failed to load dashboard data';
@@ -84,6 +94,21 @@ class VendorBloodBankDashBoardViewModel extends ChangeNotifier {
       'pendingRequests': _pendingRequests,
       'completedRequests': _completedRequests,
     };
+  }
+
+  // Analytics map
+  Map<String, dynamic> _analytics = {};
+  Map<String, dynamic> get analytics => _analytics;
+
+  Future<void> setTimeFilter(String filter) async {
+    _selectedTimeFilter = filter;
+    notifyListeners();
+    try {
+      _analytics = await BloodBankAnalyticsService.getAnalytics(filter);
+    } catch (e) {
+      logger.w('Failed to fetch analytics for $filter: $e');
+    }
+    notifyListeners();
   }
 
   bool _isDisposed = false;

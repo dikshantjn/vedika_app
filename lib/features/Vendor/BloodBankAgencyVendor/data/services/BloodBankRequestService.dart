@@ -14,8 +14,7 @@ class BloodBankRequestService {
   // Get requests for a specific vendor
   Future<List<BloodBankRequest>> getRequests(String vendorId, String token) async {
     try {
-      _logger.i('Fetching blood bank requests for vendor: $vendorId');
-      
+
       // Make the API call
       final response = await _dio.get(
         '${ApiEndpoints.getAllBloodBankRequestByVendorId}/$vendorId/requests',
@@ -52,7 +51,6 @@ class BloodBankRequestService {
         } else if (response.data is List) {
           // Direct list response
           final List<dynamic> data = response.data;
-          _logger.i('Found ${data.length} blood bank requests');
           return data.map((json) => BloodBankRequest.fromJson(json)).toList();
         } else {
           _logger.e('Unexpected response format: ${response.data.runtimeType}');

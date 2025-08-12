@@ -4,6 +4,133 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 class TestimonialSection extends StatelessWidget {
   const TestimonialSection({Key? key}) : super(key: key);
 
+  // Separate data sources for mobile and tablet views
+  static const List<Map<String, String>> _mobileTestimonials = [
+    {
+      'name': 'Dr. Vishal Bhandari',
+      'specialty': 'Anesthesiologist',
+      'qualification': 'MBBS, MD (Internal Medicine)',
+      'experience': '15 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
+      'imagePath': 'assets/doctorsPic/DrVishalBhandari.jpeg',
+    },
+    {
+      'name': 'Dr. Piyush Lodha',
+      'specialty': 'Endocrinologist',
+      'qualification': 'MBBS, MD – Medicine, DM – Endocrinology',
+      'experience': '12 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
+      'imagePath': 'assets/doctorsPic/Piyush-Lodha.jpg',
+    },
+    {
+      'name': 'Dr. Sachin Lakade',
+      'specialty': 'Cardiologist',
+      'qualification': 'MBBS, MD – General Medicine, DNB – Cardiology',
+      'experience': '17 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A well-established cardiologist delivering comprehensive cardiac care, from preventive screening to advanced procedures like angioplasty and pacemaker management. Known for his patient-centric approach and precision in diagnosis.',
+      'imagePath': 'assets/doctorsPic/Dr.sachin-lakade.png',
+    },
+    {
+      'name': 'Dr. Sweta Lunkad',
+      'specialty': 'Haematologist',
+      'qualification': 'MBBS, DNB – General Medicine, DM – Clinical Haematology',
+      'experience': '17 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A leading haematologist performing advanced bone marrow transplants including autologous, allogeneic, MUD and haploidentical types. Recognized for expertise in complex blood disorders and compassionate patient care.',
+      'imagePath': 'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
+    },
+    {
+      'name': 'Dr. Rajeev Doshi',
+      'specialty': 'General Surgeon, Laparoscopic Surgeon, Proctologist',
+      'qualification': 'MBBS, MS – General Surgery, DNB – General Surgery',
+      'experience': '25 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'An accomplished surgeon specializing in laparoscopic, gastrointestinal, and proctology procedures. Known for precise minimally invasive techniques and a track record of effective treatment for complex surgical cases.',
+      'imagePath': 'assets/doctorsPic/DrRajeevDoshi.jpeg',
+    },
+    {
+      'name': 'Dr. Amrut Oswal',
+      'specialty': 'Orthopaedic Surgeon',
+      'qualification': 'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
+      'experience': '36 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A veteran orthopedic surgeon specializing in joint replacement, spinal surgeries, and complex fracture management. Recognized for surgical mastery and dedication to restoring mobility.',
+      'imagePath': 'assets/doctorsPic/Dr.AmrutOswal.jpg',
+    },
+  ];
+
+  static const List<Map<String, String>> _tabletTestimonials = [
+    {
+      'name': 'Dr. Vishal Bhandari',
+      'specialty': 'Anesthesiologist',
+      'qualification': 'MBBS, MD (Internal Medicine)',
+      'experience': '15 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
+      'imagePath': 'assets/doctorsPic/DrVishalBhandari.jpeg',
+    },
+    {
+      'name': 'Dr. Piyush Lodha',
+      'specialty': 'Endocrinologist',
+      'qualification': 'MBBS, MD – Medicine, DM – Endocrinology',
+      'experience': '12 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
+      'imagePath': 'assets/doctorsPic/Piyush-Lodha.jpg',
+    },
+    {
+      'name': 'Dr. Sachin Lakade',
+      'specialty': 'Cardiologist',
+      'qualification': 'MBBS, MD – General Medicine, DNB – Cardiology',
+      'experience': '17 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A well-established cardiologist delivering comprehensive cardiac care, from preventive screening to advanced procedures like angioplasty and pacemaker management. Known for his patient-centric approach and precision in diagnosis.',
+      'imagePath': 'assets/doctorsPic/Dr.sachin-lakade.png',
+    },
+    {
+      'name': 'Dr. Sweta Lunkad',
+      'specialty': 'Haematologist',
+      'qualification': 'MBBS, DNB – General Medicine, DM – Clinical Haematology',
+      'experience': '17 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A leading haematologist performing advanced bone marrow transplants including autologous, allogeneic, MUD and haploidentical types. Recognized for expertise in complex blood disorders and compassionate patient care.',
+      'imagePath': 'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
+    },
+    {
+      'name': 'Dr. Rajeev Doshi',
+      'specialty': 'General Surgeon, Laparoscopic Surgeon, Proctologist',
+      'qualification': 'MBBS, MS – General Surgery, DNB – General Surgery',
+      'experience': '25 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'An accomplished surgeon specializing in laparoscopic, gastrointestinal, and proctology procedures. Known for precise minimally invasive techniques and a track record of effective treatment for complex surgical cases.',
+      'imagePath': 'assets/doctorsPic/DrRajeevDoshi.jpeg',
+    },
+    {
+      'name': 'Dr. Amrut Oswal',
+      'specialty': 'Orthopaedic Surgeon',
+      'qualification': 'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
+      'experience': '36 years experience',
+      'location': 'Pune',
+      'testimonial':
+          'A veteran orthopedic surgeon specializing in joint replacement, spinal surgeries, and complex fracture management. Recognized for surgical mastery and dedication to restoring mobility.',
+      'imagePath': 'assets/doctorsPic/Dr.AmrutOswal.jpg',
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
     // Get screen width to determine if it's a tablet
@@ -56,154 +183,59 @@ class TestimonialSection extends StatelessWidget {
   }
 
   Widget _buildMobileLayout(double cardWidth) {
+    final List<Widget> children = [];
+    for (int i = 0; i < _mobileTestimonials.length; i++) {
+      final t = _mobileTestimonials[i];
+      children.add(
+        _buildTestimonialCard(
+          t['name']!,
+          t['specialty']!,
+          t['qualification']!,
+          t['experience']!,
+          t['location']!,
+          t['testimonial']!,
+          t['imagePath']!,
+          cardWidth,
+        ),
+      );
+      if (i < _mobileTestimonials.length - 1) {
+        children.add(SizedBox(width: 16));
+      }
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          _buildTestimonialCard(
-            'Dr. Vishal Bhandari',
-            'Anesthesiologist',
-            'MBBS, MD (Internal Medicine)',
-            '15 years experience',
-            'Pune',
-            'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
-            'assets/doctorsPic/DrVishalBhandari.jpeg',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Piyush Lodha',
-            'Endocrinologist',
-            'MBBS, MD – Medicine, DM – Endocrinology',
-            '12 years experience',
-            'Pune',
-            'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
-            'assets/doctorsPic/Piyush-Lodha.jpg',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Sachin Lakade',
-            'Cardiologist',
-            'MBBS, MD – General Medicine, DNB – Cardiology',
-            '17 years experience',
-            'Pune',
-            'A well-established cardiologist currently consulting at Bhakare Super Speciality and VishwaRaj Hospital. Delivers full suite of cardiac services from preventive care to angioplasty and pacemaker management.',
-            'assets/doctorsPic/Dr.sachin-lakade.png',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Sweta Lunkad',
-            'Haematologist',
-            'MBBS, DNB – General Medicine, DM – Clinical Haematology',
-            '17 years experience',
-            'Pune',
-            'A leading haematologist heading hematology and bone marrow transplant services at Lakshya Cancer Care and Jupiter Hospital. Performs complex BMTs including autologous, allogeneic, MUD and haploidentical transplants.',
-            'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Rajeev Joshi',
-            'Orthopaedic Surgeon',
-            'MBBS, MS – Orthopaedics',
-            '33 years experience',
-            'Pune',
-            'A senior orthopedic surgeon at Sancheti Hospital, renowned for hip and knee replacement surgeries. With over three decades of surgical practice, handles complex reconstructive cases and trauma-related joint repairs.',
-            'assets/doctorsPic/DrRajivJoshi.jpeg',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Amrut Oswal',
-            'Orthopaedic Surgeon',
-            'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
-            '36 years experience',
-            'Pune',
-            'A veteran orthopedic surgeon at KEM Hospital Pune specializing in hip/knee replacements, spinal procedures, and complex fracture care. With broad surgical mastery across joint reconstruction and trauma.',
-            'assets/doctorsPic/Dr.AmrutOswal.jpg',
-            cardWidth,
-          ),
-        ],
-      ),
+      child: Row(children: children),
     );
   }
 
+
   Widget _buildTabletLayout(double cardWidth) {
+    final List<Widget> children = [];
+    for (int i = 0; i < _tabletTestimonials.length; i++) {
+      final t = _tabletTestimonials[i];
+      children.add(
+        _buildTestimonialCard(
+          t['name']!,
+          t['specialty']!,
+          t['qualification']!,
+          t['experience']!,
+          t['location']!,
+          t['testimonial']!,
+          t['imagePath']!,
+          cardWidth,
+        ),
+      );
+      if (i < _tabletTestimonials.length - 1) {
+        children.add(SizedBox(width: 16));
+      }
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          _buildTestimonialCard(
-            'Dr. Vishal Bhandari',
-            'Anesthesiologist',
-            'MBBS, MD (Internal Medicine)',
-            '15 years experience',
-            'Pune',
-            'A seasoned anesthesiologist renowned in Pune region for anesthesia expertise. Known for his calm presence in stressful OR and ICU settings, supporting safe surgical outcomes and patient comfort.',
-            'assets/doctorsPic/Dr. Vishal Bhandari.jpg',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Piyush Lodha',
-            'Endocrinologist',
-            'MBBS, MD – Medicine, DM – Endocrinology',
-            '12 years experience',
-            'Pune',
-            'A distinguished endocrinologist treating hormonal disorders across ages—from diabetes and thyroid to growth and adrenal diseases. Has strong academic credentials with award-winning conference papers and integrates advanced tools for diabetes management.',
-            'assets/doctorsPic/Piyush-Lodha.jpg',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Sachin Lakade',
-            'Cardiologist',
-            'MBBS, MD – General Medicine, DNB – Cardiology',
-            '17 years experience',
-            'Pune',
-            'A well-established cardiologist currently consulting at Bhakare Super Speciality and VishwaRaj Hospital. Delivers full suite of cardiac services from preventive care to angioplasty and pacemaker management.',
-            'assets/doctorsPic/Dr.sachin-lakade.png',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Sweta Lunkad',
-            'Haematologist',
-            'MBBS, DNB – General Medicine, DM – Clinical Haematology',
-            '17 years experience',
-            'Pune',
-            'A leading haematologist heading hematology and bone marrow transplant services at Lakshya Cancer Care and Jupiter Hospital. Performs complex BMTs including autologous, allogeneic, MUD and haploidentical transplants.',
-            'assets/doctorsPic/Dr.-Sweta-Lunkad.webp',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Rajeev Joshi',
-            'Orthopaedic Surgeon',
-            'MBBS, MS – Orthopaedics',
-            '33 years experience',
-            'Pune',
-            'A senior orthopedic surgeon at Sancheti Hospital, renowned for hip and knee replacement surgeries. With over three decades of surgical practice, handles complex reconstructive cases and trauma-related joint repairs.',
-            'assets/doctorsPic/Dr. Rajeev Joshi.jfif',
-            cardWidth,
-          ),
-          SizedBox(width: 16),
-          _buildTestimonialCard(
-            'Dr. Amrut Oswal',
-            'Orthopaedic Surgeon',
-            'MBBS, Diploma in Orthopaedics, MS – Orthopaedics',
-            '36 years experience',
-            'Pune',
-            'A veteran orthopedic surgeon at KEM Hospital Pune specializing in hip/knee replacements, spinal procedures, and complex fracture care. With broad surgical mastery across joint reconstruction and trauma.',
-            'assets/doctorsPic/Dr. Amrut Oswal.jfif',
-            cardWidth,
-          ),
-        ],
-      ),
+      child: Row(children: children),
     );
   }
 

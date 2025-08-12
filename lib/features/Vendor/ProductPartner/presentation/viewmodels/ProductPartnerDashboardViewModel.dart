@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../data/services/ProductPartnerProfileService.dart';
+import '../../data/services/ProductPartnerAnalysisService.dart';
 import '../../../Service/VendorService.dart';
 
 class ProductPartnerDashboardViewModel extends ChangeNotifier {
   final ProductPartnerProfileService _service = ProductPartnerProfileService();
   final VendorService _vendorService = VendorService();
+  final ProductPartnerAnalysisService _analysisService = ProductPartnerAnalysisService();
   bool _isLoading = false;
   bool _isStatusLoading = false;
   bool _isActive = true;
@@ -21,6 +23,7 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
   List<FlSpot> _performanceData = [];
   String _currentPeriod = 'Weekly';
   String _vendorId = '';
+  ProductPartnerAnalysisData? _analysisData;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -37,6 +40,7 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> get recentActivities => _recentActivities;
   List<FlSpot> get performanceData => _performanceData;
   String get currentPeriod => _currentPeriod;
+  ProductPartnerAnalysisData? get analysisData => _analysisData;
 
   Future<void> fetchDashboardData(String vendorId) async {
     _isLoading = true;
@@ -83,6 +87,9 @@ class ProductPartnerDashboardViewModel extends ChangeNotifier {
       ];
 
       _updatePerformanceData();
+
+      // Fetch analysis mock data
+      _analysisData = await _analysisService.getAnalysis(vendorId);
     } catch (e) {
       print('Error fetching dashboard data: $e');
       // Handle error appropriately

@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/viewModels/DiagnosticCenterProfileViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/DiagnosticCenterProfileScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/BookingsContent.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/DashboardContent.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/BookingHistoryContent.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/InsightsContent.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/NotificationsContent.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestBookingContentPage.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestDashboardContentPage.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestInsightContentPage.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestNotificationsContentPage.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/LabTestColorPalette.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/DashboardBottomNav.dart';
-import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/dashboard/DashboardDrawer.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/MainWidgets/DashboardBottomNav.dart';
+import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/widgets/MainWidgets/DashboardDrawer.dart';
 
 class LabTestDashboardScreen extends StatefulWidget {
   final int? initialTab;
@@ -29,9 +28,9 @@ class _LabTestDashboardScreenState extends State<LabTestDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _pages = [
-    const DashboardContent(),
-    const BookingsContent(),
-    const InsightsContent(),
+    const LabTestDashboardContentPage(),
+    const LabTestBookingContentPage(),
+    const LabTestInsightContentPage(),
     const DiagnosticCenterProfileScreen(),
   ];
 
@@ -108,7 +107,7 @@ class _LabTestDashboardScreenState extends State<LabTestDashboardScreen> {
         ],
       ),
       body: _showNotifications
-          ? const NotificationsContent()
+          ? const LabTestNotificationsContentPage()
           : _pages[_currentIndex],
       bottomNavigationBar: DashboardBottomNav(
         currentIndex: _currentIndex,

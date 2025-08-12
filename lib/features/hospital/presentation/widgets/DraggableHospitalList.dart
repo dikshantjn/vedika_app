@@ -127,7 +127,7 @@ class DraggableHospitalList extends StatelessWidget {
                   color: Colors.blueGrey[800],
                 ),
               ),
-              if (hospitals.isEmpty || hospitals.length != expandedItems.length)
+              if (hospitals.isEmpty)
                 Flexible(
                   child: Center(
                     child: Text(
@@ -144,10 +144,16 @@ class DraggableHospitalList extends StatelessWidget {
                     itemCount: hospitals.length,
                     itemBuilder: (_, index) {
                       var hospital = hospitals[index];
-                      bool isExpanded = expandedItems[index];
+                      // Safely resolve expanded state even if lengths are temporarily mismatched
+                      final bool isExpanded =
+                          (index < expandedItems.length) ? expandedItems[index] : false;
                       final locationParts = hospital.location.split(',');
-                      final lat = double.tryParse(locationParts[0]) ?? 0.0;
-                      final lng = double.tryParse(locationParts[1]) ?? 0.0;
+                      final lat = locationParts.isNotEmpty
+                          ? double.tryParse(locationParts[0].trim()) ?? 0.0
+                          : 0.0;
+                      final lng = locationParts.length > 1
+                          ? double.tryParse(locationParts[1].trim()) ?? 0.0
+                          : 0.0;
 
                       return GestureDetector(
                         onTap: () => onHospitalTap(index, lat, lng),

@@ -32,6 +32,10 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" tools:ignore="BluetoothPermission"/>
+
     <application
         android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true"
@@ -93,9 +97,20 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel" />
+
+        <!-- Native continuous speech recognition service -->
+        <service
+            android:name=".NativeSpeechService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 
     <queries>
+        <!-- Allow visibility of speech recognition services on Android 11+ -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <package android:name="com.google.android.googlequicksearchbox" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

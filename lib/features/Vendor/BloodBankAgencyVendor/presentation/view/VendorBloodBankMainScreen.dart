@@ -245,53 +245,21 @@ class _VendorBloodBankMainScreenState extends State<VendorBloodBankMainScreen> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.notifications_active,
-                    title: 'Live Requests',
+                    title: 'Requests',
                     onTap: () => _handleDrawerItemTap(2),
                     isSelected: _currentIndex == 2,
                   ),
                   _buildDrawerItem(
                     icon: Icons.history,
-                    title: 'Booking History',
+                    title: 'History',
                     onTap: () => _handleDrawerItemTap(3),
                     isSelected: _currentIndex == 3,
                   ),
                   _buildDrawerItem(
-                    icon: Icons.analytics,
-                    title: 'Insights & Reports',
-                    onTap: () {
-                      // TODO: Navigate to analytics screen
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.edit,
-                    title: 'Edit Agency Info',
+                    icon: Icons.person,
+                    title: 'Profile',
                     onTap: () => _handleDrawerItemTap(4),
                     isSelected: _currentIndex == 4,
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.access_time,
-                    title: 'Service Hours',
-                    onTap: () {
-                      // TODO: Navigate to service hours screen
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    onTap: () {
-                      // TODO: Navigate to notifications screen
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.support_agent,
-                    title: 'Admin Support',
-                    onTap: () {
-                      // TODO: Navigate to support screen
-                      Navigator.pop(context);
-                    },
                   ),
                   const Divider(),
                   _buildDrawerItem(

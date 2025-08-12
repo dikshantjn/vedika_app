@@ -11,14 +11,23 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/widgets/Dashboard/AmbulanceAgencyAnalyticsInsightsChart.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/AmbulanceAgencyColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/widgets/SeasonalLineChart.dart';
 
-class AmbulanceAgencyDashboardScreen extends StatelessWidget {
+class AmbulanceAgencyDashboardScreen extends StatefulWidget {
+  @override
+  State<AmbulanceAgencyDashboardScreen> createState() => _AmbulanceAgencyDashboardScreenState();
+}
+
+class _AmbulanceAgencyDashboardScreenState extends State<AmbulanceAgencyDashboardScreen> {
+  bool _showAiSuggestion = true;
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<AgencyDashboardViewModel, AmbulanceMainViewModel>(
       builder: (context, viewModel, mainViewModel, child) {
         return Scaffold(
-          backgroundColor: Colors.grey[100],
+          backgroundColor: AmbulanceAgencyColorPalette.backgroundWhite,
           body: RefreshIndicator(
             onRefresh: () async {
               await viewModel.refreshDashboardData();
@@ -29,18 +38,16 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
               child: Column(
                 children: [
                   _buildHeader(context, viewModel, mainViewModel),
+                  const SizedBox(height: 16),
+                  if (_showAiSuggestion)
                   Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTodaySummary(viewModel),
-                        const SizedBox(height: 24),
-                        _buildLiveBookingRequests(viewModel, context),
-                        const SizedBox(height: 24),
-                        AmbulanceAgencyAnalyticsInsightsChart(viewModel: viewModel),
-                      ],
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildAiSuggestionCard(viewModel),
                     ),
+                  if (_showAiSuggestion) const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildAnalyticsSection(viewModel),
                   ),
                 ],
               ),
@@ -52,47 +59,84 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, AgencyDashboardViewModel viewModel, AmbulanceMainViewModel mainViewModel) {
+    final topPadding = MediaQuery.of(context).padding.top + 16;
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        bottom: 24,
-        left: 16,
-        right: 16,
-      ),
+      padding: EdgeInsets.only(top: topPadding, bottom: 24, left: 16, right: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AmbulanceAgencyColorPalette.accentCyan,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Welcome message at top
+          Text(
+            'Welcome back',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              // Profile Picture
-              Container(
+              // Profile Picture with error fallback
+              Builder(builder: (context) {
+                String? url;
+                final photos = viewModel.agencyProfile?.officePhotos;
+                if (photos != null && photos.isNotEmpty) {
+                  final first = photos.first;
+                  if (first is Map) {
+                    final dynamic candidate = first['url'];
+                    if (candidate is String && candidate.isNotEmpty) {
+                      url = candidate;
+                    }
+                  }
+                }
+                return Container(
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.blue.shade700, width: 2),
+                    border: Border.all(color: Colors.white.withOpacity(0.9), width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
                   ],
-                  image: DecorationImage(
-                    image: NetworkImage(viewModel.agencyProfile?.officePhotos.firstOrNull?['url'] ?? 'https://via.placeholder.com/150'),
-                    fit: BoxFit.cover,
                   ),
-                ),
-              ),
+                  child: ClipOval(
+                    child: (url != null && url!.isNotEmpty)
+                        ? Image.network(
+                            url!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.white.withOpacity(0.15),
+                                child: const Icon(Icons.person, color: Colors.white, size: 28),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: Colors.white.withOpacity(0.15),
+                            child: const Icon(Icons.person, color: Colors.white, size: 28),
+                          ),
+                  ),
+                );
+              }),
               const SizedBox(width: 16),
               // Agency Details
               Expanded(
@@ -104,20 +148,20 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.email_outlined, size: 16, color: Colors.grey[600]),
+                        const Icon(Icons.email_outlined, size: 16, color: Colors.white70),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             viewModel.agencyProfile?.email ?? 'agency@email.com',
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Colors.white70,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -162,19 +206,14 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: mainViewModel.isActive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                    color: Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
-                      width: 1.5,
+                      color: mainViewModel.isActive
+                          ? AmbulanceAgencyColorPalette.successGreen
+                          : AmbulanceAgencyColorPalette.errorRed,
+                      width: 1.2,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (mainViewModel.isActive ? Colors.green : Colors.red).withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -186,7 +225,9 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                              mainViewModel.isActive
+                                  ? AmbulanceAgencyColorPalette.successGreen
+                                  : AmbulanceAgencyColorPalette.errorRed,
                             ),
                           ),
                         )
@@ -196,7 +237,9 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                            color: mainViewModel.isActive
+                                ? AmbulanceAgencyColorPalette.successGreen
+                                : AmbulanceAgencyColorPalette.errorRed,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -204,9 +247,9 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                       Text(
                         mainViewModel.isActive ? 'Active' : 'Inactive',
                         style: GoogleFonts.poppins(
-                          color: mainViewModel.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                          color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -215,15 +258,289 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          // Quick Stats Row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          // You can add additional brief subtext here if needed
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiSuggestionCard(AgencyDashboardViewModel vm) {
+    final Color primary = AmbulanceAgencyColorPalette.accentPurple; // AI purple
+    final Color secondary = AmbulanceAgencyColorPalette.accentCyan; // Cyan
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primary.withOpacity(0.18),
+            secondary.withOpacity(0.14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: primary.withOpacity(0.25), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: secondary.withOpacity(0.18),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.psychology_alt_rounded,
+              color: primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _quickStatItem(Icons.phone, '${viewModel.totalBookings}', 'Total Calls'),
-                _quickStatItem(Icons.timer, '${viewModel.avgResponseTime} min', 'Avg Response'),
-                _quickStatItem(Icons.local_shipping, '${viewModel.operationalKms} km', 'Distance'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'AI Suggestion',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: primary,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => setState(() => _showAiSuggestion = false),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'High-demand window predicted 5–7 PM in Andheri & Bandra. Pre-position 2 units there and enable auto-dispatch to cut acceptance time by ~15%. Powai shows slightly higher cancellations; consider quick callback verification.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AmbulanceAgencyColorPalette.textPrimary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildAnalyticsSection(AgencyDashboardViewModel vm) {
+    final data = vm.analytics;
+    if (data.isEmpty) {
+      return Container(
+        height: 140,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Analytics Overview',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AmbulanceAgencyColorPalette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Top KPIs grid
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isWide = constraints.maxWidth >= 600;
+            final double ratio = isWide ? 2.4 : 1.9; // more height on narrow screens
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: ratio,
+              children: [
+                _kpiCard('Users Acquired', data['usersAcquired'].toString(), Icons.group),
+                _kpiCard('DAU / MAU', '${data['dau']}/${data['mau']}', Icons.timeline),
+                _kpiCard('Returning Customers', data['returningCustomers'].toString(), Icons.repeat),
+                _kpiCard('Cancellation Rate', '${data['cancellationRate']}%', Icons.cancel_presentation),
+                _kpiCard('Avg Time to Pickup', '${data['avgPickupTimeMin']} min', Icons.local_taxi),
+                _kpiCard('Time to Accept', '${data['timeToAcceptSec']} sec', Icons.hourglass_top),
+                _kpiCard('Trips Booked', data['tripsBooked'].toString(), Icons.local_hospital),
+                _kpiCard('Revenue', '₹${(data['revenue'] as double).toStringAsFixed(0)}', Icons.payments),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        // Demand vs Scheduled
+        _metricCard(
+          title: 'Demand Trends',
+          subtitle: 'Emergency vs Scheduled',
+          icon: Icons.emergency_share,
+          child: Builder(builder: (context) {
+            final int emergency = (data['emergency'] as num).toInt();
+            final int scheduled = (data['scheduled'] as num).toInt();
+            final int total = emergency + scheduled;
+            return Row(
+              children: [
+                Expanded(child: _progressTile('Emergency', emergency, total, Colors.red)),
+                const SizedBox(width: 12),
+                Expanded(child: _progressTile('Scheduled', scheduled, total, AmbulanceAgencyColorPalette.secondaryBlue)),
+              ],
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+        // Area demand and oversupply
+        _metricCard(
+          title: 'Area-based Requests',
+          subtitle: 'High demand zones',
+          icon: Icons.location_on,
+          child: Column(
+            children: (data['areaDemand'] as List).map<Widget>((e) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(e['area'], style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 5,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: (e['requests'] as num).toDouble() / 80,
+                          minHeight: 8,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AmbulanceAgencyColorPalette.secondaryBlue),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('${e['requests']}', style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textSecondary)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _metricCard(
+          title: 'Oversupply Mapping',
+          subtitle: 'Areas with excess supply',
+          icon: Icons.map,
+          child: Column(
+            children: (data['oversupply'] as List).map<Widget>((e) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(e['area'], style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 5,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: (e['excess'] as num).toDouble() / 30,
+                          minHeight: 8,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AmbulanceAgencyColorPalette.secondaryTeal),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('${e['excess']}', style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textSecondary)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Seasonal trends (simple bar by month)
+        _metricCard(
+          title: 'Seasonal Trends',
+          subtitle: 'Incident peaks by month',
+          icon: Icons.trending_up,
+          child: SizedBox(
+            height: 180,
+            child: SeasonalLineChart(data: List<Map<String, dynamic>>.from(data['seasonalTrends'] as List)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _kpiCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: AmbulanceAgencyColorPalette.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+            child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AmbulanceAgencyColorPalette.primaryLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AmbulanceAgencyColorPalette.secondaryBlue, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AmbulanceAgencyColorPalette.textPrimary)),
+                const SizedBox(height: 2),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textSecondary)),
               ],
             ),
           ),
@@ -232,6 +549,79 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
     );
   }
 
+  Widget _metricCard({required String title, required String subtitle, required IconData icon, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AmbulanceAgencyColorPalette.cardWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AmbulanceAgencyColorPalette.secondaryBlue, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: AmbulanceAgencyColorPalette.textPrimary)),
+                    Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _progressTile(String label, int value, int total, Color color) {
+    final double ratio = total == 0 ? 0 : value / total;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AmbulanceAgencyColorPalette.primaryLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: GoogleFonts.poppins(fontSize: 12, color: AmbulanceAgencyColorPalette.textPrimary)),
+              Text('$value', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 10,
+              backgroundColor: Colors.white,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _quickStatItem(IconData icon, String value, String label) {
     return Container(
       margin: const EdgeInsets.only(right: 16),
@@ -271,6 +661,13 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildTodaySummary(AgencyDashboardViewModel vm) {
+    final cards = <Widget>[
+      _summaryBox("Total Bookings", "${vm.totalBookings}", Colors.blue),
+      _summaryBox("Today's Bookings", "${vm.todaysBookings}", Colors.green),
+      _summaryBox("Avg Response", "${vm.avgResponseTime} min", Colors.orange),
+      _summaryBox("Operational KMs", "${vm.operationalKms} km", Colors.purple),
+    ];
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -279,36 +676,37 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "Today's Overview",
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _summaryBox("Total Bookings", "${vm.totalBookings}", Colors.blue),
-                const SizedBox(width: 16),
-                _summaryBox("Today's Bookings", "${vm.todaysBookings}", Colors.green),
-                const SizedBox(width: 16),
-                _summaryBox("Response Time", "${vm.avgResponseTime} min", Colors.orange),
-                const SizedBox(width: 16),
-                _summaryBox("Operational KMs", "${vm.operationalKms} km", Colors.purple),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
+              final crossAxisCount = isWide ? 4 : 2;
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: isWide ? 3.2 : 2.6,
+                children: cards,
+              );
+            },
           ),
         ],
       ),
@@ -317,31 +715,38 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
 
   Widget _summaryBox(String title, String count, Color color) {
     return Container(
-      width: 160,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withOpacity(0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.analytics, color: color, size: 24),
-          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withOpacity(0.25)),
+            ),
+            child: Icon(Icons.analytics, color: color, size: 20),
+          ),
+          const SizedBox(height: 10),
           Text(
             count,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.poppins(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: color,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 14,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
               color: Colors.grey[600],
             ),
           ),
@@ -359,11 +764,11 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -372,23 +777,24 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
             children: [
               Text(
                 "Live Booking Requests",
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
               ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: const Color(0xFF1565C0).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   "${vm.pendingBookings.length} Active",
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500,
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF1565C0),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
               ),
@@ -407,7 +813,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         "No ongoing bookings right now",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.grey[600],
                           fontSize: 16,
                         ),
@@ -419,7 +825,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: vm.pendingBookings.length,
-                  separatorBuilder: (_, __) => Divider(height: 24),
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final request = vm.pendingBookings[index];
                     return _buildBookingRequestCard(request, context);
@@ -442,10 +848,17 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
     Color statusColor = isPending ? Colors.orange : Colors.green;
 
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
@@ -455,9 +868,9 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.blue.withOpacity(0.1),
+                backgroundColor: const Color(0xFF1565C0).withOpacity(0.1),
                 radius: 24,
-                child: Icon(Icons.person, color: Colors.blue, size: 24),
+                child: const Icon(Icons.person, color: Color(0xFF1565C0), size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -466,7 +879,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       customerName,
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -479,7 +892,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             contact,
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: GoogleFonts.poppins(color: Colors.grey[600]!),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -489,15 +902,15 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                 ),
               ),
               OutlinedButton.icon(
-                icon: Icon(Icons.call, color: Colors.green, size: 18),
-                label: Text("Call"),
+                icon: const Icon(Icons.call, color: Colors.green, size: 18),
+                label: const Text("Call"),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.green,
                   side: BorderSide(color: Colors.green),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 onPressed: () => launchUrl(Uri.parse('tel:$contact')),
               ),
@@ -505,21 +918,21 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: EdgeInsets.all(12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Colors.grey[50],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: Colors.red, size: 20),
+                    const Icon(Icons.location_on, color: Colors.red, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         pickup,
-                        style: TextStyle(color: Colors.grey[800]),
+                        style: GoogleFonts.poppins(color: Colors.grey[800]!),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -528,12 +941,12 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: Colors.green, size: 20),
+                    const Icon(Icons.location_on, color: Colors.green, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         drop,
-                        style: TextStyle(color: Colors.grey[800]),
+                        style: GoogleFonts.poppins(color: Colors.grey[800]!),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -549,7 +962,7 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(time.toLocal()),
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.grey[600],
                     fontSize: 14,
                   ),
@@ -558,14 +971,14 @@ class AmbulanceAgencyDashboardScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   status.toUpperCase(),
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,

@@ -322,10 +322,14 @@ class HospitalSearchViewModel extends ChangeNotifier {
     print("📍 Adding markers...");
     _markers.clear();
     _markers.addAll(_hospitals.map((hospital) {
-      // Parse location string to get lat and lng
+      // Parse location string to get lat and lng (trim to handle spaces)
       final locationParts = hospital.location.split(',');
-      final lat = double.tryParse(locationParts[0]) ?? 0.0;
-      final lng = double.tryParse(locationParts[1]) ?? 0.0;
+      final lat = locationParts.isNotEmpty
+          ? double.tryParse(locationParts[0].trim()) ?? 0.0
+          : 0.0;
+      final lng = locationParts.length > 1
+          ? double.tryParse(locationParts[1].trim()) ?? 0.0
+          : 0.0;
 
       return Marker(
         markerId: MarkerId(hospital.vendorId ?? hospital.generatedId ?? ''),

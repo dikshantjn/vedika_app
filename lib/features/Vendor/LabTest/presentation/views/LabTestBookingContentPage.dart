@@ -9,19 +9,19 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/Lab
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/lab_test_invoice_pdf.dart';
 
-class BookingsContent extends StatefulWidget {
+class LabTestBookingContentPage extends StatefulWidget {
   final int? initialTab;
   
-  const BookingsContent({
+  const LabTestBookingContentPage({
     Key? key,
     this.initialTab,
   }) : super(key: key);
 
   @override
-  State<BookingsContent> createState() => _BookingsContentState();
+  State<LabTestBookingContentPage> createState() => _BookingsContentState();
 }
 
-class _BookingsContentState extends State<BookingsContent> with SingleTickerProviderStateMixin {
+class _BookingsContentState extends State<LabTestBookingContentPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late BookingsViewModel _viewModel;
 
