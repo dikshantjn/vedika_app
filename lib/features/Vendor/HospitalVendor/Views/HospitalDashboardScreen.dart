@@ -487,7 +487,7 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AI Suggestion',
+                    'VedikaAI Suggestion',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

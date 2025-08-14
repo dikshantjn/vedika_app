@@ -302,7 +302,7 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('AI Suggestion', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.purple)),
+                      Text('VedikaAI Suggestion', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.purple)),
                       Icon(Icons.close, size: 16, color: Colors.black54),
                     ],
                   ),

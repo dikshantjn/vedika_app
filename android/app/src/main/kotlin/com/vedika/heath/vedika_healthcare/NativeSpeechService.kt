@@ -42,6 +42,13 @@ class NativeSpeechService : Service() {
     private var recognizerIntent: Intent? = null
     private var isListening = false
     private val handler = Handler(Looper.getMainLooper())
+    private val maxSessionMs = 15_000L
+    private val silenceMs = 2_500L
+    private val minInputMs = 1_000L
+    private val sessionTimeoutRunnable = Runnable {
+        stopListening()
+        stopSelf()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -81,7 +88,10 @@ class NativeSpeechService : Service() {
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, silenceMs)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, silenceMs)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, minInputMs)
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
@@ -112,19 +122,23 @@ class NativeSpeechService : Service() {
                     else -> "Error code: $error"
                 }
                 sendError(message)
-                handler.postDelayed({ restartListening() }, 500)
+                stopListening()
+                stopSelf()
             }
 
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                val text = matches?.joinToString(" ") ?: ""
+                val candidate = matches?.firstOrNull() ?: ""
+                val text = cleanText(candidate)
                 sendResult(text, true)
-                restartListening()
+                stopListening()
+                stopSelf()
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                val text = matches?.joinToString(" ") ?: ""
+                val candidate = matches?.firstOrNull() ?: ""
+                val text = cleanText(candidate)
                 sendResult(text, false)
             }
 
@@ -136,11 +150,13 @@ class NativeSpeechService : Service() {
         if (isListening) return
         speechRecognizer?.startListening(recognizerIntent)
         isListening = true
+        handler.removeCallbacks(sessionTimeoutRunnable)
+        handler.postDelayed(sessionTimeoutRunnable, maxSessionMs)
     }
 
     private fun restartListening() {
-        isListening = false
-        startListening()
+        // Do not auto-restart; stop instead
+        stopListening()
     }
 
     private fun stopListening() {
@@ -148,6 +164,8 @@ class NativeSpeechService : Service() {
         speechRecognizer?.stopListening()
         stopForeground(true)
         isListening = false
+        handler.removeCallbacks(sessionTimeoutRunnable)
+        sendStatus("stopped")
     }
 
     private fun createNotification() {
@@ -206,5 +224,22 @@ class NativeSpeechService : Service() {
             putExtra(EXTRA_ERROR, error)
         }
         sendBroadcast(intent)
+    }
+
+    // Reduce duplicate phrases like "nearest hospital nearest hospital"
+    private fun cleanText(raw: String): String {
+        if (raw.isEmpty()) return raw
+        val parts = raw.trim().split(" ")
+        if (parts.size < 2) return raw
+        val builder = StringBuilder()
+        var prev = ""
+        for (p in parts) {
+            if (!p.equals(prev, ignoreCase = true)) {
+                if (builder.isNotEmpty()) builder.append(' ')
+                builder.append(p)
+            }
+            prev = p
+        }
+        return builder.toString()
     }
 }

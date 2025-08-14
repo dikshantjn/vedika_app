@@ -85,7 +85,7 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ScannerViewModel.dart';
-import 'package:vedika_healthcare/features/ai/presentation/viewmodel/AIViewModel.dart';
+import 'package:vedika_healthcare/features/VedikaAI/presentation/viewmodel/AIViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/WardViewModel.dart';
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';

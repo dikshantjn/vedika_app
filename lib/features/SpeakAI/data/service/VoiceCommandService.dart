@@ -11,10 +11,59 @@ import 'package:vedika_healthcare/features/home/presentation/view/ProductListScr
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'dart:developer' as developer;
 
 class VoiceCommandService {
+  // Static intent resolver to simulate backend `/api/voice/intent`
+  // Returns a Future to mimic async network call
+  static Future<Map<String, dynamic>> resolveIntent(String query) async {
+    final dio = Dio(BaseOptions(
+      // Keep generous timeouts so overlay can keep showing Processing… until response arrives
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(minutes: 5),
+      headers: { 'Content-Type': 'application/json' },
+    ));
+    final Map<String, dynamic> payload = { 'query': query };
+
+    // Enrich with user and location context if available
+    try {
+      final String? userId = await StorageService.getUserId();
+      if (userId != null && userId.isNotEmpty) {
+        payload['userId'] = userId;
+      }
+    } catch (_) {}
+
+    try {
+      final lp = LocationProvider();
+      await lp.fetchLocation(updateBackend: false);
+      if (lp.latitude != null && lp.longitude != null) {
+        payload['userLocation'] = '${lp.latitude},${lp.longitude}';
+      }
+    } catch (_) {}
+    final resp = await dio.post(ApiEndpoints.speakAIIntent, data: payload);
+    if (resp.data is Map) {
+      // Normalize keys we use downstream
+      final Map<String, dynamic> body = Map<String, dynamic>.from(resp.data as Map);
+      // Some APIs may return 'title/subtitle' per result instead of name/location
+      if (body['results'] is List) {
+        body['results'] = (body['results'] as List).map((e) {
+          if (e is Map) {
+            final m = Map<String, dynamic>.from(e);
+            m['name'] = m['title'] ?? m['name'];
+            m['location'] = m['subtitle'] ?? m['location'];
+            return m;
+          }
+          return e;
+        }).toList();
+      }
+      return body;
+    }
+    return { 'intent': 'UNKNOWN', 'entities': {}, 'results': [] };
+  }
   static void handleVoiceCommand(BuildContext context, String command, [Function(String)? onError]) {
     final normalizedCommand = command.toLowerCase().trim();
     developer.log('Processing voice command: $normalizedCommand');

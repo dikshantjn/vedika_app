@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/features/ai/data/services/AIService.dart';
-import 'package:vedika_healthcare/features/ai/data/models/AIChatResponse.dart';
+import 'package:vedika_healthcare/features/VedikaAI/data/services/AIService.dart';
+import 'package:vedika_healthcare/features/VedikaAI/data/models/AIChatResponse.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
 
 class AIViewModel extends ChangeNotifier {
@@ -131,7 +131,7 @@ class AIViewModel extends ChangeNotifier {
       if (_chatHistory.isNotEmpty && _chatHistory.last['type'] == 'error') {
         _chatHistory.removeLast();
       }
-      // Remove the last AI response if it exists
+      // Remove the last VedikaAI response if it exists
       if (_chatHistory.isNotEmpty && _chatHistory.last['type'] == 'ai') {
         _chatHistory.removeLast();
       }

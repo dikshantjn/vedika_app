@@ -270,7 +270,7 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI Suggestion',
+                  'VedikaAI Suggestion',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,

@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.38:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.38:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -216,9 +216,9 @@ class ApiEndpoints {
   static const String getProductOrdersByUserId = '$baseUrl/product-order/orders/user';  // Get product orders by user ID
   static const String getDeliveredProductOrdersByUserId = '$baseUrl/product-order/orders/user';  // Get delivered product orders by user ID
 
-  // 📌 AI Prescription Scanning API
+  // 📌 VedikaAI Prescription Scanning API
   static const String scanPrescription = '$baseUrl/ai/scanPrescription';
-  static const String interpretSymptoms = '$baseUrl/ai/symptoms/interpret';  // NEW: endpoint for AI symptoms interpretation
+  static const String interpretSymptoms = '$baseUrl/ai/symptoms/interpret';  // NEW: endpoint for VedikaAI symptoms interpretation
   static const String analyzePrescription = '$baseUrl/ai/analyze-prescription';  // NEW: endpoint for analyzing prescription
   static const String verifyPrescriptionText = '$baseUrl/ai/verify-prescription'; // NEW: endpoint for verifying prescription text
 
@@ -236,5 +236,8 @@ class ApiEndpoints {
   static const String generateMedicineOrderInvoice = '$baseUrl/orders/medicine-order-generate-invoice';  // NEW: endpoint for generating medicine order invoice
   static const String getPrescriptionData = '$baseUrl/orders';  // NEW: endpoint for generating medicine order invoice
   static const String blogPosts = '$baseUrl/blogs/posts';
+
+  // 📌 SpeakAI
+  static const String speakAIIntent = '$baseUrl/speakAI/intent';
 
 }

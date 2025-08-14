@@ -6,7 +6,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
-import 'package:vedika_healthcare/shared/widgets/VoiceRecognitionOverlay.dart';
+import 'package:vedika_healthcare/features/SpeakAI/presentation/view/VoiceRecognitionOverlay.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;

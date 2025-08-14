@@ -23,7 +23,7 @@ import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchVie
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescriptionView.dart';
 import 'package:logger/logger.dart';
-import 'package:vedika_healthcare/features/AI/presentation/view/AIChatScreen.dart';
+import 'package:vedika_healthcare/features/VedikaAI/presentation/view/AIChatScreen.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 
@@ -396,7 +396,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
                 title: Text(
-                  'Search with Vedika AI',
+                  'Search with Vedika VedikaAI',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -404,7 +404,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
                 subtitle: Text(
-                  'Get intelligent search results powered by AI',
+                  'Get intelligent search results powered by VedikaAI',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: 12,
@@ -678,7 +678,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         );
                       },
                       child: Tooltip(
-                        message: 'Ask Vedika AI',
+                        message: 'Ask VedikaAI',
                         child: Image.asset(
                           'assets/ai.png',
                           width: 28,

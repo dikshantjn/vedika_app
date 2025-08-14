@@ -26,8 +26,8 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildAiSuggestionCard(MedicalStoreVendorDashboardViewModel viewModel) {
-    // AI-styled gradient and subtle neon glow
-    final Color primary = const Color(0xFF6C5CE7); // AI purple
+    // VedikaAI-styled gradient and subtle neon glow
+    final Color primary = const Color(0xFF6C5CE7); // VedikaAI purple
     final Color secondary = const Color(0xFF00D1FF); // Cyan
     return Container(
       padding: const EdgeInsets.all(14),
@@ -75,7 +75,7 @@ class _DashboardContentState extends State<DashboardContent> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'AI Suggestion',
+                      'VedikaAI Suggestion',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,

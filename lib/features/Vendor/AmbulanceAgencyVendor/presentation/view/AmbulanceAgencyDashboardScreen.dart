@@ -265,7 +265,7 @@ class _AmbulanceAgencyDashboardScreenState extends State<AmbulanceAgencyDashboar
   }
 
   Widget _buildAiSuggestionCard(AgencyDashboardViewModel vm) {
-    final Color primary = AmbulanceAgencyColorPalette.accentPurple; // AI purple
+    final Color primary = AmbulanceAgencyColorPalette.accentPurple; // VedikaAI purple
     final Color secondary = AmbulanceAgencyColorPalette.accentCyan; // Cyan
 
     return Container(
@@ -314,7 +314,7 @@ class _AmbulanceAgencyDashboardScreenState extends State<AmbulanceAgencyDashboar
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'AI Suggestion',
+                      'VedikaAI Suggestion',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,

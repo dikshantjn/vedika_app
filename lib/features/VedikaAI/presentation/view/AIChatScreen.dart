@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/ai/presentation/viewmodel/AIViewModel.dart';
-import 'package:vedika_healthcare/features/ai/presentation/widgets/AIMessageBubble.dart';
-import 'package:vedika_healthcare/features/ai/presentation/widgets/AIResponseCard.dart';
+import 'package:vedika_healthcare/features/VedikaAI/presentation/viewmodel/AIViewModel.dart';
+import 'package:vedika_healthcare/features/vedikaAI/presentation/widgets/AIMessageBubble.dart';
+import 'package:vedika_healthcare/features/VedikaAI/presentation/widgets/AIResponseCard.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:vedika_healthcare/features/ai/data/models/AIChatResponse.dart';
+import 'package:vedika_healthcare/features/VedikaAI/data/models/AIChatResponse.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:image_picker/image_picker.dart';
@@ -882,7 +882,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             child: TextField(
               controller: _messageController,
               decoration: InputDecoration(
-                hintText: 'Ask Vedika AI...',
+                hintText: 'Ask Vedika VedikaAI...',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 20,
@@ -907,7 +907,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         child: TextField(
                           controller: _messageController,
                           decoration: InputDecoration(
-                            hintText: 'Ask Vedika AI...',
+                            hintText: 'Ask Vedika VedikaAI...',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 20,

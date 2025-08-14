@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
-import 'package:vedika_healthcare/features/ai/data/models/AIChatResponse.dart';
+import 'package:vedika_healthcare/features/VedikaAI/data/models/AIChatResponse.dart';
 
 class AIService {
   Future<AIChatResponse> interpretSymptoms(String spokenText) async {

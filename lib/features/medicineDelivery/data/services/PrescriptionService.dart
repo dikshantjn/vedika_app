@@ -151,7 +151,7 @@ class PrescriptionService {
     }
   }
 
-  /// Verifies prescription text using AI
+  /// Verifies prescription text using VedikaAI
   Future<Map<String, dynamic>> verifyPrescriptionTextAI(String prescriptionText) async {
     try {
       final requestData = {
