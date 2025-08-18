@@ -200,6 +200,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
+      extendBody: true,
       drawer: DrawerMenu(),
       bottomNavigationBar: BottomNavBar(
         selectedIndex: _selectedIndex,
@@ -246,7 +247,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         CategoryGrid(),
                         BrandSection(),
                         TestimonialSection(),
-                        SizedBox(height: 20), // Reduced bottom padding since we're using standard bottom nav
+                        SizedBox(height: 54 + 12 + MediaQuery.of(context).padding.bottom),
                       ],
                     ),
                   ),

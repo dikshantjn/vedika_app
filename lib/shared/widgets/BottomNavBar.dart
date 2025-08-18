@@ -139,54 +139,60 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                   margin: margin,
                   barRadius: barRadius,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      icon: Icons.home_filled,
-                      label: 'Home',
-                      selected: widget.selectedIndex == 0,
-                      onTap: () => widget.onItemTapped(0),
-                    ),
-                    // Spacer for center button area
-                    SizedBox(width: notchWidth),
-                    // Emergency blinking phone icon
-                    GestureDetector(
-                      onTap: _onEmergencyTap,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4), // Reduced top padding
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min, // Added to prevent overflow
-                          children: [
-                            AnimatedBuilder(
-                              animation: blinkAnimation,
-                              builder: (context, child) {
-                                return Container(
-                                  width: 28, // Reduced from 32
-                                  height: 28, // Reduced from 32
-                                  decoration: BoxDecoration(
-                                    color: blinkAnimation.value,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.phone, color: Colors.white, size: 16), // Reduced from 20
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 1), // Reduced spacing
-                            Text(
-                              'Emergency',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14, // Further reduced font size
-                              ),
-                            ),
-                          ],
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(
+                          icon: Icons.home_filled,
+                          label: 'Home',
+                          selected: widget.selectedIndex == 0,
+                          onTap: () => widget.onItemTapped(0),
                         ),
-                      ),
+                        // Spacer for center button area
+                        SizedBox(width: notchWidth),
+                        // Emergency blinking phone icon
+                        GestureDetector(
+                          onTap: _onEmergencyTap,
+                          child: Padding(
+                            padding: EdgeInsets.zero,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min, // Added to prevent overflow
+                              children: [
+                                AnimatedBuilder(
+                                  animation: blinkAnimation,
+                                  builder: (context, child) {
+                                    return Container(
+                                      width: 28, // Reduced from 32
+                                      height: 28, // Reduced from 32
+                                      decoration: BoxDecoration(
+                                        color: blinkAnimation.value,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.phone, color: Colors.white, size: 16), // Reduced from 20
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 1), // Reduced spacing
+                                Text(
+                                  'Emergency',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14, // Further reduced font size
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -289,7 +295,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(top: 4), // Reduced top padding
+        padding: EdgeInsets.zero,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min, // Added to prevent overflow
