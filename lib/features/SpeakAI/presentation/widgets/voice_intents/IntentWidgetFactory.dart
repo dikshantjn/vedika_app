@@ -27,7 +27,7 @@ class IntentWidgetFactory {
           ),
           const SizedBox(height: 8),
         ],
-        ...results.map((r) => _buildResultItem(r, onActionPressed)).toList(),
+        ...results.map((r) => _ResultItem(resultItem: r, onActionPressed: onActionPressed)).toList(),
         if (results.isEmpty)
           Center(
             child: Container(
@@ -100,12 +100,40 @@ class IntentWidgetFactory {
   }
 
   static Widget _buildResultItem(dynamic r, ActionHandler onActionPressed) {
+    // Legacy path no longer used. Kept to minimize diffs.
+    return _ResultItem(resultItem: r, onActionPressed: onActionPressed);
+  }
+}
+
+class _ResultItem extends StatefulWidget {
+  final dynamic resultItem;
+  final ActionHandler onActionPressed;
+
+  const _ResultItem({Key? key, required this.resultItem, required this.onActionPressed}) : super(key: key);
+
+  @override
+  State<_ResultItem> createState() => _ResultItemState();
+}
+
+class _ResultItemState extends State<_ResultItem> {
+  bool _showConsultationMode = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final dynamic r = widget.resultItem;
     final String type = (r is Map && r['type'] != null) ? r['type'].toString() : '';
     final String title = (r is Map && (r['title'] ?? r['name']) != null) ? (r['title'] ?? r['name']).toString() : '';
     final String subtitle = (r is Map && (r['subtitle'] ?? r['location']) != null) ? (r['subtitle'] ?? r['location']).toString() : '';
     final String rating = (r is Map && r['rating'] != null) ? r['rating'].toString() : '';
     final List<dynamic> badges = (r is Map && r['badges'] is List) ? List<dynamic>.from(r['badges']) : const [];
     final List<dynamic> actions = (r is Map && r['actions'] is List) ? List<dynamic>.from(r['actions']) : const [];
+
+    final bool supportsOnline = badges
+        .map((b) => b.toString().toLowerCase())
+        .any((b) => b.contains('online') || b.contains('tele'));
+    final bool supportsOffline = badges
+        .map((b) => b.toString().toLowerCase())
+        .any((b) => b.contains('offline') || b.contains('in-person'));
 
     IconData leadingIcon = Icons.local_hospital;
     if (type == 'bed') leadingIcon = Icons.king_bed_outlined;
@@ -185,6 +213,13 @@ class IntentWidgetFactory {
               spacing: 8,
               children: actions.map((a) {
                 final String lbl = (a is Map && a['label'] != null) ? a['label'].toString() : 'Action';
+                String actionType = '';
+                if (a is Map && a['type'] != null) {
+                  actionType = a['type'].toString().toUpperCase();
+                } else if (a is Map && a['action'] is Map && (a['action'] as Map)['type'] != null) {
+                  actionType = (a['action'] as Map)['type'].toString().toUpperCase();
+                }
+                final bool isBookingDoctor = (type == 'doctor') && (actionType == 'BOOK_DOCTOR' || actionType == 'BOOK_APPOINTMENT' || lbl.toLowerCase().contains('book'));
                 return OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.white.withOpacity(0.2)),
@@ -192,11 +227,62 @@ class IntentWidgetFactory {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   onPressed: () async {
-                    await onActionPressed(r, a);
+                    if (isBookingDoctor) {
+                      setState(() {
+                        _showConsultationMode = true;
+                      });
+                      return;
+                    }
+                    await widget.onActionPressed(r, a);
                   },
                   child: Text(lbl, style: const TextStyle(fontSize: 12)),
                 );
               }).toList(),
+            ),
+          ],
+          if (_showConsultationMode && type == 'doctor' && (supportsOnline || supportsOffline)) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Choose consultation mode',
+              style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                if (supportsOnline)
+                  ElevatedButton(
+                    onPressed: () async {
+                      final dynamic original = actions.firstWhere((a) => (a is Map && (a['type'] ?? '').toString().toUpperCase() == 'BOOK_DOCTOR'), orElse: () => null);
+                      final Map action = (original is Map) ? Map<String, dynamic>.from(original) : <String, dynamic>{};
+                      action['type'] = 'BOOK_DOCTOR';
+                      action['mode'] = 'ONLINE';
+                      await widget.onActionPressed(r, action);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    child: const Text('Online', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                if (supportsOnline && supportsOffline) const SizedBox(width: 8),
+                if (supportsOffline)
+                  ElevatedButton(
+                    onPressed: () async {
+                      final dynamic original = actions.firstWhere((a) => (a is Map && (a['type'] ?? '').toString().toUpperCase() == 'BOOK_DOCTOR'), orElse: () => null);
+                      final Map action = (original is Map) ? Map<String, dynamic>.from(original) : <String, dynamic>{};
+                      action['type'] = 'BOOK_DOCTOR';
+                      action['mode'] = 'OFFLINE';
+                      await widget.onActionPressed(r, action);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    child: const Text('Offline', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+              ],
             ),
           ],
         ],

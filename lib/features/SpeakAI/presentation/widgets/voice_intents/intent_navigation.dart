@@ -15,7 +15,21 @@ typedef PushNamed = void Function(String route, {Object? arguments});
 
 class IntentActionOutcome {
   final bool closeOverlay;
-  const IntentActionOutcome({this.closeOverlay = true});
+  final String? route;
+  final Object? arguments;
+  final bool showEmergencyDialog;
+  final String? doctorNumber;
+  final String? ambulanceNumber;
+  final String? bloodBankNumber;
+  const IntentActionOutcome({
+    this.closeOverlay = true,
+    this.route,
+    this.arguments,
+    this.showEmergencyDialog = false,
+    this.doctorNumber,
+    this.ambulanceNumber,
+    this.bloodBankNumber,
+  });
 }
 
 bool shouldAutoNavigateForIntent(String upperIntent) {
@@ -38,20 +52,29 @@ Future<IntentActionOutcome> handleIntentAction(
   try {
     final dynamic a = action['action'] ?? action;
     final String type = (a['type'] ?? '').toString().toUpperCase();
-
+    final String resultType = (resultItem is Map && resultItem['type'] != null)
+        ? resultItem['type'].toString().toUpperCase()
+        : '';
+    print('intent type: $type');
     switch (type) {
-      case 'BOOK_AMBULANCE':
+      case 'NAVIGATE_SEARCH_AMBULANCE':
       case 'CALL_EMERGENCY':
-        Future.delayed(const Duration(milliseconds: 120), () {
-          pushNamed(AppRoutes.ambulanceSearch);
-        });
-        return const IntentActionOutcome(closeOverlay: true);
+        if (resultType == 'EMERGENCY') {
+          final String phone = (a is Map && a['phone'] != null) ? a['phone'].toString() : '108';
+          return IntentActionOutcome(
+            closeOverlay: true,
+            showEmergencyDialog: true,
+            doctorNumber: phone,
+            ambulanceNumber: phone,
+            bloodBankNumber: phone,
+          );
+        }
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.ambulanceSearch);
 
       case 'BOOK_BLOOD':
-        Future.delayed(const Duration(milliseconds: 120), () {
-          pushNamed(AppRoutes.bloodBank);
-        });
-        return const IntentActionOutcome(closeOverlay: true);
+      case 'BOOK_BLOOD_BANK':
+      case 'NAVIGATE_SEARCH_BLOOD':
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.bloodBank);
 
       case 'BOOK_BED':
       case 'BOOK_HOSPITAL_BED': {
@@ -72,23 +95,16 @@ Future<IntentActionOutcome> handleIntentAction(
           if (vendorId != null && vendorId.isNotEmpty) {
             final hospitalService = HospitalVendorService();
             final profile = await hospitalService.getHospitalProfile(vendorId);
-            Future.delayed(const Duration(milliseconds: 120), () {
-              pushNamed(AppRoutes.bookAppointment, arguments: profile);
-            });
-          } else {
-            Future.delayed(const Duration(milliseconds: 120), () {
-              pushNamed(AppRoutes.hospital);
-            });
+            return IntentActionOutcome(closeOverlay: true, route: AppRoutes.bookAppointment, arguments: profile);
           }
+          return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.hospital);
         } catch (_) {
-          Future.delayed(const Duration(milliseconds: 120), () {
-            pushNamed(AppRoutes.hospital);
-          });
+          return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.hospital);
         }
-        return const IntentActionOutcome(closeOverlay: true);
       }
 
-      case 'BOOK_DOCTOR': {
+      case 'BOOK_DOCTOR':
+      case 'BOOK_APPOINTMENT': {
         try {
           String? vendorId;
           if (resultItem is Map && resultItem['vendorId'] != null) {
@@ -159,10 +175,13 @@ Future<IntentActionOutcome> handleIntentAction(
             } catch (_) {}
           }
           if (doctorArg != null) {
-            Future.delayed(const Duration(milliseconds: 120), () {
-              pushNamed(AppRoutes.bookClinicAppointment, arguments: doctorArg);
-            });
-            return const IntentActionOutcome(closeOverlay: true);
+            // Require explicit mode selection. If missing, do not navigate yet.
+            final String mode = ((a is Map ? a['mode'] : null) ?? '').toString().toUpperCase();
+            if (mode.isEmpty) {
+              return const IntentActionOutcome(closeOverlay: false);
+            }
+            final String route = mode == 'ONLINE' ? AppRoutes.onlineDoctorDetail : AppRoutes.bookClinicAppointment;
+            return IntentActionOutcome(closeOverlay: true, route: route, arguments: doctorArg);
           }
           return const IntentActionOutcome(closeOverlay: false);
         } catch (_) {
@@ -179,7 +198,9 @@ Future<IntentActionOutcome> handleIntentAction(
           }
         } catch (_) {}
         if (center == null) {
-          final String? labId = (a is Map && (a['labId'] != null)) ? a['labId'].toString() : null;
+          // Prefer id from result item if present
+          String? labId = (resultItem is Map && resultItem['id'] != null) ? resultItem['id'].toString() : null;
+          labId ??= (a is Map && (a['labId'] != null)) ? a['labId'].toString() : null;
           if (labId != null && labId.isNotEmpty) {
             try {
               final vendorService = VendorLab.LabTestService();
@@ -188,22 +209,14 @@ Future<IntentActionOutcome> handleIntentAction(
           }
         }
         if (center != null) {
-          Future.delayed(const Duration(milliseconds: 120), () {
-            pushNamed(AppRoutes.bookLabTestAppointment, arguments: center);
-          });
-        } else {
-          Future.delayed(const Duration(milliseconds: 120), () {
-            pushNamed(AppRoutes.labTest);
-          });
+          return IntentActionOutcome(closeOverlay: true, route: AppRoutes.bookLabTestAppointment, arguments: center);
         }
-        return const IntentActionOutcome(closeOverlay: true);
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.labTest);
       }
 
       case 'ORDER_MEDICINE':
-        Future.delayed(const Duration(milliseconds: 120), () {
-          pushNamed(AppRoutes.medicineOrder);
-        });
-        return const IntentActionOutcome(closeOverlay: true);
+      case 'ORDER_MEDICINE_PRESCRIPTION':
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.medicineOrder);
 
       case 'ADD_TO_CART': {
         String? productId = a['productId']?.toString();
@@ -237,10 +250,7 @@ Future<IntentActionOutcome> handleIntentAction(
       }
 
       case 'TRACK':
-        Future.delayed(const Duration(milliseconds: 120), () {
-          pushNamed(AppRoutes.trackOrderScreen);
-        });
-        return const IntentActionOutcome(closeOverlay: true);
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.trackOrderScreen);
 
       default:
         return const IntentActionOutcome(closeOverlay: false);

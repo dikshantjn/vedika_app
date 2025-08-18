@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/SpeakAI/presentation/viewmodel/VoiceR
 import 'package:vedika_healthcare/main.dart' show navigatorKey;
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/IntentResultsView.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/intent_navigation.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
 
 class VoiceRecognitionOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -55,9 +56,8 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay>
     )..repeat();
 
     _vm.initialize();
-    // Request permissions and maybe start
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await _vm.ensurePermissionsAndStart();
+    // Start listening immediately to reduce perceived latency
+    _vm.ensurePermissionsAndStart().then((ok) {
       if (!ok && mounted) {
         _showPermissionDialog();
       }
@@ -534,7 +534,27 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay>
         );
         if (outcome.closeOverlay) {
           await _vm.stopService();
-          if (mounted) widget.onClose();
+          if (mounted) {
+            widget.onClose();
+            if (outcome.showEmergencyDialog) {
+              // Show EmergencyDialog after the overlay closes
+              Future.delayed(const Duration(milliseconds: 120), () {
+                showDialog(
+                  context: context,
+                  builder: (_) => EmergencyDialog(
+                    doctorNumber: outcome.doctorNumber ?? '',
+                    ambulanceNumber: outcome.ambulanceNumber ?? '',
+                    bloodBankNumber: outcome.bloodBankNumber ?? '',
+                  ),
+                );
+              });
+            } else if (outcome.route != null) {
+              // Defer navigation slightly to allow overlay to close cleanly
+              Future.delayed(const Duration(milliseconds: 120), () {
+                _pushNamed(outcome.route!, arguments: outcome.arguments);
+              });
+            }
+          }
         }
       },
     );

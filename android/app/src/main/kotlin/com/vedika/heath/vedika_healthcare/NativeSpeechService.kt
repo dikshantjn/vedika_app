@@ -42,9 +42,12 @@ class NativeSpeechService : Service() {
     private var recognizerIntent: Intent? = null
     private var isListening = false
     private val handler = Handler(Looper.getMainLooper())
-    private val maxSessionMs = 15_000L
-    private val silenceMs = 2_500L
-    private val minInputMs = 1_000L
+    // Allow longer overall session so user can speak naturally
+    private val maxSessionMs = 120_000L
+    // Allow up to ~3 seconds of pause before considering speech complete
+    private val silenceMs = 3_000L
+    // Reduce minimum speech input length for faster first token
+    private val minInputMs = 300L
     private val sessionTimeoutRunnable = Runnable {
         stopListening()
         stopSelf()
@@ -74,7 +77,6 @@ class NativeSpeechService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun initSpeechRecognizer() {
-        val micPermissionGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             sendError("Speech recognition not available on this device")
             stopSelf()
@@ -155,8 +157,12 @@ class NativeSpeechService : Service() {
     }
 
     private fun restartListening() {
-        // Do not auto-restart; stop instead
-        stopListening()
+        if (!isListening) return
+        // Briefly cancel and restart to extend session without tearing down service
+        speechRecognizer?.cancel()
+        handler.postDelayed({
+            speechRecognizer?.startListening(recognizerIntent)
+        }, 150L)
     }
 
     private fun stopListening() {

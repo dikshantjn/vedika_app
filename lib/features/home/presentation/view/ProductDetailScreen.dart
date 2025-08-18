@@ -6,8 +6,6 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductCartViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/ProductCartService.dart';
 import 'package:dio/dio.dart';
