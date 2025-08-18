@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   cloud_firestore
   connectivity_plus
   desktop_webview_auth
@@ -20,7 +21,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   rive_common
   share_plus
   speech_to_text_windows
-  syncfusion_pdfviewer_windows
   url_launcher_windows
 )
 

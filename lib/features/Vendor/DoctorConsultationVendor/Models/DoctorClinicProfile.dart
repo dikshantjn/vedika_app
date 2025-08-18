@@ -143,8 +143,6 @@ class DoctorClinicProfile {
 
   factory DoctorClinicProfile.fromJson(Map<String, dynamic> json) {
     try {
-      print('🏗️ Parsing DoctorClinicProfile from JSON with keys: ${json.keys.toList()}');
-      
       // Parse medical license files
       List<Map<String, String>> parseMedicalLicenseFile(dynamic licenses) {
         if (licenses == null) return [];

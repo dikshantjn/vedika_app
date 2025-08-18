@@ -290,6 +290,7 @@ class MyApp extends StatelessWidget {
           emergencyService.initialize();
 
           return MaterialApp(
+            showPerformanceOverlay: false,
             title: 'Vedika Healthcare',
             debugShowCheckedModeBanner: false,
             useInheritedMediaQuery: enableDevicePreview && !kReleaseMode, // Conditional for device preview

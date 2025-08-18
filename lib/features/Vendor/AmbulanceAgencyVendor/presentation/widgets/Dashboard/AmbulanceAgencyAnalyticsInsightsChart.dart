@@ -80,8 +80,6 @@ class _AmbulanceAgencyAnalyticsInsightsChartState extends State<AmbulanceAgencyA
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
                     tooltipPadding: const EdgeInsets.all(8),
-                    tooltipRoundedRadius: 8,
-                    tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final name = _titles[group.x.toInt()];
                       return BarTooltipItem(

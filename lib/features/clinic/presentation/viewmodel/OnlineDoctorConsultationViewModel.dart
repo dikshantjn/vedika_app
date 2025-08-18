@@ -12,6 +12,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
   String? _error;
   List<String> _selectedSpecializations = [];
   String _sortBy = 'Experience'; // Default sort
+  bool _isDisposed = false;
 
   // Getters
   List<DoctorClinicProfile> get doctors => _filteredDoctors;
@@ -28,6 +29,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     searchController.dispose();
     super.dispose();
   }
@@ -36,7 +38,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
   Future<void> fetchDoctors() async {
     print('🚀 Starting fetchDoctors in OnlineDoctorConsultationViewModel');
     _isLoading = true;
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
 
     try {
       // Call the API service to get active online clinics
@@ -69,15 +71,17 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
         return;
       }
       
+      if (_isDisposed) return;
       _filteredDoctors = List.from(_allDoctors);
       _isLoading = false;
       print('✅ fetchDoctors completed successfully');
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
     } catch (e) {
       print('❌ Error in fetchDoctors: $e');
+      if (_isDisposed) return;
       _error = e.toString();
       _isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
       
       // Fallback to sample data if API fails
       print('🔄 Falling back to sample data due to error');
@@ -105,7 +109,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
     // Apply sorting
     _applySorting();
     
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
   }
   
   // Apply sorting based on selected sort option
@@ -153,7 +157,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
     searchController.clear();
     _sortBy = 'Experience';
     _filteredDoctors = List.from(_allDoctors);
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
   }
   
   // Set sort option

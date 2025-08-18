@@ -126,103 +126,36 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: CustomScrollView(
+      appBar: AppBar(
+        backgroundColor: ColorPalette.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('Health Blogs'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () async {
+              final url = 'http://localhost:3000/health-blogs/${widget.blog.blogPostId}';
+              await Share.share(url);
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
         controller: _scrollController,
-        slivers: [
-          // Modern App Bar with Hero Image
-          SliverAppBar(
-            expandedHeight: widget.blog.imageUrl.isNotEmpty ? 300.0 : 120.0,
-            floating: false,
-            pinned: true,
-            stretch: true,
-            backgroundColor: ColorPalette.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            leading: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.share_rounded, color: Colors.white),
-                  onPressed: () async {
-                    final url = 'http://localhost:3000/health-blogs/${widget.blog.blogPostId}';
-                    await Share.share(url);
-                  },
-                ),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner image with responsive 16:9 ratio for phones/tablets
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (widget.blog.imageUrl.isNotEmpty)
-                    Image.network(
-                      widget.blog.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                ColorPalette.primaryColor,
-                                ColorPalette.primaryColor.withOpacity(0.8),
-                              ],
-                            ),
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.article_outlined,
-                                  size: 64,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Blog Article',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  else
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            ColorPalette.primaryColor,
-                            ColorPalette.primaryColor.withOpacity(0.8),
-                          ],
-                        ),
-                      ),
-                    ),
-                  // Gradient overlay
+                  Image.asset(
+                    'assets/Blogs/dummyBlogImage.jpeg',
+                    fit: BoxFit.cover,
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -238,207 +171,199 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                 ],
               ),
             ),
-          ),
 
-          // Content
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  // Article Header
+            // Article Header
+            Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.blog.title,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                      height: 1.3,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Article Meta Information
                   Container(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
                       children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          widget.blog.title,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                            height: 1.3,
+                          _formatDate(widget.blog.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-
-                        const SizedBox(height: 16),
-
-                        // Article Meta Information
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.schedule_rounded,
-                                size: 18,
-                                color: Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _formatDate(widget.blog.createdAt),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Icon(
-                                Icons.timer_rounded,
-                                size: 18,
-                                color: Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '$readingTime min read',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(width: 24),
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 18,
+                          color: Colors.grey.shade600,
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // Divider
-                        Container(
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Colors.grey.shade300,
-                                Colors.transparent,
-                              ],
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$readingTime min read',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Audio controls and progress
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        LinearProgressIndicator(
-                          value: _progress,
-                          backgroundColor: Colors.grey.shade200,
-                          color: ColorPalette.primaryColor,
-                          minHeight: 4,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, size: 36, color: ColorPalette.primaryColor),
-                              onPressed: () {
-                                if (_isPlaying) {
-                                  _pauseTts();
-                                } else {
-                                  _startTts();
-                                }
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.stop_circle, size: 32, color: Colors.redAccent),
-                              onPressed: _stopTts,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              _isPlaying ? 'Reading...' : 'Tap play to listen',
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Main HTML content (no highlighting)
+                  const SizedBox(height: 24),
+
+                  // Divider
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Html(
-                      data: widget.blog.message,
-                      style: {
-                        "body": Style(
-                          fontSize: FontSize(16),
-                          lineHeight: LineHeight(1.7),
-                          color: Colors.black87,
-                          margin: Margins.only(bottom: 8),
-                          padding: HtmlPaddings.zero,
-                        ),
-                        "h1": Style(
-                          fontSize: FontSize(24),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          margin: Margins.only(top: 24, bottom: 16),
-                        ),
-                        "h2": Style(
-                          fontSize: FontSize(22),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          margin: Margins.only(top: 20, bottom: 12),
-                        ),
-                        "h3": Style(
-                          fontSize: FontSize(20),
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          margin: Margins.only(top: 18, bottom: 10),
-                        ),
-                        "p": Style(
-                          fontSize: FontSize(16),
-                          lineHeight: LineHeight(1.7),
-                          color: Colors.black87,
-                          margin: Margins.only(bottom: 8),
-                        ),
-                        "a": Style(
-                          color: ColorPalette.primaryColor,
-                          textDecoration: TextDecoration.underline,
-                        ),
-                        "blockquote": Style(
-                          border: Border(
-                            left: BorderSide(
-                              color: ColorPalette.primaryColor,
-                              width: 4,
-                            ),
-                          ),
-                          margin: Margins.only(left: 0, top: 16, bottom: 16),
-                          padding: HtmlPaddings.only(left: 16),
-                          backgroundColor: Colors.grey.shade50,
-                        ),
-                        "ul": Style(
-                          margin: Margins.only(bottom: 16),
-                        ),
-                        "ol": Style(
-                          margin: Margins.only(bottom: 16),
-                        ),
-                        "li": Style(
-                          fontSize: FontSize(16),
-                          lineHeight: LineHeight(1.7),
-                          margin: Margins.only(bottom: 8),
-                        ),
-                      },
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.grey.shade300,
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
-                  // Bottom spacing
-                  const SizedBox(height: 32),
                 ],
               ),
             ),
-        ],
+
+            // Audio controls and progress
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LinearProgressIndicator(
+                    value: _progress,
+                    backgroundColor: Colors.grey.shade200,
+                    color: ColorPalette.primaryColor,
+                    minHeight: 4,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, size: 36, color: ColorPalette.primaryColor),
+                        onPressed: () {
+                          if (_isPlaying) {
+                            _pauseTts();
+                          } else {
+                            _startTts();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.stop_circle, size: 32, color: Colors.redAccent),
+                        onPressed: _stopTts,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isPlaying ? 'Reading...' : 'Tap play to listen',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Main HTML content (no highlighting)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Html(
+                data: widget.blog.message,
+                style: {
+                  "body": Style(
+                    fontSize: FontSize(16),
+                    lineHeight: LineHeight(1.7),
+                    color: Colors.black87,
+                    margin: Margins.only(bottom: 8),
+                    padding: HtmlPaddings.zero,
+                  ),
+                  "h1": Style(
+                    fontSize: FontSize(24),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    margin: Margins.only(top: 24, bottom: 16),
+                  ),
+                  "h2": Style(
+                    fontSize: FontSize(22),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    margin: Margins.only(top: 20, bottom: 12),
+                  ),
+                  "h3": Style(
+                    fontSize: FontSize(20),
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    margin: Margins.only(top: 18, bottom: 10),
+                  ),
+                  "p": Style(
+                    fontSize: FontSize(16),
+                    lineHeight: LineHeight(1.7),
+                    color: Colors.black87,
+                    margin: Margins.only(bottom: 8),
+                  ),
+                  "a": Style(
+                    color: ColorPalette.primaryColor,
+                    textDecoration: TextDecoration.underline,
+                  ),
+                  "blockquote": Style(
+                    border: Border(
+                      left: BorderSide(
+                        color: ColorPalette.primaryColor,
+                        width: 4,
+                      ),
+                    ),
+                    margin: Margins.only(left: 0, top: 16, bottom: 16),
+                    padding: HtmlPaddings.only(left: 16),
+                    backgroundColor: Colors.grey.shade50,
+                  ),
+                  "ul": Style(
+                    margin: Margins.only(bottom: 16),
+                  ),
+                  "ol": Style(
+                    margin: Margins.only(bottom: 16),
+                  ),
+                  "li": Style(
+                    fontSize: FontSize(16),
+                    lineHeight: LineHeight(1.7),
+                    margin: Margins.only(bottom: 8),
+                  ),
+                },
+              ),
+            ),
+            // Bottom spacing
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }

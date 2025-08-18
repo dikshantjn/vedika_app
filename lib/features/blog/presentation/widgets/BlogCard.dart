@@ -82,72 +82,38 @@ class BlogCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Image with overlay gradient
-                if (blog.imageUrl.isNotEmpty)
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Image.network(
-                            blog.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      ColorPalette.primaryColor.withOpacity(0.1),
-                                      ColorPalette.primaryColor.withOpacity(0.05),
-                                    ],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.article_outlined,
-                                        size: 48,
-                                        color: ColorPalette.primaryColor.withOpacity(0.6),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Blog Article',
-                                        style: TextStyle(
-                                          color: ColorPalette.primaryColor.withOpacity(0.6),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                // if (blog.imageUrl.isNotEmpty) ... use network image
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        // Image.network(blog.imageUrl, fit: BoxFit.cover)
+                        child: Image.asset(
+                          'assets/Blogs/dummyBlogImage.jpeg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    // Subtle gradient overlay
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.1),
+                            ],
                           ),
                         ),
                       ),
-                      // Subtle gradient overlay
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.1),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
 
                 // Content
                 Padding(

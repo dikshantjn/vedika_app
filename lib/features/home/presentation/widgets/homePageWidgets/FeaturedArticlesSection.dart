@@ -246,21 +246,10 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
               child: SizedBox(
                 height: 120,
                 width: double.infinity,
-                child: Image.network(
-                  blog.imageUrl,
+                // child: Image.network(blog.imageUrl, fit: BoxFit.cover)
+                child: Image.asset(
+                  'assets/Blogs/dummyBlogImage.jpeg',
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[100],
-                      child: Center(
-                        child: Icon(
-                          Icons.article_outlined,
-                          size: 32,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                    );
-                  },
                 ),
               ),
             ),
