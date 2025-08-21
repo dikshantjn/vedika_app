@@ -7,7 +7,7 @@ import 'package:vedika_healthcare/features/SpeakAI/presentation/viewmodel/VoiceR
 import 'package:vedika_healthcare/main.dart' show navigatorKey;
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/IntentResultsView.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/intent_navigation.dart';
-import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 
 class VoiceRecognitionOverlay extends StatefulWidget {
   final VoidCallback onClose;
@@ -541,7 +541,7 @@ class _VoiceRecognitionOverlayState extends State<VoiceRecognitionOverlay>
               Future.delayed(const Duration(milliseconds: 120), () {
                 showDialog(
                   context: context,
-                  builder: (_) => EmergencyDialog(
+                  builder: (_) => EmergencyBottomSheet(
                     doctorNumber: outcome.doctorNumber ?? '',
                     ambulanceNumber: outcome.ambulanceNumber ?? '',
                     bloodBankNumber: outcome.bloodBankNumber ?? '',

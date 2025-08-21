@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.35:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.35:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.41:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.41:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -240,4 +240,11 @@ class ApiEndpoints {
   // 📌 SpeakAI
   static const String speakAIIntent = '$baseUrl/speakAI/intent';
 
+  // 📌 Membership APIs
+  static const String getMembershipPlans = '$baseUrl/membership/plans';
+  static const String createMembershipOrder = '$baseUrl/membership/order';
+  static const String verifyMembershipPayment = '$baseUrl/membership/verify-payment';
+
+  // Build URL: Get user's current membership plan
+  static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';
 }

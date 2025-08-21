@@ -262,7 +262,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => Navigator.pushNamed(context, '/vedikaPlus'),
+          onTap: () => Navigator.pushNamed(context, '/membership'),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: EdgeInsets.all(16),

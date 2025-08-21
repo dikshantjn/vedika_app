@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/view/VoiceRecognitionOverlay.dart';
 
 class BottomNavBar extends StatefulWidget {
@@ -76,11 +76,19 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   }
 
   void _onEmergencyTap() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return EmergencyDialog(ambulanceNumber: "9370320066",bloodBankNumber: "9370320066",doctorNumber: "9370320066",);
-      },
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.35),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => EmergencyBottomSheet(
+        doctorNumber: "9370320066",
+        ambulanceNumber: "9370320066",
+        bloodBankNumber: "9370320066",
+      ),
     );
   }
 

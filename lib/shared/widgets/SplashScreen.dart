@@ -15,6 +15,8 @@ import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart'
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/main.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -69,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
 
       locationProvider = LocationProvider();
       await locationProvider.initializeLocation();
-      await getWifiIpAddress();
+      // await getWifiIpAddress();
 
       emergencyService = EmergencyService(locationProvider);
       emergencyService.initialize();
@@ -77,6 +79,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
       final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+      final membershipViewModel = Provider.of<MembershipViewModel>(context, listen: false);
 
       await cartViewModel.fetchOrdersAndCartItems();
 
@@ -88,6 +91,12 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
       if (!mounted) return;
 
       if (authViewModel.isLoggedIn) {
+        // Preload membership plans and current user membership for global availability
+        final userId = await StorageService.getUserId();
+        if (userId != null && userId.isNotEmpty) {
+          await membershipViewModel.loadPlans();
+          await membershipViewModel.loadCurrentMembership(userId);
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),

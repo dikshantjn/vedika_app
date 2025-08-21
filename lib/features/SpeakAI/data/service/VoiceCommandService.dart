@@ -8,7 +8,7 @@ import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearch
 import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 import 'package:vedika_healthcare/features/home/data/services/CategoryService.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
-import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyDialog.dart';
+import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -260,7 +260,7 @@ class VoiceCommandService {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return EmergencyDialog(
+        return EmergencyBottomSheet(
           ambulanceNumber: "9370320066",
           bloodBankNumber: "9370320066",
           doctorNumber: "9370320066",

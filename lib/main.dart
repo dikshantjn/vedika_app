@@ -89,6 +89,7 @@ import 'package:vedika_healthcare/features/VedikaAI/presentation/viewmodel/AIVie
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/WardViewModel.dart';
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
+import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -100,11 +101,11 @@ void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
 }
 
-Future<void> getWifiIpAddress() async {
-  final info = NetworkInfo();
-  String? ip = await info.getWifiIP();
-  print("Connected Wi-Fi IP Address: $ip");
-}
+// Future<void> getWifiIpAddress() async {
+//   final info = NetworkInfo();
+//   String? ip = await info.getWifiIP();
+//   print("Connected Wi-Fi IP Address: $ip");
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -278,6 +279,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AIViewModel()),
         ChangeNotifierProvider(create: (_) => WardViewModel()),
         ChangeNotifierProvider(create: (context) => BlogViewModel()),
+        ChangeNotifierProvider(create: (_) => MembershipViewModel()),
 
       ],
       child: Builder(
