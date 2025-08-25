@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/view/ProductDetailScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
@@ -195,6 +195,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   }
 
                   return GridView.builder(
+                    key: const PageStorageKey<String>('product_list_grid'),
                     padding: const EdgeInsets.all(16),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -389,11 +390,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
     
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(product: product),
-          ),
+          AppRoutes.productDetail,
+          arguments: product,
         );
       },
       child: Container(

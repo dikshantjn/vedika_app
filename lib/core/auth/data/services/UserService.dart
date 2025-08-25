@@ -41,12 +41,7 @@ class UserService {
         'userId': userId,
       };
 
-      // Debug logs
-      print('🔍 DEBUG: Making profile update request');
-      print('🔗 Using edit profile endpoint instead of update profile');
-      ApiEndpoints.printEndpointUrl(ApiEndpoints.editUserProfile);
-      print('📦 Request Data: ${jsonEncode(requestData)}');
-      print('🔑 Token: $token');
+      // Debug logs removed for cleaner output
 
       // Try the edit endpoint instead
       final response = await _dio.put(  // Changed to PUT method as it's more appropriate for edits
@@ -57,36 +52,19 @@ class UserService {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
-          validateStatus: (status) {
-            print('🔍 Received status code: $status');
-            return status! < 500;  // Accept any status code below 500 to see the actual response
-          },
+                  validateStatus: (status) {
+          return status! < 500;  // Accept any status code below 500 to see the actual response
+        },
         ),
       );
 
-      // Debug response
-      print('📥 Response Status: ${response.statusCode}');
-      print('📥 Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
-        print('✅ User profile updated successfully');
         return true;
       } else {
-        print('❌ Error updating user profile: ${response.statusCode}');
-        if (response.data != null) {
-          print('❌ Error details: ${response.data}');
-        }
         return false;
       }
     } catch (error) {
-      print('❌ Error updating user profile: $error');
-      if (error is DioException) {
-        print('🌐 Request URL: ${error.requestOptions.uri}');
-        print('📝 Request Method: ${error.requestOptions.method}');
-        print('📦 Request Data: ${error.requestOptions.data}');
-        print('🔍 Response Status: ${error.response?.statusCode}');
-        print('📄 Response Data: ${error.response?.data}');
-      }
       throw error; // Propagate error to handle it in the UI
     }
   }
@@ -121,14 +99,11 @@ class UserService {
       );
 
       if (response.statusCode == 200) {
-        print('User coordinates updated successfully');
         return true;
       } else {
-        print('Error updating user coordinates: ${response.statusCode}');
         return false;
       }
     } catch (error) {
-      print('Error updating coordinates: $error');
       return false;
     }
   }

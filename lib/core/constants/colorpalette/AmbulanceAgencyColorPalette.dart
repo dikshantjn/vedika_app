@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 class AmbulanceAgencyColorPalette {
-  // Primary Colors
-  static const Color primaryRed = Color(0xFFE53935); // Vibrant emergency red
-  static const Color primaryDark = Color(0xFF1A237E); // Deep navy blue
-  static const Color primaryLight = Color(0xFFE3F2FD); // Light sky blue
+  // Primary Colors - Unified Teal Theme, with emergency highlight retained separately
+  static const Color primaryRed = Color(0xFFE53935); // Emergency accent (retained)
+  static const Color primaryDark = Color(0xFF2B7F80);
+  static const Color primaryLight = Color(0xFFEAFBFB);
 
   // Secondary Colors
-  static const Color secondaryBlue = Color(0xFF1976D2); // Trustworthy blue
-  static const Color secondaryTeal = Color(0xFF00897B); // Calming teal
-  static const Color secondaryAmber = Color(0xFFFFA000); // Attention amber
+  static const Color secondaryBlue = Color(0xFF38A3A5);
+  static const Color secondaryTeal = Color(0xFF2E8C8E);
+  static const Color secondaryAmber = Color(0xFFFFA000);
 
   // Background & Surface
   static const Color backgroundWhite = Color(0xFFFAFAFA); // Off-white background
@@ -35,13 +35,13 @@ class AmbulanceAgencyColorPalette {
 
   // Gradient Options
   static const Gradient emergencyGradient = LinearGradient(
-    colors: [Color(0xFFE53935), Color(0xFFD81B60)],
+    colors: [Color(0xFFE53935), Color(0xFF2B7F80)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const Gradient professionalGradient = LinearGradient(
-    colors: [Color(0xFF1A237E), Color(0xFF283593)],
+    colors: [Color(0xFF2B7F80), Color(0xFF38A3A5)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

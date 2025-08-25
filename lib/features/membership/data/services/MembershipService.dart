@@ -37,11 +37,25 @@ class MembershipService {
   }
 
   /// Get user's current membership
+  /// Returns null if user has no active membership plan (404 response)
+  /// Returns UserMembership object if user has an active plan
   static Future<UserMembership?> getCurrentUserMembership(String userId) async {
     try {
       final url = ApiEndpoints.userCurrentMembership(userId);
-      ApiEndpoints.printEndpointUrl(url);
-      final response = await _dio.get(url);
+      // print('Current membership endpoint: $url');
+      final response = await _dio.get(
+        url,
+        options: Options(
+          // Accept 404 as valid response - it means user has no active membership plan
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+      // Handle 404 - user has no active membership plan
+      if (response.statusCode == 404) {
+        // This is not an error - user simply has no active membership plan
+        return null;
+      }
+      
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         if (data is Map && data['currentPlan'] != null) {
@@ -69,6 +83,10 @@ class MembershipService {
         return null;
       }
     } on DioException catch (e) {
+      // If it's a 404, it means no plan found (not an error)
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
       throw Exception('Network error: ${e.message}');
     } catch (e) {
       throw Exception('Error fetching current membership: $e');

@@ -12,8 +12,12 @@ class MedicineTab extends StatefulWidget {
   _MedicineTabState createState() => _MedicineTabState();
 }
 
-class _MedicineTabState extends State<MedicineTab> {
+class _MedicineTabState extends State<MedicineTab> with AutomaticKeepAliveClientMixin {
   final MedicineOrderHistoryViewModel viewModel = MedicineOrderHistoryViewModel();
+  bool _isDisposed = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -21,12 +25,26 @@ class _MedicineTabState extends State<MedicineTab> {
     _fetchOrders();
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Future<void> _fetchOrders() async {
+    if (_isDisposed) return;
     await viewModel.fetchOrdersByUser();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     return FutureBuilder(
       future: _fetchOrders(),
       builder: (context, snapshot) {
@@ -42,12 +60,19 @@ class _MedicineTabState extends State<MedicineTab> {
           }
 
           return RefreshIndicator(
-            onRefresh: _fetchOrders,
+            onRefresh: () {
+              // Check if widget is still mounted before refreshing
+              if (!mounted || _isDisposed) return Future.value();
+              return _fetchOrders();
+            },
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16.0),
               itemCount: orders.length,
               itemBuilder: (context, index) {
+                // Check if widget is still mounted before building items
+                if (!mounted || _isDisposed) return Container();
+                
                 final order = orders[index];
                 return _buildOrderItem(context, order: order);
               },
@@ -60,6 +85,11 @@ class _MedicineTabState extends State<MedicineTab> {
 
 
   Widget _buildOrderItem(BuildContext context, {required MedicineOrderModel order}) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     final dateTime = (order.createdAt);
     final formattedDate = DateFormat('dd MMMM yyyy').format(dateTime);
     final formattedTime = DateFormat('hh:mm a').format(dateTime);
@@ -92,7 +122,11 @@ class _MedicineTabState extends State<MedicineTab> {
               ),
               IconButton(
                 icon: const Icon(Icons.info_outline, color: Colors.blueGrey),
-                onPressed: () => _showOrderDetailsBottomSheet(context, order),
+                onPressed: () {
+                  // Check if widget is still mounted before showing dialog
+                  if (!mounted || _isDisposed) return;
+                  _showOrderDetailsBottomSheet(context, order);
+                },
               ),
             ],
           ),
@@ -144,6 +178,11 @@ class _MedicineTabState extends State<MedicineTab> {
   }
 
   Widget _buildStatusChip(String status) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     String formattedStatus = status.replaceAllMapped(
         RegExp(r'([a-z])([A-Z])'), (match) => '${match.group(1)} ${match.group(2)}');
 
@@ -182,6 +221,9 @@ class _MedicineTabState extends State<MedicineTab> {
   }
 
   void _showOrderDetailsBottomSheet(BuildContext context, MedicineOrderModel order) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) return;
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -201,11 +243,28 @@ class _OrderDetailsBottomSheet extends StatefulWidget {
   State<_OrderDetailsBottomSheet> createState() => _OrderDetailsBottomSheetState();
 }
 
-class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
+class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with AutomaticKeepAliveClientMixin {
   bool _isLoading = false;
+  bool _isDisposed = false;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     final order = widget.order;
     return Container(
       constraints: BoxConstraints(
@@ -410,8 +469,14 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
                 onPressed: _isLoading
                     ? null
                     : () async {
+                        // Check if widget is still mounted before proceeding
+                        if (!mounted || _isDisposed) return;
+                        
                         setState(() => _isLoading = true);
                         await generateAndDownloadInvoicePDF(order);
+                        
+                        // Check if widget is still mounted before calling setState again
+                        if (!mounted || _isDisposed) return;
                         setState(() => _isLoading = false);
                       },
               ),
@@ -424,6 +489,11 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
   }
 
   Color _statusColor(String status) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Colors.grey; // Return default color if disposed
+    }
+    
     switch (status.toLowerCase()) {
       case 'delivered':
         return Colors.green;
@@ -441,6 +511,11 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
   }
 
   String _formatStatus(String status) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return status; // Return original status if disposed
+    }
+    
     return status.replaceAllMapped(
       RegExp(r'([a-z])([A-Z])'),
       (match) => '${match.group(1)} ${match.group(2)}',
@@ -448,6 +523,11 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
   }
 
   Widget _receiptRow(String label, double value, {bool isDiscount = false}) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

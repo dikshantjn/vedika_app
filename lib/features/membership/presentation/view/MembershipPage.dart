@@ -9,6 +9,7 @@ import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/features/membership/data/services/MembershipPaymentService.dart';
 import 'package:vedika_healthcare/features/membership/presentation/utils/PlanVisuals.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({Key? key}) : super(key: key);
@@ -1015,7 +1016,7 @@ class _MembershipPageState extends State<MembershipPage> {
 
                     // Price summary and pay now / actions
                     Padding(
-                      padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
                       child: Row(
                         children: [
                           Expanded(
@@ -1199,6 +1200,44 @@ class _MembershipPageState extends State<MembershipPage> {
                         ],
                       ),
                     ),
+                    
+                    // Loan option note
+                    if (paymentStage == 'idle') ...[
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!, width: 1),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Colors.blue[700],
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Loan options available',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      SizedBox(height: 16),
+                    ],
                   ],
                 ),
               ),

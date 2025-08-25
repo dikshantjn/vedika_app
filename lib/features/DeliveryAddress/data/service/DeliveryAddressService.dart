@@ -22,7 +22,7 @@ class DeliveryAddressService {
   Future<List<DeliveryAddressModel>> getAllAddressesByUserId(String userId) async {
     try {
       // Log the API endpoint and userId for debugging purposes
-      print("Fetching addresses for userId: $userId");
+      // Debug print removed
       final String endpoint = '${ApiEndpoints.getDeliveryAddresses}/$userId';
       print("API Endpoint: $endpoint");
 

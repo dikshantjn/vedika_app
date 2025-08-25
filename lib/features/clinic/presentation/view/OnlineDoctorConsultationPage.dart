@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/OnlineDoctorConsultationViewModel.dart';
 
 class OnlineDoctorConsultationPage extends StatefulWidget {
@@ -81,9 +82,15 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
-            color: DoctorConsultationColorPalette.primaryBlue,
+            icon: const Icon(Icons.arrow_back_ios_new, color: ColorPalette.primaryColor),
+            onPressed: () {
+              final scope = MainScreenScope.maybeOf(context);
+              if (scope != null) {
+                scope.setIndex(0);
+              } else {
+                Navigator.pop(context);
+              }
+            },
           ),
           const SizedBox(width: 8),
           const Text(
@@ -393,11 +400,10 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
   Widget _buildDoctorCard(BuildContext context, DoctorClinicProfile doctor) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => OnlineDoctorDetailPage(doctor: doctor),
-          ),
+          AppRoutes.onlineDoctorDetail,
+          arguments: doctor,
         );
       },
       child: Container(
@@ -572,12 +578,10 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to doctor detail page
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(
-                          builder: (context) => OnlineDoctorDetailPage(doctor: doctor),
-                        ),
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.onlineDoctorDetail,
+                        arguments: doctor,
                       );
                     },
                     style: ElevatedButton.styleFrom(

@@ -21,7 +21,6 @@ class TrackOrderService {
         throw Exception('Failed to load orders');
       }
     } catch (e) {
-      print('Error fetching orders: $e');
       throw Exception('Failed to load orders');
     }
   }
@@ -30,7 +29,6 @@ class TrackOrderService {
   Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
       final response = await _dio.get('${ApiEndpoints.getCartItemByOrderId}/$orderId');
-      print('Response: ${response.data}');
       if (response.statusCode == 200) {
         List<dynamic> cartItemsData = response.data['cartItems'] ?? [];
         return cartItemsData.map((item) => CartModel.fromJson(item)).toList();
@@ -47,7 +45,6 @@ class TrackOrderService {
     try {
       final response = await _dio.get('${ApiEndpoints.getActiveAmbulanceRequests}/$userId');
 
-      print("Response Data: ${response.data}");
 
       if (response.statusCode == 200 && response.data['success']) {
         List<dynamic> bookingData = response.data['data'];
@@ -68,7 +65,6 @@ class TrackOrderService {
   // 🔹 Fetch blood bank bookings
   Future<List<BloodBankBooking>> getBookings(String userId, String token) async {
     try {
-      print('Fetching blood bank bookings for user: $userId');
 
       // Make the API call
       final response = await _dio.get(
@@ -81,7 +77,6 @@ class TrackOrderService {
         ),
       );
 
-      print('API Response: ${response.data}');
 
       // Check if the request was successful
       if (response.statusCode == 200) {
@@ -125,10 +120,8 @@ class TrackOrderService {
   // 🔹 Fetch product orders
   Future<List<ProductOrder>> fetchProductOrders(String userId) async {
     try {
-      debugPrint('🛍️ Fetching product orders for user: $userId');
       final response = await _dio.get('${ApiEndpoints.getProductOrdersByUserId}/$userId');
-      debugPrint('📦 API Response: ${response.data}');
-      
+
       if (response.statusCode == 200 && response.data['orders'] != null) {
         List<dynamic> ordersJson = response.data['orders'];
         debugPrint('📦 Found ${ordersJson.length} product orders');

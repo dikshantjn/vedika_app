@@ -271,7 +271,13 @@ class _EmergencyBottomSheetState extends State<EmergencyBottomSheet> {
                                 label: 'Doctor',
                                 color: Colors.blueAccent,
                                 icon: Icons.call,
-                                onTap: () => context.read<EmergencyService>().triggerDoctorEmergency(widget.doctorNumber),
+                                onTap: () {
+                                  if (EmergencyService.isInitialized) {
+                                    EmergencyService.instance.triggerDoctorEmergency(widget.doctorNumber);
+                                  } else {
+                                    print("⚠️ EmergencyService not initialized yet");
+                                  }
+                                },
                               ),
                             ),
                             SizedBox(width: 12),
@@ -281,7 +287,13 @@ class _EmergencyBottomSheetState extends State<EmergencyBottomSheet> {
                                 label: 'Ambulance',
                                 color: Colors.green,
                                 icon: Icons.local_hospital,
-                                onTap: () => context.read<EmergencyService>().triggerAmbulanceEmergency(widget.ambulanceNumber),
+                                onTap: () {
+                                  if (EmergencyService.isInitialized) {
+                                    EmergencyService.instance.triggerAmbulanceEmergency(widget.ambulanceNumber);
+                                  } else {
+                                    print("⚠️ EmergencyService not initialized yet");
+                                  }
+                                },
                               ),
                             ),
                             SizedBox(width: 12),
@@ -291,7 +303,13 @@ class _EmergencyBottomSheetState extends State<EmergencyBottomSheet> {
                                 label: 'Blood Bank',
                                 color: Colors.pinkAccent,
                                 icon: Icons.bloodtype,
-                                onTap: () => context.read<EmergencyService>().triggerBloodBankEmergency(widget.bloodBankNumber),
+                                onTap: () {
+                                  if (EmergencyService.isInitialized) {
+                                    EmergencyService.instance.triggerBloodBankEmergency(widget.bloodBankNumber);
+                                  } else {
+                                    print("⚠️ EmergencyService not initialized yet");
+                                  }
+                                },
                               ),
                             ),
                           ],

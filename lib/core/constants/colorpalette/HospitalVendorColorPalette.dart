@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 class HospitalVendorColorPalette {
-  // Primary Colors - Modern Healthcare Blue
-  static const Color primaryBlue = Color(0xFF2B6CB0);
-  static const Color primaryBlueLight = Color(0xFF4299E1);
-  static const Color primaryBlueDark = Color(0xFF2C5282);
+  // Primary Colors - Unified Teal Theme
+  static const Color primaryBlue = Color(0xFF38A3A5);
+  static const Color primaryBlueLight = Color(0xFF5FC2C4);
+  static const Color primaryBlueDark = Color(0xFF2B7F80);
 
-  // Secondary Colors - Professional Teal
-  static const Color secondaryTeal = Color(0xFF319795);
-  static const Color secondaryTealLight = Color(0xFF4FD1C5);
-  static const Color secondaryTealDark = Color(0xFF285E61);
+  // Secondary Colors - Complementary Teal
+  static const Color secondaryTeal = Color(0xFF2E8C8E);
+  static const Color secondaryTealLight = Color(0xFF7CD6D0);
+  static const Color secondaryTealDark = Color(0xFF227373);
 
   // Accent Colors - Modern Purples
   static const Color accentPurple = Color(0xFF6B46C1);
@@ -34,7 +34,7 @@ class HospitalVendorColorPalette {
   static const Color successGreen = Color(0xFF38A169);
   static const Color warningYellow = Color(0xFFD69E2E);
   static const Color errorRed = Color(0xFFE53E3E);
-  static const Color infoBlue = Color(0xFF3182CE);
+  static const Color infoBlue = Color(0xFF38A3A5);
 
   // Gradient Colors - Modern Healthcare Gradients
   static const LinearGradient primaryGradient = LinearGradient(

@@ -58,7 +58,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   void initSocketConnection() async {
     if (!_mounted) return;
     
-    debugPrint("🚀 Initializing socket connection for clinic appointments...");
     try {
       String? userId = await StorageService.getUserId();
       if (userId == null) {
@@ -87,7 +86,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
       // Set up event listeners
       _socket!.onConnect((_) {
-        debugPrint('✅ Socket connected for clinic appointments');
         _socket!.emit('register', userId);
       });
 
@@ -118,7 +116,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
       // Connect to the socket
       _socket!.connect();
-      debugPrint('🔄 Attempting to connect socket for clinic appointments...');
     } catch (e) {
       debugPrint("❌ Socket connection error: $e");
       _attemptReconnect();

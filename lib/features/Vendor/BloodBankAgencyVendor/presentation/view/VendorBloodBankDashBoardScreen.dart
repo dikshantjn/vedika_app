@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/VendorBloodBankDashBoardViewModel.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/widgets/Sparkline.dart';
 
 class VendorBloodBankDashBoardScreen extends StatelessWidget {
@@ -277,13 +278,13 @@ class VendorBloodBankDashBoardScreen extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               Colors.purple.withOpacity(0.15),
-              Colors.cyan.withOpacity(0.12),
+              ColorPalette.primaryColor.withOpacity(0.12),
             ],
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.purple.withOpacity(0.25)),
           boxShadow: [
-            BoxShadow(color: Colors.cyan.withOpacity(0.15), blurRadius: 16, offset: const Offset(0, 6)),
+            BoxShadow(color: ColorPalette.primaryColor.withOpacity(0.15), blurRadius: 16, offset: const Offset(0, 6)),
           ],
         ),
         child: Row(

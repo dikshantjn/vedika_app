@@ -40,7 +40,6 @@ class BloodInventoryService {
         data: updatedInventory.toJson(),
       );
 
-      _logger.i('Response received: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data is Map<String, dynamic>) {

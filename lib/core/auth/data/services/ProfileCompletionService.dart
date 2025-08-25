@@ -15,7 +15,6 @@ class ProfileCompletionService {
 
   Future<bool> isProfileComplete(String userId, ServiceType serviceType) async {
     try {
-      print('Checking profile completion for userId: $userId and service: $serviceType');
       final user = await _userService.getUserById(userId);
       if (user == null) {
         print('User not found');
@@ -44,10 +43,8 @@ class ProfileCompletionService {
           break;
       }
 
-      print('Profile completion result for $serviceType: $isComplete');
       if (!isComplete) {
         final missingFields = getMissingFields(user, serviceType);
-        print('Missing fields: $missingFields');
       }
       return isComplete;
     } catch (e, stackTrace) {
@@ -58,29 +55,16 @@ class ProfileCompletionService {
   }
 
   bool _checkAmbulanceProfile(UserModel user) {
-    print('Checking ambulance profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
-    print('Emergency Contact: ${user.emergencyContactNumber}');
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
         user.location?.isNotEmpty == true &&
         user.emergencyContactNumber?.isNotEmpty == true;
 
-    print('Ambulance profile complete: $isComplete');
     return isComplete;
   }
 
   bool _checkHospitalProfile(UserModel user) {
-    print('Checking hospital profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
-    print('DOB: ${user.dateOfBirth}');
-    print('Blood Group: ${user.bloodGroup}');
-    print('Emergency Contact: ${user.emergencyContactNumber}');
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
@@ -89,17 +73,10 @@ class ProfileCompletionService {
         user.bloodGroup?.isNotEmpty == true &&
         user.emergencyContactNumber?.isNotEmpty == true;
 
-    print('Hospital profile complete: $isComplete');
     return isComplete;
   }
 
   bool _checkBloodBankProfile(UserModel user) {
-    print('Checking blood bank profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
-    print('DOB: ${user.dateOfBirth}');
-    print('Blood Group: ${user.bloodGroup}');
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
@@ -107,47 +84,30 @@ class ProfileCompletionService {
         user.bloodGroup?.isNotEmpty == true &&
         user.dateOfBirth != null;
 
-    print('Blood bank profile complete: $isComplete');
     return isComplete;
   }
 
   bool _checkLabTestProfile(UserModel user) {
-    print('Checking lab test profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
-    print('DOB: ${user.dateOfBirth}');
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
         user.location?.isNotEmpty == true &&
         user.dateOfBirth != null;
 
-    print('Lab test profile complete: $isComplete');
     return isComplete;
   }
 
   bool _checkMedicineDeliveryProfile(UserModel user) {
-    print('Checking medicine delivery profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
         user.location?.isNotEmpty == true;
 
-    print('Medicine delivery profile complete: $isComplete');
     return isComplete;
   }
 
   bool _checkClinicProfile(UserModel user) {
-    print('Checking clinic profile fields:');
-    print('Name: ${user.name}');
-    print('Phone: ${user.phoneNumber}');
-    print('Location: ${user.location}');
-    print('DOB: ${user.dateOfBirth}');
-    print('Blood Group: ${user.bloodGroup}');
+
 
     final isComplete = user.name?.isNotEmpty == true &&
         user.phoneNumber?.isNotEmpty == true &&
@@ -155,12 +115,10 @@ class ProfileCompletionService {
         user.dateOfBirth != null &&
         user.bloodGroup?.isNotEmpty == true;
 
-    print('Clinic profile complete: $isComplete');
     return isComplete;
   }
 
   Map<String, String> getMissingFields(UserModel user, ServiceType serviceType) {
-    print('Getting missing fields for service: $serviceType');
     Map<String, String> missingFields = {};
 
     switch (serviceType) {
@@ -204,7 +162,6 @@ class ProfileCompletionService {
         break;
     }
 
-    print('Missing fields: $missingFields');
     return missingFields;
   }
 } 

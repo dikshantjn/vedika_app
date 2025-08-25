@@ -48,12 +48,12 @@ class MembershipPaymentService {
       }
 
       // Debug: Print the exact URL being called
-      ApiEndpoints.printEndpointUrl(ApiEndpoints.createMembershipOrder);
+      // print('Create membership order endpoint: ${ApiEndpoints.createMembershipOrder}');
 
       print('📡 API Request Details:');
       print('   URL: ${ApiEndpoints.createMembershipOrder}');
       print('   Method: POST');
-      print('   User ID: $userId');
+      // Debug print removed
       print('   Plan ID: $membershipPlanId');
       
       final requestPayload = {
@@ -134,7 +134,7 @@ class MembershipPaymentService {
       print('🔐 Verifying payment with backend...');
       print('   URL: ${ApiEndpoints.verifyMembershipPayment}');
       print('   Method: POST');
-      print('   userId: $userId');
+      // Debug print removed
       print('   membershipPlanId: $membershipPlanId');
       print('   paymentId: $paymentId');
 

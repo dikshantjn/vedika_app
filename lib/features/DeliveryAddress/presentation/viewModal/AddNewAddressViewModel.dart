@@ -100,7 +100,7 @@ class AddNewAddressViewModel extends ChangeNotifier {
   Future<void> getAllAddresses() async {
     try {
       String? userId = await StorageService.getUserId();
-      print("Fetched UserId: $userId"); // Log userId
+              // Debug print removed
 
       if (userId != null) {
         isLoading = true;

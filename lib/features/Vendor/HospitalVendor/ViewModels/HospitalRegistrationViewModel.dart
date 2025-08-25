@@ -606,10 +606,8 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
 
       _logger.i('Calling hospital registration API');
       final response = await _service.registerHospital(vendor, hospital);
-      _logger.i('API response status code: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _logger.i('Registration successful, clearing file lists');
         _certificationFiles.clear();
         _licenseFiles.clear();
         _photoFiles.clear();

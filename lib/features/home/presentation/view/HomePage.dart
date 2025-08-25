@@ -12,7 +12,6 @@ import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWid
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/JustForYouSection.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart';
 import 'package:flutter/rendering.dart';
@@ -21,6 +20,7 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescriptionView.dart';
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/VedikaAI/presentation/view/AIChatScreen.dart';
@@ -28,18 +28,18 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final bool embed;
+
+  const HomePage({Key? key, this.embed = false}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isCollapsed = false;
-
   late AnimationController _placeholderAnimationController;
   late AnimationController _gradientController;
   late Animation<double> _gradientAnimation;
@@ -72,6 +72,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     // Add listener to search controller
     _searchController.addListener(() {
+      if (!mounted) return;
+      
       if (_searchController.text.isEmpty) {
         context.read<SearchViewModel>().clearSearch();
       }
@@ -86,6 +88,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _typingTimer?.cancel();
     _isErasing = false;
     _typingTimer = Timer.periodic(_typingSpeed, (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
       if (!_isErasing) {
         // Typing forward
         if (_typedCharIndex < _placeholders[_currentPlaceholderIndex].length) {
@@ -97,8 +104,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           // Pause, then start erasing
           timer.cancel();
           Future.delayed(_pauseDuration, () {
+            if (!mounted) return;
+            
             _isErasing = true;
             _typingTimer = Timer.periodic(_typingSpeed, (timer) {
+              if (!mounted) {
+                timer.cancel();
+                return;
+              }
+              
               if (_typedCharIndex > 0) {
                 setState(() {
                   _typedPlaceholder = _typedPlaceholder.substring(0, _typedCharIndex - 1);
@@ -106,10 +120,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 });
               } else {
                 timer.cancel();
-                setState(() {
-                  _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
-                });
-                _startTypingPlaceholder();
+                if (mounted) {
+                  setState(() {
+                    _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
+                  });
+                  _startTypingPlaceholder();
+                }
               }
             });
           });
@@ -132,6 +148,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       vsync: this,
       duration: Duration(milliseconds: 800),
     )..addStatusListener((status) {
+        if (!mounted) return;
+        
         if (status == AnimationStatus.completed) {
           _placeholderAnimationController.reverse();
         } else if (status == AnimationStatus.dismissed) {
@@ -167,7 +185,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    // Remove listeners
+    _scrollController.removeListener(_onScroll);
     _searchController.removeListener(() {});
+    
+    // Dispose controllers
     _searchController.dispose();
     _scrollController.dispose();
     _placeholderAnimationController.dispose();
@@ -178,6 +200,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _onScroll() {
+    if (!mounted) return;
+    
     if (_scrollController.offset > 80 && !_isCollapsed) {
       setState(() {
         _isCollapsed = true;
@@ -189,83 +213,82 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  void _onNavBarItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  // Bottom navigation is managed by MainScreen; no local nav state here.
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embed) {
+      return _buildHomeBody();
+    }
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       extendBody: true,
       drawer: DrawerMenu(),
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onNavBarItemTapped,
-      ),
-      body: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          if (_searchController.text.isEmpty) {
-            context.read<SearchViewModel>().clearSearch();
-          }
-        },
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
-            statusBarColor: Colors.white,
-            statusBarIconBrightness: Brightness.dark,
-          ),
-          child: Stack(
-            children: [
-              CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 140.0,
-                    floating: false,
-                    pinned: true,
-                    elevation: 0,
-                    backgroundColor: Colors.white,
-                    automaticallyImplyLeading: false,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: _buildHeader(),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        MedicalBoxRow(),
-                        SizedBox(height: 8),
-                        BannerSlider(),
-                        JustForYouSection(),
-                        HealthConcernSection(),
-                        FeaturedArticlesSection(),
-                        CategoryGrid(),
-                        BrandSection(),
-                        TestimonialSection(),
-                        SizedBox(height: 54 + 12 + MediaQuery.of(context).padding.bottom),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              _buildFloatingSearchBar(),
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 104,
-                left: 0,
-                right: 0,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildSearchSuggestions(),
-                ),
-              ),
+      body: _buildHomeBody(),
+    );
+  }
 
-            ],
-          ),
+  Widget _buildHomeBody() {
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        if (_searchController.text.isEmpty) {
+          context.read<SearchViewModel>().clearSearch();
+        }
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+        ),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 140.0,
+                  floating: false,
+                  pinned: true,
+                  elevation: 0,
+                  backgroundColor: Colors.white,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: _buildHeader(),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MedicalBoxRow(),
+                      SizedBox(height: 8),
+                      BannerSlider(),
+                      JustForYouSection(),
+                      HealthConcernSection(),
+                      FeaturedArticlesSection(),
+                      CategoryGrid(),
+                      BrandSection(),
+                      TestimonialSection(),
+                      SizedBox(height: 54 + 12 + MediaQuery.of(context).padding.bottom),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            _buildFloatingSearchBar(),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 104,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: _buildSearchSuggestions(),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -488,14 +511,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         if (suggestion['type'] == 'service') {
                           Navigator.pushNamed(context, suggestion['route']);
                         } else if (suggestion['type'] == 'category' || suggestion['type'] == 'subcategory') {
-                          Navigator.push(
+                          Navigator.pushNamed(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductListScreen(
-                                category: suggestion['params']['category'],
-                                subCategory: suggestion['params']['subCategory'],
-                              ),
-                            ),
+                            AppRoutes.productList,
+                            arguments: <String, dynamic>{
+                              'category': suggestion['params']['category'],
+                              'subCategory': suggestion['params']['subCategory'],
+                            },
                           );
                         }
                         searchViewModel.clearSearch();

@@ -93,7 +93,6 @@ class LocationProvider with ChangeNotifier {
   /// **Check if Location Services are Enabled**
   Future<bool> isLocationServiceEnabled() async {
     bool enabled = await Geolocator.isLocationServiceEnabled();
-    print("🔄 Location services enabled: $enabled");
     return enabled;
   }
 
@@ -102,7 +101,6 @@ class LocationProvider with ChangeNotifier {
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
-      print("✅ Location permission already granted.");
       return true;
     }
 
@@ -110,7 +108,6 @@ class LocationProvider with ChangeNotifier {
     permission = await Geolocator.requestPermission();
 
     bool granted = (permission == LocationPermission.always || permission == LocationPermission.whileInUse);
-    print(granted ? "✅ Permission granted." : "❌ Permission denied.");
     return granted;
   }
 
@@ -141,7 +138,6 @@ class LocationProvider with ChangeNotifier {
         longitude = position.longitude;
         isLocationLoaded = true;
         notifyListeners();
-        print("✅ Fresh location retrieved: ($latitude, $longitude)");
 
         // Update user coordinates in backend only if requested
         if (updateBackend) {
@@ -157,7 +153,6 @@ class LocationProvider with ChangeNotifier {
 
   /// **Load Saved Location**
   Future<void> loadSavedLocation({bool updateBackend = false}) async {
-    print("🔄 Loading saved location...");
     await fetchLocation(updateBackend: updateBackend);
   }
 
@@ -186,7 +181,6 @@ class LocationProvider with ChangeNotifier {
       String coordinates = "$latitude,$longitude";
       bool success = await _userService.updateUserCoordinates(userId, coordinates);
       if (success) {
-        print("✅ User coordinates updated in backend: $coordinates");
       } else {
         print("❌ Failed to update user coordinates in backend");
       }

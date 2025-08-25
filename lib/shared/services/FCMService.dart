@@ -93,7 +93,6 @@ class FCMService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('✅ User granted notification permission');
     } else {
       print('❌ User denied notification permission');
     }
@@ -103,7 +102,6 @@ class FCMService {
   Future<void> getTokenAndSend(String userId) async {
     String? token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
-      print("🔹 FCM Token: $token");
       await sendTokenToServer(userId, token);
     }
   }
@@ -112,7 +110,6 @@ class FCMService {
   Future<void> getVendorTokenAndSend(String vendorId) async {
     String? token = await FirebaseMessaging.instance.getToken();
     if (token != null) {
-      print("🔹 Vendor FCM Token: $token");
       await sendVendorTokenToServer(vendorId, token);
     }
   }
@@ -126,7 +123,6 @@ class FCMService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ FCM Token sent to server successfully");
       } else {
         print("❌ Failed to send FCM Token: ${response.data}");
       }
@@ -144,7 +140,6 @@ class FCMService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ Vendor FCM Token sent to server successfully");
       } else {
         print("❌ Failed to send Vendor FCM Token: ${response.data}");
       }
@@ -250,7 +245,6 @@ class FCMService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ User FCM Token deleted successfully");
       } else {
         print("❌ Failed to delete User FCM Token: ${response.data}");
       }
@@ -268,7 +262,6 @@ class FCMService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ Vendor FCM Token deleted successfully");
       } else {
         print("❌ Failed to delete Vendor FCM Token: ${response.data}");
       }

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class MedicalStoreVendorColorPalette {
   // Primary Colors
-  static const Color primaryColor = Color(0xFF3498DB); // Bright Blue
-  static const Color secondaryColor = Color(0xFF34495E); // Darker Blue
-  static const Color accentColor = Color(0xFF3498DB); // Bright Blue
+  static const Color primaryColor = Color(0xFF38A3A5); // App Primary
+  static const Color secondaryColor = Color(0xFF2B7F80); // Darker Teal
+  static const Color accentColor = Color(0xFF5FC2C4); // Lighter Teal
 
   // Background Colors
   static const Color backgroundColor = Color(0xFFF5F6FA); // Light Gray
@@ -15,7 +15,7 @@ class MedicalStoreVendorColorPalette {
   static const Color successColor = Color(0xFF27AE60); // Green
   static const Color errorColor = Color(0xFFE74C3C); // Red
   static const Color warningColor = Color(0xFFF39C12); // Orange
-  static const Color infoColor = Color(0xFF2980B9); // Blue
+  static const Color infoColor = Color(0xFF38A3A5); // Teal
 
   // Text Colors
   static const Color textColor = Color(0xFF2C3E50); // Dark Blue (Primary Text)
@@ -28,7 +28,7 @@ class MedicalStoreVendorColorPalette {
   static const Color dividerColor = Color(0xFFEEEEEE); // Very Light Gray
 
   // Action Colors
-  static const Color buttonPrimary = Color(0xFF3498DB); // Bright Blue
+  static const Color buttonPrimary = Color(0xFF38A3A5); // Primary
   static const Color buttonSecondary = Color(0xFF95A5A6); // Gray
   static const Color buttonSuccess = Color(0xFF27AE60); // Green
   static const Color buttonDanger = Color(0xFFE74C3C); // Red

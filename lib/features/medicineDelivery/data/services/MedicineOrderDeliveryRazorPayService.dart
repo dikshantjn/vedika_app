@@ -11,14 +11,12 @@ class MedicineOrderDeliveryRazorPayService {
   Function(PaymentFailureResponse)? onPaymentCancelled;
 
   MedicineOrderDeliveryRazorPayService() {
-    debugPrint("🔄 Initializing Razorpay service...");
     _initializeListeners();
   }
 
   void _initializeListeners() {
     if (!_isInitialized) {
-      debugPrint("🎯 Setting up Razorpay event listeners");
-      
+
       // Remove any existing listeners first
       _razorpay.clear();
       
@@ -28,7 +26,6 @@ class MedicineOrderDeliveryRazorPayService {
       _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
       
       _isInitialized = true;
-      debugPrint("✅ Razorpay listeners initialized");
     }
   }
 

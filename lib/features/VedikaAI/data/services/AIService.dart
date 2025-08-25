@@ -6,8 +6,6 @@ import 'package:vedika_healthcare/features/VedikaAI/data/models/AIChatResponse.d
 class AIService {
   Future<AIChatResponse> interpretSymptoms(String spokenText) async {
     try {
-      print('📡 Calling API: ${ApiEndpoints.interpretSymptoms}');
-      print('📦 Request body: {"spokenText": "$spokenText"}');
       
       final response = await http.post(
         Uri.parse(ApiEndpoints.interpretSymptoms),
@@ -49,7 +47,6 @@ class AIService {
       );
 
       if (response.statusCode == 200) {
-        print('✅ API Response Status: ${response.statusCode}');
         return jsonDecode(response.body);
       } else {
         print('❌ API Error: ${response.statusCode}');

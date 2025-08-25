@@ -5,8 +5,10 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/clinic/data/services/ClinicPaymentService.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 
 class BookClinicAppointmentPage extends StatefulWidget {
@@ -384,15 +386,15 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
         ),
       ),
       leading: IconButton(
-        icon: Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        onPressed: () {
+          // Navigate back using route stack
+          if (MainScreenNavigator.instance.canGoBack) {
+            MainScreenNavigator.instance.goBack();
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       title: Text(
         "Book Appointment",

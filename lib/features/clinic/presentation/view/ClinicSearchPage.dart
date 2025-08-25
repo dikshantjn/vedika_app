@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/ClinicSearchViewModel.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/widgets/DraggableClinicList.dart';
 
@@ -126,11 +128,14 @@ class _ClinicSearchPageState extends State<ClinicSearchPage> {
                 ],
               ),
               child: IconButton(
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: DoctorConsultationColorPalette.primaryBlue,
-                ),
-                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new, color: ColorPalette.primaryColor),
+                onPressed: () {
+                  if (MainScreenNavigator.instance.canGoBack) {
+                    MainScreenNavigator.instance.goBack();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
               ),
             ),
           ),

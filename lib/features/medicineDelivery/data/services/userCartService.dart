@@ -15,9 +15,21 @@ class UserCartService {
     try {
       final response = await dio.get(
         '${ApiEndpoints.getCartItemsByUserId}/$userId/AddedItemsInCart',
+        options: Options(
+          validateStatus: (status) {
+            // Treat 404 as success since it means "no pending orders found"
+            return status != null && (status == 200 || status == 201 || status == 404);
+          },
+        ),
       );
 
       debugPrint('Response Cart Items: ${response.data}');
+
+      // Handle 404 response (no pending orders found)
+      if (response.statusCode == 404) {
+        debugPrint('No pending orders found for user: $userId');
+        return []; // Return empty list for no orders
+      }
 
       if (response.statusCode == 200) {
         // First get the pending orders
@@ -116,11 +128,23 @@ class UserCartService {
   Future<List<MedicineOrderModel>> fetchOrdersByUserId(String userId) async {
     try {
       final response = await dio.get(
-        '${ApiEndpoints.fetchOrdersByUserId}/$userId/AddedItemsInCart', // Fetch orders by userId and status 'Pending'
+        '${ApiEndpoints.fetchOrdersByUserId}/$userId/AddedItemsInCart',
+        options: Options(
+          validateStatus: (status) {
+            // Treat 404 as success since it means "no pending orders found"
+            return status != null && (status == 200 || status == 201 || status == 404);
+          },
+        ),
       );
 
       // Print the full response data
-      print('fetchOrdersByUserId Response: ${response.data}'); // This will print the response data
+              // Debug print removed
+
+      // Handle 404 response (no pending orders found)
+      if (response.statusCode == 404) {
+        print('No pending orders found for user: $userId');
+        return []; // Return empty list for no orders
+      }
 
       // Check if the request is successful
       if (response.statusCode == 200) {
@@ -149,11 +173,23 @@ class UserCartService {
   Future<List<CartModel>> fetchCartItemsByOrderId(String orderId) async {
     try {
       final response = await dio.get(
-        '${ApiEndpoints.getCartItemByOrderId}/$orderId', // Endpoint to fetch cart items by orderId
+        '${ApiEndpoints.getCartItemByOrderId}/$orderId',
+        options: Options(
+          validateStatus: (status) {
+            // Treat 404 as success since it might mean "no cart items found for this order"
+            return status != null && (status == 200 || status == 201 || status == 404);
+          },
+        ),
       );
 
       // Print the full response data
       print('Response: ${response.data}');  // This will print the response data
+
+      // Handle 404 response (no cart items found for this order)
+      if (response.statusCode == 404) {
+        print('No cart items found for order: $orderId');
+        return []; // Return empty list for no cart items
+      }
 
       // Check if the request is successful
       if (response.statusCode == 200) {
@@ -181,11 +217,23 @@ class UserCartService {
   Future<List<MedicineProduct>> fetchProductByCartId(String cartId) async {
     try {
       final response = await dio.get(
-        '${ApiEndpoints.fetchProductByCartId}/$cartId/product', // Fetch products by cartId
+        '${ApiEndpoints.fetchProductByCartId}/$cartId/product',
+        options: Options(
+          validateStatus: (status) {
+            // Treat 404 as success since it might mean "no product found for this cart ID"
+            return status != null && (status == 200 || status == 201 || status == 404);
+          },
+        ),
       );
 
       // Print the full response data for debugging
       debugPrint('Response: ${response.data}'); // Logs the full response
+
+      // Handle 404 response (no product found for this cart ID)
+      if (response.statusCode == 404) {
+        debugPrint('No product found for cart ID: $cartId');
+        return []; // Return empty list for no product
+      }
 
       // Check if the request is successful (status code 200)
       if (response.statusCode == 200) {

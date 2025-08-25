@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 import 'package:vedika_healthcare/features/blog/presentation/widgets/BlogCard.dart';
@@ -40,8 +41,15 @@ class _BlogListPageState extends State<BlogListPage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+              onPressed: () {
+                final scope = MainScreenScope.maybeOf(context);
+                if (scope != null) {
+                  scope.setIndex(0);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
           ),
           title: const Text(

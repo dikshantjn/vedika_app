@@ -8,6 +8,7 @@ import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearch
 import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 import 'package:vedika_healthcare/features/home/data/services/CategoryService.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:provider/provider.dart';
@@ -270,62 +271,26 @@ class VoiceCommandService {
   }
 
   static void _triggerDoctorEmergency(BuildContext context) {
-    final emergencyService = EmergencyService(context.read<LocationProvider>());
-    emergencyService.triggerDoctorEmergency("9370320066");
+    if (EmergencyService.isInitialized) {
+      EmergencyService.instance.triggerDoctorEmergency("9370320066");
+    } else {
+      print("⚠️ EmergencyService not initialized yet");
+    }
   }
 
   static void _triggerAmbulanceEmergency(BuildContext context) {
-    final emergencyService = EmergencyService(context.read<LocationProvider>());
-    emergencyService.triggerAmbulanceEmergency("9370320066");
+    if (EmergencyService.isInitialized) {
+      EmergencyService.instance.triggerAmbulanceEmergency("9370320066");
+    } else {
+      print("⚠️ EmergencyService not initialized yet");
+    }
   }
 
   static void _triggerBloodBankEmergency(BuildContext context) {
-    final emergencyService = EmergencyService(context.read<LocationProvider>());
-    emergencyService.triggerBloodBankEmergency("9370320066");
-  }
-
-  static Map<String, dynamic>? _findMatchingCategory(String command) {
-    final categories = CategoryService.getAllCategories();
-    
-    // First try exact matches
-    for (var category in categories) {
-      final categoryName = (category['name'] as String).toLowerCase();
-      if (command.contains(categoryName)) {
-        return category;
-      }
+    if (EmergencyService.isInitialized) {
+      EmergencyService.instance.triggerBloodBankEmergency("9370320066");
+    } else {
+      print("⚠️ EmergencyService not initialized yet");
     }
-
-    // Then try partial matches
-    for (var category in categories) {
-      final categoryName = (category['name'] as String).toLowerCase();
-      final words = categoryName.split(' ');
-      
-      // Check if all words in the category name are present in the command
-      bool allWordsMatch = words.every((word) => command.contains(word));
-      if (allWordsMatch) {
-        return category;
-      }
-    }
-
-    return null;
-  }
-
-  static void _navigateToProductList(BuildContext context, String category) {
-    if (!context.mounted) return;
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductListScreen(
-          category: category,
-        ),
-      ),
-    );
-  }
-
-  static void _navigateToRoute(BuildContext context, String routeName) {
-    if (!context.mounted) return;
-    
-    Navigator.pushNamed(context, routeName);
   }
 } 

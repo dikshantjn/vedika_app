@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
@@ -38,7 +39,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.cyan,
+        backgroundColor: ColorPalette.primaryColor,
         elevation: 0,
         title: const Text(
           'Service Details',
@@ -89,7 +90,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                               widget.viewModel.setPaymentBypassed(value ?? false);
                             });
                           },
-                          activeColor: Colors.cyan,
+                          activeColor: ColorPalette.primaryColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -306,7 +307,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: Colors.cyan,
+                  backgroundColor: ColorPalette.primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -347,10 +348,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.cyan.withOpacity(0.1),
+              color: ColorPalette.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 20, color: Colors.cyan),
+            child: Icon(icon, size: 20, color: ColorPalette.primaryColor),
           ),
           const SizedBox(width: 12),
           Text(

@@ -35,6 +35,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   int _totalItemCount = 0;
   IO.Socket? _socket;
   bool mounted = true;
+  
+  // Add flag to track if cart data has already been fetched
+  bool _hasInitialized = false;
+  DateTime? _lastFetchTime;
+  static const Duration _cacheValidDuration = Duration(minutes: 5); // Cache valid for 5 minutes
 
   // Add callback for cart count updates
   Function()? onCartCountUpdate;
@@ -66,6 +71,32 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   List<CartModel> get cartItems => _cartItems;
   Map<String, List<MedicineProduct>> get medicineProductDetails => _medicineProductDetails;
 
+  // **🔹 Check if cart is empty**
+  bool get isCartEmpty => _cartItems.isEmpty && _productCartItems.isEmpty;
+
+  // **🔹 Check if there are any items (medicine or products)**
+  bool get hasAnyItems => _cartItems.isNotEmpty || _productCartItems.isNotEmpty;
+
+  // **🔹 Get total cart count (medicine + products)**
+  int get totalCartCount => _cartItems.length + _productCartItems.length;
+
+  // **🔹 Check if cart is loading**
+  bool get isCartLoading => _isLoading;
+
+  // **🔹 Check if cart has been initialized**
+  bool get hasInitialized => _hasInitialized;
+
+  // **🔹 Check if cache is still valid**
+  bool get isCacheValid {
+    if (_lastFetchTime == null) return false;
+    return DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration;
+  }
+
+  // **🔹 Get cart summary for debugging**
+  String get cartSummary {
+    return 'Cart Summary: ${_cartItems.length} medicine items, ${_productCartItems.length} product items, Total: $_totalItemCount';
+  }
+
   CartAndPlaceOrderViewModel(this._userCartService, this._productCartService)
       : _productService = ProductService(),
         _productOrderService = ProductOrderService();
@@ -91,41 +122,53 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchOrdersAndCartItems() async {
-    debugPrint("🔄 Starting to fetch orders and cart items...");
+  Future<void> fetchOrdersAndCartItems({bool forceRefresh = false}) async {
+    // Check if we already have data and cache is valid
+    if (!forceRefresh && _hasInitialized && isCacheValid && _cartItems.isNotEmpty) {
+      return;
+    }
+
+    // Check if we're already loading
+    if (_isLoading) {
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
     try {
       String? userId = await StorageService.getUserId();
       if (userId == null) {
-        debugPrint("❌ User ID not found");
         _isLoading = false;
         notifyListeners();
         return;
       }
-      debugPrint("👤 User ID: $userId");
 
       // Fetch existing product items
-      debugPrint("📦 Fetching user cart items...");
       final existingItems = await _userCartService.getUserCart(userId);
-      debugPrint("📦 Fetched ${existingItems.length} cart items");
       _cartItems = existingItems;
 
       // Fetch medicine orders
-      debugPrint("💊 Fetching medicine orders...");
       final medicineOrders = await _userCartService.fetchOrdersByUserId(userId);
-      debugPrint("💊 Fetched ${medicineOrders.length} medicine orders");
       _orders = medicineOrders;
 
       // Fetch product cart items
-      debugPrint("🛍️ Fetching product cart items...");
       final productItems = await _productCartService.getProductCartItems();
-      debugPrint("🛍️ Fetched ${productItems.length} product cart items");
       _productCartItems = productItems;
 
+      // Handle case where there are no cart items or orders
+      if (_cartItems.isEmpty && _orders.isEmpty && _productCartItems.isEmpty) {
+        _totalItemCount = 0;
+        _subtotal = 0.0;
+        _calculateSubtotal(_cartItems);
+        _hasInitialized = true;
+        _lastFetchTime = DateTime.now();
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
       // Fetch product details for each cart item
-      debugPrint("🔍 Fetching product details...");
       _productDetails = [];
       for (var cartItem in _productCartItems) {
         if (cartItem.productId != null && cartItem.productId!.isNotEmpty) {
@@ -133,7 +176,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
             final product = await _productService.getProductById(cartItem.productId!);
             if (product != null) {
               _productDetails.add(product);
-              debugPrint("✅ Found product details for ID: ${cartItem.productId}");
             } else {
               debugPrint('⚠️ No product details found for product ID: ${cartItem.productId}');
             }
@@ -147,27 +189,39 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       // Update total item count
       _totalItemCount = _cartItems.length + _productCartItems.length;
-      debugPrint("📊 Total items in cart: $_totalItemCount");
-      debugPrint("📊 Medicine cart items: ${_cartItems.length}");
-      debugPrint("📊 Product cart items: ${_productCartItems.length}");
-      
+      // debugPrint("📊 Total items in cart: $_totalItemCount");
+      // debugPrint("📊 Medicine cart items: ${_cartItems.length}");
+      // debugPrint("📊 Product cart items: ${_productCartItems.length}");
+      //
       // Calculate subtotal
       _calculateSubtotal(_cartItems);
-      debugPrint("💰 Subtotal calculated: $_subtotal");
 
       // Print cart items for debugging
-      debugPrint("🛒 Current cart items:");
-      for (var item in _cartItems) {
-        debugPrint("- ${item.name} (Quantity: ${item.quantity}, Price: ${item.price})");
+      if (_cartItems.isNotEmpty) {
+        for (var item in _cartItems) {
+        }
+      } else {
+        // debugPrint("🛒 No medicine cart items found");
       }
+
+      // Mark as initialized and update cache time
+      _hasInitialized = true;
+      _lastFetchTime = DateTime.now();
 
     } catch (e, stackTrace) {
       debugPrint("❌ Error fetching cart items: $e");
       debugPrint("❌ Stack trace: $stackTrace");
+      
+      // Set default values on error
+      _cartItems = [];
+      _orders = [];
+      _productCartItems = [];
+      _totalItemCount = 0;
+      _subtotal = 0.0;
     } finally {
       _isLoading = false;
       notifyListeners();
-      debugPrint("✅ Finished fetching orders and cart items");
+      // debugPrint("✅ Finished fetching orders and cart items");
     }
   }
 
@@ -212,7 +266,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // **🔹 Remove Item from Cart and Update State**
   Future<void> removeFromCart(String cartId) async {
     try {
-      debugPrint('🗑️ Removing item from cart: $cartId');
+      // debugPrint('🗑️ Removing item from cart: $cartId');
       
       // First remove from backend
       await _userCartService.deleteCartItem(cartId);
@@ -224,16 +278,19 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       _calculateSubtotal(_cartItems);
       _updateTotalItemCount();
       
+      // Clear cache to ensure fresh data on next fetch
+      clearCartCache();
+      
       // Notify listeners to update UI
       notifyListeners();
       
-      debugPrint('✅ Item removed successfully. Remaining items: ${_cartItems.length}');
     } catch (e) {
       debugPrint("❌ Error removing item from cart: $e");
       // Even if there's an error, try to remove from local state
       _cartItems.removeWhere((item) => item.cartId == cartId);
       _calculateSubtotal(_cartItems);
       _updateTotalItemCount();
+      clearCartCache();
       notifyListeners();
     }
   }
@@ -248,7 +305,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   }
 
   void applyCoupon(String couponCode) {
-    debugPrint("🎟️ Attempting to apply coupon: $couponCode");
 
     if (couponCode.isEmpty) {
       debugPrint("❌ Empty coupon code");
@@ -264,7 +320,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     if (couponCode == "TEST10") {
       _isCouponApplied = true;
       _discount = _subtotal * 0.1; // 10% discount
-      debugPrint("✅ Coupon applied successfully. New discount: $_discount");
       calculateTotal();
       notifyListeners();
     } else {
@@ -284,7 +339,13 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   // **🔹 Calculate Subtotal**
   void _calculateSubtotal(List<CartModel> cartItems) {
-    debugPrint("💰 Calculating subtotal for ${cartItems.length} items");
+
+    if (cartItems.isEmpty) {
+      _subtotal = 0.0;
+      calculateTotal();
+      return;
+    }
+    
     double newSubtotal = 0.0;
     for (var item in cartItems) {
       double itemTotal = item.price * item.quantity;
@@ -293,24 +354,17 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     }
 
     if (_subtotal != newSubtotal) {
-      debugPrint("💰 Updating subtotal from $_subtotal to $newSubtotal");
       _subtotal = newSubtotal;
       calculateTotal();
     } else {
-      debugPrint("💰 Subtotal unchanged: $_subtotal");
     }
   }
 
   void calculateTotal() {
     double newTotal = _subtotal - _discount + _deliveryCharge + _platformFee;
-    debugPrint("🛒 Subtotal: $_subtotal");
-    debugPrint("💰 Discount: $_discount");
-    debugPrint("🚚 Delivery Charge: $_deliveryCharge");
-    debugPrint("⚙️ Platform Fee: $_platformFee");
-    debugPrint("🔢 Calculated Total: $newTotal");
 
     if (newTotal <= 0) {
-      debugPrint("❌ Invalid Total! Setting to Minimum 1.");
+
       newTotal = 1; // Ensure total is always positive
     }
 
@@ -338,7 +392,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint("🗑️ Disposing CartAndPlaceOrderViewModel");
     if (_socket != null) {
       _socket!.disconnect();
       _socket!.dispose();
@@ -348,8 +401,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   }
 
   Future<void> handlePayment(double totalAmount) async {
-    debugPrint("📲 Initiating Razorpay Payment...");
-    debugPrint("💳 Payment Amount: $totalAmount");
 
     if (totalAmount <= 0) {
       if (_onPaymentError != null) {
@@ -359,7 +410,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     }
 
     try {
-      debugPrint("🔑 Using Razorpay Key: ${ApiConstants.razorpayApiKey}");
       if (ApiConstants.razorpayApiKey.isEmpty) {
         if (_onPaymentError != null) {
           _onPaymentError!("Payment gateway configuration error");
@@ -384,14 +434,10 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       // Set up Razorpay event handlers
       _razorPayService.onPaymentSuccess = (PaymentSuccessResponse response) {
-        debugPrint("🎯 Payment success callback triggered in view model");
-        debugPrint("💰 Payment ID from callback: ${response.paymentId}");
         _handlePaymentSuccess(response);
       };
       
       _razorPayService.onPaymentError = (PaymentFailureResponse response) {
-        debugPrint("❌ Payment error callback triggered in view model");
-        debugPrint("💬 Error message from callback: ${response.message}");
         if (_onPaymentError != null) {
           _onPaymentError!(response.message ?? "Payment failed");
         }
@@ -418,19 +464,13 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    debugPrint("✅ Payment Success Handler Started");
-    debugPrint("💰 Payment ID: ${response.paymentId}");
-    debugPrint("🔑 Order ID: ${response.orderId}");
-    debugPrint("💳 Signature: ${response.signature}");
 
     try {
       String transactionId = response.paymentId!;
       String paymentMethod = "Razorpay";
       String paymentStatus = "Paid";
-      String appliedCoupon = _isCouponApplied ? "TEST10" : "";
 
-      debugPrint("🔄 Processing medicine orders...");
-      debugPrint("📦 Total orders to process: ${_orders.length}");
+
 
       // Calculate per-order charges
       int orderCount = _orders.length;
@@ -447,7 +487,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // Handle medicine orders
       for (var order in _orders) {
         try {
-          debugPrint("📦 Processing order: ${order.orderId}");
 
           // Calculate subtotal for this order
           double orderSubtotal = 0.0;
@@ -477,24 +516,13 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
             updatedAt: DateTime.now(),
           );
 
-          debugPrint("📦 Updated order details:");
-          debugPrint("- Subtotal: ${updatedOrder.subtotal}");
-          debugPrint("- Delivery Charge: ${updatedOrder.deliveryCharge}");
-          debugPrint("- Platform Fee: ${updatedOrder.platformFee}");
-          debugPrint("- Discount: ${updatedOrder.discountAmount}");
-          debugPrint("- Total Amount: ${updatedOrder.totalAmount}");
-
           // Update order in backend
-          debugPrint("🔄 Calling updateOrder for order: ${order.orderId}");
           final success = await _userCartService.updateOrder(updatedOrder);
-          debugPrint("✅ Order update result: $success");
 
           if (!success) {
             debugPrint("❌ Failed to update order: ${order.orderId}");
           }
         } catch (e, stackTrace) {
-          debugPrint("❌ Error processing order ${order.orderId}:");
-          debugPrint("Error: $e");
           debugPrint("Stack trace: $stackTrace");
         }
       }
@@ -504,22 +532,18 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       _cartItems.clear();
       _calculateSubtotal(_cartItems); // Recalculate subtotal with empty cart
       _totalItemCount = 0; // Reset total item count
-      debugPrint("🧹 Cleared medicine orders and cart items after payment");
 
       // Handle product orders if there are any product cart items
       if (_productCartItems.isNotEmpty) {
-        debugPrint("🛍️ Processing product orders...");
         try {
           // Call placeProductOrder to create the order
           final orderResponse = await _productOrderService.placeProductOrder();
-          debugPrint("✅ Product order placed successfully: $orderResponse");
 
           // Clear the product cart after successful order placement
           _productCartItems.clear();
           _totalItemCount = 0; // Reset total count since both carts are empty
           notifyListeners();
 
-          debugPrint("🛒 Product cart cleared after successful order");
         } catch (e) {
           debugPrint("❌ Error placing product order: $e");
           throw Exception("Failed to place product order: $e");
@@ -530,7 +554,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       if (_onPaymentSuccess != null) {
         debugPrint("📞 Calling external payment success callback");
         _onPaymentSuccess!(transactionId);
-        debugPrint("✅ External payment success callback executed");
       }
 
       // Notify about cart count update
@@ -538,7 +561,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         onCartCountUpdate!();
       }
 
-      debugPrint("✅ Payment Success Handler Completed");
     } catch (e, stackTrace) {
       debugPrint("❌ Error in payment success handler:");
       debugPrint("❌ Error: $e");
@@ -559,14 +581,12 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   }
 
   void initSocketConnection() async {
-    debugPrint("🚀 Initializing socket connection for cart updates...");
     try {
       String? userId = await StorageService.getUserId();
       if (userId == null) {
         debugPrint("❌ User ID not found for socket registration");
         return;
       }
-      debugPrint("👤 User ID for socket: $userId");
 
       // Close existing socket if any
       _socket?.disconnect();
@@ -589,10 +609,8 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       // Set up event listeners
       _socket!.onConnect((_) {
-        debugPrint('✅ Socket connected for cart updates');
         _socket!.emit('register', userId);
-        debugPrint('📡 Emitted register event with userId: $userId');
-        
+
         // Fetch cart items immediately after connection
         fetchOrdersAndCartItems();
       });
@@ -614,18 +632,24 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       // Add event listener for cart updates
       _socket!.on('UserCart', (data) async {
         debugPrint('🛒 Cart update received: $data');
+        // Clear cache when cart updates are received
+        clearCartCache();
         await _handleCartUpdate(data);
       });
 
       // Add event listener for medicine order updates
       _socket!.on('MedicineOrderUpdate', (data) async {
         debugPrint('💊 Medicine order update received: $data');
+        // Clear cache when order updates are received
+        clearCartCache();
         await _handleMedicineOrderUpdate(data);
       });
 
       // Add event listener for order status updates
       _socket!.on('orderStatusUpdated', (data) async {
         debugPrint('📦 Order status update received: $data');
+        // Clear cache when order status updates are received
+        clearCartCache();
         await _handleOrderStatusUpdate(data);
       });
 
@@ -638,7 +662,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       // Connect to the socket
       _socket!.connect();
-      debugPrint('🔄 Attempting to connect socket for cart updates...');
     } catch (e) {
       debugPrint("❌ Socket connection error: $e");
       _attemptReconnect();
@@ -656,35 +679,27 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   Future<void> _handleCartUpdate(dynamic data) async {
     try {
-      debugPrint('🛒 Processing cart update: $data');
-      
+
       // Parse the data if it's a string
       Map<String, dynamic> cartData = data is String ? json.decode(data) : data;
-      debugPrint('🛒 Parsed data: $cartData');
-      
+
       final orderId = cartData['orderId'];
       final newCartItems = cartData['cartItems'];
-      final totalItems = cartData['totalItems'];
-      
+
       if (orderId != null && newCartItems != null) {
-        debugPrint('🛒 Updating cart for order: $orderId');
-        debugPrint('🛒 New cart items: $newCartItems');
-        
+
         // Convert new items to CartModel objects
         List<CartModel> parsedNewItems = (newCartItems as List).map((item) {
-          debugPrint('🔄 Converting item: $item');
           return CartModel.fromJson(item);
         }).toList();
         
-        debugPrint('🛒 Converted ${parsedNewItems.length} items');
-        
+
         // Replace the entire cart items list with the new items
         _cartItems = parsedNewItems;
         
         // Update total item count based on unique items
         _totalItemCount = _cartItems.length;
-        debugPrint('📊 Updated total items: $_totalItemCount');
-        
+
         // Recalculate totals
         _calculateSubtotal(_cartItems);
         
@@ -696,11 +711,8 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         // Notify listeners to update UI
         if (mounted) {
           notifyListeners();
-          debugPrint('🔄 UI updated with new cart data');
         }
         
-        debugPrint('✅ Cart updated successfully');
-        debugPrint('🛒 Current cart items:');
         for (var item in _cartItems) {
           debugPrint("- ${item.name} (Quantity: ${item.quantity}, Price: ${item.price})");
         }
@@ -715,12 +727,10 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   Future<void> _handleMedicineOrderUpdate(dynamic data) async {
     try {
-      debugPrint('💊 Processing medicine order update: $data');
-      
+
       // Parse the data if it's a string
       Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
-      debugPrint('💊 Parsed data: $orderData');
-      
+
       // Refresh cart data
       await fetchOrdersAndCartItems();
       
@@ -729,7 +739,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         onCartCountUpdate!();
       }
       
-      debugPrint('✅ Cart refreshed after medicine order update');
     } catch (e, stackTrace) {
       debugPrint('❌ Error handling medicine order update: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -738,12 +747,10 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
   Future<void> _handleOrderStatusUpdate(dynamic data) async {
     try {
-      debugPrint('📦 Processing order status update: $data');
-      
+
       // Parse the data if it's a string
       Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
-      debugPrint('📦 Parsed data: $orderData');
-      
+
       // Refresh cart data to get latest state
       await fetchOrdersAndCartItems();
       
@@ -752,7 +759,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         onCartCountUpdate!();
       }
       
-      debugPrint('✅ Cart refreshed after order status update');
     } catch (e, stackTrace) {
       debugPrint('❌ Error handling order status update: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -762,8 +768,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // Add product to cart
   Future<void> addProductToCart(Product product) async {
     try {
-      debugPrint("🛍️ Adding product to cart: ${product.name}");
-      
+
       final cartId = const Uuid().v4();
       final orderId = const Uuid().v4();
       
@@ -775,14 +780,12 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
 
       _cartItems.add(cartItem);
       _totalItemCount = _cartItems.length; // Update total item count
-      debugPrint("📦 Cart count updated: $_totalItemCount");
-      
+
       // Calculate new subtotal
       _calculateSubtotal(_cartItems);
       calculateTotal();
       
       notifyListeners();
-      debugPrint("✅ Product added to cart successfully");
 
       // TODO: Implement API call to save cart item
       // await _cartRepository.addToCart(cartItem);
@@ -795,8 +798,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // Add product to product cart
   Future<void> addToProductCart(VendorProduct product) async {
     try {
-      debugPrint("🛍️ Adding product to product cart: ${product.name}");
-      
+
       // Check if product already exists in cart
       final existingItemIndex = _productCartItems.indexWhere(
         (item) => item.productId == product.productId,
@@ -815,7 +817,6 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
           (existingItem.quantity ?? 0) + 1,
         );
         _productCartItems[existingItemIndex] = updatedItem;
-        debugPrint("📦 Updated quantity for existing product: ${updatedItem.quantity}");
       } else {
         // Add new product to cart
         final newItem = ProductCart(
@@ -830,15 +831,15 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         );
         final addedItem = await _productCartService.addToCart(cartItem: newItem);
         _productCartItems.add(addedItem);
-        debugPrint("📦 Added new product to cart");
       }
 
       // Update total item count
       _totalItemCount = _cartItems.length + _productCartItems.length;
-      debugPrint("📦 Total cart count updated: $_totalItemCount");
+
+      // Clear cache to ensure fresh data on next fetch
+      clearCartCache();
       
       notifyListeners();
-      debugPrint("✅ Product added to cart successfully");
     } catch (e) {
       debugPrint('❌ Error adding product to cart: $e');
       rethrow;
@@ -848,8 +849,7 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // Delete product from cart
   Future<void> deleteProductFromCart(String cartId) async {
     try {
-      debugPrint("🗑️ Deleting product from cart: $cartId");
-      
+
       // Delete from backend
       final success = await _productCartService.deleteCartItem(cartId);
       
@@ -859,10 +859,11 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
         
         // Update total item count
         _totalItemCount = _cartItems.length + _productCartItems.length;
-        debugPrint("📦 Total cart count updated: $_totalItemCount");
+
+        // Clear cache to ensure fresh data on next fetch
+        clearCartCache();
         
         notifyListeners();
-        debugPrint("✅ Product deleted from cart successfully");
       }
     } catch (e) {
       debugPrint('❌ Error deleting product from cart: $e');
@@ -873,22 +874,46 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
   // Update product cart item quantity
   Future<void> updateProductCartQuantity(String cartId, int quantity) async {
     try {
-      debugPrint("🔄 Updating product cart quantity. Cart ID: $cartId, New quantity: $quantity");
-      
+
       final updatedItem = await _productCartService.updateCartItemQuantity(cartId, quantity);
       
       // Update local state
       final index = _productCartItems.indexWhere((item) => item.cartId == cartId);
       if (index != -1) {
         _productCartItems[index] = updatedItem;
-        debugPrint("📦 Updated quantity for product: ${updatedItem.quantity}");
-        
+
+        // Clear cache to ensure fresh data on next fetch
+        clearCartCache();
         notifyListeners();
-        debugPrint("✅ Product quantity updated successfully");
       }
     } catch (e) {
       debugPrint('❌ Error updating product quantity: $e');
       rethrow;
     }
+  }
+
+  // **🔹 Force refresh cart data (clears cache)**
+  Future<void> refreshCartData() async {
+    debugPrint("🔄 Force refreshing cart data...");
+    _hasInitialized = false;
+    _lastFetchTime = null;
+    await fetchOrdersAndCartItems(forceRefresh: true);
+  }
+
+  // **🔹 Clear cart cache**
+  void clearCartCache() {
+    debugPrint("🗑️ Clearing cart cache...");
+    _hasInitialized = false;
+    _lastFetchTime = null;
+  }
+
+  // **🔹 Get cache status for debugging**
+  String get cacheStatus {
+    if (!_hasInitialized) return "Not initialized";
+    if (_lastFetchTime == null) return "No cache time";
+    
+    final age = DateTime.now().difference(_lastFetchTime!);
+    final isValid = isCacheValid;
+    return "Cache age: ${age.inMinutes}m ${age.inSeconds % 60}s, Valid: $isValid";
   }
 }

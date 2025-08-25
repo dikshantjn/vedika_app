@@ -58,8 +58,7 @@ class LabTestBooking {
 
   factory LabTestBooking.fromJson(Map<String, dynamic> json) {
     // Debug print for reportUrls
-    print('Raw reportUrls from JSON: ${json['reportUrls']}');
-    
+
     return LabTestBooking(
       bookingId: json['bookingId'],
       vendorId: json['vendorId'],

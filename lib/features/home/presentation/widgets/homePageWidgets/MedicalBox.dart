@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalBoxColors.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class MedicalBoxRow extends StatelessWidget {
   const MedicalBoxRow({Key? key}) : super(key: key);
@@ -120,10 +121,7 @@ class MedicalBoxRow extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (route == "/bloodbank") {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => BloodBankMapScreen()),
-            );
+            Navigator.pushNamed(context, AppRoutes.bloodBank);
           } else {
             Navigator.pushNamed(context, route);
           }

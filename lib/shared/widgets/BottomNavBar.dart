@@ -1,10 +1,7 @@
 import 'dart:developer';
 import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
-import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/view/VoiceRecognitionOverlay.dart';
 
@@ -25,7 +22,6 @@ class BottomNavBar extends StatefulWidget {
 class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMixin {
   late AnimationController _gradientController;
   late Animation<double> _gradientAnimation;
-  EmergencyService? _emergencyService;
   late NotchBottomBarController _controller;
   late Animation<Color?> _blinkAnimation;
   late AnimationController _blinkController;
@@ -52,12 +48,6 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
       begin: Colors.transparent,
       end: Colors.red.withOpacity(0.9),
     ).animate(_blinkController);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _emergencyService ??= EmergencyService(context.read<LocationProvider>());
   }
 
   @override

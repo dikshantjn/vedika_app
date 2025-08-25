@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:intl/intl.dart';
 
 class NotificationPage extends StatefulWidget {
@@ -95,6 +95,17 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
       backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () {
+            final scope = MainScreenScope.maybeOf(context);
+            if (scope != null) {
+              scope.setIndex(0);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: Text(
           'Notifications',
           style: TextStyle(
@@ -133,7 +144,6 @@ class _NotificationPageState extends State<NotificationPage> with SingleTickerPr
           ],
         ),
       ),
-      drawer: DrawerMenu(),
       body: Column(
         children: [
           // Search Bar

@@ -114,9 +114,6 @@ class DiagnosticCenter {
   // Add fromJson factory constructor
   factory DiagnosticCenter.fromJson(Map<String, dynamic> json) {
     try {
-      // Print the entire JSON for debugging
-      print('Parsing DiagnosticCenter from JSON: $json');
-      
       // Helper function to safely convert to List<String>
       List<String> safeStringList(dynamic value) {
         if (value == null) return [];
@@ -194,7 +191,6 @@ class DiagnosticCenter {
         location: json['location']?.toString() ?? '',
       );
       
-      print('Successfully parsed DiagnosticCenter: ${center.name}');
       return center;
     } catch (e, stackTrace) {
       print('Error parsing DiagnosticCenter: $e');

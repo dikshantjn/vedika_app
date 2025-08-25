@@ -12,7 +12,6 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
-import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
@@ -90,6 +89,7 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/Ward
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -236,9 +236,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MedicineProductViewModel()),
         ChangeNotifierProvider(create: (_) => MedicineOrderViewModel()),
         ChangeNotifierProvider(create: (context) => BloodBankViewModel(context)),
-        ProxyProvider<LocationProvider, EmergencyService>(
-          update: (context, locationProvider, _) => EmergencyService(locationProvider),
-        ),
+        // EmergencyService is now initialized as a singleton in SplashScreen
+        // No need for Provider here
 
         ChangeNotifierProvider(create: (_) => AddNewAddressViewModel()),
         ChangeNotifierProvider(create: (_) => TrackOrderViewModel()),
@@ -280,16 +279,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WardViewModel()),
         ChangeNotifierProvider(create: (context) => BlogViewModel()),
         ChangeNotifierProvider(create: (_) => MembershipViewModel()),
+        ChangeNotifierProvider(create: (_) => ProfileCompletionViewModel()),
 
       ],
       child: Builder(
         builder: (context) {
-          // Call loadSavedLocation and initialize EmergencyService
+          // Call loadSavedLocation (EmergencyService is now initialized in SplashScreen)
           final locationProvider = context.read<LocationProvider>();
-          final emergencyService = context.read<EmergencyService>();
 
           locationProvider.loadSavedLocation();
-          emergencyService.initialize();
 
           return MaterialApp(
             showPerformanceOverlay: false,

@@ -47,7 +47,7 @@ class MedicalProfileService {
   // ✅ Get Medical Profile
   Future<MedicalProfile> getMedicalProfile(String userId) async {
     try {
-      print("Fetching medical profile for userId: $userId");
+      // Debug print removed
       Response response = await _dio.get("${ApiEndpoints.medicalProfile}/$userId");
 
       // Debugging: print the status code and response data for inspection
@@ -87,7 +87,7 @@ class MedicalProfileService {
   // ✅ Update Medical Profile
   Future<MedicalProfile> updateMedicalProfile(String userId, MedicalProfile updatedProfile) async {
     try {
-      print("Updating medical profile for userId: $userId with data: ${updatedProfile.toJson()}");
+              // Debug print removed
 
       // First, attempt to get the medical profile
       Response getResponse = await _dio.get("${ApiEndpoints.medicalProfile}/$userId");
@@ -124,7 +124,7 @@ class MedicalProfileService {
   // ✅ Delete Medical Profile
   Future<bool> deleteMedicalProfile(String userId) async {
     try {
-      print("Deleting medical profile for userId: $userId");
+              // Debug print removed
       Response response = await _dio.delete("${ApiEndpoints.medicalProfile}/$userId");
 
       print("Response Status Code for Delete: ${response.statusCode}");

@@ -17,9 +17,8 @@ class AmbulanceService {
       print("❌ Permissions not granted. Some features may not work.");
       return;
     }
-    await _getMobileNumber(); // Fetch device number
+    // await _getMobileNumber(); // Fetch device number
     await _fetchLocation(); // Get location in advance
-    print("✅ AmbulanceService is ready!");
   }
 
   // ✅ Request All Necessary Permissions
@@ -41,25 +40,25 @@ class AmbulanceService {
     return true;
   }
 
-  // ✅ Fetch Device Mobile Number
-  Future<void> _getMobileNumber() async {
-    try {
-      bool hasPermission = await MobileNumber.hasPhonePermission;
-      if (!hasPermission) {
-        await MobileNumber.requestPhonePermission;
-      }
-
-      List<SimCard>? simCards = await MobileNumber.getSimCards;
-
-      if (simCards != null && simCards.isNotEmpty) {
-        senderNumber = simCards.first.number ?? "Unknown";
-      }
-
-      print("📞 Device Mobile Number: $senderNumber");
-    } catch (e) {
-      print("❌ Error fetching mobile number: $e");
-    }
-  }
+  // // ✅ Fetch Device Mobile Number
+  // Future<void> _getMobileNumber() async {
+  //   try {
+  //     bool hasPermission = await MobileNumber.hasPhonePermission;
+  //     if (!hasPermission) {
+  //       await MobileNumber.requestPhonePermission;
+  //     }
+  //
+  //     List<SimCard>? simCards = await MobileNumber.getSimCards;
+  //
+  //     if (simCards != null && simCards.isNotEmpty) {
+  //       senderNumber = simCards.first.number ?? "Unknown";
+  //     }
+  //
+  //     print("📞 Device Mobile Number: $senderNumber");
+  //   } catch (e) {
+  //     print("❌ Error fetching mobile number: $e");
+  //   }
+  // }
 
   // ✅ Fetch Location in Advance
   Future<void> _fetchLocation() async {
@@ -112,7 +111,6 @@ class AmbulanceService {
       message: message,
       statusListener: (SendStatus status) {
         if (status == SendStatus.SENT) {
-          print("✅ Emergency SMS sent successfully to $emergencyNumber!");
         } else {
           print("❌ Failed to send SMS.");
         }
@@ -124,7 +122,7 @@ class AmbulanceService {
     print("🚨 Ambulance Emergency button clicked!");
 
     try {
-      await _getMobileNumber();
+      // await _getMobileNumber();
       sendEmergencySMS(providerNumber); // ✅ Send SMS
       callAmbulance(providerNumber);    // ✅ Call immediately
 
@@ -138,5 +136,4 @@ class AmbulanceService {
       return false;
     }
   }
-
 }

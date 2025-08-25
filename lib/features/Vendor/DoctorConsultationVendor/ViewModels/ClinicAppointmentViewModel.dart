@@ -53,7 +53,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   }
 
   void initSocketConnection() async {
-    debugPrint("🚀 Initializing socket connection for clinic appointments...");
     try {
       String? vendorId = await VendorLoginService().getVendorId();
       if (vendorId == null) {
@@ -82,7 +81,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
       // Set up event listeners
       _socket!.onConnect((_) {
-        debugPrint('✅ Socket connected for clinic appointments');
         _socket!.emit('registerVendor', vendorId);
       });
 
@@ -102,7 +100,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
       // Add event listener for ClinicAppointmentUpdate
       _socket!.on('ClinicAppointmentUpdate', (data) async {
-        debugPrint('🔄 Clinic appointment update received: $data');
         await _handleAppointmentUpdate(data);
       });
 
@@ -113,7 +110,6 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
       // Connect to the socket
       _socket!.connect();
-      debugPrint('🔄 Attempting to connect socket for clinic appointments...');
     } catch (e) {
       debugPrint("❌ Socket connection error: $e");
       _attemptReconnect();

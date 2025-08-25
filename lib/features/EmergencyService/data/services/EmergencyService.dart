@@ -4,31 +4,50 @@ import 'package:mobile_number/mobile_number.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class EmergencyService {
+  static EmergencyService? _instance;
+  static bool _isInitialized = false;
+  
   final Telephony telephony = Telephony.instance;
-
-
   String senderNumber = "Unknown"; // Mobile number of the device
   late LocationProvider locationProvider; // Use existing LocationProvider
 
-  EmergencyService(this.locationProvider);
+  // Private constructor to prevent external instantiation
+  EmergencyService._internal(this.locationProvider);
 
-  // ✅ Initialize on App Startup
-  Future<void> initialize() async {
+  // Singleton getter
+  static EmergencyService get instance {
+    if (_instance == null) {
+      throw StateError('EmergencyService has not been initialized. Call EmergencyService.initialize() first.');
+    }
+    return _instance!;
+  }
+
+  // Initialize method that should only be called once
+  static Future<void> initialize(LocationProvider locationProvider) async {
+    if (_isInitialized) {
+      print("⚠️ EmergencyService already initialized, skipping...");
+      return;
+    }
+
     print("🔄 Initializing EmergencyService...");
-
-    bool hasPermissions = await _requestPermissions();
+    _instance = EmergencyService._internal(locationProvider);
+    
+    bool hasPermissions = await _instance!._requestPermissions();
     if (!hasPermissions) {
       print("❌ Permissions not granted. Some features may not work.");
       return;
     }
 
-    await _getMobileNumber();  // Fetch device number
-    await locationProvider.initializeLocation(); // Ensure location is available
-
-    print("✅ EmergencyService is ready!");
+    // await _instance!._getMobileNumber();  // Fetch device number
+    await _instance!.locationProvider.initializeLocation(); // Ensure location is available
+    
+    _isInitialized = true;
   }
 
-  // ✅ Request All Permissions in Advance
+  // Check if service is initialized
+  static bool get isInitialized => _isInitialized;
+
+  // Request All Permissions in Advance
   Future<bool> _requestPermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
       Permission.phone,
@@ -48,30 +67,28 @@ class EmergencyService {
   }
 
   // ✅ Get Device Mobile Number
-  Future<void> _getMobileNumber() async {
-    try {
-      bool hasPermission = await MobileNumber.hasPhonePermission;
-      if (!hasPermission) {
-        await MobileNumber.requestPhonePermission;
-      }
-
-      List<SimCard>? simCards = await MobileNumber.getSimCards;
-      if (simCards != null && simCards.isNotEmpty) {
-        senderNumber = simCards.first.number ?? "Unknown";
-      }
-
-      print("📞 Device Mobile Number: $senderNumber");
-    } catch (e) {
-      print("❌ Error fetching mobile number: $e");
-    }
-  }
+  // Future<void> _getMobileNumber() async {
+  //   try {
+  //     bool hasPermission = await MobileNumber.hasPhonePermission;
+  //     if (!hasPermission) {
+  //       await MobileNumber.requestPhonePermission;
+  //     }
+  //
+  //     List<SimCard>? simCards = await MobileNumber.getSimCards;
+  //     if (simCards != null && simCards.isNotEmpty) {
+  //       senderNumber = simCards.first.number ?? "Unknown";
+  //     }
+  //
+  //     print("📞 Device Mobile Number: $senderNumber");
+  //   } catch (e) {
+  //     print("❌ Error fetching mobile number: $e");
+  //   }
+  // }
 
   // ✅ Make Emergency Call for Doctor
   Future<void> _makeDoctorEmergencyCall(String mobileNumber) async {
     try {
-      print("📞 Initiating emergency call for Doctor...");
       await telephony.dialPhoneNumber(mobileNumber);
-      print("✅ Calling Doctor emergency number: $mobileNumber");
     } catch (e) {
       print("❌ Error making call: $e");
     }
@@ -88,20 +105,17 @@ class EmergencyService {
         "Location: https://maps.google.com/?q=${locationProvider.latitude},${locationProvider.longitude}\n"
         "Caller: $mobileNumber";
 
-    print("📨 Checking SMS permission...");
     bool canSendSms = (await telephony.requestSmsPermissions) ?? false;
     if (!canSendSms) {
       print("❌ SMS permission denied!");
       return;
     }
 
-    print("📨 Sending Doctor Emergency SMS...");
     await telephony.sendSms(
       to: mobileNumber,
       message: message,
       statusListener: (SendStatus status) {
         if (status == SendStatus.SENT) {
-          print("✅ Doctor Emergency SMS sent successfully!");
         } else {
           print("❌ Failed to send SMS.");
         }
@@ -111,7 +125,6 @@ class EmergencyService {
 
   // ✅ Trigger Doctor Emergency
   Future<void> triggerDoctorEmergency(String mobileNumber) async {
-    print("🚨 Doctor Emergency button clicked!");
     await _sendDoctorEmergencySMS(mobileNumber);  // ✅ Send SMS immediately
     _makeDoctorEmergencyCall(mobileNumber); // ✅ Make call immediately
   }
@@ -121,7 +134,6 @@ class EmergencyService {
     try {
       print("📞 Initiating emergency call for Ambulance...");
       await telephony.dialPhoneNumber(mobileNumber);
-      print("✅ Calling Ambulance emergency number: $mobileNumber");
     } catch (e) {
       print("❌ Error making call: $e");
     }
@@ -138,20 +150,17 @@ class EmergencyService {
         "Location: https://maps.google.com/?q=${locationProvider.latitude},${locationProvider.longitude}\n"
         "Caller: $mobileNumber";
 
-    print("📨 Checking SMS permission...");
     bool canSendSms = (await telephony.requestSmsPermissions) ?? false;
     if (!canSendSms) {
       print("❌ SMS permission denied!");
       return;
     }
 
-    print("📨 Sending Ambulance Emergency SMS...");
     await telephony.sendSms(
       to: mobileNumber,
       message: message,
       statusListener: (SendStatus status) {
         if (status == SendStatus.SENT) {
-          print("✅ Ambulance Emergency SMS sent successfully!");
         } else {
           print("❌ Failed to send SMS.");
         }
@@ -161,7 +170,6 @@ class EmergencyService {
 
   // ✅ Trigger Ambulance Emergency
   Future<void> triggerAmbulanceEmergency(String mobileNumber) async {
-    print("🚨 Ambulance Emergency button clicked!");
     await _sendAmbulanceEmergencySMS(mobileNumber);  // ✅ Send SMS immediately
     _makeAmbulanceEmergencyCall(mobileNumber); // ✅ Make call immediately
   }
@@ -171,7 +179,6 @@ class EmergencyService {
     try {
       print("📞 Initiating emergency call for Blood Bank...");
       await telephony.dialPhoneNumber(mobileNumber);
-      print("✅ Calling Blood Bank emergency number: $mobileNumber");
     } catch (e) {
       print("❌ Error making call: $e");
     }
@@ -188,20 +195,17 @@ class EmergencyService {
         "Location: https://maps.google.com/?q=${locationProvider.latitude},${locationProvider.longitude}\n"
         "Caller: $mobileNumber";
 
-    print("📨 Checking SMS permission...");
     bool canSendSms = (await telephony.requestSmsPermissions) ?? false;
     if (!canSendSms) {
       print("❌ SMS permission denied!");
       return;
     }
 
-    print("📨 Sending Blood Bank Emergency SMS...");
     await telephony.sendSms(
       to: mobileNumber,
       message: message,
       statusListener: (SendStatus status) {
         if (status == SendStatus.SENT) {
-          print("✅ Blood Bank Emergency SMS sent successfully!");
         } else {
           print("❌ Failed to send SMS.");
         }
@@ -211,7 +215,6 @@ class EmergencyService {
 
   // ✅ Trigger Blood Bank Emergency
   Future<void> triggerBloodBankEmergency(String mobileNumber) async {
-    print("🚨 Blood Bank Emergency button clicked!");
     await _sendBloodBankEmergencySMS(mobileNumber);  // ✅ Send SMS immediately
     _makeBloodBankEmergencyCall(mobileNumber); // ✅ Make call immediately
   }

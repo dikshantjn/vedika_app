@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/viewModal/HospitalSearchViewModel.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/DraggableHospitalList.dart';
@@ -38,6 +40,24 @@ class _HospitalSearchPageState extends State<HospitalSearchPage> {
     return Consumer<HospitalSearchViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
+          appBar: AppBar(
+            backgroundColor: ColorPalette.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new),
+              onPressed: () {
+                final scope = MainScreenScope.maybeOf(context);
+                if (scope != null) {
+                  scope.setIndex(0);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            title: const Text('Hospitals'),
+            centerTitle: true,
+          ),
           body: Stack(
             children: [
               // Google Map

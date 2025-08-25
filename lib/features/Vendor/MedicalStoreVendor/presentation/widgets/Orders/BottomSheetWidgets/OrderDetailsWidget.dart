@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/Orders/PrescriptionPreviewScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
@@ -110,7 +111,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       case "ReadyForPickup":
         return Colors.purple;
       case "OutForDelivery":
-        return Colors.cyan;
+        return ColorPalette.primaryColor;
       case "Delivered":
         return Colors.green.shade600;
       case "ReturnRequested":
@@ -120,7 +121,7 @@ class _OrderDetailsWidgetState extends State<OrderDetailsWidget> {
       case "ReturnPickupPending":
         return Colors.amber;
       case "ReturnInTransit":
-        return Colors.cyan.shade600;
+        return ColorPalette.primaryColor;
       case "Returned":
         return Colors.red.shade600;
       case "RefundProcessed":

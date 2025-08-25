@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/auth/data/services/ProfileCompletionService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
-import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
-import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordsPage.dart';
-import 'package:vedika_healthcare/features/TrackOrder/presentation/view/TrackOrderScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankBookingScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankRequestScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/ProcessBloodBankBookingScreen.dart';
-import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/doctor_dashboard_screen.dart';
@@ -19,43 +11,90 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalD
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
-import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBloodBankLocationServiceScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
-import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicConsultationTypePage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorConsultationPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
-import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
-import 'package:vedika_healthcare/features/labTest/data/models/LabModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/view/BookLabTestAppointmentPage.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/CartScreen.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
-import 'package:vedika_healthcare/features/notifications/presentation/view/NotificationPage.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogListPage.dart';
 import 'package:vedika_healthcare/features/membership/presentation/view/MembershipPage.dart';
+import 'package:vedika_healthcare/features/settings/presentation/view/SettingsPage.dart';
+import 'package:vedika_healthcare/features/help/presentation/view/HelpCenterPage.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/ProductDetailScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
+import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
+
+// Singleton navigation controller for better performance
+class NavigationController {
+  static final NavigationController _instance = NavigationController._internal();
+  factory NavigationController() => _instance;
+  NavigationController._internal();
+
+  static NavigationController get instance => _instance;
+
+  // Cache for vendor service to avoid repeated initialization
+  VendorLoginService? _vendorLoginService;
+  VendorLoginService get vendorLoginService {
+    _vendorLoginService ??= VendorLoginService();
+    return _vendorLoginService!;
+  }
+
+  // Navigation method that uses existing MainScreen if available
+  void navigateToMainScreen(BuildContext context, {
+    int? index,
+    Widget? child,
+    Map<String, dynamic>? arguments,
+  }) {
+    // Check if MainScreen already exists in the route stack
+    final existingRoute = ModalRoute.of(context);
+    if (existingRoute?.settings.name == '/home') {
+      // Update existing MainScreen
+      if (index != null && child != null) {
+        MainScreenNavigator.instance.navigateToIndexWithChild(index, child);
+      } else if (index != null) {
+        MainScreenNavigator.instance.navigateToIndex(index);
+      } else if (child != null) {
+        MainScreenNavigator.instance.navigateToTransientChild(child);
+      }
+      return;
+    }
+
+    // Navigate to new MainScreen
+    Navigator.pushReplacementNamed(
+      context,
+      '/home',
+      arguments: {
+        if (index != null) 'initialIndex': index,
+        if (child != null) 'transientChild': child,
+        ...?arguments,
+      },
+    );
+  }
+}
 
 class AppRoutes {
-  // Auth Routes
+  // Route constants
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
   static const String vendorLogin = '/vendorLogin';
   static const String logout = '/logout';
-
-  // Main Routes
   static const String home = '/home';
   static const String profile = '/profile';
   static const String settings = '/settings';
@@ -65,8 +104,10 @@ class AppRoutes {
   static const String vedikaPlus = '/vedikaPlus';
   static const String membership = '/membership';
   static const String blogs = '/blogs';
-
-  // Service Routes
+  static const String settingsPage = '/settingsPage';
+  static const String helpCenter = '/helpCenter';
+  static const String productList = '/productList';
+  static const String productDetail = '/productDetail';
   static const String ambulanceSearch = '/ambulance-search';
   static const String bloodBank = '/blood-bank';
   static const String medicineOrder = '/medicine-order';
@@ -77,23 +118,17 @@ class AppRoutes {
   static const String clinic = '/clinic';
   static const String onlineDoctorConsultation = '/onlineDoctorConsultation';
   static const String hospital = '/hospital';
-
-  // Booking Routes
   static const String bookAppointment = '/book-appointment';
   static const String bookClinicAppointment = '/book-clinic-appointment';
   static const String bookLabTestAppointment = '/book-lab-test-appointment';
   static const String clinicConsultationType = '/clinic/consultationType';
   static const String onlineDoctorDetail = '/clinic/onlineConsultation/doctor';
   static const String doctorAppointments = '/doctor/appointments';
-
-  // Other Routes
   static const String donorRegistration = '/donor-registration';
   static const String trackOrder = '/track-order';
   static const String orderHistory = '/orderHistory';
   static const String enableBloodBankLocation = '/enableBloodBankLocation';
   static const String goToCart = '/goToCart';
-
-  // Vendor Routes
   static const String vendor = '/vendor';
   static const String VendorMedicalStoreDashBoard = '/VendorMedicalStoreDashBoard';
   static const String MedicalStoreVendordashboard = '/MedicalStoreVendordashboard';
@@ -111,220 +146,220 @@ class AppRoutes {
   static const String VendorProductPartnerDashBoard = '/VendorProductPartnerDashBoard';
   static const String bloodBankBooking = '/bloodBankBooking';
 
-  // New route
-
+  // Optimized route mapping with lazy initialization
   static Map<String, WidgetBuilder> getRoutes() {
-    final vendorLoginService = VendorLoginService();
-    
+    final nav = NavigationController.instance;
+
     return {
-      home: (context) => HomePage(),
-      bloodBank: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: BloodBankMapScreen(),
-          serviceType: ServiceType.bloodBank,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in bloodBank route: ${snapshot.error}');
-            return BloodBankMapScreen();
-          }
-          return snapshot.data ?? BloodBankMapScreen();
-        },
-      ),
-      ambulanceSearch: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: AmbulanceSearchPage(),
-          serviceType: ServiceType.ambulance,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in ambulance route: ${snapshot.error}');
-            return AmbulanceSearchPage();
-          }
-          return snapshot.data ?? AmbulanceSearchPage();
-        },
-      ),
-      medicineOrder: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: MedicineOrderScreen(),
-          serviceType: ServiceType.medicineDelivery,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in medicine route: ${snapshot.error}');
-            return MedicineOrderScreen();
-          }
-          return snapshot.data ?? MedicineOrderScreen();
-        },
-      ),
-      hospital: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: HospitalSearchPage(),
-          serviceType: ServiceType.hospital,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in hospital route: ${snapshot.error}');
-            return HospitalSearchPage();
-          }
-          return snapshot.data ?? HospitalSearchPage();
-        },
-      ),
-      clinicConsultationType: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: ClinicConsultationTypePage(),
-          serviceType: ServiceType.clinic,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in clinic route: ${snapshot.error}');
-            return ClinicConsultationTypePage();
-          }
-          return snapshot.data ?? ClinicConsultationTypePage();
-        },
-      ),
-      labTest: (context) => FutureBuilder<Widget>(
-        future: ProfileNavigationService.checkProfileCompletionAndNavigate(
-          destination: LabSearchPage(),
-          serviceType: ServiceType.labTest,
-          context: context,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasError) {
-            print('Error in lab route: ${snapshot.error}');
-            return LabSearchPage();
-          }
-          return snapshot.data ?? LabSearchPage();
-        },
-      ),
-      donorRegistration: (context) => DonorRegistrationPage(),
-      orderHistory: (context) => OrderHistoryPage(),
-      enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(),
-      doctorAppointments: (context) => ClinicAppointmentsScreen(),
-      clinic: (context) => ClinicSearchPage(),
-      clinicSearch: (context) => ClinicSearchPage(),
-      onlineDoctorConsultation: (context) => OnlineDoctorConsultationPage(),
-      goToCart: (context) => CartScreen(),
-      notification: (context) => NotificationPage(),
-      userProfile: (context) => UserProfilePage(),
-      healthRecords: (context) => HealthRecordsPage(),
+      // Primary routes
+      home: (context) => const MainScreen(),
       login: (context) => UserLoginScreen(),
       vendorLogin: (context) => VendorRegistrationPage(),
       logout: (context) => LogoutPage(),
-      bloodBankBooking: (context) => BloodBankBookingScreen(),
+
+      // Vendor routes (direct navigation - no MainScreen wrapper needed)
       vendor: (context) => VendorRegistrationPage(),
       VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(),
-      trackOrderScreen: (context) => TrackOrderScreen(),
       VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
       VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
       VendorBloodBankDashBoard: (context) => VendorBloodBankMainScreen(),
       VendorPathologyDashBoard: (context) => LabTestDashboardScreen(),
+      bloodBankBooking: (context) => BloodBankBookingScreen(),
+
+      // Optimized vendor product partner with cached service
       VendorProductPartnerDashBoard: (context) => FutureBuilder<String?>(
-        future: vendorLoginService.getVendorId(),
+        future: nav.vendorLoginService.getVendorId(),
         builder: (context, snapshot) {
-          print('VendorProductPartnerDashBoard - Connection State: ${snapshot.connectionState}');
-          print('VendorProductPartnerDashBoard - Has Data: ${snapshot.hasData}');
-          print('VendorProductPartnerDashBoard - Data: ${snapshot.data}');
-          print('VendorProductPartnerDashBoard - Error: ${snapshot.error}');
-          
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          
-          if (snapshot.hasError) {
-            return Scaffold(
-              body: Center(
-                child: Text('Error loading vendor ID: ${snapshot.error}'),
-              ),
-            );
-          }
-          
-          if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
+
+          if (!snapshot.hasData || snapshot.data == null) {
             return const Scaffold(
               body: Center(
                 child: Text('No vendor ID found. Please login again.'),
               ),
             );
           }
-          
-          return VendorProductPartnerDashBoardScreen(
-            vendorId: snapshot.data!,
-          );
+
+          return VendorProductPartnerDashBoardScreen(vendorId: snapshot.data!);
         },
       ),
-      blogs: (context) => const BlogListPage(),
-      membership: (context) => MembershipPage(),
+
+      // Direct navigation routes (non-MainScreen)
+      donorRegistration: (context) => DonorRegistrationPage(),
+      enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(),
+      doctorAppointments: (context) => ClinicAppointmentsScreen(),
+      membership: (context) => const MembershipPage(),
+
+      // MainScreen-integrated routes (optimized)
+      bloodBank: (context) => _MainScreenRoute(
+        child: BloodBankMapScreen(),
+        index: 9,
+      ),
+      ambulanceSearch: (context) => _MainScreenRoute(
+        child: AmbulanceSearchPage(),
+        index: 9,
+      ),
+      medicineOrder: (context) => _MainScreenRoute(
+        child: MedicineOrderScreen(),
+        index: 9,
+      ),
+      hospital: (context) => _MainScreenRoute(
+        child: HospitalSearchPage(),
+        index: 9,
+      ),
+      clinicConsultationType: (context) => _MainScreenRoute(
+        child: ClinicConsultationTypePage(),
+        index: 9,
+      ),
+      labTest: (context) => _MainScreenRoute(
+        child: LabSearchPage(),
+        index: 9,
+      ),
+      clinic: (context) => _MainScreenRoute(
+        child: ClinicSearchPage(),
+        index: 9,
+      ),
+      clinicSearch: (context) => _MainScreenRoute(
+        child: ClinicSearchPage(),
+        index: 9,
+      ),
+      onlineDoctorConsultation: (context) => _MainScreenRoute(
+        child: OnlineDoctorConsultationPage(),
+        index: 9,
+      ),
+      goToCart: (context) => _MainScreenRoute(
+        child: CartScreen(),
+        index: 9,
+      ),
+      blogs: (context) => _MainScreenRoute(
+        child: BlogListPage(),
+        index: 9,
+      ),
+      settingsPage: (context) => _MainScreenRoute(
+        child: SettingsPage(),
+        index: 9,
+      ),
+      helpCenter: (context) => _MainScreenRoute(
+        child: HelpCenterPage(),
+        index: 9,
+      ),
+
+      // MainScreen index routes
+      orderHistory: (context) => _MainScreenRoute(index: 1),
+      notification: (context) => _MainScreenRoute(index: 2),
+      healthRecords: (context) => _MainScreenRoute(index: 3),
+      trackOrderScreen: (context) => _MainScreenRoute(index: 4),
+      userProfile: (context) => _MainScreenRoute(index: 6),
+
+      // Parametrized routes
+      productList: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        return _MainScreenRoute(
+          child: ProductListScreen(
+            category: args?['category'] ?? 'medicine',
+            subCategory: args?['subCategory'],
+          ),
+          index: 9,
+        );
+      },
+      productDetail: (context) {
+        final product = ModalRoute.of(context)?.settings.arguments as VendorProduct;
+        return _MainScreenRoute(
+          child: ProductDetailScreen(product: product),
+          index: 9,
+        );
+      },
     };
   }
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    final nav = NavigationController.instance;
+
     switch (settings.name) {
       case bookAppointment:
         final hospital = settings.arguments as HospitalProfile;
         return MaterialPageRoute(
-          builder: (context) => BookAppointmentPage(hospital: hospital),
+          builder: (context) => _MainScreenRoute(
+            child: BookAppointmentPage(hospital: hospital),
+            index: 9,
+          ),
         );
 
       case bookClinicAppointment:
         final clinic = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
-          builder: (context) => BookClinicAppointmentPage(doctor: clinic),
+          builder: (context) => _MainScreenRoute(
+            child: BookClinicAppointmentPage(doctor: clinic),
+            index: 9,
+          ),
         );
 
       case bookLabTestAppointment:
-        final center = settings.arguments as DiagnosticCenter;  // Extracting DiagnosticCenter argument
+        final center = settings.arguments as DiagnosticCenter;
         return MaterialPageRoute(
-          builder: (context) => BookLabTestAppointmentPage(center: center),
+          builder: (context) => _MainScreenRoute(
+            child: BookLabTestAppointmentPage(center: center),
+            index: 9,
+          ),
         );
 
       case onlineDoctorDetail:
-        final doctor = settings.arguments as DoctorClinicProfile ;
+        final doctor = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
-          builder: (context) => OnlineDoctorDetailPage(doctor: doctor),
+          builder: (context) => _MainScreenRoute(
+            child: OnlineDoctorDetailPage(doctor: doctor),
+            index: 9,
+          ),
         );
 
       default:
         return MaterialPageRoute(
-          builder: (context) => Scaffold(body: Center(child: Text('Page Not Found'))),
+          builder: (context) => const Scaffold(
+            body: Center(child: Text('Page Not Found')),
+          ),
         );
     }
+  }
+}
+
+// Optimized widget for MainScreen routes
+class _MainScreenRoute extends StatelessWidget {
+  final Widget? child;
+  final int? index;
+
+  const _MainScreenRoute({
+    this.child,
+    this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Use post-frame callback for navigation to avoid build conflicts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (MainScreenNavigator.instance.isMainScreenCreated) {
+        // Update existing MainScreen
+        if (child != null && index != null) {
+          MainScreenNavigator.instance.navigateToIndexWithChild(index!, child!);
+        } else if (index != null) {
+          MainScreenNavigator.instance.navigateToIndex(index!);
+        } else if (child != null) {
+          MainScreenNavigator.instance.navigateToTransientChild(child!);
+        }
+        Navigator.pop(context);
+      } else {
+        // Create new MainScreen
+        Navigator.pushReplacementNamed(context, '/home', arguments: {
+          if (index != null) 'initialIndex': index,
+          if (child != null) 'transientChild': child,
+        });
+      }
+    });
+
+    return const SizedBox.shrink();
   }
 }

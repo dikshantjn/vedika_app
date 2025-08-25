@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presenta
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/ServiceDetailsScreen.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class ProcessBookingScreen extends StatefulWidget {
   final String requestId;
@@ -79,13 +80,13 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text("Process Booking"),
-          backgroundColor: Colors.cyan,
+          backgroundColor: ColorPalette.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
         ),
         body: const Center(
           child: CircularProgressIndicator(
-            color: Colors.cyan,
+            color: ColorPalette.primaryColor,
           ),
         ),
       );
@@ -95,7 +96,7 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text("Booking Status"),
-          backgroundColor: Colors.cyan,
+          backgroundColor: ColorPalette.primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
         ),
@@ -132,11 +133,11 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
       appBar: AppBar(
         foregroundColor: Colors.white,
         title: const Text('Process Booking'),
-        backgroundColor: Colors.cyan,
+        backgroundColor: ColorPalette.primaryColor,
         elevation: 0,
       ),
       body: RefreshIndicator(
-        color: Colors.cyan,
+        color: ColorPalette.primaryColor,
         onRefresh: () async {
           setState(() => isLoading = true);
           await viewModel.fetchPendingBookings();
@@ -167,13 +168,13 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Icon(Icons.bookmark_outline, color: Colors.cyan[700], size: 24),
+                    Icon(Icons.bookmark_outline, color: ColorPalette.primaryColor, size: 24),
                     const SizedBox(width: 8),
                     Text(
                       "Booking Details",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.cyan[700],
+                        color: ColorPalette.primaryColor,
                       ),
                     ),
                   ],
@@ -200,13 +201,13 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Icon(Icons.medical_services_outlined, color: Colors.cyan[700], size: 24),
+                    Icon(Icons.medical_services_outlined, color: ColorPalette.primaryColor, size: 24),
                     const SizedBox(width: 8),
                     Text(
                       "Service Details",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.cyan[700],
+                        color: ColorPalette.primaryColor,
                       ),
                     ),
                     const Spacer(),
@@ -276,16 +277,16 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                       icon: Icon(
                         isDetailsFilled ? Icons.edit : Icons.add,
                         size: 20,
-                        color: Colors.cyan[700],
+                        color: ColorPalette.primaryColor,
                       ),
                       label: Text(
                         isDetailsFilled ? "Edit Details" : "Add Details",
-                        style: TextStyle(color: Colors.cyan[700]),
+                        style: TextStyle(color: ColorPalette.primaryColor),
                       ),
                       style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.cyan[700]!),
+                          side: BorderSide(color: ColorPalette.primaryColor),
                         ),
                       ),
                     ),
@@ -313,13 +314,13 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Icon(Icons.update, color: Colors.cyan[700], size: 24),
+                    Icon(Icons.update, color: ColorPalette.primaryColor, size: 24),
                     const SizedBox(width: 8),
                     Text(
                       "Update Status",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.cyan[700],
+                        color: ColorPalette.primaryColor,
                       ),
                     ),
                   ],
@@ -364,7 +365,7 @@ class _ProcessBookingScreenState extends State<ProcessBookingScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.cyan),
+                            borderSide: BorderSide(color: ColorPalette.primaryColor),
                           ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           filled: true,

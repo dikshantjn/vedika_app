@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/CategoryViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class CategoryGrid extends StatefulWidget {
   @override
@@ -19,13 +20,12 @@ class _CategoryGridState extends State<CategoryGrid> {
   }
 
   void _navigateToProductList(BuildContext context, String category) {
-    Navigator.push(
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) => ProductListScreen(
-          category: category,
-        ),
-      ),
+      AppRoutes.productList,
+      arguments: <String, dynamic>{
+        'category': category,
+      },
     );
   }
 

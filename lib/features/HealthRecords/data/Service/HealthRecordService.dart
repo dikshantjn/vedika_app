@@ -14,14 +14,9 @@ class HealthRecordService {
         throw Exception('User ID not found');
       }
 
-      print('📤 Fetching health records for user: $userId');
       final response = await _dio.get(
         '${ApiEndpoints.getHealthRecords}/$userId',
       );
-
-      print('📥 Response received:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
         final List<dynamic> recordsJson = response.data['data'];
@@ -44,18 +39,14 @@ class HealthRecordService {
 
   Future<HealthRecord> addRecord(HealthRecord record) async {
     try {
-      print('📤 Sending request to add health record:');
-      print('   URL: ${ApiEndpoints.addHealthRecord}');
-      print('   Request Body: ${record.toJson()}');
+
 
       final response = await _dio.post(
         ApiEndpoints.addHealthRecord,
         data: record.toJson(),
       );
 
-      print('📥 Response received:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data: ${response.data}');
+
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return HealthRecord.fromJson(response.data['data']);
@@ -121,18 +112,10 @@ class HealthRecordService {
   }
 
   Future<List<ClinicAppointment>> getOngoingMeetings(String userId) async {
-    print('🔄 Starting getOngoingMeetings API call');
     try {
-      print('📤 Fetching ongoing meetings for user: $userId');
-      print('   API Endpoint: ${ApiEndpoints.getOngoingMeetings}/$userId');
-      
       final response = await _dio.get(
         '${ApiEndpoints.getOngoingMeetings}/$userId',
       );
-
-      print('📥 Response received:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
         final List<dynamic> meetingsJson = response.data['data'];
@@ -162,10 +145,6 @@ class HealthRecordService {
     required List<String> healthRecordIds,
   }) async {
     try {
-      print('📡 Sharing health records...');
-      print('👤 User ID: $userId');
-      print('📋 Health Record IDs: $healthRecordIds');
-      print('🏥 Clinic Appointment ID: $clinicAppointmentId');
 
       final response = await _dio.post(
         ApiEndpoints.shareHealthRecords,
@@ -176,8 +155,6 @@ class HealthRecordService {
         },
       );
 
-      print('📥 Response status: ${response.statusCode}');
-      print('📦 Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -204,14 +181,10 @@ class HealthRecordService {
 
   Future<bool> checkHealthRecordPasswordSet(String userId) async {
     try {
-      print('🔍 Checking if health record password is set for user: $userId');
       final response = await _dio.get(
         '${ApiEndpoints.checkHealthRecordPassword}/$userId/health-record-password/check',
       );
 
-      print('📥 Response received:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -222,11 +195,7 @@ class HealthRecordService {
     } catch (e) {
       print('❌ Error checking health record password: $e');
       if (e is DioException) {
-        print('📡 API Error Details:');
-        print('   Status Code: ${e.response?.statusCode}');
-        print('   Response Data: ${e.response?.data}');
-        print('   Error Type: ${e.type}');
-        print('   Error Message: ${e.message}');
+
       }
       return false;
     }
@@ -234,7 +203,6 @@ class HealthRecordService {
 
   Future<bool> setHealthRecordPassword(String userId, String newPassword) async {
     try {
-      print('🔐 Setting health record password for user: $userId');
       final response = await _dio.post(
         '${ApiEndpoints.setHealthRecordPassword}/$userId/health-record-password',
         data: {
@@ -242,9 +210,7 @@ class HealthRecordService {
         },
       );
 
-      print('📥 Response received:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data: ${response.data}');
+
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -267,7 +233,6 @@ class HealthRecordService {
 
   Future<bool> verifyHealthRecordPassword(String userId, String password) async {
     try {
-      print('🔐 Verifying health record password for user: $userId');
       final response = await _dio.post(
         '${ApiEndpoints.verifyHealthRecordPassword}/$userId/verify-health-record-password',
         data: {

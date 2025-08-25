@@ -19,19 +19,14 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🛍️ Building ProductOrderTrackingCard with ${widget.orders.length} orders');
-    
     if (widget.orders.isEmpty) {
-      debugPrint('❌ No product orders to display');
       return const Center(child: Text("No product orders found."));
     }
 
     return Column(
       children: widget.orders.map((order) {
-        debugPrint('📦 Building card for order: ${order.orderId}');
         final steps = _getSteps();
         final currentStepIndex = _getCurrentStepIndex(order.status);
-        debugPrint('📦 Order status: ${order.status}, Current step: $currentStepIndex');
 
         // Store the previous step index if it doesn't exist
         if (!_previousStepIndices.containsKey(order.orderId)) {
@@ -153,7 +148,12 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
             }
             
             // Ensure we don't scroll past the end
-            scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+            double maxScrollPosition = (steps.length * 80.0) - screenWidth;
+            if (maxScrollPosition >= 0.0) {
+              scrollPosition = scrollPosition.clamp(0.0, maxScrollPosition);
+            } else {
+              scrollPosition = 0.0; // If max is negative, just scroll to beginning
+            }
             
             // Animate to the calculated position
             scrollController.animateTo(
@@ -177,7 +177,13 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
             scrollPosition = scrollPosition - (screenWidth / 2) + 40;
           }
           
-          scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+          // Ensure the max scroll position is valid (greater than or equal to min)
+          double maxScrollPosition = (steps.length * 80.0) - screenWidth;
+          if (maxScrollPosition >= 0.0) {
+            scrollPosition = scrollPosition.clamp(0.0, maxScrollPosition);
+          } else {
+            scrollPosition = 0.0; // If max is negative, just scroll to beginning
+          }
           
           scrollController.animateTo(
             scrollPosition,
@@ -250,11 +256,7 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
   }
 
   Widget _buildOrderDetails(ProductOrder order) {
-    debugPrint('📦 Building order details for order: ${order.orderId}');
-    debugPrint('📦 Order items count: ${order.items?.length ?? 0}');
-    
     if (order.items == null || order.items!.isEmpty) {
-      debugPrint('❌ No order items found');
       return const SizedBox.shrink();
     }
 
@@ -267,12 +269,8 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
         ),
         const SizedBox(height: 12),
         ...order.items!.map((item) {
-          debugPrint('📦 Processing order item: ${item.orderItemId}');
-          debugPrint('📦 Vendor product: ${item.vendorProduct?.name}');
-          
           final product = item.vendorProduct;
           if (product == null) {
-            debugPrint('❌ No vendor product found for item');
             return const SizedBox.shrink();
           }
 
@@ -299,7 +297,6 @@ class _ProductOrderTrackingCardState extends State<ProductOrderTrackingCard> {
                         child: const Center(child: CircularProgressIndicator()),
                       ),
                       errorWidget: (context, url, error) {
-                        debugPrint('❌ Error loading image: $error');
                         return Container(
                           color: Colors.grey.shade200,
                           child: const Icon(Icons.error),

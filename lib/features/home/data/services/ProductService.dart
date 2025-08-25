@@ -15,7 +15,6 @@ class ProductService {
         return productsJson.map((json) => VendorProduct.fromJson(json)).toList();
       } else {
         print('Error fetching products by category: Status code ${response.statusCode}');
-        print('Response data: ${response.data}');
         return [];
       }
     } on DioException catch (e) {
@@ -40,7 +39,6 @@ class ProductService {
         return productsJson.map((json) => VendorProduct.fromJson(json)).toList();
       } else {
         print('Error fetching products by subcategory: Status code ${response.statusCode}');
-        print('Response data: ${response.data}');
         return [];
       }
     } on DioException catch (e) {
@@ -89,7 +87,6 @@ class ProductService {
         }
       } else {
         print('Error fetching product by ID: Status code ${response.statusCode}');
-        print('Response data: ${response.data}');
         return null;
       }
     } on DioException catch (e) {
@@ -114,7 +111,6 @@ class ProductService {
         return productsJson.map((json) => VendorProduct.fromJson(json)).toList();
       } else {
         print('Error searching products: Status code ${response.statusCode}');
-        print('Response data: ${response.data}');
         return [];
       }
     } on DioException catch (e) {

@@ -1,22 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lottie/lottie.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/view/HomePage.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
-import 'package:vedika_healthcare/main.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -27,7 +23,6 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
   late LocationProvider locationProvider;
   late EmergencyService emergencyService;
   bool _initializing = false;
-  bool _permissionGranted = false;
   final VendorLoginService _loginService = VendorLoginService();
   Timer? _timeoutTimer;
 
@@ -69,17 +64,20 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         statusBarIconBrightness: Brightness.dark,
       ));
 
-      locationProvider = LocationProvider();
+      // Use globally provided LocationProvider for faster, shared availability
+      locationProvider = Provider.of<LocationProvider>(context, listen: false);
       await locationProvider.initializeLocation();
       // await getWifiIpAddress();
 
-      emergencyService = EmergencyService(locationProvider);
-      emergencyService.initialize();
+      // Initialize EmergencyService using the singleton pattern
+      await EmergencyService.initialize(locationProvider);
+      emergencyService = EmergencyService.instance;
 
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
       final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
       final membershipViewModel = Provider.of<MembershipViewModel>(context, listen: false);
+      final profileCompletionVM = Provider.of<ProfileCompletionViewModel>(context, listen: false);
 
       await cartViewModel.fetchOrdersAndCartItems();
 
@@ -96,11 +94,12 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         if (userId != null && userId.isNotEmpty) {
           await membershipViewModel.loadPlans();
           await membershipViewModel.loadCurrentMembership(userId);
+          // Preload profile completion for all services once at startup
+          await profileCompletionVM.preloadAll(userId);
         }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        debugPrint('🚨 SPLASH: Navigating to AppRoutes.home after successful initialization');
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
         int? role = await _loginService.getVendorRole();
         await vendorAuthViewModel.navigateToDashboard(context, role);

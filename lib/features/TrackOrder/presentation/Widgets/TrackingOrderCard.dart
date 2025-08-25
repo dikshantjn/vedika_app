@@ -159,7 +159,12 @@ class _TrackingOrderCardState extends State<TrackingOrderCard> {
             }
             
             // Ensure we don't scroll past the end
-            scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+            double maxScrollPosition = (steps.length * 80.0) - screenWidth;
+            if (maxScrollPosition >= 0.0) {
+              scrollPosition = scrollPosition.clamp(0.0, maxScrollPosition);
+            } else {
+              scrollPosition = 0.0; // If max is negative, just scroll to beginning
+            }
             
             // Animate to the calculated position
             scrollController.animateTo(
@@ -183,7 +188,13 @@ class _TrackingOrderCardState extends State<TrackingOrderCard> {
             scrollPosition = scrollPosition - (screenWidth / 2) + 40;
           }
           
-          scrollPosition = scrollPosition.clamp(0.0, (steps.length * 80.0) - screenWidth);
+          // Ensure the max scroll position is valid (greater than or equal to min)
+          double maxScrollPosition = (steps.length * 80.0) - screenWidth;
+          if (maxScrollPosition >= 0.0) {
+            scrollPosition = scrollPosition.clamp(0.0, maxScrollPosition);
+          } else {
+            scrollPosition = 0.0; // If max is negative, just scroll to beginning
+          }
           
           scrollController.animateTo(
             scrollPosition,

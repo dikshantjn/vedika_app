@@ -13,6 +13,7 @@ import 'package:vedika_healthcare/features/hospital/presentation/widgets/Hospita
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/PatientDetailsForm.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/TimeSlotSelection.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 
 class BookAppointmentPage extends StatefulWidget {
   final HospitalProfile hospital;
@@ -254,10 +255,15 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
+                                          onPressed: () {
+                        Navigator.pop(context); // Close the dialog first
+                        // Then navigate back using MainScreenNavigator
+                        if (MainScreenNavigator.instance.canGoBack) {
+                          MainScreenNavigator.instance.goBack();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColor,
                       padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -366,9 +372,15 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
             color: Colors.white.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.arrow_back, color: Colors.white),
+          child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (MainScreenNavigator.instance.canGoBack) {
+            MainScreenNavigator.instance.goBack();
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       actions: [
         IconButton(

@@ -6,7 +6,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/HealthRecords/data/models/HealthRecord.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/view/HealthRecordItem.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HealthRecordsPage extends StatefulWidget {
@@ -557,6 +557,17 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () {
+            final scope = MainScreenScope.maybeOf(context);
+            if (scope != null) {
+              scope.setIndex(0);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: Text(
           isSelectionMode ? '${selectedRecordIds.length} Selected' : "Health Records",
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -630,7 +641,6 @@ class _HealthRecordsPageState extends State<HealthRecordsPage> with SingleTicker
         icon: const Icon(Icons.upload_file, color: Colors.white),
         label: const Text('Upload Record', style: TextStyle(color: Colors.white)),
       ),
-      drawer: DrawerMenu(),
       body: TabBarView(
         controller: _tabController,
         children: categories.map((category) => _buildRecordList(category)).toList(),

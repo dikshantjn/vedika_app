@@ -205,21 +205,15 @@ class AppointmentService {
   /// Get appointment details
   Future<ClinicAppointment?> getAppointmentDetails(String appointmentId) async {
     try {
-      print('[AppointmentService] Getting details for appointment ID: $appointmentId');
-      
-      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId';
-      print('[AppointmentService] Making GET request to: $url');
-      
-      final response = await _dio.get(url);
 
-      print('[AppointmentService] Response status code: ${response.statusCode}');
-      print('[AppointmentService] Response data: ${response.data}');
+      final String url = '${ApiEndpoints.createClinicAppointment}/$appointmentId';
+
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
         // Extract appointment from response
         final Map<String, dynamic> appointmentData = response.data['appointment'] ?? response.data;
-        print('[AppointmentService] Raw appointment data: $appointmentData');
-        
+
         final appointment = ClinicAppointment.fromJson(appointmentData);
         print('[AppointmentService] Successfully fetched appointment details');
         return appointment;

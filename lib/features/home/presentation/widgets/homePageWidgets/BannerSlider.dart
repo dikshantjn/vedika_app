@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/BannerColorPalette.dart';
@@ -61,187 +62,191 @@ class BannerSlider extends StatelessWidget {
                 itemBuilder: (context, index, realIndex) {
                   final offer = offers[index];
                   final gradientColors = BannerColorPalette.getGradientForType(offer.type);
+                  final double cardHeight = 180.0;
+                  final double imageWidth = (MediaQuery.of(context).size.width * 0.24).clamp(80.0, 120.0);
 
                   return GestureDetector(
                     onTap: () => _navigateToPage(context, offer, healthDayViewModel),
                     child: Container(
+                      height: cardHeight,
                       margin: const EdgeInsets.symmetric(horizontal: 8.0),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: gradientColors,
                         ),
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
                             color: gradientColors[0].withOpacity(0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                            spreadRadius: 0,
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                            spreadRadius: 0,
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: Stack(
                         children: [
-                          // Background Image with Overlay
+                          // Geometric accents (no ellipses)
                           Positioned(
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: MediaQuery.of(context).size.width * 0.35,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(20),
-                                bottomRight: Radius.circular(20),
+                            top: 14,
+                            right: 18,
+                            child: Transform.rotate(
+                              angle: math.pi / 4,
+                              child: Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: gradientColors[1].withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                               ),
-                              child: Stack(
-                                children: [
-                                  Image.asset(
-                                    offer.image,
-                                    height: 180,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 44,
+                            right: 72,
+                            child: Transform.rotate(
+                              angle: math.pi / 12,
+                              child: Container(
+                                width: 46,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      gradientColors[0].withOpacity(0.10),
+                                      gradientColors[2].withOpacity(0.10),
+                                    ],
                                   ),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 26,
+                            right: 24,
+                            child: Transform.rotate(
+                              angle: -math.pi / 8,
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: gradientColors[0].withOpacity(0.18),
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // PNG at bottom-right (smaller size)
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: Container(
+                              width: imageWidth as double,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Image.asset(
+                                offer.image,
+                                height: cardHeight - 36,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+
+                          // Content (clean, organized)
+                          Positioned.fill(
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                16,
+                                16,
+                                (imageWidth as double) + 24,
+                                16,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
                                   Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                        colors: [
-                                          gradientColors[0].withOpacity(0.8),
-                                          gradientColors[1].withOpacity(0.6),
-                                          gradientColors[2].withOpacity(0.4),
-                                        ],
+                                      color: BannerColorPalette.badgeBackground,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Text(
+                                      offer.type == "offer"
+                                          ? "Special Offer"
+                                          : offer.type == "health_days"
+                                              ? "Health Day"
+                                              : "Discount",
+                                      style: TextStyle(
+                                        color: BannerColorPalette.badgeText,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    offer.title,
+                                    style: TextStyle(
+                                      color: BannerColorPalette.lightText,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.1,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    offer.description,
+                                    style: TextStyle(
+                                      color: BannerColorPalette.lightText.withOpacity(0.9),
+                                      fontSize: 12,
+                                      height: 1.35,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: BannerColorPalette.buttonBackground,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Learn More",
+                                          style: TextStyle(
+                                            color: BannerColorPalette.buttonText,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(Icons.arrow_forward_rounded, size: 14, color: BannerColorPalette.buttonText),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: BannerColorPalette.badgeBackground,
-                                          borderRadius: BorderRadius.circular(20),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.1),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Text(
-                                          offer.type == "offer"
-                                              ? "Special Offer"
-                                              : offer.type == "health_days"
-                                                  ? "Health Day"
-                                                  : "Discount",
-                                          style: TextStyle(
-                                            color: BannerColorPalette.badgeText,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      // Title with fixed height
-                                      SizedBox(
-                                        height: 22,
-                                        child: Text(
-                                          offer.title,
-                                          style: TextStyle(
-                                            color: BannerColorPalette.lightText,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1.2,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Description with fixed height
-                                      SizedBox(
-                                        height: 36,
-                                        child: Text(
-                                          offer.description,
-                                          style: TextStyle(
-                                            color: BannerColorPalette.lightText,
-                                            fontSize: 12,
-                                            height: 1.3,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      // Learn More Button
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: BannerColorPalette.buttonBackground,
-                                          borderRadius: BorderRadius.circular(20),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.15),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              "Learn More",
-                                              style: TextStyle(
-                                                color: BannerColorPalette.buttonText,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.arrow_forward_rounded,
-                                              color: BannerColorPalette.buttonText,
-                                              size: 14,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: MediaQuery.of(context).size.width * 0.35),
-                              ],
                             ),
                           ),
                         ],

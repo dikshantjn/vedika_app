@@ -8,6 +8,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
 
 class DrawerMenu extends StatefulWidget {
+  final void Function(int index)? onSelectIndex;
+  final int? currentIndex;
+  final Map<String, int>? routeIndexMap;
+
+  const DrawerMenu(
+      {Key? key, this.onSelectIndex, this.currentIndex, this.routeIndexMap})
+      : super(key: key);
+
   @override
   _DrawerMenuState createState() => _DrawerMenuState();
 }
@@ -22,9 +30,9 @@ class _DrawerMenuState extends State<DrawerMenu> {
   Future<void> _fetchUserDetails() async {
     final userViewModel = context.read<UserViewModel>();
     final userId = await StorageService.getUserId();
-      if (userId != null) {
+    if (userId != null) {
       await userViewModel.fetchUserDetails(userId);
-      }
+    }
   }
 
   @override
@@ -42,18 +50,25 @@ class _DrawerMenuState extends State<DrawerMenu> {
           _buildDivider(),
           _buildSectionTitle("Main Menu"),
           _buildSection(context, [
-            _buildDrawerItem(context, Icons.shopping_bag_rounded, "My Orders", "/orderHistory"),
+            _buildDrawerItem(context, Icons.shopping_bag_rounded, "My Orders",
+                "/orderHistory"),
             _buildNotificationItem(context, notificationViewModel),
-            _buildDrawerItem(context, Icons.medical_services_rounded, "Health Records", "/healthRecords"),
-            _buildDrawerItem(context, Icons.local_shipping_rounded, "Track Order", AppRoutes.trackOrderScreen),
-            _buildDrawerItem(context, Icons.logout_rounded, "Logout", "/logout"),
+            _buildDrawerItem(context, Icons.medical_services_rounded,
+                "Health Records", "/healthRecords"),
+            _buildDrawerItem(context, Icons.local_shipping_rounded,
+                "Track Order", AppRoutes.trackOrderScreen),
+            _buildDrawerItem(
+                context, Icons.logout_rounded, "Logout", "/logout"),
           ]),
           _buildDivider(),
           _buildSectionTitle("More"),
           _buildSection(context, [
-            _buildDrawerItem(context, Icons.settings_rounded, "Settings", "/settings"),
-            _buildDrawerItem(context, Icons.help_rounded, "Help Center", "/help"),
-            _buildDrawerItem(context, Icons.description_rounded, "Terms & Conditions", "/terms"),
+            _buildDrawerItem(context, Icons.settings_rounded, "Settings",
+                AppRoutes.settingsPage),
+            _buildDrawerItem(context, Icons.help_rounded, "Help Center",
+                AppRoutes.helpCenter),
+            _buildDrawerItem(context, Icons.description_rounded,
+                "Terms & Conditions", "/terms"),
           ]),
           SizedBox(height: 20),
           _buildAppVersion(),
@@ -76,12 +91,26 @@ class _DrawerMenuState extends State<DrawerMenu> {
       userViewModel.user?.location?.isNotEmpty ?? false,
     ];
 
-    int filledEssentialFields = essentialFields.where((isFilled) => isFilled).length;
+    int filledEssentialFields =
+        essentialFields.where((isFilled) => isFilled).length;
     double profileCompletion = filledEssentialFields / essentialFields.length;
 
     return GestureDetector(
       onTap: () async {
-        await Navigator.pushNamed(context, AppRoutes.userProfile);
+        final index = widget.routeIndexMap != null
+            ? widget.routeIndexMap![AppRoutes.userProfile]
+            : null;
+        if (widget.onSelectIndex != null && index != null) {
+          // If already on the same screen, just close the drawer
+          if (widget.currentIndex == index) {
+            Navigator.of(context).maybePop();
+            return;
+          }
+          Navigator.of(context).maybePop();
+          widget.onSelectIndex!(index);
+        } else {
+          await Navigator.pushNamed(context, AppRoutes.userProfile);
+        }
         _fetchUserDetails();
       },
       child: Container(
@@ -130,7 +159,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                       ),
                       child: CircleAvatar(
                         radius: 28,
-                      backgroundColor: Colors.white,
+                        backgroundColor: Colors.white,
                         child: userViewModel.user?.photo?.isNotEmpty == true
                             ? ClipOval(
                                 child: CachedNetworkImage(
@@ -138,9 +167,11 @@ class _DrawerMenuState extends State<DrawerMenu> {
                                   width: 56,
                                   height: 56,
                                   fit: BoxFit.cover,
-                                  placeholder: (context, url) => CircularProgressIndicator(
+                                  placeholder: (context, url) =>
+                                      CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        ColorPalette.primaryColor),
                                   ),
                                   errorWidget: (context, url, error) => Icon(
                                     Icons.person_rounded,
@@ -160,7 +191,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -199,9 +231,10 @@ class _DrawerMenuState extends State<DrawerMenu> {
                             letterSpacing: 0.5,
                           ),
                         ),
-                      if (userViewModel.user?.name?.isNotEmpty ?? false) SizedBox(height: 4),
-                        Text(
-                          userViewModel.user?.phoneNumber ?? '',
+                      if (userViewModel.user?.name?.isNotEmpty ?? false)
+                        SizedBox(height: 4),
+                      Text(
+                        userViewModel.user?.phoneNumber ?? '',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white.withOpacity(0.9),
@@ -217,7 +250,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                             color: Colors.white.withOpacity(0.7),
                           ),
                           SizedBox(width: 4),
-                      Text(
+                          Text(
                             "Tap to view profile",
                             style: TextStyle(
                               fontSize: 12,
@@ -262,7 +295,22 @@ class _DrawerMenuState extends State<DrawerMenu> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => Navigator.pushNamed(context, '/membership'),
+          onTap: () {
+            final route = AppRoutes.membership;
+            final index = widget.routeIndexMap != null
+                ? widget.routeIndexMap![route]
+                : null;
+            if (widget.onSelectIndex != null && index != null) {
+              if (widget.currentIndex == index) {
+                Navigator.of(context).maybePop();
+                return;
+              }
+              Navigator.of(context).maybePop();
+              widget.onSelectIndex!(index);
+            } else {
+              Navigator.pushNamed(context, route);
+            }
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: EdgeInsets.all(16),
@@ -274,7 +322,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.star_rounded, color: Colors.white, size: 24),
+                  child:
+                      Icon(Icons.star_rounded, color: Colors.white, size: 24),
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -282,7 +331,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-        children: [
+                        children: [
                           Text(
                             "Vedika ",
                             style: TextStyle(
@@ -291,23 +340,24 @@ class _DrawerMenuState extends State<DrawerMenu> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              "Plus",
+                            ),
+                            child: Text(
+                              "Plus",
                               style: TextStyle(
                                 color: Color(0xFF874292),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
-            ),
-          ),
-        ],
-      ),
+                            ),
+                          ),
+                        ],
+                      ),
                       SizedBox(height: 4),
                       Text(
                         "Health plan for your family",
@@ -319,7 +369,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                Icon(Icons.arrow_forward_ios_rounded,
+                    color: Colors.white, size: 16),
               ],
             ),
           ),
@@ -351,7 +402,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
     );
   }
 
-  Widget _buildDrawerItem(BuildContext context, IconData icon, String title, String route) {
+  Widget _buildDrawerItem(
+      BuildContext context, IconData icon, String title, String route) {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Container(
@@ -370,16 +422,29 @@ class _DrawerMenuState extends State<DrawerMenu> {
           color: Colors.grey[800],
         ),
       ),
-      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey[400]),
+      trailing: Icon(Icons.arrow_forward_ios_rounded,
+          size: 16, color: Colors.grey[400]),
       onTap: () {
-        Navigator.pushNamed(context, route);
+        final index =
+            widget.routeIndexMap != null ? widget.routeIndexMap![route] : null;
+        if (widget.onSelectIndex != null && index != null) {
+          if (widget.currentIndex == index) {
+            Navigator.of(context).maybePop();
+            return;
+          }
+          Navigator.of(context).maybePop();
+          widget.onSelectIndex!(index);
+        } else {
+          Navigator.pushNamed(context, route);
+        }
       },
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context, NotificationViewModel viewModel) {
+  Widget _buildNotificationItem(
+      BuildContext context, NotificationViewModel viewModel) {
     final unreadCount = viewModel.notifications.where((n) => !n.isRead).length;
-    
+
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Stack(
@@ -390,7 +455,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
               color: ColorPalette.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.notifications_rounded, color: ColorPalette.primaryColor, size: 20),
+            child: Icon(Icons.notifications_rounded,
+                color: ColorPalette.primaryColor, size: 20),
           ),
           if (unreadCount > 0)
             Positioned(
@@ -428,9 +494,22 @@ class _DrawerMenuState extends State<DrawerMenu> {
           color: Colors.grey[800],
         ),
       ),
-      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey[400]),
+      trailing: Icon(Icons.arrow_forward_ios_rounded,
+          size: 16, color: Colors.grey[400]),
       onTap: () {
-        Navigator.pushNamed(context, "/notification");
+        const route = AppRoutes.notification;
+        final index =
+            widget.routeIndexMap != null ? widget.routeIndexMap![route] : null;
+        if (widget.onSelectIndex != null && index != null) {
+          if (widget.currentIndex == index) {
+            Navigator.of(context).maybePop();
+            return;
+          }
+          Navigator.of(context).maybePop();
+          widget.onSelectIndex!(index);
+        } else {
+          Navigator.pushNamed(context, route);
+        }
       },
     );
   }
