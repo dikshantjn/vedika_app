@@ -882,7 +882,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             child: TextField(
               controller: _messageController,
               decoration: InputDecoration(
-                hintText: 'Ask Vedika VedikaAI...',
+                hintText: 'Ask Vedika AI...',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 20,
@@ -907,7 +907,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         child: TextField(
                           controller: _messageController,
                           decoration: InputDecoration(
-                            hintText: 'Ask Vedika VedikaAI...',
+                            hintText: 'Ask Vedika AI...',
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 20,
