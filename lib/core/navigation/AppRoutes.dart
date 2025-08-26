@@ -19,6 +19,7 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalD
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
+import 'package:vedika_healthcare/features/herPhases/presentation/view/herPhasesScreen.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/view/UserProfilePage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
@@ -46,6 +47,7 @@ import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/vi
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogListPage.dart';
 
+
 class AppRoutes {
   // Auth Routes
   static const String login = '/login';
@@ -63,6 +65,7 @@ class AppRoutes {
   static const String healthRecords = '/healthRecords';
   static const String vedikaPlus = '/vedikaPlus';
   static const String blogs = '/blogs';
+  static const String herPhases = '/herPhases';
 
   // Service Routes
   static const String ambulanceSearch = '/ambulance-search';
@@ -289,6 +292,7 @@ class AppRoutes {
         },
       ),
       blogs: (context) => const BlogListPage(),
+      herPhases: (context) => HerPhasesScreen(),
     };
   }
 

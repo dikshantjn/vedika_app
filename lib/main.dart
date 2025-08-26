@@ -94,7 +94,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 // Device Preview Configuration
-const bool enableDevicePreview = true; // Set to false to disable device preview
+const bool enableDevicePreview = false; // Set to false to disable device preview
 
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
