@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class AIChatScreen extends StatefulWidget {
   final String initialQuery;
@@ -200,7 +201,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             Container(
               width: 40,
               height: 4,
-              margin: EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -275,7 +276,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                 }
               },
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -382,7 +383,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
     }
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +407,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         Container(
                           width: 40,
                           height: 4,
-                          margin: EdgeInsets.symmetric(vertical: 8),
+                          margin: const EdgeInsets.symmetric(vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.grey[300],
                             borderRadius: BorderRadius.circular(2),
@@ -419,8 +420,8 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                             Clipboard.setData(ClipboardData(text: messageText));
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Message copied to clipboard'),
-                                duration: Duration(seconds: 2),
+                                content: const Text('Message copied to clipboard'),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                             Navigator.pop(context);
@@ -436,7 +437,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                             });
                           },
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -457,7 +458,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 5,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -468,7 +469,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                     Container(
                       width: 60,
                       height: 60,
-                      margin: EdgeInsets.all(8),
+                      margin: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: ColorPalette.primaryColor.withOpacity(0.3),
@@ -493,7 +494,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                                       color: ColorPalette.primaryColor,
                                       size: 24,
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'PDF',
                                       style: TextStyle(
@@ -521,26 +522,29 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                     ),
                   if (messageText.isNotEmpty)
                     Padding(
-                      padding: EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(12),
                         child: isEditing
                             ? Row(
                                 children: [
                                   Expanded(
-                                    child: TextField(
-                                      controller: _editControllers[messageIndex],
-                                      decoration: InputDecoration(
-                                        hintText: 'Edit message...',
-                                        border: InputBorder.none,
-                                        contentPadding: EdgeInsets.symmetric(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: TextField(
+                                        controller: _editControllers[messageIndex],
+                                        decoration: InputDecoration(
+                                          hintText: 'Edit message...',
+                                          border: InputBorder.none,
+                                                                                  contentPadding: const EdgeInsets.symmetric(
                                           horizontal: 12,
                                           vertical: 8,
                                         ),
+                                        ),
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 16,
+                                        ),
+                                        maxLines: null,
                                       ),
-                                      style: TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 16,
-                                      ),
-                                      maxLines: null,
                                     ),
                                   ),
                                   IconButton(
@@ -670,36 +674,61 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      backgroundColor: Colors.black,
       body: Column(
         children: [
+          _buildAppBar(),
           Expanded(
-            child: _buildChatList(),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _buildChatList(),
+                ),
+                _buildMessageInput(),
+              ],
+            ),
           ),
-          _buildMessageInput(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-          _buildAIAvatar(),
-          SizedBox(width: 12),
-          _buildAITitle(),
+  Widget _buildAppBar() {
+    return Container(
+      color: Colors.black,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 8,
+        left: 16,
+        right: 16,
+        bottom: 16,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back, color: ColorPalette.primaryColor),
+            onPressed: () {
+              if (MainScreenNavigator.instance.canGoBack) {
+                MainScreenNavigator.instance.goBack();
+              } else {
+                MainScreenNavigator.instance.navigateToIndex(0);
+              }
+            },
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                _buildAIAvatar(),
+                SizedBox(width: 12),
+                _buildAITitle(),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: ColorPalette.primaryColor),
+            onPressed: () => context.read<AIViewModel>().clearChat(),
+          ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.delete_outline, color: ColorPalette.primaryColor),
-          onPressed: () => context.read<AIViewModel>().clearChat(),
-        ),
-      ],
     );
   }
 
@@ -751,11 +780,13 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
           return _buildEmptyState();
         }
 
-        return ListView.builder(
-          controller: _scrollController,
-          padding: EdgeInsets.all(16),
-          reverse: false,
-          itemCount: viewModel.chatHistory.length + (viewModel.isLoading ? 1 : 0),
+        return Container(
+          color: Colors.black,
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            reverse: false,
+            itemCount: viewModel.chatHistory.length + (viewModel.isLoading ? 1 : 0),
           itemBuilder: (context, index) {
             if (viewModel.isLoading && index == viewModel.chatHistory.length) {
               return _buildLoadingShimmer();
@@ -774,44 +805,50 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
               );
             }
           },
-        );
+        ),
+      );
       },
     );
   }
 
   Widget _buildEmptyState() {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/ai.png',
-                          width: 64,
-                          height: 64,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'How can I help you today?',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/ai.png',
+            width: 64,
+            height: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'How can I help you today?',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildMessageInput() {
     return Container(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 16 + MediaQuery.of(context).padding.bottom, // Remove extra bottom nav bar height
+            ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.black,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
-                  offset: Offset(0, -5),
+                  offset: const Offset(0, -5),
                 ),
               ],
             ),
@@ -846,7 +883,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                       padding: const EdgeInsets.all(8.0),
                       child: Row(
                         children: [
-                          SizedBox(
+                          const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
@@ -854,7 +891,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                               valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
                             ),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             'Processing ${_isPdf ? "PDF" : "image"}...',
                             style: TextStyle(
@@ -872,26 +909,29 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildFilePreview(),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
                                 maxHeight: 150,
                               ),
                               child: SingleChildScrollView(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Ask Vedika AI...',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-              maxLines: null,
-              textCapitalization: TextCapitalization.sentences,
-            ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: TextField(
+                                    controller: _messageController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Ask Vedika AI...',
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    maxLines: null,
+                                    textCapitalization: TextCapitalization.sentences,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -904,18 +944,21 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         maxHeight: 150,
                       ),
                       child: SingleChildScrollView(
-                        child: TextField(
-                          controller: _messageController,
-                          decoration: InputDecoration(
-                            hintText: 'Ask Vedika AI...',
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: TextField(
+                            controller: _messageController,
+                            decoration: InputDecoration(
+                              hintText: 'Ask Vedika AI...',
+                              border: InputBorder.none,
+                                                          contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20,
                               vertical: 12,
                             ),
+                            ),
+                            maxLines: null,
+                            textCapitalization: TextCapitalization.sentences,
                           ),
-                          maxLines: null,
-                          textCapitalization: TextCapitalization.sentences,
                         ),
                       ),
                     ),
@@ -929,7 +972,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _buildAttachmentButton(),
-                            SizedBox(width: 16),
+                            const SizedBox(width: 16),
                             _buildMicButton(),
                           ],
                         ),
@@ -1093,7 +1136,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildMessageShimmer(lightGradient),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           _buildCardShimmer(lightGradient),
         ],
       ),
@@ -1104,7 +1147,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
     return Shimmer.fromColors(
       baseColor: Color(0xFFB2E6E7),
       highlightColor: Color(0xFFE0F7F7),
-      period: Duration(milliseconds: 1500),
+      period: const Duration(milliseconds: 1500),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: List.generate(
@@ -1114,7 +1157,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                 ? double.infinity
                 : MediaQuery.of(context).size.width * (0.7 - (index * 0.1)),
             height: 16,
-            margin: EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               gradient: gradient,
@@ -1129,9 +1172,9 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
     return Shimmer.fromColors(
       baseColor: Color(0xFFB2E6E7),
       highlightColor: Color(0xFFE0F7F7),
-      period: Duration(milliseconds: 1500),
+      period: const Duration(milliseconds: 1500),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -1139,7 +1182,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             BoxShadow(
               color: Color(0xFF8A2BE2).withOpacity(0.05),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -1154,7 +1197,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                 gradient: gradient,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1165,7 +1208,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                         ? double.infinity
                         : MediaQuery.of(context).size.width * (0.5 - (index * 0.1)),
                     height: index == 0 ? 16 : 14 - (index * 0.5),
-                    margin: EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       gradient: gradient,
@@ -1182,8 +1225,8 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
 
   Widget _buildPrescriptionError(Map<String, dynamic> error) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.red.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -1195,7 +1238,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
           Row(
             children: [
               Icon(Icons.error_outline, color: Colors.red.shade700),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   error['error'] ?? 'Error',
@@ -1208,7 +1251,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             error['message'] ?? 'An error occurred',
             style: TextStyle(
@@ -1216,15 +1259,15 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
               fontSize: 14,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: () => context.read<AIViewModel>().retryLastQuery(),
-            icon: Icon(Icons.refresh, size: 18),
-            label: Text('Retry'),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade700,
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -1263,7 +1306,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                       color: ColorPalette.primaryColor,
                       size: 24,
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'PDF',
                       style: TextStyle(
@@ -1298,7 +1341,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                 });
               },
               child: Container(
-                padding: EdgeInsets.all(2),
+                padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   shape: BoxShape.circle,
@@ -1321,7 +1364,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
 class _RotatingGradientBorderPainter extends CustomPainter {
   final Animation<double> animation;
   final double strokeWidth;
-  _RotatingGradientBorderPainter({required this.animation, this.strokeWidth = 3});
+  const _RotatingGradientBorderPainter({required this.animation, this.strokeWidth = 3});
 
   @override
   void paint(Canvas canvas, Size size) {

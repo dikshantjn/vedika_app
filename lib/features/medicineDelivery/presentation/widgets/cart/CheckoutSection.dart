@@ -105,9 +105,7 @@ class CheckoutSection extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return ChooseAddressSheet(
-          onAddressConfirmed: () {}, // Handled via Navigator.pop()
-        );
+        return ChooseAddressSheet();
       },
     );
 

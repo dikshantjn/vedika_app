@@ -19,8 +19,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
-import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/home/presentation/view/ScanPrescriptionView.dart';
 import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/features/VedikaAI/presentation/view/AIChatScreen.dart';
@@ -759,7 +757,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               child: IconButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.goToCart);
+                  Navigator.pushNamed(context, AppRoutes.newCartScreen);
                 },
                 icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
               ),

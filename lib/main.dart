@@ -14,6 +14,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
+import 'package:vedika_healthcare/features/NewMedicineDelivery/presentation/viewmodel/MedicineDeliveryViewModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingHistoryViewModel.dart';
@@ -41,6 +42,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineProductViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/viewmodels/product_partner_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
@@ -280,6 +282,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => BlogViewModel()),
         ChangeNotifierProvider(create: (_) => MembershipViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileCompletionViewModel()),
+        ChangeNotifierProvider(create: (_) => MedicineDeliveryViewModel()),
+        ChangeNotifierProvider(create: (_) => NewOrdersViewModel()),
 
       ],
       child: Builder(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/NewOrdersScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/MedicineOrderPage.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Products/MedicalProductsProductScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Profile/MedicalStoreVendorProfileContent.dart';
@@ -30,7 +31,8 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
 
   final List<Widget> _pages = [
     const DashboardContent(),
-    MedicineOrderPage(),
+    // MedicineOrderPage(),
+    NewOrdersScreen(),
     MedicalProductsProductScreen(),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
     MedicalStoreVendorProfileContent(),

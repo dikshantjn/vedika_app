@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.42:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.42:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -91,7 +91,6 @@ class ApiEndpoints {
   static const String getDeliveryAddresses = '$baseUrl/deliveryAddress/getDeliveryAddress';
   static const String deleteDeliveryAddress = '$baseUrl/deliveryAddress/deleteDeliveryAddress';
   static const String placedOrderWithPayment = '$baseUrl/orders/update-order';
-  static const String updateOrderStatus = '$baseUrl/orders';
   static const String trackOrder = '$baseUrl/orders';
   static const String updatePrescriptionStatus = '$baseUrl/orders';
   static const String enableSelfDelivery = '$baseUrl/orders';  // PATCH to enable self delivery
@@ -238,6 +237,19 @@ class ApiEndpoints {
   static const String getMembershipPlans = '$baseUrl/membership/plans';
   static const String createMembershipOrder = '$baseUrl/membership/order';
   static const String verifyMembershipPayment = '$baseUrl/membership/verify-payment';
+
+  // 📌 Medicine Delivery APIs
+  static const String getMedicalStores = '$baseUrl/medicine-delivery/medicalstores';
+  static const String sendPrescription = '$baseUrl/medicine-delivery/send';
+  static const String getPendingPrescriptions = '$baseUrl/medicine-delivery/prescriptions/pending';
+  static const String acceptPrescription = '$baseUrl/medicine-delivery/prescriptions';
+  static const String rejectPrescription = '$baseUrl/medicine-delivery/prescriptions';
+  static const String getOrdersByVendor = '$baseUrl/medicine-delivery/orders/vendor';
+  static const String updateOrderPayment = '$baseUrl/medicine-delivery/orders';
+  static const String updateOrderNote = '$baseUrl/medicine-delivery/orders';
+  static const String updateOrderStatus = '$baseUrl/medicine-delivery/update-status'; // Update order status
+  static const String getPendingPaymentOrders = '$baseUrl/medicine-delivery/orders/user'; // Get orders waiting for payment
+  static const String placeMedicineOrder = '$baseUrl/medicine-delivery/place-medicine-order'; // Place medicine order after payment
 
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';
