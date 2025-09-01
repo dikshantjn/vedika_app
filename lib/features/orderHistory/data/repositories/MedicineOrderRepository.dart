@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/models/MedicineOrder.dart';
 
 class MedicineOrderRepository {
   final Dio _dio = Dio();

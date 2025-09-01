@@ -12,6 +12,13 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorDrawerMenu.dart';
 
 class VendorMedicalStoreDashBoardScreen extends StatefulWidget {
+  final int? initialIndex;
+
+  const VendorMedicalStoreDashBoardScreen({
+    Key? key,
+    this.initialIndex,
+  }) : super(key: key);
+
   @override
   _VendorMedicalStoreDashBoardScreenState createState() =>
       _VendorMedicalStoreDashBoardScreenState();
@@ -23,6 +30,11 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
   @override
   void initState() {
     super.initState();
+    // Set initial index from widget parameter
+    if (widget.initialIndex != null) {
+      _currentIndex = widget.initialIndex!;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MedicalStoreVendorDashboardViewModel>(context, listen: false)
           .fetchVendorStatus();

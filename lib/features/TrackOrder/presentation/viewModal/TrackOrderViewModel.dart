@@ -11,6 +11,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/CartModel.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/ProductOrder.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -41,6 +42,9 @@ class TrackOrderViewModel extends ChangeNotifier {
 
   List<ProductOrder> _productOrders = [];
   List<ProductOrder> get productOrders => _productOrders;
+
+  List<Order> _activeMedicineDeliveryOrders = [];
+  List<Order> get activeMedicineDeliveryOrders => _activeMedicineDeliveryOrders;
 
   void _attemptReconnect() {
     Future.delayed(Duration(seconds: 2), () {
@@ -89,6 +93,7 @@ class TrackOrderViewModel extends ChangeNotifier {
           fetchActiveAmbulanceBookings(),
           fetchBloodBankBookings(),
           fetchProductOrders(),
+          fetchActiveMedicineDeliveryOrders(),
         ]);
         debugPrint("📦 Initial orders fetched after socket connection");
       });
@@ -163,56 +168,80 @@ class TrackOrderViewModel extends ChangeNotifier {
         fetchActiveAmbulanceBookings(),
         fetchBloodBankBookings(),
         fetchProductOrders(),
+        fetchActiveMedicineDeliveryOrders(),
       ]);
       
       // Handle product order update
       if (productOrderId != null && status != null) {
         debugPrint('📦 Processing product order update');
-        
+
         // Find and update the product order in the list
         final productOrderIndex = _productOrders.indexWhere((order) => order.orderId == productOrderId);
         if (productOrderIndex != -1) {
           debugPrint('📦 Found product order at index: $productOrderIndex');
           debugPrint('📦 Current status: ${_productOrders[productOrderIndex].status}');
           debugPrint('📦 New status: $status');
-          
+
           // Update the product order status
           _productOrders[productOrderIndex] = _productOrders[productOrderIndex].copyWith(
             status: status.toLowerCase(),
           );
-          
+
           // Store the status update message
           _lastStatusUpdate = _getProductOrderStatusMessage(status);
-          
+
           debugPrint('✅ Product order $productOrderId status updated to: $status');
           debugPrint('✅ Updated order status: ${_productOrders[productOrderIndex].status}');
         } else {
           debugPrint('❌ Product order not found with ID: $productOrderId');
         }
       }
-      // Handle regular order update
-      else if ((orderId != null || prescriptionId != null) && status != null) {
+      // Handle medicine delivery order update (NewMedicineOrderTrackingCard)
+      else if (orderId != null && status != null) {
+        debugPrint('🚚 Processing medicine delivery order update');
+
+        // Find and update the medicine delivery order in the list
+        final medicineOrderIndex = _activeMedicineDeliveryOrders.indexWhere((order) => order.orderId == orderId);
+        if (medicineOrderIndex != -1) {
+          debugPrint('🚚 Found medicine delivery order at index: $medicineOrderIndex');
+          debugPrint('🚚 Current status: ${_activeMedicineDeliveryOrders[medicineOrderIndex].status}');
+          debugPrint('🚚 New status: $status');
+
+          // Update the medicine delivery order status
+          _activeMedicineDeliveryOrders[medicineOrderIndex] = _activeMedicineDeliveryOrders[medicineOrderIndex].copyWith(
+            status: status,
+          );
+
+          // Store the status update message for medicine delivery orders
+          _lastStatusUpdate = _getMedicineDeliveryStatusMessage(status);
+
+          debugPrint('✅ Medicine delivery order $orderId status updated to: $status');
+          debugPrint('✅ Updated order status: ${_activeMedicineDeliveryOrders[medicineOrderIndex].status}');
+        } else {
+          debugPrint('❌ Medicine delivery order not found with ID: $orderId');
+        }
+      }
+      // Handle regular order update (old medicine orders)
+      else if (prescriptionId != null && status != null) {
         // Find and update the order in the orders list
         final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
         if (orderIndex != -1) {
           debugPrint('📦 Found order at index: $orderIndex');
-          
+
           // Update the order status
           _orders[orderIndex] = _orders[orderIndex].copyWith(
             orderStatus: status,
             updatedAt: DateTime.now(),
           );
-          
+
           // Store the status update message
           _lastStatusUpdate = _getStatusMessage(status, isPrescription: false);
-          
+
           debugPrint('✅ Order $orderId status updated to: $status');
-        } else if (prescriptionId != null) {
+        } else {
           // Handle prescription status update
           _lastStatusUpdate = _getStatusMessage(status, isPrescription: true);
           debugPrint('✅ Prescription $prescriptionId status updated to: $status');
-        } else {
-          debugPrint('❌ Order not found with ID: $orderId');
         }
       } else {
         debugPrint('❌ Missing orderId/prescriptionId/productOrderId or status in data: $orderData');
@@ -376,7 +405,7 @@ class TrackOrderViewModel extends ChangeNotifier {
   String _getProductOrderStatusMessage(String status) {
     // Convert status to lowercase for consistent comparison
     final lowerStatus = status.toLowerCase();
-    
+
     switch (lowerStatus) {
       case 'pending':
         return 'Order Placed';
@@ -392,6 +421,27 @@ class TrackOrderViewModel extends ChangeNotifier {
         return 'Delivered';
       case 'cancelled':
         return 'Order Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  // Helper method to get medicine delivery order status messages
+  String _getMedicineDeliveryStatusMessage(String status) {
+    // Convert status to lowercase for consistent comparison
+    final lowerStatus = status.toLowerCase();
+
+    switch (lowerStatus) {
+      case 'pending':
+        return 'Order Placed';
+      case 'waiting_for_payment':
+        return 'Waiting for Payment';
+      case 'payment_completed':
+        return 'Payment Completed';
+      case 'out_for_delivery':
+        return 'Out for Delivery';
+      case 'delivered':
+        return 'Delivered';
       default:
         return status;
     }
@@ -548,6 +598,36 @@ class TrackOrderViewModel extends ChangeNotifier {
 
       _productOrders = [];
       _error = "No Product Orders Found";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ Fetch active medicine delivery orders for current user
+  Future<void> fetchActiveMedicineDeliveryOrders() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      String? userId = await StorageService.getUserId();
+
+      if (userId == null) {
+        debugPrint("❌ User ID not found");
+        throw Exception("User ID not found");
+      }
+
+      _activeMedicineDeliveryOrders = await _service.fetchActiveMedicineDeliveryOrders(userId);
+
+      debugPrint("📦 Fetched ${_activeMedicineDeliveryOrders.length} active medicine delivery orders");
+
+      _error = null;
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error fetching active medicine delivery orders: $e");
+      debugPrint("🔍 Stack Trace:\n$stackTrace");
+
+      _activeMedicineDeliveryOrders = [];
+      _error = "No Active Medicine Delivery Orders Found";
     } finally {
       _isLoading = false;
       notifyListeners();

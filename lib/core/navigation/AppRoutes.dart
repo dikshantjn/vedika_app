@@ -153,7 +153,7 @@ class AppRoutes {
   static const String newMedicineOrderScreen = '/newMedicineOrderScreen';
   static const String newCartScreen = '/newCartScreen';
 
-  // medical store vendor 
+  // medical store vendor
   static const String newOrderScreen = '/newOrderScreen';
 
   // Optimized route mapping with lazy initialization
@@ -161,9 +161,13 @@ class AppRoutes {
     final nav = NavigationController.instance;
 
     return {
-      
-      // medical store vendor 
-      newOrderScreen: (context) => const NewOrdersScreen(),
+
+      // medical store vendor
+      newOrderScreen: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        final initialTab = args?['initialTab'] as int?;
+        return NewOrdersScreen(initialTab: initialTab);
+      },
       newCartScreen: (context) => const NewCartScreen(),
 
       // Primary routes
@@ -174,7 +178,11 @@ class AppRoutes {
 
       // Vendor routes (direct navigation - no MainScreen wrapper needed)
       vendor: (context) => VendorRegistrationPage(),
-      VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(),
+      VendorMedicalStoreDashBoard: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        final initialIndex = args?['initialIndex'] as int?;
+        return VendorMedicalStoreDashBoardScreen(initialIndex: initialIndex);
+      },
       VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
       VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),

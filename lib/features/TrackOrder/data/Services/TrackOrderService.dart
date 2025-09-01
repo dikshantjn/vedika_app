@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/ProductOrder.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:flutter/foundation.dart';
 
 class TrackOrderService {
@@ -133,6 +134,25 @@ class TrackOrderService {
     } catch (e) {
       debugPrint('❌ Error fetching product orders: $e');
       throw Exception('Failed to load product orders');
+    }
+  }
+
+  // 🔹 Fetch active medicine delivery orders
+  Future<List<Order>> fetchActiveMedicineDeliveryOrders(String userId) async {
+    try {
+      final response = await _dio.get('${ApiEndpoints.getActiveMedicineDeliveryOrders}/$userId');
+
+      if (response.statusCode == 200 && response.data['success']) {
+        List<dynamic> ordersJson = response.data['data'] ?? [];
+        debugPrint('📦 Found ${ordersJson.length} active medicine delivery orders');
+        return ordersJson.map((json) => Order.fromJson(json)).toList();
+      } else {
+        debugPrint('❌ No active medicine delivery orders found or invalid response format');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching active medicine delivery orders: $e');
+      return [];
     }
   }
 }

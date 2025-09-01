@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/Ambul
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/BloodBankBookingTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/TrackingOrderCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/ProductOrderTrackingCard.dart';
+import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/NewMedicineOrderTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:flutter/rendering.dart';
@@ -51,6 +52,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepA
       viewModel.fetchActiveAmbulanceBookings(),
       viewModel.fetchBloodBankBookings(),
       viewModel.fetchProductOrders(),
+      viewModel.fetchActiveMedicineDeliveryOrders(),
     ]);
   }
 
@@ -141,10 +143,11 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepA
                       if (viewModel.error != null) {
                         return _buildErrorState(viewModel.error!);
                       }
-                      if (viewModel.orders.isEmpty && 
-                          viewModel.ambulanceBookings.isEmpty && 
+                      if (viewModel.orders.isEmpty &&
+                          viewModel.ambulanceBookings.isEmpty &&
                           viewModel.bloodBankBookings.isEmpty &&
-                          viewModel.productOrders.isEmpty) {
+                          viewModel.productOrders.isEmpty &&
+                          viewModel.activeMedicineDeliveryOrders.isEmpty) {
                         return _buildEmptyState();
                       }
                       return _buildOrdersList(viewModel);
@@ -254,6 +257,15 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepA
             ),
             const SizedBox(height: 12),
             TrackingOrderCard(viewModel: viewModel),
+            const SizedBox(height: 20),
+          ],
+          if (viewModel.activeMedicineDeliveryOrders.isNotEmpty) ...[
+            const Text(
+              'Active Medicine Delivery',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            NewMedicineOrderTrackingCard(viewModel: viewModel),
             const SizedBox(height: 20),
           ],
         ],

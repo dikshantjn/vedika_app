@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/cart/data/services/CartPaymentService
 import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class MedicineOrderSummarySheet extends StatefulWidget {
@@ -733,8 +734,16 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
-                  // Navigate to track order screen
-                  Navigator.pushNamed(context, AppRoutes.trackOrder);
+                  // Navigate to track order screen using MainScreen navigation
+                  final scope = MainScreenScope.maybeOf(context);
+                  if (scope != null) {
+                    scope.setIndex(4); // Track Order screen is at index 4
+                  } else {
+                    // Fallback navigation if MainScreen scope is not available
+                    Navigator.pushNamed(context, AppRoutes.trackOrderScreen);
+                  }
+                  // Close the bottom sheet
+                  Navigator.pop(context);
                 },
                 child: Center(
                   child: Row(

@@ -109,9 +109,9 @@ class NotificationTapHandler {
               AppRoutes.home,
             );
             await Future.delayed(const Duration(milliseconds: 100));
-            await _navigateWithHistory(context, AppRoutes.goToCart);
+            await _navigateWithHistory(context, AppRoutes.newCartScreen);
           } else {
-            await _navigateWithHistory(context, AppRoutes.goToCart);
+            await _navigateWithHistory(context, AppRoutes.newCartScreen);
           }
           break;
 
@@ -229,6 +229,22 @@ class NotificationTapHandler {
               context,
               AppRoutes.bloodBankBooking,
               arguments: {'initialTab': 3}, // 1 is the index for Completed tab
+            );
+          }
+          break;
+
+        case 'MEDICINE_ORDERS':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorMedicalStoreDashBoard,
+              arguments: {'initialIndex': 1}, // 1 is the index for Orders tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorMedicalStoreDashBoard,
+              arguments: {'initialIndex': 1}, // 1 is the index for Orders tab
             );
           }
           break;

@@ -1026,38 +1026,795 @@ class _DashboardContentState extends State<DashboardContent> {
 
   Widget _buildShimmerEffect() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: Colors.grey[200]!,
+      highlightColor: Colors.grey[50]!,
+      period: const Duration(milliseconds: 1500),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 160,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
+            // Welcome Card Shimmer
+            _buildWelcomeCardShimmer(),
+            const SizedBox(height: 16),
+
+            // Time Filter Section Shimmer
+            _buildTimeFilterShimmer(),
+            const SizedBox(height: 16),
+
+            // AI Suggestion Card Shimmer (conditionally shown)
+            if (_showAiSuggestion) ...[
+              _buildAiSuggestionShimmer(),
+              const SizedBox(height: 16),
+            ],
+
+            // Analytics & Insights Section Shimmer
+            _buildAnalyticsInsightsShimmer(),
             const SizedBox(height: 24),
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
+
+            // Charts Section Shimmer
+            _buildChartsSectionShimmer(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeCardShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.grey[300]!,
+            Colors.grey[200]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Avatar shimmer
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Welcome text
+                    Container(
+                      height: 14,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Store name
+                    Container(
+                      height: 18,
+                      width: 160,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Status indicator
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      height: 12,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Bottom info section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Container(
+                    height: 12,
+                    width: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeFilterShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Container(
+            height: 16,
+            width: 100,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Filter buttons
+          Row(
+            children: List.generate(4, (index) {
+              return Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: index == 0 ? Colors.grey[400] : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Container(
+                      height: 12,
+                      width: index == 0 ? 50 : 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiSuggestionShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.grey[200]!,
+            Colors.grey[100]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // AI Icon
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(11),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Title
+                    Container(
+                      height: 14,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                    // Close button
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Description text (multiple lines)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(2, (index) => Container(
+                    height: 12,
+                    margin: const EdgeInsets.only(bottom: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: FractionallySizedBox(
+                      widthFactor: index == 0 ? 1.0 : 0.8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  )),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsInsightsShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section title
+          Container(
+            height: 18,
+            width: 140,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(9),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Grid of insight cards
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1.2,
+            ),
+            itemCount: 12, // Approximate number of insights
+            itemBuilder: (context, index) {
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon and label row
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[400],
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Label
+                              Container(
+                                height: 12,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              // Value
+                              Container(
+                                height: 18,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[400],
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Sparkline indicator
+                    Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ),
+                          const Expanded(flex: 4, child: SizedBox()),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartsSectionShimmer() {
+    final isTablet = MediaQuery.of(context).size.width >= 600;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Charts title
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          height: 18,
+          width: 160,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(9),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Orders & Revenue Chart
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Legend
+              Row(
+                children: [
+                  _buildLegendShimmerItem(),
+                  const SizedBox(width: 16),
+                  _buildLegendShimmerItem(),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Chart area
+              Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: List.generate(5, (index) {
+                    return Positioned(
+                      left: index * 60.0,
+                      top: 20 + (index % 3) * 40.0,
+                      child: Container(
+                        width: 40,
+                        height: 80 + (index % 2) * 40.0,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Status distribution and completion rate
+        if (isTablet)
+          Row(
+            children: [
+              Expanded(child: _buildStatusDistributionShimmer()),
+              const SizedBox(width: 12),
+              Expanded(child: _buildCompletionRateShimmer()),
+            ],
+          )
+        else ...[
+          _buildStatusDistributionShimmer(),
+          const SizedBox(height: 12),
+          _buildCompletionRateShimmer(),
+        ],
+
+        const SizedBox(height: 24),
+
+        // Top medicines
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Container(
+                height: 18,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(9),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Medicine items
+              Column(
+                children: List.generate(5, (index) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[400],
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Container(
+                            height: 13,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(6.5),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          height: 12,
+                          width: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendShimmerItem() {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: Colors.grey[400],
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          height: 12,
+          width: 50,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusDistributionShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Container(
+            height: 18,
+            width: 140,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(9),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Chart bars
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(5, (index) {
+              return Column(
+                children: [
+                  Container(
+                    width: 16,
+                    height: 40 + (index % 3) * 20.0,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 10,
+                    width: 25,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    height: 10,
+                    width: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionRateShimmer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Container(
+            height: 18,
+            width: 140,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(9),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Progress bar and percentage
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 0.75,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                height: 14,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(7),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1113,56 +1870,56 @@ class _InsightCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
+                    Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Text(
                   item.label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: Colors.grey.shade700,
                     fontWeight: FontWeight.w500,
                   ),
-                    maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   item.value,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 // Mock sparkline / indicator
                 Container(
-                  height: 6,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     children: [
                       Expanded(
-                        flex: 60,
+                        flex: 65,
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.grey.shade400,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
-                      const Expanded(flex: 40, child: SizedBox()),
+                      const Expanded(flex: 35, child: SizedBox()),
                     ],
                   ),
                 ),
               ],
-              ),
             ),
+          ),
           ],
         ),
       ),

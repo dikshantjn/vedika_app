@@ -4,7 +4,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/AmbulanceTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/LabTestTab.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/MedicineTab.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/MedicineDeliveryOrderHistoryTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BedBookingTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BloodBankTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ClinicAppointmentTab.dart';
@@ -122,7 +122,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepA
     
     try {
       return [
-        MedicineTab(),
+        MedicineDeliveryOrderHistoryTab(),
         AmbulanceTab(),
         _userId != null ? BedBookingTab(userId: _userId!) : const Center(child: CircularProgressIndicator()),
         LabTestTab(),

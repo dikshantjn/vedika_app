@@ -11,16 +11,30 @@ class NewOrdersViewModel extends ChangeNotifier {
   
   List<Prescription> _prescriptions = [];
   List<Order> _orders = [];
+  List<Order> _filteredOrders = [];
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedTab = 'prescriptions'; // 'prescriptions' or 'orders'
+
+  // Search and filter properties
+  String _searchQuery = '';
+  String? _selectedStatusFilter;
+  String? _selectedDateFilter;
+  String? _selectedAmountFilter;
   
   // Getters
   List<Prescription> get prescriptions => _prescriptions;
   List<Order> get orders => _orders;
+  List<Order> get filteredOrders => _filteredOrders.isEmpty && _searchQuery.isEmpty && _selectedStatusFilter == null && _selectedDateFilter == null && _selectedAmountFilter == null ? _orders : _filteredOrders;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get selectedTab => _selectedTab;
+
+  // Search and filter getters
+  String get searchQuery => _searchQuery;
+  String? get selectedStatusFilter => _selectedStatusFilter;
+  String? get selectedDateFilter => _selectedDateFilter;
+  String? get selectedAmountFilter => _selectedAmountFilter;
 
   // Initialize data
   Future<void> initialize() async {
@@ -60,6 +74,7 @@ class NewOrdersViewModel extends ChangeNotifier {
   Future<void> _loadOrders(String vendorId) async {
     try {
       _orders = await _service.getOrders(vendorId);
+      _filteredOrders = List.from(_orders); // Initialize filtered orders
       notifyListeners();
     } catch (e) {
       notifyListeners();
@@ -264,6 +279,109 @@ class NewOrdersViewModel extends ChangeNotifier {
 
   // Get pending orders count
   int get pendingOrdersCount => getOrdersByStatus('pending').length;
+
+  // Search and filter methods
+  void searchOrders(String query) {
+    _searchQuery = query.toLowerCase();
+    _applyFilters();
+  }
+
+  void setStatusFilter(String? status) {
+    _selectedStatusFilter = status;
+    notifyListeners(); // Update UI immediately
+  }
+
+  void setDateFilter(String? dateFilter) {
+    _selectedDateFilter = dateFilter;
+    notifyListeners(); // Update UI immediately
+  }
+
+  void setAmountFilter(String? amountFilter) {
+    _selectedAmountFilter = amountFilter;
+    notifyListeners(); // Update UI immediately
+  }
+
+  void applyFilters() {
+    _applyFilters();
+  }
+
+  void clearAllFilters() {
+    _searchQuery = '';
+    _selectedStatusFilter = null;
+    _selectedDateFilter = null;
+    _selectedAmountFilter = null;
+    _filteredOrders = List.from(_orders);
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    _searchQuery = '';
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    List<Order> filtered = List.from(_orders);
+
+    // Apply search query
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((order) {
+        final orderId = order.orderId.toLowerCase();
+        final customerName = order.user?.name?.toLowerCase() ?? '';
+        final status = order.status?.toLowerCase() ?? '';
+
+        return orderId.contains(_searchQuery) ||
+               customerName.contains(_searchQuery) ||
+               status.contains(_searchQuery);
+      }).toList();
+    }
+
+    // Apply status filter
+    if (_selectedStatusFilter != null && _selectedStatusFilter!.isNotEmpty) {
+      filtered = filtered.where((order) => order.status == _selectedStatusFilter).toList();
+    }
+
+    // Apply date filter
+    if (_selectedDateFilter != null && _selectedDateFilter!.isNotEmpty) {
+      final now = DateTime.now();
+      DateTime startDate;
+
+      switch (_selectedDateFilter) {
+        case 'today':
+          startDate = DateTime(now.year, now.month, now.day);
+          break;
+        case 'week':
+          startDate = now.subtract(Duration(days: 7));
+          break;
+        case 'month':
+          startDate = DateTime(now.year, now.month, 1);
+          break;
+        default:
+          startDate = DateTime(2000); // Very old date for "all time"
+      }
+
+      filtered = filtered.where((order) => order.createdAt.isAfter(startDate)).toList();
+    }
+
+    // Apply amount filter
+    if (_selectedAmountFilter != null && _selectedAmountFilter!.isNotEmpty) {
+      filtered = filtered.where((order) {
+        final amount = order.totalAmount;
+        switch (_selectedAmountFilter) {
+          case 'under_500':
+            return amount < 500;
+          case '500_1000':
+            return amount >= 500 && amount <= 1000;
+          case 'above_1000':
+            return amount > 1000;
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    _filteredOrders = filtered;
+    notifyListeners();
+  }
 
   // Private methods
   void _setLoading(bool loading) {

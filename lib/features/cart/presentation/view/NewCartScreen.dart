@@ -86,65 +86,15 @@ class _NewCartScreenState extends State<NewCartScreen>
                   isScrollable: false,
                   tabs: [
                     Tab(
-                      child: Container(
-                        width: double.infinity,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Products',
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(width: 6),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '3',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: ColorPalette.primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: Text(
+                        'Medicines',
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     Tab(
-                      child: Container(
-                        width: double.infinity,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Medicines',
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(width: 6),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '2',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: ColorPalette.primaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: Text(
+                        'Products',
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
@@ -158,8 +108,8 @@ class _NewCartScreenState extends State<NewCartScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          ProductOrderTab(),
           MedicineOrderTab(),
+          ProductOrderTab(),
         ],
       ),
     );

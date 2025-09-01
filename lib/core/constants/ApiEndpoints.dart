@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.40:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -250,6 +250,9 @@ class ApiEndpoints {
   static const String updateOrderStatus = '$baseUrl/medicine-delivery/update-status'; // Update order status
   static const String getPendingPaymentOrders = '$baseUrl/medicine-delivery/orders/user'; // Get orders waiting for payment
   static const String placeMedicineOrder = '$baseUrl/medicine-delivery/place-medicine-order'; // Place medicine order after payment
+  static const String getActiveMedicineDeliveryOrders = '$baseUrl/medicine-delivery/orders/active'; // Get active medicine delivery orders by user ID
+  static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
+  static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
 
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';

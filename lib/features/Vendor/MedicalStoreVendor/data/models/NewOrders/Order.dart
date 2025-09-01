@@ -1,5 +1,6 @@
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
 
 // Simplified vendor model for orders (since API only provides basic info)
 class OrderVendor {
@@ -42,6 +43,7 @@ class Order {
   final Prescription? prescription;
   final UserModel? user;
   final OrderVendor? vendor;
+  final DeliveryAddressModel? deliveryAddress;
 
   Order({
     required this.orderId,
@@ -59,6 +61,7 @@ class Order {
     this.prescription,
     this.user,
     this.vendor,
+    this.deliveryAddress,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -79,7 +82,13 @@ class Order {
     if (json['user'] != null) {
       user = UserModel.fromJson(json['user']);
     }
-    
+
+    // Parse nested delivery address data
+    DeliveryAddressModel? deliveryAddress;
+    if (json['deliveryAddress'] != null) {
+      deliveryAddress = DeliveryAddressModel.fromJson(json['deliveryAddress']);
+    }
+
     return Order(
       orderId: json['orderId'] ?? '',
       vendorId: json['vendorId'] ?? '',
@@ -96,6 +105,7 @@ class Order {
       prescription: prescription,
       user: user, // Parse user data if available
       vendor: vendor,
+      deliveryAddress: deliveryAddress,
     );
   }
 
@@ -116,6 +126,7 @@ class Order {
       'prescription': prescription?.toJson(),
       'user': user?.toJson(),
       'vendor': vendor?.toJson(),
+      'deliveryAddress': deliveryAddress?.toJson(),
     };
   }
 
@@ -135,6 +146,7 @@ class Order {
     Prescription? prescription,
     UserModel? user,
     OrderVendor? vendor,
+    DeliveryAddressModel? deliveryAddress,
   }) {
     return Order(
       orderId: orderId ?? this.orderId,
@@ -152,6 +164,7 @@ class Order {
       prescription: prescription ?? this.prescription,
       user: user ?? this.user,
       vendor: vendor ?? this.vendor,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
     );
   }
 }
