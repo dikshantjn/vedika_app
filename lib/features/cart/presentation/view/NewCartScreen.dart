@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/cart/presentation/widgets/ProductOrderTab.dart';
 import 'package:vedika_healthcare/features/cart/presentation/widgets/MedicineOrderTab.dart';
 
@@ -18,12 +20,29 @@ class _NewCartScreenState extends State<NewCartScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Listen for cart count updates to refresh data
+    final cartViewModel = context.read<CartViewModel>();
+    cartViewModel.onCartCountUpdate = () {
+      if (mounted) {
+        // Refresh cart data when count updates
+        _refreshCartData();
+      }
+    };
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _refreshCartData() {
+    // Refresh the current tab's data
+    setState(() {
+      // This will trigger a rebuild of the tabs with updated data
+      debugPrint('🛒 Cart data refreshed due to socket update');
+    });
   }
 
   @override

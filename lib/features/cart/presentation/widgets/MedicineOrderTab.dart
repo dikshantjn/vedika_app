@@ -690,6 +690,23 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
     });
   }
 
+  void _clearCart() {
+    setState(() {
+      _medicineOrders.clear();
+      _removedOrderIds.clear();
+      print('🧹 [MedicineOrderTab] Cart cleared successfully');
+    });
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Cart cleared successfully! Order placed.'),
+        backgroundColor: Colors.green[600],
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
   int _getActiveOrdersCount() {
     return _medicineOrders.where((order) => !_removedOrderIds.contains(order.orderId)).length;
   }
@@ -732,7 +749,7 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
   void _showMedicineOrderSummarySheet(BuildContext context, String addressId) {
     // Filter out removed orders for checkout
     final activeOrders = _medicineOrders.where((order) => !_removedOrderIds.contains(order.orderId)).toList();
-    
+
     if (activeOrders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -742,7 +759,7 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
       );
       return;
     }
-    
+
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -754,6 +771,7 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
         return MedicineOrderSummarySheet(
           medicineOrders: activeOrders,
           addressId: addressId,
+          onOrderPlaced: _clearCart, // Pass the callback to clear cart
         );
       },
     );

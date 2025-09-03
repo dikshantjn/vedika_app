@@ -36,10 +36,14 @@ class FCMService {
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
         if (response.payload != null) {
-          // Add delay to ensure app is fully ready
-          await Future.delayed(Duration(milliseconds: 300));
+          // Reduced delay for faster response - app should be ready immediately
+          await Future.delayed(Duration(milliseconds: 50));
           if (navigatorKey.currentContext != null && navigatorKey.currentContext!.mounted) {
-            handleNotificationTap(response.payload!, navigatorKey.currentContext!);
+            handleNotificationTapWithAppLaunch(
+              response.payload!,
+              navigatorKey.currentContext!,
+              isAppLaunch: false // Foreground notification tap
+            );
           }
         }
       },
@@ -161,9 +165,15 @@ class FCMService {
       debugPrint("App opened from background via notification");
 
       if (navigatorKey.currentContext != null) {
-        // Add a short delay to ensure navigation executes properly
-        Future.delayed(Duration(milliseconds: 300), () {
-          handleNotificationTap(jsonEncode(message.data), navigatorKey.currentContext!);
+        // Reduced delay for faster response
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (navigatorKey.currentContext != null && navigatorKey.currentContext!.mounted) {
+            handleNotificationTapWithAppLaunch(
+              jsonEncode(message.data),
+              navigatorKey.currentContext!,
+              isAppLaunch: true // App was launched from notification
+            );
+          }
         });
       }else{
         debugPrint("navigatorKey.currentContext is null");
@@ -186,26 +196,39 @@ class FCMService {
     }
   }
 
+  /// Handle the notification tap with app launch flag
+  void handleNotificationTapWithAppLaunch(String payload, BuildContext context, {bool isAppLaunch = false}) {
+    debugPrint("Notification Payload: $payload, isAppLaunch: $isAppLaunch");
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      NotificationTapHandler.handleNotification(data, isAppLaunch: isAppLaunch);
+    } catch (e) {
+      debugPrint("Error handling notification: $e");
+    }
+  }
+
   @pragma('vm:entry-point')
   static Future<void> _backgroundHandler(RemoteMessage message) async {
     debugPrint("Background message received: ${message.notification?.title}");
 
-    // Initialize local notifications
+    // Fast initialization for background notifications
     const AndroidInitializationSettings androidInitSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+    // Initialize without callback for faster response
     await flutterLocalNotificationsPlugin.initialize(
       InitializationSettings(android: androidInitSettings),
     );
 
-    // Process the message
+    // Process the message immediately
     if (message.data.isNotEmpty) {
       final payload = jsonEncode(message.data);
 
-      // Store the notification data to be processed when app opens
+      // Show notification with high priority for immediate display
       await flutterLocalNotificationsPlugin.show(
-        0,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID based on timestamp
         message.notification?.title ?? 'New Notification',
         message.notification?.body ?? 'You have a new notification',
         const NotificationDetails(
@@ -214,6 +237,9 @@ class FCMService {
             'High Importance Notifications',
             importance: Importance.max,
             priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            channelShowBadge: true,
           ),
         ),
         payload: payload,

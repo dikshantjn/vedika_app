@@ -393,6 +393,22 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
     });
   }
 
+  void _clearCart() {
+    setState(() {
+      _products.clear();
+      print('🧹 [ProductOrderTab] Cart cleared successfully');
+    });
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Cart cleared successfully! Order placed.'),
+        backgroundColor: Colors.green[600],
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _showProductOrderSummarySheet(BuildContext context, String addressId) {
     showModalBottomSheet(
       backgroundColor: Colors.white,
@@ -405,6 +421,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
         return ProductOrderSummarySheet(
           products: _products,
           addressId: addressId,
+          onOrderPlaced: _clearCart, // Pass the callback to clear cart
         );
       },
     );

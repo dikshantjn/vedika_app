@@ -8,11 +8,13 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 class ProductOrderSummarySheet extends StatefulWidget {
   final List<Map<String, dynamic>> products;
   final String addressId;
+  final VoidCallback? onOrderPlaced; // Callback to clear cart when order is placed
 
   ProductOrderSummarySheet({
-    Key? key, 
-    required this.products, 
+    Key? key,
+    required this.products,
     required this.addressId,
+    this.onOrderPlaced,
   }) : super(key: key);
 
   @override
@@ -339,7 +341,7 @@ class _ProductOrderSummarySheetState extends State<ProductOrderSummarySheet> {
       setState(() {
         _isProcessingPayment = false;
       });
-      
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -347,7 +349,12 @@ class _ProductOrderSummarySheetState extends State<ProductOrderSummarySheet> {
           backgroundColor: Colors.green[600],
         ),
       );
-      
+
+      // Clear the cart after successful payment
+      widget.onOrderPlaced?.call();
+
+      print('✅ [ProductOrderSummarySheet] Cart cleared after successful payment');
+
       // Close the summary sheet
       Navigator.pop(context);
     }

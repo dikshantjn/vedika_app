@@ -367,10 +367,12 @@ class AppRoutes {
 class _MainScreenRoute extends StatelessWidget {
   final Widget? child;
   final int? index;
+  final bool isFromNotification; // New parameter to prevent auto-pop during notification navigation
 
   const _MainScreenRoute({
     this.child,
     this.index,
+    this.isFromNotification = false, // Default to false
   });
 
   @override
@@ -386,12 +388,16 @@ class _MainScreenRoute extends StatelessWidget {
         } else if (child != null) {
           MainScreenNavigator.instance.navigateToTransientChild(child!);
         }
-        Navigator.pop(context);
+        // Only pop if not from notification navigation
+        if (!isFromNotification) {
+          Navigator.pop(context);
+        }
       } else {
         // Create new MainScreen
         Navigator.pushReplacementNamed(context, '/home', arguments: {
           if (index != null) 'initialIndex': index,
           if (child != null) 'transientChild': child,
+          'isFromNotification': isFromNotification, // Pass the flag
         });
       }
     });

@@ -261,7 +261,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepA
           ],
           if (viewModel.activeMedicineDeliveryOrders.isNotEmpty) ...[
             const Text(
-              'Active Medicine Delivery',
+              'Medicine Delivery',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),

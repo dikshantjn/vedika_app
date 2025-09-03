@@ -253,6 +253,7 @@ class ApiEndpoints {
   static const String getActiveMedicineDeliveryOrders = '$baseUrl/medicine-delivery/orders/active'; // Get active medicine delivery orders by user ID
   static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
   static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
+  static const String getMedicineCartCount = '$baseUrl/medicine-delivery/medicine-cart-count'; // Get medicine cart count by user ID
 
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';

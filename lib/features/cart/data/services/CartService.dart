@@ -157,6 +157,76 @@ class CartService {
     }
   }
 
+  // Get medicine cart count
+  Future<Map<String, dynamic>> getMedicineCartCount({
+    required String userId,
+    String? authToken,
+  }) async {
+    try {
+      print('🔄 [CartService] Starting API call to get medicine cart count...');
+      print('📍 [CartService] URL: ${ApiEndpoints.getMedicineCartCount}/$userId');
+      print('👤 [CartService] User ID: $userId');
+      print('🔑 [CartService] Auth Token: ${authToken != null ? 'Present' : 'Not provided'}');
+
+      final response = await _dio.get(
+        '${ApiEndpoints.getMedicineCartCount}/$userId',
+        options: Options(
+          headers: {
+            if (authToken != null) 'Authorization': 'Bearer $authToken',
+          },
+        ),
+      );
+
+      print('✅ [CartService] API Response received');
+      print('📊 [CartService] Status Code: ${response.statusCode}');
+      print('📄 [CartService] Response Headers: ${response.headers}');
+      print('📝 [CartService] Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        print('🎯 [CartService] Parsing response data...');
+        print('📊 [CartService] Response success: ${responseData['success']}');
+        print('📊 [CartService] Response cart count: ${responseData['medicineCartCount']}');
+
+        final result = {
+          'success': true,
+          'medicineCartCount': responseData['medicineCartCount'] ?? 0,
+          'message': responseData['message'] ?? 'Cart count retrieved successfully',
+        };
+
+        print('✅ [CartService] Successfully parsed response');
+        print('📊 [CartService] Final result: $result');
+
+        return result;
+      } else {
+        print('❌ [CartService] API returned non-200 status code');
+        print('📊 [CartService] Status: ${response.statusCode}');
+        print('📝 [CartService] Response: ${response.data}');
+        throw Exception('Failed to get medicine cart count: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('🚨 [CartService] DioException occurred');
+      print('📊 [CartService] Error type: ${e.type}');
+      print('📊 [CartService] Error message: ${e.message}');
+      print('📊 [CartService] Error response: ${e.response}');
+      print('📊 [CartService] Error request: ${e.requestOptions}');
+      print('📊 [CartService] Error stack trace: ${e.stackTrace}');
+
+      if (e.response != null) {
+        print('📊 [CartService] Error response status: ${e.response!.statusCode}');
+        print('📊 [CartService] Error response data: ${e.response!.data}');
+        print('📊 [CartService] Error response headers: ${e.response!.headers}');
+      }
+
+      throw Exception('Error getting medicine cart count: ${e.message}');
+    } catch (e, stackTrace) {
+      print('🚨 [CartService] Unexpected error occurred');
+      print('📊 [CartService] Error: $e');
+      print('📊 [CartService] Stack trace: $stackTrace');
+      throw Exception('Error getting medicine cart count: $e');
+    }
+  }
+
   // Mock data methods for development
   List<Map<String, dynamic>> getMockCartItems() {
     return [

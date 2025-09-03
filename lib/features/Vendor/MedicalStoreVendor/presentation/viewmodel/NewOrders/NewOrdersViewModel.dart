@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/NewOrders/NewOrdersService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'dart:convert';
 
 class NewOrdersViewModel extends ChangeNotifier {
   final NewOrdersService _service = NewOrdersService();
   final VendorLoginService _loginService = VendorLoginService();
-  
+  IO.Socket? _socket;
+  bool _disposed = false;
+
   List<Prescription> _prescriptions = [];
   List<Order> _orders = [];
   List<Order> _filteredOrders = [];
@@ -21,7 +26,120 @@ class NewOrdersViewModel extends ChangeNotifier {
   String? _selectedStatusFilter;
   String? _selectedDateFilter;
   String? _selectedAmountFilter;
-  
+
+  // Constructor
+  NewOrdersViewModel() {
+    initSocketConnection();
+  }
+
+  // Socket connection initialization
+  void initSocketConnection() async {
+    debugPrint("🚀 Initializing socket connection for new orders...");
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        debugPrint("❌ Vendor ID not found for socket registration");
+        return;
+      }
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 10,
+        'reconnectionDelay': 1000,
+        'reconnectionDelayMax': 5000,
+        'timeout': 20000,
+        'forceNew': true,
+        'upgrade': true,
+        'rememberUpgrade': true,
+        'path': '/socket.io/',
+        'query': {'vendorId': vendorId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        debugPrint('✅ Socket connected for new orders');
+        _socket!.emit('registerVendor', vendorId);
+      });
+
+      _socket!.onConnectError((data) {
+        debugPrint('❌ Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        debugPrint('❌ Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        debugPrint('❌ Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Add event listener for orderStatusUpdated
+      _socket!.on('orderStatusUpdated', (data) async {
+        debugPrint('🔄 Order status update received: $data');
+        await _handleOrderStatusUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      debugPrint('🔄 Attempting to connect socket for new orders...');
+    } catch (e) {
+      debugPrint("❌ Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 2), () {
+      if (_socket != null && !_socket!.connected) {
+        debugPrint('🔄 Attempting to reconnect...');
+        _socket!.connect();
+      }
+    });
+  }
+
+  Future<void> _handleOrderStatusUpdate(dynamic data) async {
+    try {
+      debugPrint('📋 Processing order status update: $data');
+
+      // Parse the data if it's a string
+      Map<String, dynamic> updateData = data is String ? json.decode(data) : data;
+      debugPrint('📋 Parsed data: $updateData');
+
+      final orderId = updateData['orderId'];
+      final prescriptionId = updateData['prescriptionId'];
+      final newStatus = updateData['status'];
+
+      if (orderId != null || prescriptionId != null) {
+        debugPrint('✅ Order status update received, refreshing data...');
+
+        // Refresh both orders and prescriptions
+        await Future.wait([
+          refresh(),
+        ]);
+
+        debugPrint('✅ Refreshed orders and prescriptions after status update');
+      } else {
+        debugPrint('❌ Missing orderId or prescriptionId in data: $updateData');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error handling order status update: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
   // Getters
   List<Prescription> get prescriptions => _prescriptions;
   List<Order> get orders => _orders;
@@ -63,10 +181,10 @@ class NewOrdersViewModel extends ChangeNotifier {
   Future<void> _loadPrescriptions(String vendorId) async {
     try {
       _prescriptions = await _service.getPrescriptions(vendorId);
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     } catch (e) {
       // For development, use mock data if API fails
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -75,9 +193,9 @@ class NewOrdersViewModel extends ChangeNotifier {
     try {
       _orders = await _service.getOrders(vendorId);
       _filteredOrders = List.from(_orders); // Initialize filtered orders
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     } catch (e) {
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -98,16 +216,16 @@ class NewOrdersViewModel extends ChangeNotifier {
       final response = await _service.acceptPrescription(prescriptionId, vendorId, vendorNote,userId);
       
       if (response['success'] == true) {
-        // Update local prescription status
-        final index = _prescriptions.indexWhere((p) => p.prescriptionId == prescriptionId);
-        if (index != -1) {
-          _prescriptions[index] = _prescriptions[index].copyWith(
-            status: 'verified',
-            vendorNote: vendorNote,
-            updatedAt: DateTime.now(),
-          );
-          notifyListeners();
+        // Remove prescription from list after successful acceptance
+        _prescriptions.removeWhere((p) => p.prescriptionId == prescriptionId);
+
+        // Refresh orders list to show any new orders created from this prescription
+        final vendorId = await _loginService.getVendorId();
+        if (vendorId != null && vendorId.isNotEmpty) {
+          await _loadOrders(vendorId);
         }
+
+        if (!_disposed) notifyListeners();
         return response;
       } else {
         _setError('Failed to accept prescription');
@@ -136,16 +254,16 @@ class NewOrdersViewModel extends ChangeNotifier {
       final response = await _service.rejectPrescription(prescriptionId, vendorId, vendorNote);
       
       if (response['success'] == true) {
-        // Update local prescription status
-        final index = _prescriptions.indexWhere((p) => p.prescriptionId == prescriptionId);
-        if (index != -1) {
-          _prescriptions[index] = _prescriptions[index].copyWith(
-            status: 'rejected',
-            vendorNote: vendorNote,
-            updatedAt: DateTime.now(),
-          );
-          notifyListeners();
+        // Remove prescription from list after successful rejection
+        _prescriptions.removeWhere((p) => p.prescriptionId == prescriptionId);
+
+        // Refresh orders list to reflect any changes from prescription rejection
+        final vendorId = await _loginService.getVendorId();
+        if (vendorId != null && vendorId.isNotEmpty) {
+          await _loadOrders(vendorId);
         }
+
+        if (!_disposed) notifyListeners();
         return response;
       } else {
         _setError('Failed to reject prescription');
@@ -176,7 +294,9 @@ class NewOrdersViewModel extends ChangeNotifier {
             status: 'waiting_for_payment',
             updatedAt: DateTime.now(),
           );
-          notifyListeners();
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
         }
         return response;
       } else {
@@ -207,7 +327,9 @@ class NewOrdersViewModel extends ChangeNotifier {
             note: note,
             updatedAt: DateTime.now(),
           );
-          notifyListeners();
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
         }
         return response;
       } else {
@@ -238,7 +360,9 @@ class NewOrdersViewModel extends ChangeNotifier {
             status: status,
             updatedAt: DateTime.now(),
           );
-          notifyListeners();
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
         }
         return response;
       } else {
@@ -255,6 +379,7 @@ class NewOrdersViewModel extends ChangeNotifier {
 
   // Change selected tab
   void changeTab(String tab) {
+    if (_disposed) return;
     _selectedTab = tab;
     notifyListeners();
   }
@@ -287,16 +412,19 @@ class NewOrdersViewModel extends ChangeNotifier {
   }
 
   void setStatusFilter(String? status) {
+    if (_disposed) return;
     _selectedStatusFilter = status;
     notifyListeners(); // Update UI immediately
   }
 
   void setDateFilter(String? dateFilter) {
+    if (_disposed) return;
     _selectedDateFilter = dateFilter;
     notifyListeners(); // Update UI immediately
   }
 
   void setAmountFilter(String? amountFilter) {
+    if (_disposed) return;
     _selectedAmountFilter = amountFilter;
     notifyListeners(); // Update UI immediately
   }
@@ -306,6 +434,7 @@ class NewOrdersViewModel extends ChangeNotifier {
   }
 
   void clearAllFilters() {
+    if (_disposed) return;
     _searchQuery = '';
     _selectedStatusFilter = null;
     _selectedDateFilter = null;
@@ -380,21 +509,35 @@ class NewOrdersViewModel extends ChangeNotifier {
     }
 
     _filteredOrders = filtered;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
+  }
+
+  // Dispose method for socket cleanup
+  @override
+  void dispose() {
+    _disposed = true;
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
+    super.dispose();
   }
 
   // Private methods
   void _setLoading(bool loading) {
+    if (_disposed) return;
     _isLoading = loading;
     notifyListeners();
   }
 
   void _setError(String error) {
+    if (_disposed) return;
     _errorMessage = error;
     notifyListeners();
   }
 
   void _clearError() {
+    if (_disposed) return;
     _errorMessage = null;
     notifyListeners();
   }

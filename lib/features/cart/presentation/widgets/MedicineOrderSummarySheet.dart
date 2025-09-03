@@ -12,11 +12,13 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 class MedicineOrderSummarySheet extends StatefulWidget {
   final List<Order> medicineOrders;
   final String addressId;
+  final VoidCallback? onOrderPlaced; // Callback to clear cart when order is placed
 
   MedicineOrderSummarySheet({
-    Key? key, 
-    required this.medicineOrders, 
+    Key? key,
+    required this.medicineOrders,
     required this.addressId,
+    this.onOrderPlaced,
   }) : super(key: key);
 
   @override
@@ -396,13 +398,18 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
             // If we can't find the order, set to null
             _placedOrderDetails = null;
           }
-          
+
           // If we still don't have order details, create a minimal one
           if (_placedOrderDetails == null) {
             print('⚠️ [MedicineOrderSummarySheet] Creating fallback order details');
             // We'll handle this in the UI by showing basic information
           }
         });
+
+        // Clear the cart after successful order placement
+        widget.onOrderPlaced?.call();
+
+        print('✅ [MedicineOrderSummarySheet] Cart cleared after successful order placement');
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -704,70 +711,9 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 32),
-          
-          // Track Order Button - Modern Design
-          Container(
-            width: double.infinity,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  ColorPalette.primaryColor,
-                  ColorPalette.primaryColor.withOpacity(0.8),
-                ],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: ColorPalette.primaryColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  // Navigate to track order screen using MainScreen navigation
-                  final scope = MainScreenScope.maybeOf(context);
-                  if (scope != null) {
-                    scope.setIndex(4); // Track Order screen is at index 4
-                  } else {
-                    // Fallback navigation if MainScreen scope is not available
-                    Navigator.pushNamed(context, AppRoutes.trackOrderScreen);
-                  }
-                  // Close the bottom sheet
-                  Navigator.pop(context);
-                },
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.track_changes_outlined, color: Colors.white, size: 24),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Track Your Order',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 20),
-          
+
           // Close Button - Minimal Design
           TextButton(
             onPressed: () => Navigator.pop(context),

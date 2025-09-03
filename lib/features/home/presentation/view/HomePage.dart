@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/cart/index.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BannerSlider.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/BrandSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/CategoryGrid.dart';
@@ -746,7 +747,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildCartIcon() {
-    return Consumer<CartAndPlaceOrderViewModel>(
+    return Consumer<CartViewModel>(
       builder: (context, cartViewModel, child) {
         return Stack(
           children: [
@@ -762,27 +763,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
               ),
             ),
-            Positioned(
-              right: 4,
-              top: 4,
-              child: Container(
-                padding: EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                constraints: BoxConstraints(minWidth: 18, minHeight: 18),
-                child: Text(
-                  cartViewModel.totalItemCount.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            if (cartViewModel.medicineCartCount > 0)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
                   ),
-                  textAlign: TextAlign.center,
+                  constraints: BoxConstraints(minWidth: 18, minHeight: 18),
+                  child: Text(
+                    cartViewModel.medicineCartCount.toString(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
           ],
         );
       },

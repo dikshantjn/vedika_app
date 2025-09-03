@@ -97,6 +97,8 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
     return 'Cart Summary: ${_cartItems.length} medicine items, ${_productCartItems.length} product items, Total: $_totalItemCount';
   }
 
+
+
   CartAndPlaceOrderViewModel(this._userCartService, this._productCartService)
       : _productService = ProductService(),
         _productOrderService = ProductOrderService();
@@ -891,6 +893,8 @@ class CartAndPlaceOrderViewModel extends ChangeNotifier {
       rethrow;
     }
   }
+
+
 
   // **🔹 Force refresh cart data (clears cache)**
   Future<void> refreshCartData() async {

@@ -92,6 +92,7 @@ import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -141,12 +142,18 @@ void main() async {
       'data': initialMessage.data,
     });
     await notificationViewModel.addNotification(notification);
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      fcmService.handleNotificationTap(
+
+    // Use a more reliable approach for initial notification handling
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (navigatorKey.currentContext != null && navigatorKey.currentContext!.mounted) {
+        fcmService.handleNotificationTapWithAppLaunch(
           jsonEncode(initialMessage.data),
-          navigatorKey.currentContext!
-      );
+          navigatorKey.currentContext!,
+          isAppLaunch: true, // Explicitly mark as app launch
+        );
+      } else {
+        debugPrint("⚠️ Context not ready for initial notification, will handle when ready");
+      }
     });
   }
 
@@ -284,6 +291,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileCompletionViewModel()),
         ChangeNotifierProvider(create: (_) => MedicineDeliveryViewModel()),
         ChangeNotifierProvider(create: (_) => NewOrdersViewModel()),
+        ChangeNotifierProvider(create: (_) => CartViewModel()),
 
       ],
       child: Builder(

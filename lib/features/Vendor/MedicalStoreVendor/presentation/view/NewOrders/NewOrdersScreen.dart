@@ -459,13 +459,19 @@ class _NewOrdersScreenState extends State<NewOrdersScreen>
     );
   }
 
-  void _navigateToProcessOrder(dynamic order) {
-    Navigator.push(
+  void _navigateToProcessOrder(dynamic order) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => NewProcessOrderScreen(order: order),
       ),
     );
+
+    // If the order was updated successfully, refresh the orders list
+    if (result == true) {
+      final viewModel = context.read<NewOrdersViewModel>();
+      await viewModel.refresh();
+    }
   }
 
   void _showFilterOptions(BuildContext context, NewOrdersViewModel viewModel) {
@@ -473,265 +479,267 @@ class _NewOrdersScreenState extends State<NewOrdersScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.6,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              margin: EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      builder: (context) => Consumer<NewOrdersViewModel>(
+        builder: (context, vm, child) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, -5),
               ),
-            ),
-
-            // Header
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Icon(Icons.filter_list, color: ColorPalette.primaryColor, size: 24),
-                  SizedBox(width: 12),
-                  Text(
-                    'Filter Orders',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.grey[600]),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
 
-            // Filter Options
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Header
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    // Status Filter
+                    Icon(Icons.filter_list, color: ColorPalette.primaryColor, size: 24),
+                    SizedBox(width: 12),
                     Text(
-                      'Order Status',
+                      'Filter Orders',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildFilterChip(
-                          context,
-                          'All',
-                          viewModel.selectedStatusFilter == null,
-                          () => viewModel.setStatusFilter(null),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Pending',
-                          viewModel.selectedStatusFilter == 'pending',
-                          () => viewModel.setStatusFilter('pending'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Payment Completed',
-                          viewModel.selectedStatusFilter == 'payment_completed',
-                          () => viewModel.setStatusFilter('payment_completed'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Out for Delivery',
-                          viewModel.selectedStatusFilter == 'out_for_delivery',
-                          () => viewModel.setStatusFilter('out_for_delivery'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Delivered',
-                          viewModel.selectedStatusFilter == 'delivered',
-                          () => viewModel.setStatusFilter('delivered'),
-                        ),
-                      ],
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                      onPressed: () => Navigator.pop(context),
                     ),
-
-                    SizedBox(height: 24),
-
-                    // Date Range Filter
-                    Text(
-                      'Date Range',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildFilterChip(
-                          context,
-                          'All Time',
-                          viewModel.selectedDateFilter == null,
-                          () => viewModel.setDateFilter(null),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Today',
-                          viewModel.selectedDateFilter == 'today',
-                          () => viewModel.setDateFilter('today'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'This Week',
-                          viewModel.selectedDateFilter == 'week',
-                          () => viewModel.setDateFilter('week'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'This Month',
-                          viewModel.selectedDateFilter == 'month',
-                          () => viewModel.setDateFilter('month'),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 24),
-
-                    // Amount Range Filter
-                    Text(
-                      'Amount Range',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildFilterChip(
-                          context,
-                          'All',
-                          viewModel.selectedAmountFilter == null,
-                          () => viewModel.setAmountFilter(null),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Under ₹500',
-                          viewModel.selectedAmountFilter == 'under_500',
-                          () => viewModel.setAmountFilter('under_500'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          '₹500 - ₹1000',
-                          viewModel.selectedAmountFilter == '500_1000',
-                          () => viewModel.setAmountFilter('500_1000'),
-                        ),
-                        _buildFilterChip(
-                          context,
-                          'Above ₹1000',
-                          viewModel.selectedAmountFilter == 'above_1000',
-                          () => viewModel.setAmountFilter('above_1000'),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 32),
                   ],
                 ),
               ),
-            ),
 
-            // Apply and Clear Buttons
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        viewModel.clearAllFilters();
-                        Navigator.pop(context);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey[400]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        'Clear All',
+              // Filter Options
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Status Filter
+                      Text(
+                        'Order Status',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
+                          color: Colors.black87,
                         ),
                       ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        viewModel.applyFilters();
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColorPalette.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                      SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildFilterChip(
+                            context,
+                            'All',
+                            vm.selectedStatusFilter == null,
+                            () => vm.setStatusFilter(null),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Pending',
+                            vm.selectedStatusFilter == 'pending',
+                            () => vm.setStatusFilter('pending'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Payment Completed',
+                            vm.selectedStatusFilter == 'payment_completed',
+                            () => vm.setStatusFilter('payment_completed'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Out for Delivery',
+                            vm.selectedStatusFilter == 'out_for_delivery',
+                            () => vm.setStatusFilter('out_for_delivery'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Delivered',
+                            vm.selectedStatusFilter == 'delivered',
+                            () => vm.setStatusFilter('delivered'),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        'Apply Filters',
+
+                      SizedBox(height: 24),
+
+                      // Date Range Filter
+                      Text(
+                        'Date Range',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildFilterChip(
+                            context,
+                            'All Time',
+                            vm.selectedDateFilter == null,
+                            () => vm.setDateFilter(null),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Today',
+                            vm.selectedDateFilter == 'today',
+                            () => vm.setDateFilter('today'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'This Week',
+                            vm.selectedDateFilter == 'week',
+                            () => vm.setDateFilter('week'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'This Month',
+                            vm.selectedDateFilter == 'month',
+                            () => vm.setDateFilter('month'),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 24),
+
+                      // Amount Range Filter
+                      Text(
+                        'Amount Range',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildFilterChip(
+                            context,
+                            'All',
+                            vm.selectedAmountFilter == null,
+                            () => vm.setAmountFilter(null),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Under ₹500',
+                            vm.selectedAmountFilter == 'under_500',
+                            () => vm.setAmountFilter('under_500'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            '₹500 - ₹1000',
+                            vm.selectedAmountFilter == '500_1000',
+                            () => vm.setAmountFilter('500_1000'),
+                          ),
+                          _buildFilterChip(
+                            context,
+                            'Above ₹1000',
+                            vm.selectedAmountFilter == 'above_1000',
+                            () => vm.setAmountFilter('above_1000'),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Apply and Clear Buttons
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          vm.clearAllFilters();
+                          Navigator.pop(context);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(color: Colors.grey[400]!),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(
+                          'Clear All',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          vm.applyFilters();
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColorPalette.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(
+                          'Apply Filters',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
