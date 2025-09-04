@@ -2,33 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/clinic/data/services/ClinicPaymentService.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
-
-class BookClinicAppointmentPage extends StatefulWidget {
+class ClinicAppointmentPage extends StatefulWidget {
   final DoctorClinicProfile doctor;
+  final bool isOnline;
 
-  const BookClinicAppointmentPage({Key? key, required this.doctor}) : super(key: key);
+  const ClinicAppointmentPage({
+    Key? key,
+    required this.doctor,
+    required this.isOnline,
+  }) : super(key: key);
 
   @override
-  _BookClinicAppointmentPageState createState() => _BookClinicAppointmentPageState();
+  _ClinicAppointmentPageState createState() => _ClinicAppointmentPageState();
 }
 
-class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
+class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
   final GlobalKey<FormState> _patientFormKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final ClinicPaymentService _paymentService = ClinicPaymentService();
 
   DateTime _selectedDate = DateTime.now();
-  String? _selectedTimeSlot;
   String _selectedPatientType = "Self";
   bool _isPaymentProcessing = false;
+  bool _shouldRefreshTimeSlots = false;
 
   // Patient form controllers
   final TextEditingController _nameController = TextEditingController();
@@ -37,10 +41,20 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
   final TextEditingController _emailController = TextEditingController();
   String _selectedGender = 'Male';
 
+  late BookClinicAppointmentViewModel _viewModel;
+
   @override
   void initState() {
     super.initState();
     _setupPaymentCallbacks();
+
+    // Get ViewModel from Provider
+    _viewModel = Provider.of<BookClinicAppointmentViewModel>(context, listen: false);
+
+    // Load initial time slots
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTimeSlotsForSelectedDate();
+    });
   }
 
   void _setupPaymentCallbacks() {
@@ -54,6 +68,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       _isPaymentProcessing = false;
     });
 
+    // Show initial success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Payment Successful! Appointment Booked"),
@@ -61,7 +76,29 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       ),
     );
 
+    // Show appointment confirmation dialog first
     _showAppointmentConfirmedDialog();
+
+    // Refresh time slots after a brief delay to ensure dialog is shown
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (mounted) {
+        _viewModel.clearAfterBooking(); // Clear selected time slot
+        _loadTimeSlotsForSelectedDate(); // Refresh available slots
+      }
+    });
+
+    // If time slot became unavailable, show additional info
+    if (_viewModel.selectedTimeSlot == null) {
+      Future.delayed(Duration(seconds: 2), () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Time slot updated. The slot you booked is now confirmed in your appointments."),
+            backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+    }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -101,29 +138,55 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
     super.dispose();
   }
 
-  bool get isFormComplete {
-    if (_selectedTimeSlot == null) return false;
-
-    if (_selectedPatientType == "Other") {
-      if (_nameController.text.isEmpty ||
-          _ageController.text.isEmpty ||
-          _phoneController.text.isEmpty) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  void _processPayment() {
-    if (!isFormComplete) {
+  // Load time slots for the selected date
+  void _loadTimeSlotsForSelectedDate() {
+    final vendorId = widget.doctor.vendorId ?? widget.doctor.generatedId ?? '';
+    if (vendorId.isNotEmpty) {
+      _viewModel.loadTimeSlots(
+        vendorId: vendorId,
+        date: _selectedDate,
+      );
+    } else {
+      // Show error if vendor ID is missing
+      setState(() {
+        _viewModel.clearData();
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Please complete all required fields"),
+          content: Text("Unable to load time slots. Doctor information is incomplete."),
+          backgroundColor: DoctorConsultationColorPalette.errorRed,
+        ),
+      );
+    }
+  }
+
+
+  void _processPayment() {
+    // Check if time slot is selected and available
+    final selectedTimeSlot = _viewModel.selectedTimeSlot;
+    if (selectedTimeSlot == null || !_viewModel.isTimeSlotAvailable(selectedTimeSlot)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please select an available time slot"),
           backgroundColor: DoctorConsultationColorPalette.errorRed,
         ),
       );
       return;
+    }
+
+    // Check patient details if "Other" is selected
+    if (_selectedPatientType == "Other") {
+      if (_nameController.text.isEmpty ||
+          _ageController.text.isEmpty ||
+          _phoneController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Please complete all required fields"),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -136,11 +199,11 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       final minFee = double.parse(feesRange.split('-')[0]);
 
       // Extract time from the selected time slot (e.g., "10:00 - 10:30" -> "10:00")
-      final time = _selectedTimeSlot?.split(" - ").first ?? "00:00";
+      final time = _viewModel.selectedTimeSlot ?? "00:00";
 
       _paymentService.openPaymentGateway(
         doctorId: widget.doctor.vendorId ?? widget.doctor.generatedId ?? '',
-        isOnline: false, // This is an in-person/clinic appointment
+        isOnline: widget.isOnline, // Use the passed parameter
         date: _selectedDate,
         time: time,
         amount: minFee,
@@ -229,7 +292,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                     Divider(height: 16),
                     _buildConfirmationDetailRow(
                       "Time",
-                      _selectedTimeSlot!,
+                      _viewModel.selectedTimeSlot ?? "Not selected",
                       Icons.access_time,
                     ),
                     Divider(height: 16),
@@ -241,21 +304,25 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                     Divider(height: 16),
                     _buildConfirmationDetailRow(
                       "Mode",
-                      "In-Person Consultation",
-                      Icons.local_hospital,
+                      widget.isOnline ? "Online Consultation" : "In-Person Consultation",
+                      widget.isOnline ? Icons.video_call : Icons.local_hospital,
                     ),
-                    Divider(height: 16),
-                    _buildConfirmationDetailRow(
-                      "Patient",
-                      _selectedPatientType == "Self" ? "Self" : _nameController.text,
-                      Icons.person_outline,
-                    ),
+                    if (_selectedPatientType != "Self") ...[
+                      Divider(height: 16),
+                      _buildConfirmationDetailRow(
+                        "Patient",
+                        _nameController.text,
+                        Icons.person_outline,
+                      ),
+                    ],
                   ],
                 ),
               ),
               SizedBox(height: 24),
               Text(
-                'Please arrive 10 minutes before your scheduled appointment time.',
+                widget.isOnline
+                    ? 'You will receive a notification and email with further details.'
+                    : 'Please arrive 10 minutes before your scheduled appointment time.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: DoctorConsultationColorPalette.textSecondary,
@@ -345,7 +412,9 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildConfirmButton(),
+      bottomNavigationBar: Consumer<BookClinicAppointmentViewModel>(
+        builder: (context, viewModel, child) => _buildConfirmButton(viewModel),
+      ),
     );
   }
 
@@ -368,7 +437,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                 child: Opacity(
                   opacity: 0.15,
                   child: Icon(
-                    Icons.healing,
+                    widget.isOnline ? Icons.video_call : Icons.healing,
                     size: 200,
                     color: Colors.white,
                   ),
@@ -388,7 +457,6 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
         onPressed: () {
-          // Navigate back using route stack
           if (MainScreenNavigator.instance.canGoBack) {
             MainScreenNavigator.instance.goBack();
           } else {
@@ -397,7 +465,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
         },
       ),
       title: Text(
-        "Book Appointment",
+        widget.isOnline ? "Book Online Appointment" : "Book Clinic Appointment",
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -416,9 +484,37 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           backgroundColor: Colors.white,
           child: CircleAvatar(
             radius: 37,
-            backgroundImage: NetworkImage(
-              widget.doctor.profilePicture,
-            ),
+            backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+            child: widget.doctor.profilePicture.isNotEmpty
+                ? Image.network(
+                    widget.doctor.profilePicture,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.person,
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                        size: 30,
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.person,
+                    color: DoctorConsultationColorPalette.primaryBlue,
+                    size: 30,
+                  ),
           ),
         ),
         SizedBox(width: 16),
@@ -504,7 +600,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           _buildQuickInfoCards(),
           _buildDoctorInfo(),
           _buildAppointmentSection(),
-          _buildPatientDetailsSection(),
+          if (!widget.isOnline) _buildPatientDetailsSection(),
           SizedBox(height: 100), // Extra space at bottom
         ],
       ),
@@ -638,7 +734,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           ),
           SizedBox(height: 16),
           Text(
-            "${widget.doctor.doctorName} is a specialist in ${widget.doctor.specializations.toString()} with ${widget.doctor.experienceYears} years of experience. They are proficient in ${widget.doctor.languageProficiency.join(', ')} and have qualifications in ${widget.doctor.educationalQualifications.join(', ')}.",
+            "${widget.doctor.doctorName} is a specialist in ${widget.doctor.specializations.join(', ')} with ${widget.doctor.experienceYears} years of experience. They are proficient in ${widget.doctor.languageProficiency.join(', ')} and have qualifications in ${widget.doctor.educationalQualifications.join(', ')}.",
             style: TextStyle(
               fontSize: 14,
               color: DoctorConsultationColorPalette.textSecondary,
@@ -793,8 +889,9 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
             onTap: isAvailable ? () {
               setState(() {
                 _selectedDate = date;
-                _selectedTimeSlot = null; // Reset time slot when date changes
+                _viewModel.clearSelectedTimeSlot(); // Clear selected time slot
               });
+              _loadTimeSlotsForSelectedDate(); // Load time slots for new date
             } : null,
             child: AnimatedContainer(
               duration: Duration(milliseconds: 200),
@@ -866,112 +963,215 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
   }
 
   Widget _buildTimeSlots() {
-    // Get the consultation time slots from the doctor model
-    final timeSlots = widget.doctor.consultationTimeSlots;
-
-    if (timeSlots.isEmpty) {
-      return _buildNoTimeSlotsMessage();
-    }
-
-    // Check if we have the new format
-    bool isNewFormat = timeSlots.isNotEmpty &&
-        (timeSlots.first.containsKey('startTime') || timeSlots.first.containsKey('endTime'));
-
-    // Get all 30-minute slots for all timeSlots
-    List<String> thirtyMinuteSlots = [];
-
-    for (var slot in timeSlots) {
-      String startTimeStr = isNewFormat ? slot['startTime'] ?? '' : slot['start'] ?? '';
-      String endTimeStr = isNewFormat ? slot['endTime'] ?? '' : slot['end'] ?? '';
-
-      // Skip if start or end time is empty
-      if (startTimeStr.isEmpty || endTimeStr.isEmpty) continue;
-
-      // Parse the times
-      List<String> startComponents = startTimeStr.split(':');
-      List<String> endComponents = endTimeStr.split(':');
-
-      if (startComponents.length < 2 || endComponents.length < 2) continue;
-
-      int startHour = int.tryParse(startComponents[0]) ?? 0;
-      int startMinute = int.tryParse(startComponents[1]) ?? 0;
-      int endHour = int.tryParse(endComponents[0]) ?? 0;
-      int endMinute = int.tryParse(endComponents[1]) ?? 0;
-
-      // Create DateTime objects for easier manipulation
-      DateTime startTime = DateTime(2022, 1, 1, startHour, startMinute);
-      DateTime endTime = DateTime(2022, 1, 1, endHour, endMinute);
-
-      // Generate 30-minute slots
-      DateTime currentSlot = startTime;
-      while (currentSlot.isBefore(endTime)) {
-        DateTime nextSlot = currentSlot.add(Duration(minutes: 30));
-
-        // Make sure we don't go past the end time
-        if (nextSlot.isAfter(endTime)) {
-          nextSlot = endTime;
+    return Consumer<BookClinicAppointmentViewModel>(
+      builder: (context, viewModel, child) {
+        // Check if time slots need to be refreshed due to socket events
+        if (viewModel.needsTimeSlotRefresh && !viewModel.isLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            debugPrint('🏥 Refreshing time slots due to socket event');
+            _loadTimeSlotsForSelectedDate();
+            viewModel.clearRefreshFlag();
+          });
         }
 
-        // Format the times
-        String formattedCurrentSlot = DateFormat('HH:mm').format(currentSlot);
-        String formattedNextSlot = DateFormat('HH:mm').format(nextSlot);
-
-        // Only add if it's at least a 5-minute slot
-        if (nextSlot.difference(currentSlot).inMinutes >= 5) {
-          thirtyMinuteSlots.add('$formattedCurrentSlot - $formattedNextSlot');
-        }
-
-        // Move to next slot
-        currentSlot = nextSlot;
-      }
-    }
-
-    if (thirtyMinuteSlots.isEmpty) {
-      return _buildNoTimeSlotsMessage();
-    }
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: thirtyMinuteSlots.map((timeSlot) {
-        final isSelected = _selectedTimeSlot == timeSlot;
-
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedTimeSlot = timeSlot;
-            });
-          },
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? DoctorConsultationColorPalette.primaryBlue
-                  : DoctorConsultationColorPalette.backgroundCard,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: isSelected
-                  ? [
-                BoxShadow(
-                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ]
-                  : null,
-            ),
-            child: Text(
-              timeSlot,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: isSelected
-                    ? Colors.white
-                    : DoctorConsultationColorPalette.textPrimary,
+        if (viewModel.isLoading) {
+          return Container(
+            height: 100,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DoctorConsultationColorPalette.primaryBlue,
               ),
             ),
-          ),
+          );
+        }
+
+        if (viewModel.noSlotsAvailable) {
+          return Container(
+            padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.5),
+                  size: 48,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "No time slots available",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: DoctorConsultationColorPalette.textSecondary,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "This doctor has no available appointments for the selected date. Please try a different date.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: DoctorConsultationColorPalette.textHint,
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadTimeSlotsForSelectedDate,
+                  child: Text("Refresh"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (viewModel.error != null) {
+          return Container(
+            padding: EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: DoctorConsultationColorPalette.errorRed,
+                  size: 48,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "Failed to load time slots",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: DoctorConsultationColorPalette.textSecondary,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  viewModel.error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: DoctorConsultationColorPalette.textHint,
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadTimeSlotsForSelectedDate,
+                  child: Text("Retry"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final timeSlots = viewModel.allTimeSlots;
+
+        if (timeSlots.isEmpty) {
+          return _buildNoTimeSlotsMessage();
+        }
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: timeSlots.map((timeSlot) {
+            final isSelected = viewModel.selectedTimeSlot == timeSlot;
+            final isBooked = viewModel.isTimeSlotBooked(timeSlot);
+            final isAvailable = viewModel.isTimeSlotAvailable(timeSlot);
+            final isBookedByCurrentUser = viewModel.isTimeSlotBookedByCurrentUser(timeSlot);
+            final isBookedByOtherUser = viewModel.isTimeSlotBookedByOtherUser(timeSlot);
+
+            return GestureDetector(
+              onTap: isAvailable ? () {
+                viewModel.selectTimeSlot(timeSlot);
+              } : null,
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? DoctorConsultationColorPalette.primaryBlue
+                      : isBookedByCurrentUser
+                          ? DoctorConsultationColorPalette.successGreen.withOpacity(0.1)
+                          : isBookedByOtherUser
+                              ? DoctorConsultationColorPalette.errorRed.withOpacity(0.1)
+                              : DoctorConsultationColorPalette.backgroundCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: isBooked
+                      ? Border.all(
+                          color: isBookedByCurrentUser
+                              ? DoctorConsultationColorPalette.successGreen.withOpacity(0.3)
+                              : DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
+                          width: 1,
+                        )
+                      : null,
+                  boxShadow: isSelected
+                      ? [
+                    BoxShadow(
+                      color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      timeSlot,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : isBookedByCurrentUser
+                                ? DoctorConsultationColorPalette.successGreen
+                                : isBookedByOtherUser
+                                    ? DoctorConsultationColorPalette.errorRed
+                                    : DoctorConsultationColorPalette.textPrimary,
+                      ),
+                    ),
+                    if (isBooked) ...[
+                      SizedBox(width: 8),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isBookedByCurrentUser
+                              ? DoctorConsultationColorPalette.successGreen.withOpacity(0.1)
+                              : DoctorConsultationColorPalette.errorRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isBookedByCurrentUser
+                                ? DoctorConsultationColorPalette.successGreen.withOpacity(0.3)
+                                : DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          isBookedByCurrentUser ? 'BOOKED BY YOU' : 'BOOKED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isBookedByCurrentUser
+                                ? DoctorConsultationColorPalette.successGreen
+                                : DoctorConsultationColorPalette.errorRed,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -997,7 +1197,9 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
           ),
           SizedBox(height: 8),
           Text(
-            "Please contact the clinic directly for appointments",
+            widget.isOnline
+                ? "Please contact the clinic directly for online appointments"
+                : "Please contact the clinic directly for appointments",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -1285,6 +1487,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
       ),
       child: DropdownButtonFormField<String>(
         value: value,
+        isExpanded: true, // Prevents overflow in Row/Expanded layouts
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
@@ -1297,6 +1500,13 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
             color: DoctorConsultationColorPalette.primaryBlue,
           ),
           border: InputBorder.none,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: DoctorConsultationColorPalette.primaryBlue,
+              width: 2,
+            ),
+          ),
         ),
         style: TextStyle(
           color: DoctorConsultationColorPalette.textPrimary,
@@ -1309,14 +1519,14 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item,
-            child: Text(item),
+            child: Text(item, overflow: TextOverflow.ellipsis),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildConfirmButton() {
+  Widget _buildConfirmButton(BookClinicAppointmentViewModel viewModel) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1357,8 +1567,7 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
             child: AnimatedContainer(
               duration: Duration(milliseconds: 300),
               child: ElevatedButton(
-                onPressed: isFormComplete ? () {
-                  // Show booking confirmation dialog
+                onPressed: (viewModel.selectedTimeSlot != null && viewModel.isTimeSlotAvailable(viewModel.selectedTimeSlot!)) && !_isPaymentProcessing ? () {
                   _processPayment();
                 } : null,
                 style: ElevatedButton.styleFrom(
@@ -1366,13 +1575,17 @@ class _BookClinicAppointmentPageState extends State<BookClinicAppointmentPage> {
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 16),
                   disabledBackgroundColor: Colors.grey.shade300,
-                  elevation: isFormComplete ? 4 : 0,
+                  elevation: (viewModel.selectedTimeSlot != null && viewModel.isTimeSlotAvailable(viewModel.selectedTimeSlot!)) && !_isPaymentProcessing ? 4 : 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Text(
-                  "Confirm Appointment",
+                  _isPaymentProcessing
+                      ? "Processing..."
+                      : widget.isOnline
+                          ? "Book Online Appointment"
+                          : "Confirm Appointment",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

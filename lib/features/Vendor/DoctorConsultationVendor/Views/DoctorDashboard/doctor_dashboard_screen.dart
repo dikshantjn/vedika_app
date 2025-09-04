@@ -3,6 +3,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultation
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointment_history_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/clinic_appointments_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorClinicProfileScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorClinicTimeslotPage.dart';
 // import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/appointments_page.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/dashboard_page.dart';
 // import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/pages/history_page.dart';
@@ -10,8 +11,12 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/DoctorDashboard/widgets/drawer_menu.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicProfileViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicTimeslotViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Notifications/DoctorClinicNotificationScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
@@ -37,6 +42,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
     // Using placeholders for pages that aren't implemented yet
     const ClinicAppointmentsScreen(),
     const ClinicAppointmentHistoryScreen(),
+    const DoctorClinicTimeslotPage(),
     const DoctorClinicProfileScreen(),
   ];
   
@@ -45,6 +51,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
     'Dashboard',
     'Appointments',
     'History',
+    'Time Slots',
     'Profile',
   ];
   
@@ -73,9 +80,23 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()..init()),
         ChangeNotifierProvider(create: (_) => DoctorClinicProfileViewModel()..loadProfile()),
+        ChangeNotifierProvider(create: (_) => CoreNotificationViewModel()),
+        // DoctorClinicTimeslotViewModel is already provided at app level in main.dart
+        // ChangeNotifierProvider(create: (_) => DoctorClinicTimeslotViewModel()),
       ],
-      child: Consumer2<DashboardViewModel, DoctorClinicProfileViewModel>(
-        builder: (context, dashboardViewModel, profileViewModel, _) {
+      child: Consumer3<DashboardViewModel, DoctorClinicProfileViewModel, CoreNotificationViewModel>(
+        builder: (context, dashboardViewModel, profileViewModel, notificationViewModel, _) {
+          // Initialize notification view model with vendor ID if available
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            final vendorId = await VendorLoginService().getVendorId();
+            if (vendorId != null && !notificationViewModel.isUserNotifications) {
+              notificationViewModel.initializeForVendor(vendorId);
+              if (notificationViewModel.notifications.isEmpty && !notificationViewModel.isLoading) {
+                notificationViewModel.loadNotifications();
+              }
+            }
+          });
+
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle(
               statusBarColor: DoctorConsultationColorPalette.primaryBlue,
@@ -170,11 +191,56 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
             ),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-          onPressed: () {
-            // TODO: Show notifications
-          },
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: () {
+                // Navigate to notifications screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DoctorClinicNotificationScreen(),
+                  ),
+                );
+              },
+            ),
+            // Unread count badge
+            Consumer<CoreNotificationViewModel>(
+              builder: (context, notificationViewModel, child) {
+                if (notificationViewModel.unreadCount > 0) {
+                  return Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: DoctorConsultationColorPalette.errorRed,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        notificationViewModel.unreadCount > 99
+                            ? '99+'
+                            : notificationViewModel.unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
         ),
         const SizedBox(width: 8),
       ],
@@ -272,6 +338,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
               icon: Icon(Icons.history_outlined),
               activeIcon: Icon(Icons.history),
               label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.schedule_outlined),
+              activeIcon: Icon(Icons.schedule),
+              label: 'Time Slots',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),

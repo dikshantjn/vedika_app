@@ -2,6 +2,53 @@ import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 
+// Model for booked slot
+class BookedSlot {
+  final String time;
+  final String userId;
+
+  BookedSlot({
+    required this.time,
+    required this.userId,
+  });
+
+  factory BookedSlot.fromJson(Map<String, dynamic> json) {
+    return BookedSlot(
+      time: json['time'] ?? '',
+      userId: json['userId'] ?? '',
+    );
+  }
+}
+
+// Model for time slots response
+class TimeSlotsResponse {
+  final String vendorId;
+  final String date;
+  final String day;
+  final List<String> availableSlots;
+  final List<BookedSlot> bookedSlots;
+
+  TimeSlotsResponse({
+    required this.vendorId,
+    required this.date,
+    required this.day,
+    required this.availableSlots,
+    required this.bookedSlots,
+  });
+
+  factory TimeSlotsResponse.fromJson(Map<String, dynamic> json) {
+    return TimeSlotsResponse(
+      vendorId: json['vendorId'] ?? '',
+      date: json['date'] ?? '',
+      day: json['day'] ?? '',
+      availableSlots: List<String>.from(json['availableSlots'] ?? []),
+      bookedSlots: (json['bookedSlots'] as List<dynamic>?)
+          ?.map((slot) => BookedSlot.fromJson(slot))
+          .toList() ?? [],
+    );
+  }
+}
+
 class ClinicService {
   final Dio _dio;
 
@@ -233,6 +280,36 @@ class ClinicService {
         'success': false,
         'message': 'Error creating appointment: $e',
       };
+    }
+  }
+
+  // Fetch time slots by vendor and date
+  Future<TimeSlotsResponse> getTimeSlotsByVendorAndDate({
+    required String vendorId,
+    required String date,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getClinicTimeslotsByVendorAndDate}/$vendorId/date/$date',
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return TimeSlotsResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load time slots: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw Exception('Connection timeout. Please check your internet connection.');
+      }
+      throw Exception('Error fetching time slots: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching time slots: $e');
     }
   }
 } 

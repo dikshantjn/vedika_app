@@ -17,11 +17,10 @@ import 'package:vedika_healthcare/features/ambulance/presentation/view/Ambulance
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBloodBankLocationServiceScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicAppointmentPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicConsultationTypePage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorConsultationPage.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
@@ -330,7 +329,7 @@ class AppRoutes {
         final clinic = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
           builder: (context) => _MainScreenRoute(
-            child: BookClinicAppointmentPage(doctor: clinic),
+            child: ClinicAppointmentPage(doctor: clinic, isOnline: false),
             index: 9,
           ),
         );
@@ -348,7 +347,7 @@ class AppRoutes {
         final doctor = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
           builder: (context) => _MainScreenRoute(
-            child: OnlineDoctorDetailPage(doctor: doctor),
+            child: ClinicAppointmentPage(doctor: doctor, isOnline: true),
             index: 9,
           ),
         );

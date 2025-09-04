@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.40:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -182,6 +182,13 @@ class ApiEndpoints {
   static const String addWard = "$baseUrl/hospitals/wards";
   static const String editWard = "$baseUrl/hospitals/wards";
 
+  // 📌 Clinic Time Slots APIs
+  static const String getClinicTimeslotsByVendor = '$baseUrl/clinic-timeslots/vendor'; // /clinic-timeslots/vendor/:vendorId
+  static const String getClinicTimeslotsByVendorAndDate = '$baseUrl/clinic-timeslots/vendor'; // /clinic-timeslots/vendor/:vendorId/date/:date
+  static const String createClinicTimeslot = '$baseUrl/clinic-timeslots'; // POST /clinic-timeslots
+  static const String updateClinicTimeslot = '$baseUrl/clinic-timeslots'; // PUT /clinic-timeslots/:timeSlotID
+  static const String deleteClinicTimeslot = '$baseUrl/clinic-timeslots'; // DELETE /clinic-timeslots/:timeSlotID
+
   // 📌 Lab Test APIs
   static const String uploadFile = '$baseUrl/lab-test/upload-file';
   static const String uploadMultipleFiles = '$baseUrl/lab-test/upload-multiple-files';
@@ -254,6 +261,11 @@ class ApiEndpoints {
   static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
   static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
   static const String getMedicineCartCount = '$baseUrl/medicine-delivery/medicine-cart-count'; // Get medicine cart count by user ID
+
+  // 📌 Notification APIs
+  static const String getNotifications = '$baseUrl/notifications'; // GET /notifications?userId=:userId or ?vendorId=:vendorId
+  static String markNotificationAsRead(String notificationId) => '$baseUrl/notifications/$notificationId/read'; // PUT /notifications/:notificationId/read
+  static String deleteNotification(String notificationId) => '$baseUrl/notifications/$notificationId'; // DELETE /notifications/:notificationId
 
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';

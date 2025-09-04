@@ -114,6 +114,7 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
       margin: EdgeInsets.only(bottom: 20),
       child: DropdownButtonFormField<String>(
         value: _selectedGender,
+        isExpanded: true, // This prevents overflow by making dropdown fill available space
         decoration: InputDecoration(
           labelText: "Gender",
           labelStyle: TextStyle(fontSize: 16, color: Colors.grey.shade600),
@@ -121,6 +122,11 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade400),
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.teal),
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         ),
         onChanged: (String? newValue) {
           setState(() {
@@ -132,7 +138,7 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
             .map<DropdownMenuItem<String>>((String value) {
           return DropdownMenuItem<String>(
             value: value,
-            child: Text(value),
+            child: Text(value, overflow: TextOverflow.ellipsis),
           );
         }).toList(),
       ),

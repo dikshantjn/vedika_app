@@ -5,7 +5,6 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart'
     show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
 
 class DraggableClinicList extends StatelessWidget {
   final List<DoctorClinicProfile> clinics;

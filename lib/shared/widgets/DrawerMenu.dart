@@ -5,7 +5,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
+import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
 
 class DrawerMenu extends StatefulWidget {
   final void Function(int index)? onSelectIndex;
@@ -38,7 +38,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
   @override
   Widget build(BuildContext context) {
     final userViewModel = context.watch<UserViewModel>();
-    final notificationViewModel = context.watch<NotificationViewModel>();
+    final notificationViewModel = context.watch<CoreNotificationViewModel>();
 
     return Drawer(
       backgroundColor: Colors.white,
@@ -442,8 +442,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
   }
 
   Widget _buildNotificationItem(
-      BuildContext context, NotificationViewModel viewModel) {
-    final unreadCount = viewModel.notifications.where((n) => !n.isRead).length;
+      BuildContext context, CoreNotificationViewModel viewModel) {
+    final unreadCount = viewModel.unreadCount;
 
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),

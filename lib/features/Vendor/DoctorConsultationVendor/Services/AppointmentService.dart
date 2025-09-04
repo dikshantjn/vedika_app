@@ -20,30 +20,22 @@ class AppointmentService {
     try {
       // Get the vendor ID
       final String? vendorId = await _getVendorId();
-      print('[AppointmentService] Fetching pending appointments for vendorId: $vendorId');
-      
+
       if (vendorId == null) {
         throw Exception('Vendor ID not found');
       }
       
       // Make API call to fetch pending appointments
       final String url = '${ApiEndpoints.getPendingClinicAppointmentsByVendor}/$vendorId/pending';
-      print('[AppointmentService] Making GET request to: $url');
-      
-      final response = await _dio.get(url);
 
-      print('[AppointmentService] Response status code: ${response.statusCode}');
-      print('[AppointmentService] Response data: ${response.data}');
+      final response = await _dio.get(url);
 
       if (response.statusCode == 200) {
         // Extract appointments from 'appointments' field instead of 'data'
         final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
-        print('[AppointmentService] Raw appointments data: $appointmentsData');
-        
+
         final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
         
-        print('[AppointmentService] Fetched ${appointments.length} pending appointments');
-        print('[AppointmentService] Appointment types breakdown:');
         int onlineCount = 0;
         int offlineCount = 0;
         
@@ -53,11 +45,9 @@ class AppointmentService {
           } else {
             offlineCount++;
           }
-          print('[AppointmentService] - ID: ${appointment.clinicAppointmentId}, isOnline: ${appointment.isOnline}, status: ${appointment.status}, date: ${appointment.date}, time: ${appointment.time}');
         }
         
-        print('[AppointmentService] Online appointments: $onlineCount, Offline appointments: $offlineCount');
-        
+
         return appointments;
       } else {
         print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');

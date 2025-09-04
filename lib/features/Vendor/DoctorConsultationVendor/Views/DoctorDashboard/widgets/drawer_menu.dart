@@ -37,9 +37,14 @@ class DoctorDrawerMenu extends StatelessWidget {
                   onTap: () => _navigateToPage(context, 2),
                 ),
                 _buildDrawerItem(
+                  icon: Icons.schedule_outlined,
+                  title: 'Time Slots',
+                  onTap: () => _navigateToPage(context, 3),
+                ),
+                _buildDrawerItem(
                   icon: Icons.person_outline,
                   title: 'Profile',
-                  onTap: () => _navigateToPage(context, 3),
+                  onTap: () => _navigateToPage(context, 4),
                 ),
                 const Divider(height: 1),
                 _buildDrawerItem(
