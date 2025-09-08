@@ -11,6 +11,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/Emp
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomClinicAppointmentInfoDialog.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/clinic_appointment_invoice_pdf.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CabBookingBottomSheet.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/RescheduleAppointmentBottomSheet.dart';
 
 class ClinicAppointmentTab extends StatefulWidget {
   const ClinicAppointmentTab({Key? key}) : super(key: key);
@@ -557,6 +558,23 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                           _buildInfoRow('Fee', '₹${appointment.paidAmount.toStringAsFixed(2)}', isTotal: true),
                           Divider(height: 20),
                           _buildInfoRow('Payment Status', appointment.paymentStatus.toUpperCase()),
+                          if (appointment.notes != null && appointment.notes!.trim().isNotEmpty) ...[
+                            Divider(height: 20),
+                            _buildInfoRow('Notes', appointment.notes!.trim()),
+                          ],
+                          if (appointment.attachments.isNotEmpty) ...[
+                            Divider(height: 20),
+                            _buildInfoRowWidget(
+                              'Attachments',
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: appointment.attachments
+                                    .map((u) => _attachmentChip(_filenameFromUrl(u)))
+                                    .toList(),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -682,7 +700,31 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                       ],
                     ),
                     if (appointment.status.toLowerCase() == 'pending' || 
-                        appointment.status.toLowerCase() == 'confirmed')
+                        appointment.status.toLowerCase() == 'confirmed') ...[
+                      // Reschedule Button
+                      Padding(
+                        padding: EdgeInsets.only(top: 10),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: Icon(Icons.schedule),
+                            label: Text('Reschedule Appointment'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _showRescheduleBottomSheet(appointment);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: DoctorConsultationColorPalette.primaryBlue,
+                              side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Cancel Button
                       Padding(
                         padding: EdgeInsets.only(top: 10),
                         child: SizedBox(
@@ -705,6 +747,77 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                           ),
                         ),
                       ),
+                    ],
+                    
+                    // Appointment Status Information
+                    if (_hasStatusInformation(appointment)) ...[
+                      Divider(height: 30),
+                      Text(
+                        'Appointment Status',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DoctorConsultationColorPalette.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      _buildStatusInfoCard(appointment),
+                    ],
+
+                    // Attendance Status Buttons - Show for non-completed appointments
+                    if (appointment.status.toLowerCase() != 'completed') ...[
+                      Divider(height: 30),
+                      Text(
+                        'Attendance Status',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DoctorConsultationColorPalette.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: Icon(Icons.phone_disabled),
+                              label: Text('No Call'),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _updateAttendanceStatus(appointment.clinicAppointmentId, 'no_call');
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.orange[700],
+                                side: BorderSide(color: Colors.orange[700]!),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: Icon(Icons.person_off),
+                              label: Text('No Show'),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _updateAttendanceStatus(appointment.clinicAppointmentId, 'no_show');
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red[700],
+                                side: BorderSide(color: Colors.red[700]!),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -738,6 +851,66 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
         ),
       ],
     );
+  }
+
+  Widget _buildInfoRowWidget(String label, Widget valueWidget) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: DoctorConsultationColorPalette.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: valueWidget,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _attachmentChip(String filename) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: DoctorConsultationColorPalette.backgroundCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DoctorConsultationColorPalette.borderLight),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file, size: 14, color: DoctorConsultationColorPalette.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            filename,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: DoctorConsultationColorPalette.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _filenameFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path;
+      if (path.contains('/')) return path.split('/').last;
+      return url.split('?').first.split('#').first;
+    } catch (_) {
+      return url;
+    }
   }
 
   void _joinMeeting(String meetingUrl) async {
@@ -884,6 +1057,192 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
           backgroundColor: DoctorConsultationColorPalette.errorRed,
         ),
       );
+    }
+  }
+
+  void _showRescheduleBottomSheet(ClinicAppointment appointment) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => RescheduleAppointmentBottomSheet(
+        appointment: appointment,
+        viewModel: _viewModel,
+      ),
+    );
+  }
+
+  Future<void> _updateAttendanceStatus(String appointmentId, String status) async {
+    try {
+      final result = await _viewModel.updateAppointmentAttendance(
+        appointmentId: appointmentId,
+        status: status,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: result['success'] 
+                ? DoctorConsultationColorPalette.successGreen 
+                : DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating attendance: $e'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    }
+  }
+
+  bool _hasStatusInformation(ClinicAppointment appointment) {
+    return appointment.cancelReason != null ||
+           appointment.rescheduledBy != null ||
+           appointment.rescheduledAt != null ||
+           appointment.doctorAttendanceStatus != null ||
+           appointment.userAttendanceStatus != null;
+  }
+
+  Widget _buildStatusInfoCard(ClinicAppointment appointment) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (appointment.cancelReason != null) ...[
+            _buildStatusRow(
+              icon: Icons.cancel_outlined,
+              label: 'Cancel Reason',
+              value: appointment.cancelReason!,
+              color: Colors.red[600]!,
+            ),
+            SizedBox(height: 12),
+          ],
+          if (appointment.rescheduledBy != null) ...[
+            _buildStatusRow(
+              icon: Icons.schedule,
+              label: 'Rescheduled By',
+              value: appointment.rescheduledBy!,
+              color: Colors.blue[600]!,
+            ),
+            SizedBox(height: 12),
+          ],
+          if (appointment.rescheduledAt != null) ...[
+            _buildStatusRow(
+              icon: Icons.access_time,
+              label: 'Rescheduled At',
+              value: _formatDateTime(appointment.rescheduledAt!),
+              color: Colors.blue[600]!,
+            ),
+            SizedBox(height: 12),
+          ],
+          if (appointment.doctorAttendanceStatus != null) ...[
+            _buildStatusRow(
+              icon: Icons.person,
+              label: 'Doctor Status',
+              value: _formatAttendanceStatus(appointment.doctorAttendanceStatus!),
+              color: _getAttendanceStatusColor(appointment.doctorAttendanceStatus!),
+            ),
+            SizedBox(height: 12),
+          ],
+          if (appointment.userAttendanceStatus != null) ...[
+            _buildStatusRow(
+              icon: Icons.account_circle,
+              label: 'User Status',
+              value: _formatAttendanceStatus(appointment.userAttendanceStatus!),
+              color: _getAttendanceStatusColor(appointment.userAttendanceStatus!),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: color,
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatAttendanceStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'no_call':
+        return 'No Call';
+      case 'no_show':
+        return 'No Show';
+      case 'present':
+        return 'Present';
+      case 'absent':
+        return 'Absent';
+      default:
+        return status;
+    }
+  }
+
+  Color _getAttendanceStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'no_call':
+        return Colors.orange[600]!;
+      case 'no_show':
+        return Colors.red[600]!;
+      case 'present':
+        return Colors.green[600]!;
+      case 'absent':
+        return Colors.red[600]!;
+      default:
+        return Colors.grey[600]!;
     }
   }
 

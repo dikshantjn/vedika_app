@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/NewOrders/NewOrdersService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'dart:convert';
 
 class NewOrdersViewModel extends ChangeNotifier {
@@ -13,6 +14,9 @@ class NewOrdersViewModel extends ChangeNotifier {
   final VendorLoginService _loginService = VendorLoginService();
   IO.Socket? _socket;
   bool _disposed = false;
+  
+  // Reference to dashboard viewModel for updating prescription count
+  MedicalStoreVendorDashboardViewModel? _dashboardViewModel;
 
   List<Prescription> _prescriptions = [];
   List<Order> _orders = [];
@@ -30,6 +34,11 @@ class NewOrdersViewModel extends ChangeNotifier {
   // Constructor
   NewOrdersViewModel() {
     initSocketConnection();
+  }
+
+  // Set dashboard viewModel reference
+  void setDashboardViewModel(MedicalStoreVendorDashboardViewModel dashboardViewModel) {
+    _dashboardViewModel = dashboardViewModel;
   }
 
   // Socket connection initialization
@@ -87,6 +96,18 @@ class NewOrdersViewModel extends ChangeNotifier {
         await _handleOrderStatusUpdate(data);
       });
 
+      // Add event listener for new prescription requests
+      _socket!.on('newPrescriptionRequest', (data) async {
+        debugPrint('🆕 New prescription request received: $data');
+        await _handleNewPrescriptionRequest(data);
+      });
+
+      // Add event listener for prescription count updates
+      _socket!.on('updatePrescriptionCount', (data) async {
+        debugPrint('🔄 updatePrescriptionCount event received in NewOrders: $data');
+        await _handlePrescriptionCountUpdate(data);
+      });
+
       // Add ping/pong handlers
       _socket!.on('ping', (_) {
         _socket!.emit('pong');
@@ -137,6 +158,51 @@ class NewOrdersViewModel extends ChangeNotifier {
     } catch (e, stackTrace) {
       debugPrint('❌ Error handling order status update: $e');
       debugPrint('❌ Stack trace: $stackTrace');
+    }
+  }
+
+  // Handle new prescription requests from socket
+  Future<void> _handleNewPrescriptionRequest(dynamic data) async {
+    try {
+      debugPrint('🆕 Processing new prescription request: $data');
+      
+      // Refresh prescriptions list
+      final vendorId = await _loginService.getVendorId();
+      if (vendorId != null && vendorId.isNotEmpty) {
+        await _loadPrescriptions(vendorId);
+        
+        // Refresh dashboard prescription count
+        if (_dashboardViewModel != null) {
+          await _dashboardViewModel!.refreshPrescriptionCount();
+        }
+        
+        debugPrint('✅ Prescriptions list refreshed after new request');
+      }
+    } catch (e) {
+      debugPrint('❌ Error handling new prescription request: $e');
+    }
+  }
+
+  // Handle prescription count updates from socket
+  Future<void> _handlePrescriptionCountUpdate(dynamic data) async {
+    try {
+      debugPrint('🔄 Processing prescription count update in NewOrders: $data');
+      
+      // Refresh prescriptions list
+      final vendorId = await _loginService.getVendorId();
+      if (vendorId != null && vendorId.isNotEmpty) {
+        await _loadPrescriptions(vendorId);
+      }
+      
+      // Refresh dashboard prescription count
+      if (_dashboardViewModel != null) {
+        await _dashboardViewModel!.refreshPrescriptionCount();
+        debugPrint('✅ Dashboard prescription count refreshed from NewOrders');
+      } else {
+        debugPrint('⚠️ Dashboard viewModel not available for count update');
+      }
+    } catch (e) {
+      debugPrint('❌ Error handling prescription count update in NewOrders: $e');
     }
   }
 
@@ -225,6 +291,11 @@ class NewOrdersViewModel extends ChangeNotifier {
           await _loadOrders(vendorId);
         }
 
+        // Refresh dashboard prescription count
+        if (_dashboardViewModel != null) {
+          await _dashboardViewModel!.refreshPrescriptionCount();
+        }
+
         if (!_disposed) notifyListeners();
         return response;
       } else {
@@ -261,6 +332,11 @@ class NewOrdersViewModel extends ChangeNotifier {
         final vendorId = await _loginService.getVendorId();
         if (vendorId != null && vendorId.isNotEmpty) {
           await _loadOrders(vendorId);
+        }
+
+        // Refresh dashboard prescription count
+        if (_dashboardViewModel != null) {
+          await _dashboardViewModel!.refreshPrescriptionCount();
         }
 
         if (!_disposed) notifyListeners();

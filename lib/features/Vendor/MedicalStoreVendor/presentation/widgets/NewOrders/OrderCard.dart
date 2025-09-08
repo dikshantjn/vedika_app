@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/MedicineDeliveryOrderService.dart';
@@ -161,6 +162,30 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
           ),
+          // Show call button only if order is not delivered and phone number exists
+          if (widget.order.status.toLowerCase() != 'delivered' && 
+              widget.order.user?.phoneNumber != null && 
+              widget.order.user!.phoneNumber!.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: IconButton(
+                onPressed: () => _makeCall(widget.order.user!.phoneNumber!),
+                icon: Icon(
+                  Icons.phone,
+                  color: Colors.green[600],
+                  size: 18,
+                ),
+                padding: EdgeInsets.all(6),
+                constraints: BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -373,6 +398,36 @@ class _OrderCardState extends State<OrderCard> {
     } finally {
       if (mounted) {
         setState(() => _isDownloading = false);
+      }
+    }
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not make call to $phoneNumber'),
+              backgroundColor: Colors.red[600],
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: ${e.toString()}'),
+            backgroundColor: Colors.red[600],
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     }
   }

@@ -17,6 +17,7 @@ class ClinicPaymentService {
 
   // Store appointment data to use after success
   late Map<String, dynamic> _appointmentData;
+  List<String> _selectedHealthRecordIds = [];
 
   ClinicPaymentService() {
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
@@ -45,6 +46,7 @@ class ClinicPaymentService {
         vendorId: _appointmentData['vendorId'],
         userResponseStatus: _appointmentData['userResponseStatus'],
         meetingUrl: _appointmentData['meetingUrl'],
+        healthRecordIds: _selectedHealthRecordIds,
       );
 
       print('✅ Appointment creation result: $result');
@@ -98,6 +100,7 @@ class ClinicPaymentService {
     String? patientPhone,
     String? patientEmail,
     String? meetingUrl,
+    List<String>? healthRecordIds,
     required Function(PaymentSuccessResponse) onPaymentSuccess,
     Function(PaymentFailureResponse)? onPaymentError,
     Function(PaymentFailureResponse)? onPaymentCancelled,
@@ -113,6 +116,9 @@ class ClinicPaymentService {
 
     // Convert DateTime to string to avoid serialization issues
     String formattedDate = date.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+
+    // Store health record IDs
+    _selectedHealthRecordIds = healthRecordIds ?? [];
 
     // Store appointment data for use after payment success
     _appointmentData = {
@@ -132,6 +138,7 @@ class ClinicPaymentService {
       'patientGender': patientGender,
       'patientPhone': patientPhone,
       'patientEmail': patientEmail,
+      'healthRecordIds': _selectedHealthRecordIds,
     };
 
     // Store callbacks
@@ -150,7 +157,7 @@ class ClinicPaymentService {
         'contact': patientPhone ?? '',
         'email': patientEmail ?? '',
       },
-      'notes': _appointmentData,
+      'notes': "_appointmentData",
       'theme': {'color': '#328E6E'},
     };
 

@@ -269,4 +269,44 @@ class AppointmentService {
       return false;
     }
   }
+
+  /// Add or update appointment note
+  Future<Map<String, dynamic>?> updateAppointmentNote({
+    required String appointmentId,
+    required String note,
+  }) async {
+    try {
+      final String url = '${ApiEndpoints.updateClinicAppointmentNote}/$appointmentId/note';
+      final response = await _dio.put(url, data: { 'note': note });
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Upload one or more files for an appointment (multipart)
+  Future<Map<String, dynamic>?> uploadAppointmentFiles({
+    required String appointmentId,
+    required List<MultipartFile> files,
+  }) async {
+    try {
+      final String url = '${ApiEndpoints.uploadClinicAppointmentFiles}/$appointmentId/files';
+      final formData = FormData();
+      formData.files.addAll(files.map((f) => MapEntry('files', f)));
+      final response = await _dio.post(
+        url,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 } 

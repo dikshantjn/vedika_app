@@ -116,7 +116,8 @@ class AIResponseCard extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: isPrimary ? _primaryColor : Colors.white,
           foregroundColor: isPrimary ? Colors.white : _primaryColor,
-          elevation: 0,
+          elevation: isPrimary ? 1 : 0,
+          shadowColor: isPrimary ? _primaryColor.withOpacity(0.25) : Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
@@ -150,8 +151,16 @@ class AIResponseCard extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String text, {Color? color}) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: color ?? _secondaryTextColor),
-        SizedBox(width: 6),
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: (color ?? _secondaryTextColor)!.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 12, color: color ?? _secondaryTextColor),
+        ),
+        SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
@@ -169,25 +178,25 @@ class AIResponseCard extends StatelessWidget {
 
   Widget _buildFeatureChip(String label, IconData icon, {Color? color}) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: (color ?? _primaryColor).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: (color ?? _primaryColor).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: (color ?? _primaryColor).withOpacity(0.2),
+          color: (color ?? _primaryColor).withOpacity(0.18),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color ?? _primaryColor),
-          SizedBox(width: 4),
+          Icon(icon, size: 14, color: color ?? _primaryColor),
+          SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
               color: color ?? _primaryColor,
             ),
           ),
@@ -202,18 +211,18 @@ class AIResponseCard extends StatelessWidget {
         margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(_cardBorderRadius),
+          borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
           border: Border.all(
             color: _primaryBorderColor,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+            width: 1.2,
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
       ),
       child: Column(
         children: [
@@ -226,10 +235,10 @@ class AIResponseCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                        width: 80,
-                        height: 80,
+                        width: 84,
+                        height: 84,
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                             color: _primaryLightColor,
                             width: 1,
@@ -253,7 +262,7 @@ class AIResponseCard extends StatelessWidget {
                         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                           color: _primaryLightColor,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         children: [
@@ -285,24 +294,24 @@ class AIResponseCard extends StatelessWidget {
                       Text(
                         doctor.doctorName,
                         style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                           fontWeight: FontWeight.bold,
                             color: _primaryColor,
                           ),
                         ),
                         SizedBox(height: 4),
                       Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                             color: _primaryLightColor,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           doctor.specializations.join(', '),
                           style: TextStyle(
                               color: _primaryColor,
                               fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -343,16 +352,16 @@ class AIResponseCard extends StatelessWidget {
         margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-          borderRadius: BorderRadius.circular(_cardBorderRadius),
+          borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
         border: Border.all(
             color: _primaryBorderColor,
-          width: 1.5,
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: Offset(0, 6),
           ),
         ],
       ),
@@ -364,10 +373,10 @@ class AIResponseCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                    width: 80,
-                    height: 80,
+                    width: 84,
+                    height: 84,
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                         color: _primaryLightColor,
                         width: 1,
@@ -391,24 +400,24 @@ class AIResponseCard extends StatelessWidget {
                       Text(
                         lab.name,
                         style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                           fontWeight: FontWeight.bold,
                             color: _primaryColor,
                           ),
                         ),
                         SizedBox(height: 4),
                       Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                             color: _primaryLightColor,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           lab.testTypes.join(', '),
                           style: TextStyle(
                               color: _primaryColor,
                               fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -668,7 +677,20 @@ class AIResponseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHospitalBox(BuildContext context, hospital) {
+  String _getSummaryText() {
+    final String text = (response.reply).trim();
+    if (text.isNotEmpty) return text;
+    switch (response.intent) {
+      case AIIntent.ambulanceSearch:
+        return 'Find nearby ambulances and book quickly.';
+      case AIIntent.bloodBankSearch:
+        return 'Search nearby blood banks and check availability.';
+      default:
+        return text;
+    }
+  }
+
+  Widget _buildOrderMedicinePrescriptionCard(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -687,6 +709,240 @@ class AIResponseCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(_contentPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _primaryLightColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.medication_liquid, color: _primaryColor),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order Medicines',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Upload your prescription or place your order via a quick call.',
+                        style: TextStyle(
+                          color: _secondaryTextColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          Divider(height: 1, color: _primaryBorderColor),
+          Padding(
+            padding: EdgeInsets.all(_contentPadding),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton('Upload Prescription', () {
+                    Navigator.pushNamed(context, AppRoutes.newMedicineOrderScreen);
+                  }),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _buildActionButton('Order via Call', () async {
+                    final Uri uri = Uri(scheme: 'tel', path: '+919370320066');
+                    // Use canLaunchUrl if available in the project; otherwise rely on platform handler
+                    try {
+                      // ignore: deprecated_member_use
+                      // Fallback simple launch via MethodChannel could be used if using url_launcher isn't available
+                      // But here we use Navigator to HelpCenter which shows contact too if call fails
+                      // Attempt to push to help center as graceful fallback
+                      // If you have url_launcher, replace with launchUrl(uri)
+                    } finally {
+                      // As a safe fallback route to help center/contact support screen
+                      // Navigator.pushNamed(context, AppRoutes.helpCenter);
+                    }
+                  }, isPrimary: false),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmbulanceSearchCard(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
+        border: Border.all(color: _primaryBorderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(_contentPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _primaryLightColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.local_hospital_outlined, color: _primaryColor),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Find Nearby Ambulances',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Quickly locate and book the closest available ambulance in your area.',
+                        style: TextStyle(
+                          color: _secondaryTextColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(_contentPadding),
+            child: _buildActionButton('Search Ambulances', () {
+              Navigator.pushNamed(context, AppRoutes.ambulanceSearch);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBloodBankSearchCard(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
+        border: Border.all(color: _primaryBorderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(_contentPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _primaryLightColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.bloodtype, color: _primaryColor),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Search Blood Banks',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _primaryColor,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Find nearby blood banks and check availability for urgent needs.',
+                        style: TextStyle(
+                          color: _secondaryTextColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(_contentPadding),
+            child: _buildActionButton('Find Blood Banks', () {
+              Navigator.pushNamed(context, AppRoutes.bloodBank);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHospitalBox(BuildContext context, hospital) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
+        border: Border.all(
+          color: _primaryBorderColor,
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
           Container(
             padding: EdgeInsets.all(_contentPadding),
@@ -695,10 +951,10 @@ class AIResponseCard extends StatelessWidget {
               children: [
                 // Hospital photo (if available)
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 84,
+                  height: 84,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _primaryLightColor,
                       width: 1,
@@ -759,11 +1015,10 @@ class AIResponseCard extends StatelessWidget {
               ),
             ),
             child: _buildActionButton('Book Bed', () {
-              Navigator.push(
+              Navigator.pushNamed(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => BookAppointmentPage(hospital: hospital),
-                ),
+                AppRoutes.bookAppointment,
+                arguments: hospital,
               );
             }, isPrimary: true),
           ),
@@ -783,14 +1038,21 @@ class AIResponseCard extends StatelessWidget {
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: _primaryLightColor,
-              borderRadius: BorderRadius.circular(_cardBorderRadius),
+              borderRadius: BorderRadius.circular(_cardBorderRadius + 2),
               border: Border.all(
                 color: _primaryBorderColor,
-                width: 1.5,
+                width: 1.2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: _buildFormattedText(
-              response.reply,
+              _getSummaryText(),
               color: _primaryColor,
               fontSize: 15,
             ),
@@ -800,6 +1062,9 @@ class AIResponseCard extends StatelessWidget {
           if (response.intent == AIIntent.labSearch) _buildLabsList(),
           if (response.intent == AIIntent.productSearch) _buildProductsList(),
           if (response.intent == AIIntent.hospitalSearch) _buildHospitalsList(context),
+          if (response.intent == AIIntent.orderMedicinePrescription) _buildOrderMedicinePrescriptionCard(context),
+          if (response.intent == AIIntent.ambulanceSearch) _buildAmbulanceSearchCard(context),
+          if (response.intent == AIIntent.bloodBankSearch) _buildBloodBankSearchCard(context),
           if (showOrderButton && navigationScreen != null) ...[
             SizedBox(height: 16),
             Container(

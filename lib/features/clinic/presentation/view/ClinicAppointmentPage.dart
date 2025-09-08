@@ -9,6 +9,9 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Model
 import 'package:vedika_healthcare/features/clinic/data/services/ClinicPaymentService.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/viewmodel/BookClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
+import 'package:vedika_healthcare/features/HealthRecords/presentation/widgets/HealthRecordsSelectionBottomSheet.dart';
+import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
 
 class ClinicAppointmentPage extends StatefulWidget {
   final DoctorClinicProfile doctor;
@@ -33,6 +36,7 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
   String _selectedPatientType = "Self";
   bool _isPaymentProcessing = false;
   bool _shouldRefreshTimeSlots = false;
+  List<String> _selectedHealthRecordIds = [];
 
   // Patient form controllers
   final TextEditingController _nameController = TextEditingController();
@@ -213,6 +217,7 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
         patientGender: _selectedPatientType == "Self" ? "" : _selectedGender,
         patientPhone: _selectedPatientType == "Self" ? "" : _phoneController.text,
         patientEmail: _selectedPatientType == "Self" ? "" : _emailController.text,
+        healthRecordIds: _selectedHealthRecordIds,
         onPaymentSuccess: _handlePaymentSuccess,
         onPaymentError: _handlePaymentError,
         onPaymentCancelled: _handlePaymentCancelled,
@@ -231,131 +236,178 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
     }
   }
 
-  void _showAppointmentConfirmedDialog() {
-    showDialog(
+  void _showHealthRecordsSelectionBottomSheet() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle,
-                  color: DoctorConsultationColorPalette.primaryBlue,
-                  size: 48,
-                ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => HealthRecordsSelectionBottomSheet(
+        preSelectedIds: _selectedHealthRecordIds,
+        onRecordsSelected: (selectedIds) {
+          setState(() {
+            _selectedHealthRecordIds = selectedIds;
+          });
+        },
+      ),
+    );
+  }
+
+  void _showAppointmentConfirmedDialog() {
+    final parentContext = context;
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              SizedBox(height: 24),
-              Text(
-                'Appointment Confirmed!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: DoctorConsultationColorPalette.textPrimary,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, -2),
                 ),
-              ),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: DoctorConsultationColorPalette.backgroundCard,
-                  borderRadius: BorderRadius.circular(12),
+              ],
+            ),
+            padding: EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildConfirmationDetailRow(
-                      "Doctor",
-                      "Dr. ${widget.doctor.doctorName}",
-                      Icons.person,
-                    ),
-                    Divider(height: 16),
-                    _buildConfirmationDetailRow(
-                      "Date",
-                      DateFormat('EEEE, MMMM d').format(_selectedDate),
-                      Icons.calendar_today,
-                    ),
-                    Divider(height: 16),
-                    _buildConfirmationDetailRow(
-                      "Time",
-                      _viewModel.selectedTimeSlot ?? "Not selected",
-                      Icons.access_time,
-                    ),
-                    Divider(height: 16),
-                    _buildConfirmationDetailRow(
-                      "Fee",
-                      "₹${widget.doctor.consultationFeesRange.split('-')[0]}",
-                      Icons.monetization_on,
-                    ),
-                    Divider(height: 16),
-                    _buildConfirmationDetailRow(
-                      "Mode",
-                      widget.isOnline ? "Online Consultation" : "In-Person Consultation",
-                      widget.isOnline ? Icons.video_call : Icons.local_hospital,
-                    ),
-                    if (_selectedPatientType != "Self") ...[
-                      Divider(height: 16),
-                      _buildConfirmationDetailRow(
-                        "Patient",
-                        _nameController.text,
-                        Icons.person_outline,
-                      ),
-                    ],
-                  ],
+                SizedBox(height: 16),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: DoctorConsultationColorPalette.primaryBlue,
+                    size: 48,
+                  ),
                 ),
-              ),
-              SizedBox(height: 24),
-              Text(
-                widget.isOnline
-                    ? 'You will receive a notification and email with further details.'
-                    : 'Please arrive 10 minutes before your scheduled appointment time.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: DoctorConsultationColorPalette.textSecondary,
-                  fontSize: 14,
+                SizedBox(height: 16),
+                Text(
+                  'Appointment Confirmed!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: DoctorConsultationColorPalette.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.orderHistory);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  minimumSize: Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: DoctorConsultationColorPalette.backgroundCard,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 4,
-                ),
-                child: Text(
-                  'View My Appointments',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  child: Column(
+                    children: [
+                      _buildConfirmationDetailRow(
+                        "Doctor",
+                        "Dr. ${widget.doctor.doctorName}",
+                        Icons.person,
+                      ),
+                      Divider(height: 16),
+                      _buildConfirmationDetailRow(
+                        "Date",
+                        DateFormat('EEEE, MMMM d').format(_selectedDate),
+                        Icons.calendar_today,
+                      ),
+                      Divider(height: 16),
+                      _buildConfirmationDetailRow(
+                        "Time",
+                        _viewModel.selectedTimeSlot ?? "Not selected",
+                        Icons.access_time,
+                      ),
+                      Divider(height: 16),
+                      _buildConfirmationDetailRow(
+                        "Fee",
+                        "₹${widget.doctor.consultationFeesRange.split('-')[0]}",
+                        Icons.monetization_on,
+                      ),
+                      Divider(height: 16),
+                      _buildConfirmationDetailRow(
+                        "Mode",
+                        widget.isOnline ? "Online Consultation" : "In-Person Consultation",
+                        widget.isOnline ? Icons.video_call : Icons.local_hospital,
+                      ),
+                      if (_selectedPatientType != "Self") ...[
+                        Divider(height: 16),
+                        _buildConfirmationDetailRow(
+                          "Patient",
+                          _nameController.text,
+                          Icons.person_outline,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ],
+                SizedBox(height: 16),
+                Text(
+                  widget.isOnline
+                      ? 'You will receive a notification and email with further details.'
+                      : 'Please arrive 10 minutes before your scheduled appointment time.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: DoctorConsultationColorPalette.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    Future.microtask(() {
+                      // Set bridge for MainScreen-integrated OrderHistory
+                      OrderHistoryNavigation.initialTab = 5;
+                      Navigator.pushNamed(
+                        parentContext,
+                        AppRoutes.orderHistory,
+                        arguments: {'initialTab': 5},
+                      );
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Text(
+                    'View My Appointments',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -601,6 +653,8 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
           _buildDoctorInfo(),
           _buildAppointmentSection(),
           if (!widget.isOnline) _buildPatientDetailsSection(),
+          // Share Health Records Section - Available for both online and offline
+          _buildShareHealthRecordsSection(),
           SizedBox(height: 100), // Extra space at bottom
         ],
       ),
@@ -1468,6 +1522,154 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
             width: 2,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildShareHealthRecordsSection() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: DoctorConsultationColorPalette.shadowLight,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.medical_information,
+                  color: DoctorConsultationColorPalette.primaryBlue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Share Health Records',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: DoctorConsultationColorPalette.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedPatientType == "Self"
+                          ? 'Help your doctor by sharing your medical records'
+                          : 'Help your doctor by sharing relevant medical records',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: DoctorConsultationColorPalette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _showHealthRecordsSelectionBottomSheet,
+                  icon: Icon(
+                    Icons.add_circle_outline,
+                    color: DoctorConsultationColorPalette.primaryBlue,
+                    size: 20,
+                  ),
+                  label: Text(
+                    _selectedHealthRecordIds.isEmpty
+                        ? 'Select Health Records'
+                        : '${_selectedHealthRecordIds.length} Record${_selectedHealthRecordIds.length > 1 ? 's' : ''} Selected',
+                    style: TextStyle(
+                      color: DoctorConsultationColorPalette.primaryBlue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    side: BorderSide(
+                      color: DoctorConsultationColorPalette.primaryBlue,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              if (_selectedHealthRecordIds.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedHealthRecordIds.clear();
+                    });
+                  },
+                  icon: Icon(
+                    Icons.clear,
+                    color: Colors.red[600],
+                  ),
+                  tooltip: 'Clear Selection',
+                ),
+              ],
+            ],
+          ),
+          if (_selectedHealthRecordIds.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: DoctorConsultationColorPalette.primaryBlue,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedPatientType == "Self"
+                          ? 'Your health records will be shared with the doctor for better consultation'
+                          : 'Health records will be shared with the doctor for better consultation',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

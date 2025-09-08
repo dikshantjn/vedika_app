@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Duration _pauseDuration = const Duration(milliseconds: 1200);
   Timer? _typingTimer;
   bool _isErasing = false;
+  late final ValueNotifier<String> _typedPlaceholderNotifier;
 
   late FocusNode _searchFocusNode;
   final Logger _logger = Logger();
@@ -68,6 +69,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _refreshUserProfile();
     _setupCartCountListener();
     _searchFocusNode = FocusNode();
+    _typedPlaceholderNotifier = ValueNotifier<String>('');
 
     // Add listener to search controller
     _searchController.addListener(() {
@@ -95,10 +97,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (!_isErasing) {
         // Typing forward
         if (_typedCharIndex < _placeholders[_currentPlaceholderIndex].length) {
-          setState(() {
-            _typedPlaceholder += _placeholders[_currentPlaceholderIndex][_typedCharIndex];
-            _typedCharIndex++;
-          });
+          _typedPlaceholder += _placeholders[_currentPlaceholderIndex][_typedCharIndex];
+          _typedCharIndex++;
+          _typedPlaceholderNotifier.value = _typedPlaceholder;
         } else {
           // Pause, then start erasing
           timer.cancel();
@@ -113,16 +114,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               }
               
               if (_typedCharIndex > 0) {
-                setState(() {
-                  _typedPlaceholder = _typedPlaceholder.substring(0, _typedCharIndex - 1);
-                  _typedCharIndex--;
-                });
+                _typedPlaceholder = _typedPlaceholder.substring(0, _typedCharIndex - 1);
+                _typedCharIndex--;
+                _typedPlaceholderNotifier.value = _typedPlaceholder;
               } else {
                 timer.cancel();
                 if (mounted) {
-                  setState(() {
-                    _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
-                  });
+                  _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
                   _startTypingPlaceholder();
                 }
               }
@@ -145,19 +143,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     // Initialize placeholder animation
     _placeholderAnimationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
-    )..addStatusListener((status) {
-        if (!mounted) return;
-        
-        if (status == AnimationStatus.completed) {
-          _placeholderAnimationController.reverse();
-        } else if (status == AnimationStatus.dismissed) {
-          setState(() {
-            _currentPlaceholderIndex = (_currentPlaceholderIndex + 1) % _placeholders.length;
-          });
-          _placeholderAnimationController.forward();
-        }
-      });
+      duration: const Duration(milliseconds: 800),
+    );
 
     // Initialize gradient animation
     _gradientController = AnimationController(
@@ -167,8 +154,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     _gradientAnimation = Tween<double>(begin: 0, end: 1).animate(_gradientController);
 
-    // Start the placeholder animation
-    _placeholderAnimationController.forward();
+    // We avoid running the old placeholder animation to reduce rebuilds.
   }
 
   void _setupCartCountListener() {
@@ -195,6 +181,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _typingTimer?.cancel();
     _gradientController.dispose();
     _searchFocusNode.dispose();
+    _typedPlaceholderNotifier.dispose();
     super.dispose();
   }
 
@@ -246,6 +233,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           children: [
             CustomScrollView(
               controller: _scrollController,
+              physics: BouncingScrollPhysics(),
+              cacheExtent: 800,
               slivers: [
                 SliverAppBar(
                   expandedHeight: 140.0,
@@ -258,21 +247,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     background: _buildHeader(),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      MedicalBoxRow(),
-                      SizedBox(height: 8),
-                      BannerSlider(),
-                      JustForYouSection(),
-                      HealthConcernSection(),
-                      FeaturedArticlesSection(),
-                      CategoryGrid(),
-                      BrandSection(),
-                      TestimonialSection(),
-                      SizedBox(height: 54 + 12 + MediaQuery.of(context).padding.bottom),
-                    ],
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildSectionByIndex(context, index),
+                    childCount: 10,
                   ),
                 ),
               ],
@@ -439,13 +417,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   size: 16,
                 ),
                 onTap: () {
-                  Navigator.push(
+                  Navigator.pushNamed(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => AIChatScreen(
-                        initialQuery: _searchController.text,
-                      ),
-                    ),
+                    AppRoutes.aiChat,
+                    arguments: {
+                      'initialQuery': _searchController.text,
+                    },
                   );
                   searchViewModel.clearSearch();
                   _searchController.clear();
@@ -574,6 +551,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildSectionByIndex(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        return MedicalBoxRow();
+      case 1:
+        return SizedBox(height: 8);
+      case 2:
+        return RepaintBoundary(child: BannerSlider());
+      case 3:
+        return RepaintBoundary(child: JustForYouSection());
+      case 4:
+        return RepaintBoundary(child: HealthConcernSection());
+      case 5:
+        return RepaintBoundary(child: FeaturedArticlesSection());
+      case 6:
+        return RepaintBoundary(child: CategoryGrid());
+      case 7:
+        return RepaintBoundary(child: BrandSection());
+      case 8:
+        return RepaintBoundary(child: TestimonialSection());
+      case 9:
+        return SizedBox(height: 16 + MediaQuery.of(context).padding.bottom);
+      default:
+        return SizedBox.shrink();
+    }
+  }
+
   Widget _buildSearchBox(bool isCollapsed) {
     return GestureDetector(
       onTap: () {
@@ -654,12 +658,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   if (_searchController.text.isEmpty)
                     Padding(
                       padding: EdgeInsets.only(left: 12),
-                      child: Text(
-                        _placeholders[_currentPlaceholderIndex],
-                        style: TextStyle(
-                          color: Colors.grey.shade800,
-                          fontSize: 14,
-                        ),
+                      child: ValueListenableBuilder<String>(
+                        valueListenable: _typedPlaceholderNotifier,
+                        builder: (context, value, _) {
+                          final text = value.isEmpty
+                              ? _placeholders[_currentPlaceholderIndex]
+                              : value;
+                          return Text(
+                            text,
+                            style: TextStyle(
+                              color: Colors.grey.shade800,
+                              fontSize: 14,
+                            ),
+                          );
+                        },
                       ),
                     ),
                 ],
@@ -690,13 +702,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
-                        Navigator.push(
+                        Navigator.pushNamed(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => AIChatScreen(
-                              initialQuery: _searchController.text,
-                            ),
-                          ),
+                          AppRoutes.aiChat,
+                          arguments: {
+                            'initialQuery': _searchController.text,
+                          },
                         );
                       },
                       child: Tooltip(

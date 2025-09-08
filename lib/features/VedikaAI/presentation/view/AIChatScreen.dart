@@ -17,6 +17,7 @@ import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/me
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 
 class AIChatScreen extends StatefulWidget {
   final String initialQuery;
@@ -25,6 +26,17 @@ class AIChatScreen extends StatefulWidget {
     Key? key,
     required this.initialQuery,
   }) : super(key: key);
+
+  // Open AIChat inside MainScreen to ensure bottom navigation is visible
+  static Future<void> open(BuildContext context, {String initialQuery = ''}) async {
+    await Navigator.pushNamed(
+      context,
+      AppRoutes.aiChat,
+      arguments: {
+        'initialQuery': initialQuery,
+      },
+    );
+  }
 
   @override
   _AIChatScreenState createState() => _AIChatScreenState();
@@ -44,6 +56,8 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
   bool _lastSentIsPdf = false;
   int? _editingMessageIndex;
   final Map<int, TextEditingController> _editControllers = {};
+  int _lastHistoryLength = 0;
+  bool _hasAutoScrolledOnce = false;
 
   // Speech to text
   late stt.SpeechToText _speech;
@@ -674,7 +688,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           _buildAppBar(),
@@ -695,7 +709,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
 
   Widget _buildAppBar() {
     return Container(
-      color: Colors.black,
+      color: Colors.white,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
         left: 16,
@@ -779,9 +793,20 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
         if (viewModel.chatHistory.isEmpty) {
           return _buildEmptyState();
         }
+        // Ensure we auto-scroll to the latest message when history exists or grows
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isDisposed && mounted && _scrollController.hasClients) {
+            final int currentLength = viewModel.chatHistory.length + (viewModel.isLoading ? 1 : 0);
+            if (!_hasAutoScrolledOnce || currentLength > _lastHistoryLength) {
+              _scrollToBottom();
+              _hasAutoScrolledOnce = true;
+              _lastHistoryLength = currentLength;
+            }
+          }
+        });
 
         return Container(
-          color: Colors.black,
+          color: Colors.white,
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
@@ -826,7 +851,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             'How can I help you today?',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.white,
+              color: Colors.black87,
             ),
           ),
         ],
@@ -843,7 +868,7 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
               bottom: 16 + MediaQuery.of(context).padding.bottom, // Remove extra bottom nav bar height
             ),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),

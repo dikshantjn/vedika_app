@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 
@@ -249,6 +250,27 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
               ],
             ),
           ),
+          if (widget.prescription.userPhone != null && widget.prescription.userPhone!.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: IconButton(
+                onPressed: () => _makeCall(widget.prescription.userPhone!),
+                icon: Icon(
+                  Icons.phone,
+                  color: Colors.green[600],
+                  size: 20,
+                ),
+                padding: EdgeInsets.all(8),
+                constraints: BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -569,6 +591,36 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
       return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
     } else {
       return 'Just now';
+    }
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not make call to $phoneNumber'),
+              backgroundColor: Colors.red[600],
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: ${e.toString()}'),
+            backgroundColor: Colors.red[600],
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 }

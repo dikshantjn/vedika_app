@@ -17,6 +17,8 @@ import 'dart:io';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestStorageService.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class BookLabTestAppointmentPage extends StatefulWidget {
   final DiagnosticCenter center;
@@ -100,30 +102,42 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
       _isSubmitting = false;
     });
     
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
+    final parentContext = context;
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
           child: Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
-                  spreadRadius: 5,
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
@@ -136,7 +150,7 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                     size: 60,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 const Text(
                   'Booking Successful!',
                   style: TextStyle(
@@ -145,7 +159,7 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                     color: Colors.green,
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 12),
                 Text(
                   result['message'] ?? 'Your lab test has been booked successfully.',
                   textAlign: TextAlign.center,
@@ -154,14 +168,14 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                     color: Colors.grey.shade700,
                   ),
                 ),
-                const SizedBox(height: 25),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context); // Close dialog
-                          Navigator.pop(context); // Go back to previous screen
+                          Navigator.of(sheetContext).pop(); // Close sheet
+                          Navigator.pop(parentContext); // Go back to previous screen
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey.shade200,
@@ -174,17 +188,17 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                         child: const Text('Close'),
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context); // Close dialog
-                          Navigator.pop(context); // Go back to previous screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OrderHistoryPage(),
-                            ),
+                          Navigator.of(sheetContext).pop(); // Close sheet
+                          // Set bridge and navigate to OrderHistory -> Lab Test tab (index 3)
+                          OrderHistoryNavigation.initialTab = 3;
+                          Navigator.pushNamed(
+                            parentContext,
+                            AppRoutes.orderHistory,
+                            arguments: {'initialTab': 3},
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -367,18 +381,9 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
               ),
             ],
           ),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () {
-              final scope = MainScreenScope.maybeOf(context);
-              if (scope != null) {
-                scope.setIndex(0);
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
           ),
         ),
         onPressed: () {

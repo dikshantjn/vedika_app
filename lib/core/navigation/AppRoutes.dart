@@ -225,6 +225,7 @@ class AppRoutes {
             initialQuery: args?['initialQuery'] ?? '',
           ),
           index: 9,
+          hideBottomNav: true,
         );
       },
       bloodBank: (context) => _MainScreenRoute(
@@ -367,11 +368,13 @@ class _MainScreenRoute extends StatelessWidget {
   final Widget? child;
   final int? index;
   final bool isFromNotification; // New parameter to prevent auto-pop during notification navigation
+  final bool hideBottomNav;
 
   const _MainScreenRoute({
     this.child,
     this.index,
     this.isFromNotification = false, // Default to false
+    this.hideBottomNav = false,
   });
 
   @override
@@ -382,10 +385,13 @@ class _MainScreenRoute extends StatelessWidget {
         // Update existing MainScreen
         if (child != null && index != null) {
           MainScreenNavigator.instance.navigateToIndexWithChild(index!, child!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         } else if (index != null) {
           MainScreenNavigator.instance.navigateToIndex(index!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         } else if (child != null) {
           MainScreenNavigator.instance.navigateToTransientChild(child!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         }
         // Only pop if not from notification navigation
         if (!isFromNotification) {
@@ -397,6 +403,7 @@ class _MainScreenRoute extends StatelessWidget {
           if (index != null) 'initialIndex': index,
           if (child != null) 'transientChild': child,
           'isFromNotification': isFromNotification, // Pass the flag
+          'hideBottomNav': hideBottomNav,
         });
       }
     });

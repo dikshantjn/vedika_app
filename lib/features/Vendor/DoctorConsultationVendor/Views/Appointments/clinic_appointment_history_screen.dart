@@ -947,6 +947,23 @@ class _ClinicAppointmentHistoryScreenState extends State<ClinicAppointmentHistor
                                     _buildKeyValueRow('Payment Status', appointment.paymentStatus),
                                     const SizedBox(height: 12),
                                     _buildKeyValueRow('Amount Paid', '₹${appointment.paidAmount.toStringAsFixed(2)}'),
+                                    if (appointment.notes != null && appointment.notes!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 12),
+                                      _buildKeyValueRow('Notes', appointment.notes!),
+                                    ],
+                                    if (appointment.attachments.isNotEmpty) ...[
+                                      const SizedBox(height: 12),
+                                      _buildKeyValueRowWidget(
+                                        'Attachments',
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: appointment.attachments
+                                              .map((u) => _attachmentChip(_filenameFromUrl(u)))
+                                              .toList(),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -1050,5 +1067,65 @@ class _ClinicAppointmentHistoryScreenState extends State<ClinicAppointmentHistor
         ),
       ],
     );
+  }
+
+  Widget _buildKeyValueRowWidget(String key, Widget valueWidget) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          key,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: DoctorConsultationColorPalette.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: valueWidget,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _attachmentChip(String filename) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: DoctorConsultationColorPalette.backgroundCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DoctorConsultationColorPalette.borderLight),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file, size: 14, color: DoctorConsultationColorPalette.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            filename,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: DoctorConsultationColorPalette.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _filenameFromUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path;
+      if (path.contains('/')) return path.split('/').last;
+      return url.split('?').first.split('#').first;
+    } catch (_) {
+      return url;
+    }
   }
 } 

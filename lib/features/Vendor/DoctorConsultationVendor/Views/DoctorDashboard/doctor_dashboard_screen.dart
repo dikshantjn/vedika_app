@@ -39,7 +39,6 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
   // Pages for bottom navigation
   final List<Widget> _pages = [
     const DashboardPage(),
-    // Using placeholders for pages that aren't implemented yet
     const ClinicAppointmentsScreen(),
     const ClinicAppointmentHistoryScreen(),
     const DoctorClinicTimeslotPage(),
@@ -66,6 +65,25 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> with Sing
         });
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['initialIndex'] is int) {
+      final int idx = args['initialIndex'];
+      if (idx >= 0 && idx < _pages.length && _currentIndex != idx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _currentIndex = idx;
+            });
+            _tabController.animateTo(idx);
+          }
+        });
+      }
+    }
   }
   
   @override

@@ -224,6 +224,7 @@ class ClinicService {
     required String vendorId,
     required String userResponseStatus,
     String? meetingUrl,
+    List<String>? healthRecordIds,
   }) async {
     try {
       final Map<String, dynamic> appointmentData = {
@@ -238,6 +239,7 @@ class ClinicService {
         "vendorId": vendorId,
         "userResponseStatus": userResponseStatus,
         "meetingUrl": meetingUrl,
+        "healthRecordIds": healthRecordIds ?? [],
       };
 
       // Debug print removed

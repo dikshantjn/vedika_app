@@ -1,5 +1,6 @@
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'dart:convert';
 
 class ClinicAppointment {
   final String clinicAppointmentId;
@@ -19,6 +20,13 @@ class ClinicAppointment {
   final String? meetingUrl;
 
   final DoctorClinicProfile? doctor;
+  final String? notes;
+  final List<String> attachments;
+  final String? cancelReason;
+  final String? rescheduledBy;
+  final DateTime? rescheduledAt;
+  final String? doctorAttendanceStatus;
+  final String? userAttendanceStatus;
 
   ClinicAppointment({
     required this.clinicAppointmentId,
@@ -36,9 +44,28 @@ class ClinicAppointment {
     required this.userResponseStatus,
     this.meetingUrl,
     this.doctor,
+    this.notes,
+    required this.attachments,
+    this.cancelReason,
+    this.rescheduledBy,
+    this.rescheduledAt,
+    this.doctorAttendanceStatus,
+    this.userAttendanceStatus,
   });
 
   factory ClinicAppointment.fromJson(Map<String, dynamic> json) {
+    List<String> parsedAttachments = const [];
+    final dynamic attachmentsJson = json['attachments'];
+    if (attachmentsJson is List) {
+      parsedAttachments = attachmentsJson.map((e) => e.toString()).toList();
+    } else if (attachmentsJson is String && attachmentsJson.isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(attachmentsJson);
+        if (decoded is List) {
+          parsedAttachments = decoded.map((e) => e.toString()).toList();
+        }
+      } catch (_) {}
+    }
     return ClinicAppointment(
       clinicAppointmentId: json['clinicAppointmentId'],
       doctorId: json['doctorId'],
@@ -61,6 +88,15 @@ class ClinicAppointment {
       doctor: json['doctor'] != null
           ? DoctorClinicProfile.fromJson(json['doctor'])
           : null,
+      notes: json['notes'],
+      attachments: parsedAttachments,
+      cancelReason: json['cancelReason'],
+      rescheduledBy: json['rescheduledBy'],
+      rescheduledAt: json['rescheduledAt'] != null
+          ? DateTime.parse(json['rescheduledAt'])
+          : null,
+      doctorAttendanceStatus: json['doctorAttendanceStatus'],
+      userAttendanceStatus: json['userAttendanceStatus'],
     );
   }
 
@@ -81,6 +117,13 @@ class ClinicAppointment {
       'userResponseStatus': userResponseStatus,
       'meetingUrl': meetingUrl,
       'doctor': doctor?.toJson(),
+      'notes': notes,
+      'attachments': attachments,
+      'cancelReason': cancelReason,
+      'rescheduledBy': rescheduledBy,
+      'rescheduledAt': rescheduledAt?.toIso8601String(),
+      'doctorAttendanceStatus': doctorAttendanceStatus,
+      'userAttendanceStatus': userAttendanceStatus,
     };
   }
 
@@ -100,6 +143,13 @@ class ClinicAppointment {
     String? userResponseStatus,
     String? meetingUrl,
     DoctorClinicProfile? doctor,
+    String? notes,
+    List<String>? attachments,
+    String? cancelReason,
+    String? rescheduledBy,
+    DateTime? rescheduledAt,
+    String? doctorAttendanceStatus,
+    String? userAttendanceStatus,
   }) {
     return ClinicAppointment(
       clinicAppointmentId: clinicAppointmentId ?? this.clinicAppointmentId,
@@ -117,6 +167,13 @@ class ClinicAppointment {
       userResponseStatus: userResponseStatus ?? this.userResponseStatus,
       meetingUrl: meetingUrl ?? this.meetingUrl,
       doctor: doctor ?? this.doctor,
+      notes: notes ?? this.notes,
+      attachments: attachments ?? this.attachments,
+      cancelReason: cancelReason ?? this.cancelReason,
+      rescheduledBy: rescheduledBy ?? this.rescheduledBy,
+      rescheduledAt: rescheduledAt ?? this.rescheduledAt,
+      doctorAttendanceStatus: doctorAttendanceStatus ?? this.doctorAttendanceStatus,
+      userAttendanceStatus: userAttendanceStatus ?? this.userAttendanceStatus,
     );
   }
 }

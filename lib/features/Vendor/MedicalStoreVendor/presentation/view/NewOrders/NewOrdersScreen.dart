@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/NewOrders/PrescriptionCard.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/NewOrders/OrderCard.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/NewProcessOrderScreen.dart';
@@ -58,6 +59,11 @@ class _NewOrdersScreenState extends State<NewOrdersScreen>
   void _initializeData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<NewOrdersViewModel>();
+      final dashboardViewModel = context.read<MedicalStoreVendorDashboardViewModel>();
+      
+      // Set dashboard viewModel reference for prescription count updates
+      viewModel.setDashboardViewModel(dashboardViewModel);
+      
       viewModel.initialize();
 
       // Set the initial tab based on the argument

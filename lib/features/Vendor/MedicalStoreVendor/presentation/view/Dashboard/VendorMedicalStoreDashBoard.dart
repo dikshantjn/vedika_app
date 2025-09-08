@@ -74,10 +74,15 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
         actions: [_buildAppBarActions()],
       ),
       body: _pages[_currentIndex],
-      bottomNavigationBar: MedicalStoreVendorBottomNav(
-        currentIndex: _currentIndex,
-        onTabSelected: _onTabSelected,
-        isSpecialPage: _currentIndex >= 5,
+      bottomNavigationBar: Consumer<MedicalStoreVendorDashboardViewModel>(
+        builder: (context, viewModel, child) {
+          return MedicalStoreVendorBottomNav(
+            currentIndex: _currentIndex,
+            onTabSelected: _onTabSelected,
+            isSpecialPage: _currentIndex >= 5,
+            prescriptionCount: viewModel.prescriptionCount,
+          );
+        },
       ),
     );
   }

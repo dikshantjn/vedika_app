@@ -1,14 +1,14 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
+  // static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
-  // static const String socketUrl = "https://f8186641a964.ngrok-free.app";
-  // static const String baseUrl = "https://f8186641a964.ngrok-free.app/api";
+  static const String socketUrl = "https://947a075b3d46.ngrok-free.app";
+  static const String baseUrl = "https://947a075b3d46.ngrok-free.app/api";
 
 
   // 📌 Auth APIs
@@ -47,6 +47,10 @@ class ApiEndpoints {
   static const String getOngoingMeetings = '$baseUrl/clinic-appointments/ongoing-meetings';
   static const String shareHealthRecords = '$baseUrl/clinic-appointments/share-health-records';
   static const String getHealthRecordsByAppointmentId = '$baseUrl/clinic-appointments/health-records';  // NEW: endpoint for getting health records by appointment ID
+  static const String updateClinicAppointmentNote = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/note
+  static const String uploadClinicAppointmentFiles = '$baseUrl/clinic-appointments'; // POST /clinic-appointments/:appointmentId/files
+  static const String rescheduleClinicAppointment = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/reschedule
+  static const String updateAppointmentAttendance = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/attendance
 
   // 📌 Medicine Product APIs
   static const String addProduct = '$baseUrl/medicineProduct/add-product';

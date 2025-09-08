@@ -474,6 +474,44 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'CLINIC_APPOINTMENT':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorClinicDashBoard,
+              arguments: {'initialIndex': 1}, // Appointments tab
+            );
+          } else {
+            // If already on dashboard, navigate again with index param
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorClinicDashBoard,
+              arguments: {'initialIndex': 1}, // Appointments tab
+            );
+          }
+          break;
+
+        case 'CLINIC_APPOINTMENT_ORDER_HISTORY':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 50));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 5}, // Clinic tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 5}, // Clinic tab
+            );
+          }
+          break;
+
         default:
           print("Unknown notification type: $type");
       }

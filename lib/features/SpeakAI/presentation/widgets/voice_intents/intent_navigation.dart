@@ -216,7 +216,7 @@ Future<IntentActionOutcome> handleIntentAction(
 
       case 'ORDER_MEDICINE':
       case 'ORDER_MEDICINE_PRESCRIPTION':
-        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.medicineOrder);
+        return const IntentActionOutcome(closeOverlay: true, route: AppRoutes.newMedicineOrderScreen);
 
       case 'ADD_TO_CART': {
         String? productId = a['productId']?.toString();

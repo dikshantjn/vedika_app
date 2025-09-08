@@ -64,6 +64,13 @@ class MainScreenNavigator {
     }
   }
 
+  // Control bottom navigation bar visibility
+  void setBottomNavVisible(bool visible) {
+    if (_currentState != null && _currentState!.mounted) {
+      _currentState!._setBottomNavVisible(visible);
+    }
+  }
+
   // Method to go back (pop route)
   bool goBack() {
     if (_currentState != null && _currentState!.mounted) {
@@ -123,6 +130,9 @@ class MainScreenState extends State<MainScreen> {
   // Lazy loading mechanism for pages
   final Map<int, Widget> _pageCache = {};
 
+  // Bottom navigation visibility
+  bool _bottomNavVisible = true;
+
   @override
   void initState() {
     super.initState();
@@ -174,6 +184,14 @@ class MainScreenState extends State<MainScreen> {
           }
         }
         
+        if (args.containsKey('hideBottomNav')) {
+          final hideBottomNav = args['hideBottomNav'] as bool?;
+          if (hideBottomNav != null) {
+            _bottomNavVisible = !hideBottomNav;
+            needsUpdate = true;
+          }
+        }
+
         if (needsUpdate) {
           // Add the new route to stack
           if (args.containsKey('initialIndex') || args.containsKey('transientChild')) {
@@ -260,6 +278,10 @@ class MainScreenState extends State<MainScreen> {
       if (newIndex != 9) {
         _currentTransientChild = null;
       }
+      // Ensure bottom nav is visible when navigating to a standard index
+      if (newIndex != 9) {
+        _bottomNavVisible = true;
+      }
     });
   }
 
@@ -283,6 +305,7 @@ class MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
       _currentTransientChild = child;
+      // Keep current bottom nav visibility as-is unless explicitly changed
     });
     // Clear the page cache for the new index to force rebuild
     _pageCache.remove(index);
@@ -294,6 +317,7 @@ class MainScreenState extends State<MainScreen> {
       'index': index,
       'child': child,
       'timestamp': DateTime.now(),
+      'bottomNavVisible': _bottomNavVisible,
     });
     debugPrint('🚨 Route added to stack: index=$index, child=${child.runtimeType}, stack size: ${_routeStack.length}');
   }
@@ -308,12 +332,15 @@ class MainScreenState extends State<MainScreen> {
       final previousRoute = _routeStack.last;
       final previousIndex = previousRoute['index'] as int;
       final previousChild = previousRoute['child'] as Widget?;
+      final previousBottomNavVisible = previousRoute['bottomNavVisible'] as bool? ?? true;
       
       debugPrint('🚨 Popping route: going back to index=$previousIndex, child=${previousChild.runtimeType}');
       
       setState(() {
         _selectedIndex = previousIndex;
         _currentTransientChild = previousChild;
+        // Restore the recorded bottom nav visibility for the previous route
+        _bottomNavVisible = previousBottomNavVisible;
       });
       
       // Clear the page cache for the new index to force rebuild
@@ -322,6 +349,16 @@ class MainScreenState extends State<MainScreen> {
       return true;
     }
     return false;
+  }
+  // Setter used by navigator to control bottom nav visibility
+  void _setBottomNavVisible(bool visible) {
+    if (!mounted) return;
+    setState(() {
+      _bottomNavVisible = visible;
+    });
+    if (_routeStack.isNotEmpty) {
+      _routeStack[_routeStack.length - 1]['bottomNavVisible'] = _bottomNavVisible;
+    }
   }
 
   // Method to check if we can pop
@@ -377,15 +414,17 @@ class MainScreenState extends State<MainScreen> {
         ),
         // Do not extend body under the BottomNavBar to avoid overlap
         extendBody: false,
-        bottomNavigationBar: BottomNavBar(
-          selectedIndex: _selectedIndex,
-          onItemTapped: (int index) {
-            // Bottom bar only switches to Home in current design
-            if (index == 0) {
-              _handleSelectIndex(0);
-            }
-          },
-        ),
+        bottomNavigationBar: _bottomNavVisible
+            ? BottomNavBar(
+                selectedIndex: _selectedIndex,
+                onItemTapped: (int index) {
+                  // Bottom bar only switches to Home in current design
+                  if (index == 0) {
+                    _handleSelectIndex(0);
+                  }
+                },
+              )
+            : null,
       ),
     );
   }

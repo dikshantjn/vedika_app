@@ -269,6 +269,88 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Reschedule a clinic appointment
+  Future<Map<String, dynamic>> rescheduleAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    if (_isActionInProgress) {
+      return {
+        'success': false,
+        'message': 'Another action is in progress. Please wait.',
+      };
+    }
+    
+    _isActionInProgress = true;
+    notifyListeners();
+    
+    try {
+      final result = await _service.rescheduleClinicAppointment(
+        appointmentId: appointmentId,
+        date: date,
+        time: time,
+      );
+      
+      if (result['success']) {
+        // Update local list after successful rescheduling
+        await fetchUserClinicAppointments();
+      }
+      
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('Error rescheduling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: $e',
+      };
+    } finally {
+      _isActionInProgress = false;
+      notifyListeners();
+    }
+  }
+
+  // Update appointment attendance status
+  Future<Map<String, dynamic>> updateAppointmentAttendance({
+    required String appointmentId,
+    required String status, // "no_call" or "no_show"
+  }) async {
+    if (_isActionInProgress) {
+      return {
+        'success': false,
+        'message': 'Another action is in progress. Please wait.',
+      };
+    }
+    
+    _isActionInProgress = true;
+    notifyListeners();
+    
+    try {
+      final result = await _service.updateAppointmentAttendance(
+        appointmentId: appointmentId,
+        status: status,
+      );
+      
+      if (result['success']) {
+        // Update local list after successful attendance update
+        await fetchUserClinicAppointments();
+      }
+      
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('Error updating attendance: $e');
+      return {
+        'success': false,
+        'message': 'Error updating attendance: $e',
+      };
+    } finally {
+      _isActionInProgress = false;
+      notifyListeners();
+    }
+  }
   
   // Refresh appointments data
   Future<void> refreshAppointments() async {

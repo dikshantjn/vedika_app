@@ -102,12 +102,6 @@ void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
 }
 
-// Future<void> getWifiIpAddress() async {
-//   final info = NetworkInfo();
-//   String? ip = await info.getWifiIP();
-//   print("Connected Wi-Fi IP Address: $ip");
-// }
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   

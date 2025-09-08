@@ -129,17 +129,33 @@ class HospitalProfile {
       landmark: json['landmark'],
       ownerName: json['ownerName'],
       certifications: (json['certifications'] as List<dynamic>?)
-          ?.map((e) => Map<String, String>.from(
-              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
-          .toList() ?? [],
+          ?.map((e) {
+            if (e is Map) {
+              return Map<String, String>.from(
+                e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+              );
+            }
+            return <String, String>{};
+          }).toList() ?? [],
       licenses: (json['licenses'] as List<dynamic>?)
-          ?.map((e) => Map<String, String>.from(
-              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
-          .toList() ?? [],
+          ?.map((e) {
+            if (e is Map) {
+              return Map<String, String>.from(
+                e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+              );
+            }
+            return <String, String>{};
+          }).toList() ?? [],
       specialityTypes: List<String>.from(json['specialityTypes']),
       servicesOffered: List<String>.from(json['servicesOffered']),
       bedsAvailable: json['bedsAvailable'],
-      doctors: List<Map<String, dynamic>>.from(json['doctors']),
+      doctors: (json['doctors'] as List<dynamic>?)?.map((e) {
+        if (e is Map<String, dynamic>) return e;
+        if (e is Map) return Map<String, dynamic>.from(e);
+        // if string list provided, wrap as simple map
+        if (e is String) return <String, dynamic>{'name': e};
+        return <String, dynamic>{};
+      }).toList() ?? <Map<String, dynamic>>[],
       workingTime: json['workingTime'],
       workingDays: json['workingDays'],
       contactNumber: json['contactNumber'],
@@ -152,12 +168,20 @@ class HospitalProfile {
       hasWheelchairAccess: json['hasWheelchairAccess'],
       providesOnlineConsultancy: json['providesOnlineConsultancy'],
       feesRange: json['feesRange'],
-      otherFacilities: List<String>.from(json['otherFacilities']),
-      insuranceCompanies: List<String>.from(json['insuranceCompanies']),
-      photos: (json['photos'] as List<dynamic>?)
-          ?.map((e) => Map<String, String>.from(
-              (e as Map).map((k, v) => MapEntry(k.toString(), v.toString()))))
-          .toList() ?? [],
+      otherFacilities: List<String>.from(json['otherFacilities'] ?? const <String>[]),
+      insuranceCompanies: List<String>.from(json['insuranceCompanies'] ?? const <String>[]),
+      photos: (json['photos'] as List<dynamic>?)?.map((e) {
+        if (e is Map) {
+          final m = Map<String, String>.from(
+            e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+          return m;
+        }
+        if (e is String) {
+          return <String, String>{'url': e, 'name': ''};
+        }
+        return <String, String>{};
+      }).toList() ?? <Map<String, String>>[],
       state: json['state'],
       city: json['city'],
       pincode: json['pincode'],

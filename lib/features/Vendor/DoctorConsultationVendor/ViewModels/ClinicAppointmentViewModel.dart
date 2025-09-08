@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import '../Models/ClinicAppointment.dart';
@@ -372,6 +373,39 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
     );
   }
 
+  // Add or update note for an appointment
+  Future<bool> addAppointmentNote(String appointmentId, String note) async {
+    try {
+      final result = await _appointmentService.updateAppointmentNote(
+        appointmentId: appointmentId,
+        note: note,
+      );
+      if (result != null) {
+        await fetchUserClinicAppointments();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to add note: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Upload one or more files to an appointment
+  Future<Map<String, dynamic>?> uploadAppointmentFiles(String appointmentId, List<MultipartFile> files) async {
+    try {
+      return await _appointmentService.uploadAppointmentFiles(
+        appointmentId: appointmentId,
+        files: files,
+      );
+    } catch (e) {
+      _errorMessage = 'Failed to upload files: ${e.toString()}';
+      notifyListeners();
+      return null;
+    }
+  }
+
   // Fetch health records for an appointment
   Future<Map<String, dynamic>?> fetchHealthRecords(String appointmentId) async {
     _isLoadingHealthRecords = true;
@@ -425,6 +459,8 @@ extension ClinicAppointmentExtension on ClinicAppointment {
     String? meetingUrl,
     UserModel? user,
     DoctorClinicProfile? doctor,
+    String? notes,
+    List<String>? attachments,
   }) {
     return ClinicAppointment(
       clinicAppointmentId: clinicAppointmentId ?? this.clinicAppointmentId,
@@ -442,6 +478,8 @@ extension ClinicAppointmentExtension on ClinicAppointment {
       meetingUrl: meetingUrl ?? this.meetingUrl,
       user: user ?? this.user,
       doctor: doctor ?? this.doctor,
+      notes: notes ?? this.notes,
+      attachments: attachments ?? this.attachments,
     );
   }
 } 

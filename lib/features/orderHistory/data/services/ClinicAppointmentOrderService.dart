@@ -82,4 +82,91 @@ class ClinicAppointmentOrderService {
       throw Exception('Error cancelling appointment: $e');
     }
   }
+
+  // Reschedule a clinic appointment
+  Future<Map<String, dynamic>> rescheduleClinicAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.rescheduleClinicAppointment}/$appointmentId/reschedule',
+        data: {
+          'date': date,
+          'time': time,
+          'by': 'user',
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Appointment rescheduled successfully',
+          'appointment': response.data['appointment'],
+          'bookedSlot': response.data['bookedSlot'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data['message'] ?? 'Failed to reschedule appointment: ${response.statusCode}',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: $e',
+      };
+    }
+  }
+
+  // Update appointment attendance status
+  Future<Map<String, dynamic>> updateAppointmentAttendance({
+    required String appointmentId,
+    required String status, // "no_call" or "no_show"
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateAppointmentAttendance}/$appointmentId/attendance',
+        data: {
+          'role': 'user',
+          'status': status,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Attendance status updated successfully',
+          'appointment': response.data['appointment'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data['message'] ?? 'Failed to update attendance: ${response.statusCode}',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': 'Error updating attendance: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error updating attendance: $e',
+      };
+    }
+  }
 } 
