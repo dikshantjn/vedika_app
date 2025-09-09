@@ -113,6 +113,72 @@ class AppointmentService {
     }
   }
 
+  /// Fetch online appointments for a vendor
+  Future<List<ClinicAppointment>> fetchOnlineAppointments() async {
+    try {
+      // Get the vendor ID
+      final String? vendorId = await _getVendorId();
+
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+      
+      // Make API call to fetch online appointments
+      final String url = '${ApiEndpoints.getPendingOnlineClinicAppointmentsByVendor}/$vendorId/pending/online';
+      print('[AppointmentService] Fetching online appointments from: $url');
+
+      final response = await _dio.get(url);
+
+      if (response.statusCode == 200) {
+        // Extract appointments from 'appointments' field
+        final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
+        final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
+        
+        print('[AppointmentService] Fetched ${appointments.length} online appointments');
+        return appointments;
+      } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
+        throw Exception('Failed to fetch online appointments: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[AppointmentService] Error fetching online appointments: $e');
+      throw Exception('Failed to fetch online appointments: $e');
+    }
+  }
+
+  /// Fetch offline appointments for a vendor
+  Future<List<ClinicAppointment>> fetchOfflineAppointments() async {
+    try {
+      // Get the vendor ID
+      final String? vendorId = await _getVendorId();
+
+      if (vendorId == null) {
+        throw Exception('Vendor ID not found');
+      }
+      
+      // Make API call to fetch offline appointments
+      final String url = '${ApiEndpoints.getPendingOfflineClinicAppointmentsByVendor}/$vendorId/pending/offline';
+      print('[AppointmentService] Fetching offline appointments from: $url');
+
+      final response = await _dio.get(url);
+
+      if (response.statusCode == 200) {
+        // Extract appointments from 'appointments' field
+        final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
+        final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
+        
+        print('[AppointmentService] Fetched ${appointments.length} offline appointments');
+        return appointments;
+      } else {
+        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
+        throw Exception('Failed to fetch offline appointments: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('[AppointmentService] Error fetching offline appointments: $e');
+      throw Exception('Failed to fetch offline appointments: $e');
+    }
+  }
+
   /// Fetch all appointments for a vendor
   Future<List<ClinicAppointment>> fetchAppointments() async {
     try {
@@ -307,6 +373,119 @@ class AppointmentService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Update appointment attendance status
+  Future<bool> updateAttendanceStatus(String appointmentId, String status) async {
+    try {
+      print('[AppointmentService] Updating attendance status: ID=$appointmentId, status=$status');
+      
+      final String url = '${ApiEndpoints.updateAppointmentAttendance}/$appointmentId/attendance';
+      print('[AppointmentService] Making PUT request to: $url');
+      
+      final response = await _dio.put(
+        url,
+        data: {
+          'role': 'doctor',
+          'status': status,
+        },
+      );
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[AppointmentService] Successfully updated attendance status');
+        return true;
+      } else {
+        print('[AppointmentService] Failed to update attendance status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('[AppointmentService] Error updating attendance status: $e');
+      return false;
+    }
+  }
+
+  /// Reschedule an appointment
+  Future<bool> rescheduleAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    try {
+      print('[AppointmentService] Rescheduling appointment: ID=$appointmentId, date=$date, time=$time');
+      
+      final String url = '${ApiEndpoints.updateAppointmentAttendance}/$appointmentId/reschedule';
+      print('[AppointmentService] Making PUT request to: $url');
+      
+      final response = await _dio.put(
+        url,
+        data: {
+          'date': date,
+          'time': time,
+        },
+      );
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[AppointmentService] Successfully rescheduled appointment');
+        return true;
+      } else {
+        print('[AppointmentService] Failed to reschedule appointment: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('[AppointmentService] Error rescheduling appointment: $e');
+      return false;
+    }
+  }
+
+  /// Cancel an appointment with reason
+  Future<Map<String, dynamic>> cancelAppointment({
+    required String appointmentId,
+    required String cancelReason,
+  }) async {
+    try {
+      print('[AppointmentService] Cancelling appointment: ID=$appointmentId, reason=$cancelReason');
+      
+      final String url = '${ApiEndpoints.cancelClinicAppointment}/$appointmentId/cancel';
+      print('[AppointmentService] Making PUT request to: $url');
+      
+      final response = await _dio.put(
+        url,
+        data: {
+          'cancelBy': 'doctor',
+          'cancelReason': cancelReason,
+        },
+      );
+
+      print('[AppointmentService] Response status code: ${response.statusCode}');
+      print('[AppointmentService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[AppointmentService] Successfully cancelled appointment');
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Appointment cancelled successfully',
+          'appointment': response.data['appointment'],
+        };
+      } else {
+        print('[AppointmentService] Failed to cancel appointment: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to cancel appointment: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('[AppointmentService] Error cancelling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Error cancelling appointment: $e',
+      };
     }
   }
 } 

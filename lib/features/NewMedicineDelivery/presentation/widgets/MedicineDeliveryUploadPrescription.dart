@@ -27,12 +27,14 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
   String? _uploadError;
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _skipNotesController = TextEditingController();
+  final TextEditingController _generalProductsController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _quantityController.dispose();
     _skipNotesController.dispose();
+    _generalProductsController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -128,10 +130,10 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
                 Text(
                   'Upload Prescription',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -169,6 +171,8 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
       children: [
         SizedBox(height: 8),
         if (_selectedFiles.isEmpty) _buildUploadOptions(),
+        SizedBox(height: 20),
+        _buildGeneralProductsSection(),
         if (_selectedFiles.isNotEmpty) ...[
           _buildSelectedFiles(),
           SizedBox(height: 28),
@@ -180,6 +184,58 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
           SizedBox(height: 16),
           _buildErrorWidget(),
         ],
+      ],
+    );
+  }
+
+  Widget _buildGeneralProductsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Order General Products',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+            letterSpacing: -0.2,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[300]!, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.05),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _generalProductsController,
+            maxLines: 4,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Enter product names with quantity (e.g., Dolo 650 x 10 tablets)',
+              hintStyle: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(16),
+            ),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -805,7 +861,9 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: _selectedFiles.isEmpty ? null : _uploadPrescription,
+              onPressed: (_selectedFiles.isNotEmpty || _generalProductsController.text.trim().isNotEmpty)
+                  ? _uploadPrescription
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: ColorPalette.primaryColor,
                 foregroundColor: Colors.white,
@@ -827,7 +885,7 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
                 ),
               )
                   : Text(
-                'Upload & Continue',
+                _selectedFiles.isNotEmpty ? 'Upload & Continue' : 'Submit',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -933,7 +991,7 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
   }
 
   Future<void> _uploadPrescription() async {
-    if (_selectedFiles.isEmpty) return;
+    if (_selectedFiles.isEmpty && _generalProductsController.text.trim().isEmpty) return;
 
     setState(() {
       _isUploading = true;
@@ -946,22 +1004,24 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
       // Get vendorId from the store parameter
       final String vendorId = widget.store.vendorId ?? "unknown";
       String? userId = await StorageService.getUserId();
-      final response = await service.uploadPrescription(
+      final prescription = await service.uploadPrescription(
         userId: userId!,
         vendorId: vendorId,
         files: _selectedFiles,
         quantityPreference: _quantityController.text.isNotEmpty ? _quantityController.text : "Not specified",
         skipNotes: _skipNotesController.text.isNotEmpty ? _skipNotesController.text : "None",
+        generalProduct: _generalProductsController.text.trim().isNotEmpty
+            ? _generalProductsController.text.trim()
+            : null,
       );
-
-      if (response['success'] == true) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Prescription uploaded successfully!'),
+                Text('Submitted successfully!'),
               ],
             ),
             backgroundColor: Colors.green[600],
@@ -972,8 +1032,6 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
           ),
         );
         Navigator.pop(context);
-      } else {
-        _setError('Upload failed: ${response['message'] ?? 'Unknown error'}');
       }
     } catch (e) {
       _setError('Upload failed: $e');

@@ -3,43 +3,37 @@ import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
 import 'package:vedika_healthcare/features/clinic/data/services/ClinicService.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
-import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/ClinicAppointmentViewModel.dart';
 
-class RescheduleAppointmentBottomSheet extends StatefulWidget {
+class RescheduleAppointmentForDoctorBottomSheet extends StatefulWidget {
   final ClinicAppointment appointment;
   final ClinicAppointmentViewModel viewModel;
 
-  const RescheduleAppointmentBottomSheet({
+  const RescheduleAppointmentForDoctorBottomSheet({
     Key? key,
     required this.appointment,
     required this.viewModel,
   }) : super(key: key);
 
   @override
-  State<RescheduleAppointmentBottomSheet> createState() => _RescheduleAppointmentBottomSheetState();
+  State<RescheduleAppointmentForDoctorBottomSheet> createState() => _RescheduleAppointmentForDoctorBottomSheetState();
 }
 
-class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointmentBottomSheet> {
+class _RescheduleAppointmentForDoctorBottomSheetState extends State<RescheduleAppointmentForDoctorBottomSheet> {
   final ClinicService _clinicService = ClinicService();
   
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
   bool _isLoading = false;
+  bool _isRescheduling = false;
   String? _error;
   TimeSlotsResponse? _timeSlotsResponse;
   bool _noSlotsAvailable = false;
-  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _initializeCurrentUserId();
     _loadTimeSlotsForSelectedDate();
-  }
-
-  Future<void> _initializeCurrentUserId() async {
-    _currentUserId = await StorageService.getUserId();
   }
 
   Future<void> _loadTimeSlotsForSelectedDate() async {
@@ -101,20 +95,6 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
     return _timeSlotsResponse?.availableSlots.contains(timeSlot) ?? false;
   }
 
-  // Check if a booked time slot belongs to the current user
-  bool _isTimeSlotBookedByCurrentUser(String timeSlot) {
-    if (_timeSlotsResponse == null || _currentUserId == null) return false;
-    return _timeSlotsResponse!.bookedSlots.any((bookedSlot) =>
-        bookedSlot.time == timeSlot && bookedSlot.userId == _currentUserId);
-  }
-
-  // Check if a booked time slot belongs to another user
-  bool _isTimeSlotBookedByOtherUser(String timeSlot) {
-    if (_timeSlotsResponse == null || _currentUserId == null) return false;
-    return _timeSlotsResponse!.bookedSlots.any((bookedSlot) =>
-        bookedSlot.time == timeSlot && bookedSlot.userId != _currentUserId);
-  }
-
   int _compareTimeSlots(String a, String b) {
     try {
       final timeA = DateFormat('HH:mm').parse(a);
@@ -136,25 +116,47 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
       return;
     }
 
-    final dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    final timeString = _selectedTimeSlot!.split(' - ')[0]; // Extract start time
+    setState(() {
+      _isRescheduling = true;
+    });
 
-    final result = await widget.viewModel.rescheduleAppointment(
-      appointmentId: widget.appointment.clinicAppointmentId,
-      date: dateString,
-      time: timeString,
-    );
+    try {
+      final dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final timeString = _selectedTimeSlot!.split(' - ')[0]; // Extract start time
 
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: result['success'] 
-              ? DoctorConsultationColorPalette.successGreen 
-              : DoctorConsultationColorPalette.errorRed,
-        ),
+      final result = await widget.viewModel.rescheduleAppointment(
+        appointmentId: widget.appointment.clinicAppointmentId,
+        date: dateString,
+        time: timeString,
       );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: result['success'] 
+                ? DoctorConsultationColorPalette.successGreen 
+                : DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reschedule appointment: ${e.toString()}'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRescheduling = false;
+        });
+      }
     }
   }
 
@@ -211,7 +213,7 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Select a new date and time for your appointment',
+                        'Select a new date and time for the appointment',
                         style: TextStyle(
                           fontSize: 14,
                           color: DoctorConsultationColorPalette.textSecondary,
@@ -252,6 +254,14 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                         SizedBox(height: 8),
                         Text(
                           '${DateFormat('EEEE, MMMM d, yyyy').format(widget.appointment.date)} at ${widget.appointment.time}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.textSecondary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Patient: ${widget.appointment.user?.name ?? 'Unknown'}',
                           style: TextStyle(
                             fontSize: 14,
                             color: DoctorConsultationColorPalette.textSecondary,
@@ -306,17 +316,21 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _isRescheduling ? null : () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.grey[400]!),
+                      side: BorderSide(color: _isRescheduling ? Colors.grey[300]! : Colors.grey[400]!),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
                       'Cancel',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16, 
+                        fontWeight: FontWeight.w600,
+                        color: _isRescheduling ? Colors.grey[400] : null,
+                      ),
                     ),
                   ),
                 ),
@@ -324,7 +338,7 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                 Expanded(
                   flex: 2,
                   child: ElevatedButton(
-                    onPressed: _selectedTimeSlot != null ? _rescheduleAppointment : null,
+                    onPressed: (_selectedTimeSlot != null && !_isRescheduling) ? _rescheduleAppointment : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: DoctorConsultationColorPalette.primaryBlue,
                       foregroundColor: Colors.white,
@@ -335,10 +349,29 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                       ),
                       elevation: 2,
                     ),
-                    child: Text(
-                      'Reschedule Appointment',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
+                    child: _isRescheduling
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Rescheduling...',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Reschedule Appointment',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
                   ),
                 ),
               ],
@@ -360,7 +393,7 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
 
           return GestureDetector(
-            onTap: () {
+            onTap: _isRescheduling ? null : () {
               setState(() {
                 _selectedDate = date;
                 _selectedTimeSlot = null; // Clear selected time slot
@@ -462,7 +495,7 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
             ),
             SizedBox(height: 8),
             Text(
-              "This doctor has no available appointments for the selected date. Please try a different date.",
+              "No available appointments for the selected date. Please try a different date.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -551,11 +584,9 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
         final isSelected = _selectedTimeSlot == timeSlot;
         final isBooked = _isTimeSlotBooked(timeSlot);
         final isAvailable = _isTimeSlotAvailable(timeSlot);
-        final isBookedByCurrentUser = _isTimeSlotBookedByCurrentUser(timeSlot);
-        final isBookedByOtherUser = _isTimeSlotBookedByOtherUser(timeSlot);
 
         return GestureDetector(
-          onTap: isAvailable ? () {
+          onTap: (isAvailable && !_isRescheduling) ? () {
             setState(() {
               _selectedTimeSlot = timeSlot;
             });
@@ -564,23 +595,21 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
             duration: Duration(milliseconds: 200),
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? DoctorConsultationColorPalette.primaryBlue
-                  : isBookedByCurrentUser
-                      ? DoctorConsultationColorPalette.successGreen.withOpacity(0.1)
-                      : isBookedByOtherUser
+              color: _isRescheduling
+                  ? Colors.grey[300]
+                  : isSelected
+                      ? DoctorConsultationColorPalette.primaryBlue
+                      : isBooked
                           ? DoctorConsultationColorPalette.errorRed.withOpacity(0.1)
                           : DoctorConsultationColorPalette.backgroundCard,
               borderRadius: BorderRadius.circular(10),
               border: isBooked
                   ? Border.all(
-                      color: isBookedByCurrentUser
-                          ? DoctorConsultationColorPalette.successGreen.withOpacity(0.3)
-                          : DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
+                      color: DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
                       width: 1,
                     )
                   : null,
-              boxShadow: isSelected
+              boxShadow: isSelected && !_isRescheduling
                   ? [
                 BoxShadow(
                   color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3),
@@ -597,11 +626,11 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                   timeSlot,
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    color: isSelected
-                        ? Colors.white
-                        : isBookedByCurrentUser
-                            ? DoctorConsultationColorPalette.successGreen
-                            : isBookedByOtherUser
+                    color: _isRescheduling
+                        ? Colors.grey[500]
+                        : isSelected
+                            ? Colors.white
+                            : isBooked
                                 ? DoctorConsultationColorPalette.errorRed
                                 : DoctorConsultationColorPalette.textPrimary,
                   ),
@@ -611,25 +640,19 @@ class _RescheduleAppointmentBottomSheetState extends State<RescheduleAppointment
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isBookedByCurrentUser
-                          ? DoctorConsultationColorPalette.successGreen.withOpacity(0.1)
-                          : DoctorConsultationColorPalette.errorRed.withOpacity(0.1),
+                      color: DoctorConsultationColorPalette.errorRed.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isBookedByCurrentUser
-                            ? DoctorConsultationColorPalette.successGreen.withOpacity(0.3)
-                            : DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
+                        color: DoctorConsultationColorPalette.errorRed.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
                     child: Text(
-                      isBookedByCurrentUser ? 'BOOKED BY YOU' : 'BOOKED',
+                      'BOOKED',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: isBookedByCurrentUser
-                            ? DoctorConsultationColorPalette.successGreen
-                            : DoctorConsultationColorPalette.errorRed,
+                        color: DoctorConsultationColorPalette.errorRed,
                       ),
                     ),
                   ),

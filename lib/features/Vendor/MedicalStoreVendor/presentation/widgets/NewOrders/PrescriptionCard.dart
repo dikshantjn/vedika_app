@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/PrescriptionPreviewScreen.dart';
 
 class PrescriptionCard extends StatefulWidget {
   final Prescription prescription;
@@ -34,12 +35,13 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -55,47 +57,37 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
 
   Widget _buildHeader() {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      ColorPalette.primaryColor.withOpacity(0.1),
-                      ColorPalette.primaryColor.withOpacity(0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: ColorPalette.primaryColor.withOpacity(0.1),
                 child: Icon(
-                  Icons.medical_services,
+                  Icons.person,
                   color: ColorPalette.primaryColor,
-                  size: 24,
+                  size: 18,
                 ),
               ),
-              SizedBox(width: 16),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Prescription Request',
+                      widget.prescription.userName ?? 'Unknown User',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: 2),
                     Text(
-                      'ID: ${widget.prescription.prescriptionId.length > 8 ? widget.prescription.prescriptionId.substring(0, 8) + '...' : widget.prescription.prescriptionId}',
+                      widget.prescription.userPhone ?? 'No phone number',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -105,56 +97,80 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                   ],
                 ),
               ),
+              if (widget.prescription.userPhone != null && widget.prescription.userPhone!.isNotEmpty) ...[
+                SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: IconButton(
+                    onPressed: () => _makeCall(widget.prescription.userPhone!),
+                    icon: Icon(
+                      Icons.phone,
+                      color: Colors.green[600],
+                      size: 18,
+                    ),
+                    padding: EdgeInsets.all(6),
+                    constraints: BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                  ),
+                ),
+              ],
+              SizedBox(width: 8),
               _buildStatusChip(),
             ],
           ),
-          SizedBox(height: 20),
-          _buildUserInfo(),
-          SizedBox(height: 16),
+          SizedBox(height: 12),
           _buildPrescriptionDetails(),
-          SizedBox(height: 16),
+          SizedBox(height: 12),
           Row(
             children: [
               Icon(
                 Icons.access_time,
-                size: 16,
+                size: 14,
                 color: Colors.grey[500],
               ),
               SizedBox(width: 8),
               Text(
                 _formatDateTime(widget.prescription.createdAt),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Spacer(),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isExpanded ? 'Show Less' : 'Show More',
-                      style: TextStyle(
-                        color: ColorPalette.primaryColor,
-                        fontWeight: FontWeight.w600,
+              if (widget.prescription.prescriptionFiles.isNotEmpty) ...[
+                Spacer(),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isExpanded ? 'Show Less' : 'Show More',
+                        style: TextStyle(
+                          color: ColorPalette.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(
-                      _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: ColorPalette.primaryColor,
-                    ),
-                  ],
+                      SizedBox(width: 4),
+                      Icon(
+                        _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        size: 18,
+                        color: ColorPalette.primaryColor,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -209,24 +225,24 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
 
   Widget _buildUserInfo() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 20,
+            radius: 16,
             backgroundColor: ColorPalette.primaryColor.withOpacity(0.1),
             child: Icon(
               Icons.person,
               color: ColorPalette.primaryColor,
-              size: 24,
+              size: 18,
             ),
           ),
-          SizedBox(width: 16),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +250,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                 Text(
                   widget.prescription.userName ?? 'Unknown User',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -243,7 +259,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                 Text(
                   widget.prescription.userPhone ?? 'No phone number',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -262,12 +278,12 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                 icon: Icon(
                   Icons.phone,
                   color: Colors.green[600],
-                  size: 20,
+                  size: 18,
                 ),
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(6),
                 constraints: BoxConstraints(
-                  minWidth: 40,
-                  minHeight: 40,
+                  minWidth: 36,
+                  minHeight: 36,
                 ),
               ),
             ),
@@ -296,11 +312,20 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
           ),
           SizedBox(height: 12),
         ],
-        _buildDetailRow(
-          'Files',
-          '${widget.prescription.prescriptionFiles.length} prescription file(s)',
-          Icons.attach_file,
-        ),
+        if (widget.prescription.generalProduct != null && widget.prescription.generalProduct!.trim().isNotEmpty) ...[
+          _buildDetailRow(
+            'General Products',
+            widget.prescription.generalProduct!,
+            Icons.shopping_bag,
+          ),
+          SizedBox(height: 12),
+        ],
+        if (widget.prescription.prescriptionFiles.isNotEmpty)
+          _buildDetailRow(
+            'Files',
+            '${widget.prescription.prescriptionFiles.length} prescription file(s)',
+            Icons.attach_file,
+          ),
       ],
     );
   }
@@ -343,49 +368,24 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
 
   Widget _buildExpandedContent() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(color: Colors.grey[200]),
-          SizedBox(height: 16),
-          Text(
-            'Prescription Files',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 12),
-          ...widget.prescription.prescriptionFiles.map((file) => _buildFileItem(file)),
-          SizedBox(height: 16),
-          Text(
-            'Add Note (Optional)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 12),
-          TextField(
-            controller: _noteController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Add your note here (optional)...',
-              hintStyle: TextStyle(color: Colors.grey[500]),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+          if (widget.prescription.prescriptionFiles.isNotEmpty) ...[
+            Divider(color: Colors.grey[200]),
+            SizedBox(height: 12),
+            Text(
+              'Prescription Files',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: ColorPalette.primaryColor),
-              ),
-              contentPadding: EdgeInsets.all(16),
             ),
-          ),
+            SizedBox(height: 8),
+            ...widget.prescription.prescriptionFiles.map((file) => _buildFileItem(file)),
+          ],
         ],
       ),
     );
@@ -393,8 +393,8 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
 
   Widget _buildFileItem(String fileUrl) {
     return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
@@ -405,14 +405,14 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
           Icon(
             Icons.image,
             color: Colors.blue[600],
-            size: 20,
+            size: 18,
           ),
-          SizedBox(width: 12),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               fileUrl.split('/').last,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 color: Colors.black87,
                 fontWeight: FontWeight.w500,
               ),
@@ -425,7 +425,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
             icon: Icon(
               Icons.visibility,
               color: ColorPalette.primaryColor,
-              size: 20,
+              size: 18,
             ),
           ),
         ],
@@ -474,38 +474,38 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
     }
 
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: EdgeInsets.all(12),
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () => _rejectPrescription(),
-              icon: Icon(Icons.close, size: 18),
-              label: Text('Reject'),
+              icon: Icon(Icons.close, size: 16),
+              label: Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 10),
                 side: BorderSide(color: Colors.red[400]!),
                 foregroundColor: Colors.red[600],
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
           ),
-          SizedBox(width: 16),
+          SizedBox(width: 12),
           Expanded(
             flex: 2,
             child: ElevatedButton.icon(
               onPressed: () => _acceptPrescription(),
-              icon: Icon(Icons.check, size: 18),
-              label: Text('Accept'),
+              icon: Icon(Icons.check, size: 16),
+              label: Text('Accept', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ColorPalette.primaryColor,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
@@ -516,11 +516,13 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
   }
 
   void _viewPrescription(String fileUrl) {
-    // TODO: Implement prescription viewing logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening prescription: ${fileUrl.split('/').last}'),
-        duration: Duration(seconds: 2),
+    final String name = Uri.tryParse(fileUrl)?.pathSegments.isNotEmpty == true
+        ? Uri.parse(fileUrl).pathSegments.last
+        : fileUrl.split('/').last;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrescriptionPreviewScreen(fileUrl: fileUrl, fileName: name),
       ),
     );
   }

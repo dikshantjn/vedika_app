@@ -83,6 +83,54 @@ class ClinicAppointmentOrderService {
     }
   }
 
+  // Cancel an appointment with reason
+  Future<Map<String, dynamic>> cancelAppointmentWithReason({
+    required String appointmentId,
+    required String cancelReason,
+  }) async {
+    try {
+      print('[ClinicAppointmentOrderService] Cancelling appointment: ID=$appointmentId, reason=$cancelReason');
+      
+      final String url = '${ApiEndpoints.cancelClinicAppointment}/$appointmentId/cancel';
+      print('[ClinicAppointmentOrderService] Making PUT request to: $url');
+      
+      final response = await _dio.put(
+        url,
+        data: {
+          'cancelBy': 'user',
+          'cancelReason': cancelReason,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('[ClinicAppointmentOrderService] Response status code: ${response.statusCode}');
+      print('[ClinicAppointmentOrderService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[ClinicAppointmentOrderService] Successfully cancelled appointment');
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Appointment cancelled successfully',
+          'appointment': response.data['appointment'],
+        };
+      } else {
+        print('[ClinicAppointmentOrderService] Failed to cancel appointment: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to cancel appointment: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('[ClinicAppointmentOrderService] Error cancelling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Error cancelling appointment: $e',
+      };
+    }
+  }
+
   // Reschedule a clinic appointment
   Future<Map<String, dynamic>> rescheduleClinicAppointment({
     required String appointmentId,

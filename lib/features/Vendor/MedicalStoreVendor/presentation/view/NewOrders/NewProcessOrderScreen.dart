@@ -3,6 +3,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/PrescriptionPreviewScreen.dart';
 
 class NewProcessOrderScreen extends StatefulWidget {
   final Order order;
@@ -84,15 +85,16 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
 
   Widget _buildOrderHeader() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -103,31 +105,24 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
           Row(
             children: [
               Container(
-                padding: EdgeInsets.all(10),
+                padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      ColorPalette.primaryColor.withOpacity(0.15),
-                      ColorPalette.primaryColor.withOpacity(0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+                  color: ColorPalette.primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.shopping_cart_rounded,
                   color: ColorPalette.primaryColor,
-                  size: 24,
+                  size: 20,
                 ),
               ),
-              SizedBox(width: 12),
+              SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Order #${widget.order.orderId.length > 8 ? widget.order.orderId.substring(0, 8) + '...' : widget.order.orderId}',
+                  'Order #${widget.order.orderId}',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black87,
                   ),
                 ),
@@ -135,20 +130,20 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               _buildStatusChip(_currentStatus),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 10),
           
           // Customer details section
           Container(
-            padding: EdgeInsets.all(12),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.blue[200]!),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.blue[100],
                     borderRadius: BorderRadius.circular(8),
@@ -156,10 +151,10 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                   child: Icon(
                     Icons.person,
                     color: Colors.blue[600],
-                    size: 16,
+                    size: 14,
                   ),
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +162,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                       Text(
                         'Customer Details',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           color: Colors.blue[700],
                           fontWeight: FontWeight.w600,
                         ),
@@ -176,7 +171,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                       Text(
                         widget.order.user?.name ?? 'Unknown Customer',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.black87,
                           fontWeight: FontWeight.w600,
                         ),
@@ -185,7 +180,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                       Text(
                         widget.order.user?.phoneNumber ?? 'No phone number',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
@@ -196,8 +191,128 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               ],
             ),
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 10),
+
+          // General product (if exists)
+          if (widget.order.prescription?.generalProduct != null && widget.order.prescription!.generalProduct!.trim().isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.shopping_bag, color: Colors.orange[700], size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'General Products',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          widget.order.prescription!.generalProduct!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10),
+          ],
           
+          // Prescription files (if exist)
+          if (widget.order.prescription?.prescriptionFiles != null && widget.order.prescription!.prescriptionFiles.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.attach_file, color: Colors.grey[700], size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'Prescription Files',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  ...widget.order.prescription!.prescriptionFiles.map((url) {
+                    final String name = Uri.tryParse(url)?.pathSegments.isNotEmpty == true
+                        ? Uri.parse(url).pathSegments.last
+                        : url.split('/').last;
+                    final bool isPdf = name.toLowerCase().endsWith('.pdf');
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PrescriptionPreviewScreen(fileUrl: url, fileName: name),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: 6),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
+                                color: isPdf ? Colors.red[600] : Colors.blue[600], size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 18, color: Colors.grey[600]),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+            SizedBox(height: 10),
+          ],
+
           // Order details in a compact grid layout
           Row(
             children: [

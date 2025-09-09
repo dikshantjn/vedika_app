@@ -6,8 +6,10 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedi
 
 import 'package:vedika_healthcare/features/NewMedicineDelivery/presentation/widgets/MedicineDeliverySearchBar.dart';
 import 'package:vedika_healthcare/features/NewMedicineDelivery/presentation/widgets/MedicineDeliveryUploadPrescription.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MedicineDeliveryScreen extends StatefulWidget {
   const MedicineDeliveryScreen({Key? key}) : super(key: key);
@@ -22,12 +24,15 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  final ScrollController _scrollController = ScrollController();
+  bool _showAppBarTitle = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _initializeData();
+    _scrollController.addListener(_onScroll);
   }
 
   void _initializeAnimations() {
@@ -66,10 +71,21 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
     });
   }
 
+  void _onScroll() {
+    final bool showTitle = _scrollController.hasClients && _scrollController.offset > 80;
+    if (showTitle != _showAppBarTitle) {
+      setState(() {
+        _showAppBarTitle = showTitle;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -78,6 +94,7 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           _buildSliverAppBar(),
           _buildContent(),
@@ -93,7 +110,37 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
       floating: false,
       pinned: true,
       elevation: 0,
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.primaryColor,
+      title: AnimatedOpacity(
+        opacity: _showAppBarTitle ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: const Text(
+          'Medicine Delivery',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      centerTitle: true,
+      leading: IconButton(
+        icon: Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        ),
+        onPressed: () {
+          if (MainScreenNavigator.instance.canGoBack) {
+            MainScreenNavigator.instance.goBack();
+          } else {
+            Navigator.pop(context);
+          }
+        },
+      ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -216,62 +263,164 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
 
   Widget _buildStoreCard(VendorMedicalStoreProfile store) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: Colors.grey[100]!,
           width: 1,
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Row(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    store.name ?? 'Unknown Store',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                      letterSpacing: -0.5,
-                    ),
+            // Store Header with Call Button
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: ColorPalette.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
+                  child: Icon(
+                    Icons.local_pharmacy,
+                    color: ColorPalette.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        store.name ?? 'Unknown Store',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Medical Store',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            OutlinedButton.icon(
-              onPressed: () => _showUploadPrescription(context, store),
-              icon: Icon(
-                Icons.upload_file_rounded,
-                size: 18,
-                color: Colors.orange[600]!,
-              ),
-              label: Text(
-                'Upload Prescription',
-                style: TextStyle(
-                  color: Colors.orange[600]!,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+            
+            SizedBox(height: 20),
+            
+            // Action Buttons Row (Call + Upload Prescription)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildOutlinedActionButton(
+                    icon: Icons.phone,
+                    label: 'Call',
+                    color: Colors.green[600]!,
+                    onPressed: () => _handleCall(store),
+                  ),
                 ),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                side: BorderSide(
-                  color: Colors.orange[600]!,
-                  width: 1.5,
+                SizedBox(width: 12),
+                Expanded(
+                  child: _buildOutlinedActionButton(
+                    icon: Icons.upload_file_rounded,
+                    label: 'Upload Prescription',
+                    color: Colors.orange[600]!,
+                    onPressed: () => _showUploadPrescription(context, store),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutlinedActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      height: 40,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          size: 16,
+          color: color,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: color,
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSmallOutlinedButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: 40,
+      height: 40,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: color,
+            width: 1.5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: color,
         ),
       ),
     );
@@ -317,11 +466,11 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
         itemCount: 3,
         itemBuilder: (context, index) {
           return Container(
-            height: 120,
-            margin: EdgeInsets.only(bottom: 16),
+            height: 160,
+            margin: EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
             ),
           );
         },
@@ -437,6 +586,24 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
       builder: (context) => MedicineDeliveryUploadPrescription(store: store),
     );
   }
+
+  void _handleCall(VendorMedicalStoreProfile store) {
+    final String phone = store.contactNumber;
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No contact number available'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
+
+    final Uri uri = Uri(scheme: 'tel', path: phone);
+    launchUrl(uri);
+  }
+
+  
 
 
 }

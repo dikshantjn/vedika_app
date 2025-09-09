@@ -1,14 +1,14 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.37:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.37:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
-  static const String socketUrl = "https://947a075b3d46.ngrok-free.app";
-  static const String baseUrl = "https://947a075b3d46.ngrok-free.app/api";
+  // static const String socketUrl = "https://947a075b3d46.ngrok-free.app";
+  // static const String baseUrl = "https://947a075b3d46.ngrok-free.app/api";
 
 
   // 📌 Auth APIs
@@ -43,6 +43,8 @@ class ApiEndpoints {
   static const String completeClinicAppointment = '$baseUrl/clinic-appointments/complete';  // NEW: endpoint for marking appointment as completed after meeting ends
   static const String getClinicAppointmentsByUserId = '$baseUrl/clinic-appointments/user'; // Example: /clinic-appointments/user/:userId
   static const String getPendingClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending
+  static const String getPendingOnlineClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending/online
+  static const String getPendingOfflineClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending/offline
   static const String getCompletedClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/completed
   static const String getOngoingMeetings = '$baseUrl/clinic-appointments/ongoing-meetings';
   static const String shareHealthRecords = '$baseUrl/clinic-appointments/share-health-records';
@@ -51,6 +53,7 @@ class ApiEndpoints {
   static const String uploadClinicAppointmentFiles = '$baseUrl/clinic-appointments'; // POST /clinic-appointments/:appointmentId/files
   static const String rescheduleClinicAppointment = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/reschedule
   static const String updateAppointmentAttendance = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/attendance
+  static const String cancelClinicAppointment = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/cancel
 
   // 📌 Medicine Product APIs
   static const String addProduct = '$baseUrl/medicineProduct/add-product';

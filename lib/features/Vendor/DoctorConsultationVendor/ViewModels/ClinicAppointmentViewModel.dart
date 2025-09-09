@@ -7,7 +7,6 @@ import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicService.dart';
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'dart:convert';
@@ -24,6 +23,8 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   
   List<ClinicAppointment> _appointments = [];
   List<ClinicAppointment> _filteredAppointments = [];
+  List<ClinicAppointment> _onlineAppointments = [];
+  List<ClinicAppointment> _offlineAppointments = [];
   DoctorClinicProfile? _doctorProfile;
   
   ClinicAppointmentFetchState _fetchState = ClinicAppointmentFetchState.initial;
@@ -39,6 +40,8 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Getters
   List<ClinicAppointment> get appointments => _filteredAppointments;
+  List<ClinicAppointment> get onlineAppointments => _onlineAppointments;
+  List<ClinicAppointment> get offlineAppointments => _offlineAppointments;
   ClinicAppointmentFetchState get fetchState => _fetchState;
   String get errorMessage => _errorMessage ?? '';
   AppointmentFilter get currentFilter => _currentFilter;
@@ -139,7 +142,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       
       if (appointmentId != null && status != null) {
         // Refresh appointments list for any status update
-        await fetchUserClinicAppointments();
+        await fetchAllAppointments();
         debugPrint('✅ Refreshed appointments after update');
       } else {
         debugPrint('❌ Missing appointmentId or status in data: $appointmentData');
@@ -154,7 +157,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     print('[ClinicAppointmentViewModel] Initializing...');
     await fetchDoctorProfile();
-    await fetchUserClinicAppointments();
+    await fetchAllAppointments();
   }
 
   // Fetch doctor profile information
@@ -168,7 +171,40 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
     }
   }
 
-  // Fetch appointments from service
+  // Fetch all appointments (online and offline) separately
+  Future<void> fetchAllAppointments() async {
+    print('[ClinicAppointmentViewModel] fetchAllAppointments() called');
+    _fetchState = ClinicAppointmentFetchState.loading;
+    _errorMessage = null;
+    notifyListeners();
+    
+    try {
+      // Fetch online and offline appointments in parallel
+      final results = await Future.wait([
+        _appointmentService.fetchOnlineAppointments(),
+        _appointmentService.fetchOfflineAppointments(),
+      ]);
+      
+      _onlineAppointments = results[0];
+      _offlineAppointments = results[1];
+      
+      // Combine for backward compatibility
+      _appointments = [..._onlineAppointments, ..._offlineAppointments];
+      _applyFilters();
+      
+      _fetchState = ClinicAppointmentFetchState.loaded;
+      notifyListeners();
+      
+      print('[ClinicAppointmentViewModel] Fetched ${_onlineAppointments.length} online and ${_offlineAppointments.length} offline appointments');
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Error in fetchAllAppointments: $e');
+      _fetchState = ClinicAppointmentFetchState.error;
+      _errorMessage = 'Failed to load appointments: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  // Fetch appointments from service (backward compatibility)
   Future<void> fetchUserClinicAppointments() async {
     print('[ClinicAppointmentViewModel] fetchUserClinicAppointments() called');
     _fetchState = ClinicAppointmentFetchState.loading;
@@ -297,7 +333,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       final success = await _appointmentService.updateAppointmentStatus(appointmentId, newStatus);
       
       if (success) {
-        await fetchUserClinicAppointments();
+        await fetchAllAppointments();
       } else {
         _errorMessage = 'Failed to update appointment status';
         notifyListeners();
@@ -313,10 +349,114 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  // Update appointment attendance status
+  Future<bool> updateAttendanceStatus(String appointmentId, String status) async {
+    print('[ClinicAppointmentViewModel] Starting attendance status update: ID=$appointmentId, status=$status');
+    _fetchState = ClinicAppointmentFetchState.loading;
+    notifyListeners();
+    
+    try {
+      final success = await _appointmentService.updateAttendanceStatus(appointmentId, status);
+      print('[ClinicAppointmentViewModel] Service returned: $success');
+      
+      if (success) {
+        print('[ClinicAppointmentViewModel] Success - refreshing appointments...');
+        await fetchAllAppointments();
+      } else {
+        print('[ClinicAppointmentViewModel] Failed - setting error message');
+        _errorMessage = 'Failed to update attendance status';
+        notifyListeners();
+      }
+      
+      _fetchState = ClinicAppointmentFetchState.loaded;
+      notifyListeners();
+      print('[ClinicAppointmentViewModel] Returning success: $success');
+      return success;
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Exception occurred: $e');
+      _fetchState = ClinicAppointmentFetchState.error;
+      _errorMessage = 'Failed to update attendance: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
   
   // Cancel an appointment
   Future<bool> cancelAppointment(String appointmentId) async {
     return await updateAppointmentStatus(appointmentId, 'cancelled');
+  }
+
+  // Cancel an appointment with reason
+  Future<Map<String, dynamic>> cancelAppointmentWithReason({
+    required String appointmentId,
+    required String cancelReason,
+  }) async {
+    try {
+      print('[ClinicAppointmentViewModel] Cancelling appointment with reason: ID=$appointmentId, reason=$cancelReason');
+      
+      final result = await _appointmentService.cancelAppointment(
+        appointmentId: appointmentId,
+        cancelReason: cancelReason,
+      );
+      
+      if (result['success']) {
+        print('[ClinicAppointmentViewModel] Success - refreshing appointments...');
+        await fetchAllAppointments();
+        return {
+          'success': true,
+          'message': result['message'],
+        };
+      } else {
+        print('[ClinicAppointmentViewModel] Failed - setting error message');
+        return {
+          'success': false,
+          'message': result['message'],
+        };
+      }
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Exception occurred: $e');
+      return {
+        'success': false,
+        'message': 'Failed to cancel appointment: ${e.toString()}',
+      };
+    }
+  }
+
+  // Reschedule an appointment
+  Future<Map<String, dynamic>> rescheduleAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    try {
+      print('[ClinicAppointmentViewModel] Rescheduling appointment: ID=$appointmentId, date=$date, time=$time');
+      
+      final success = await _appointmentService.rescheduleAppointment(
+        appointmentId: appointmentId,
+        date: date,
+        time: time,
+      );
+      
+      if (success) {
+        await fetchAllAppointments();
+        return {
+          'success': true,
+          'message': 'Appointment rescheduled successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to reschedule appointment',
+        };
+      }
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Error rescheduling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Failed to reschedule appointment: ${e.toString()}',
+      };
+    }
   }
   
   // Generate meeting URL for online appointments
@@ -348,7 +488,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       final success = await _appointmentService.completeAppointmentAfterMeeting(appointmentId);
       
       if (success) {
-        await fetchUserClinicAppointments();
+        await fetchAllAppointments();
       } else {
         _errorMessage = 'Failed to mark appointment as completed';
         notifyListeners();
@@ -364,7 +504,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
 
   // Refresh appointments
   Future<void> refreshAppointments() async {
-    await fetchUserClinicAppointments();
+    await fetchAllAppointments();
   }
 
   void showSnackBar(BuildContext context, String message) {
@@ -381,7 +521,7 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
         note: note,
       );
       if (result != null) {
-        await fetchUserClinicAppointments();
+        await fetchAllAppointments();
         return true;
       }
       return false;

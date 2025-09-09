@@ -1870,54 +1870,62 @@ class _InsightCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-                    Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Mock sparkline / indicator
-                Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 65,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                   Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bool showSpark = constraints.maxHeight >= 110;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.value,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (showSpark) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 65,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade400,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const Expanded(flex: 35, child: SizedBox()),
+                          ],
                         ),
                       ),
-                      const Expanded(flex: 35, child: SizedBox()),
                     ],
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
           ],

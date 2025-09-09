@@ -7,6 +7,7 @@ class Prescription {
   final List<String> prescriptionFiles;
   final String? quantityPreference;
   final String? skipNotes;
+  final String? generalProduct;
   final String status;
   final String? vendorNote;
   final DateTime createdAt;
@@ -21,6 +22,7 @@ class Prescription {
     required this.prescriptionFiles,
     this.quantityPreference,
     this.skipNotes,
+    this.generalProduct,
     required this.status,
     this.vendorNote,
     required this.createdAt,
@@ -40,6 +42,7 @@ class Prescription {
       prescriptionFiles: List<String>.from(json['prescriptionFiles'] ?? []),
       quantityPreference: json['quantityPreference'],
       skipNotes: json['skipNotes'],
+      generalProduct: json['generalProduct'] ?? json['generalProductText'],
       status: json['status'] ?? 'pending',
       vendorNote: json['vendorNote'],
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
@@ -57,6 +60,7 @@ class Prescription {
       'prescriptionFiles': prescriptionFiles,
       'quantityPreference': quantityPreference,
       'skipNotes': skipNotes,
+      'generalProduct': generalProduct,
       'status': status,
       'vendorNote': vendorNote,
       'createdAt': createdAt.toIso8601String(),
@@ -73,6 +77,7 @@ class Prescription {
     List<String>? prescriptionFiles,
     String? quantityPreference,
     String? skipNotes,
+    String? generalProduct,
     String? status,
     String? vendorNote,
     DateTime? createdAt,
@@ -87,6 +92,7 @@ class Prescription {
       prescriptionFiles: prescriptionFiles ?? this.prescriptionFiles,
       quantityPreference: quantityPreference ?? this.quantityPreference,
       skipNotes: skipNotes ?? this.skipNotes,
+      generalProduct: generalProduct ?? this.generalProduct,
       status: status ?? this.status,
       vendorNote: vendorNote ?? this.vendorNote,
       createdAt: createdAt ?? this.createdAt,

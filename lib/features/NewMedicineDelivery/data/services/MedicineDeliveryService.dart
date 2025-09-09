@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 
 class MedicineDeliveryService {
   final Dio _dio = Dio();
@@ -89,12 +90,13 @@ class MedicineDeliveryService {
   }
 
   // Upload prescription files
-  Future<Map<String, dynamic>> uploadPrescription({
+  Future<Prescription> uploadPrescription({
     required String vendorId,
     required String userId,
     required List<File> files,
     required String quantityPreference,
     required String skipNotes,
+    String? generalProduct,
     String? authToken,
   }) async {
     try {
@@ -104,6 +106,8 @@ class MedicineDeliveryService {
         'userId': userId,
         'quantityPreference': quantityPreference,
         'skipNotes': skipNotes,
+        if (generalProduct != null && generalProduct.isNotEmpty)
+          'generalProduct': generalProduct,
       });
 
       // Add files to FormData - use 'files' as the key for each file
@@ -136,11 +140,8 @@ class MedicineDeliveryService {
 
       if (response.statusCode == 201) {
         final Map<String, dynamic> responseData = response.data;
-        return {
-          'success': true,
-          'data': responseData['data'],
-          'message': responseData['message'],
-        };
+        final Map<String, dynamic> data = responseData['data'] ?? {};
+        return Prescription.fromJson(data);
       } else {
         throw Exception('Failed to upload prescription: ${response.statusCode}');
       }
