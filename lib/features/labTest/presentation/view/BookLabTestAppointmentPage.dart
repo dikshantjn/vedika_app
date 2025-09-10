@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
@@ -45,6 +46,33 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
   late LabAppointmentPaymentService _paymentService;
   final LabTestService _labTestService = LabTestService();
   final LabTestStorageService _storageService = LabTestStorageService();
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not make the call'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
   
   @override
   void initState() {
@@ -367,6 +395,19 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
       ),
       centerTitle: true,
       titleSpacing: 0,
+      actions: [
+        IconButton(
+          icon: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.phone, color: Colors.white),
+          ),
+          onPressed: () => _makeCall(widget.center.mainContactNumber),
+        ),
+      ],
       leading: IconButton(
         icon: Container(
           padding: const EdgeInsets.all(8),

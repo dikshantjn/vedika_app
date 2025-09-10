@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
@@ -14,6 +15,19 @@ class LabBottomSheet extends StatefulWidget {
 
 class _LabBottomSheetState extends State<LabBottomSheet> {
   Map<int, bool> expandedStates = {};
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,27 +266,40 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                     ),
 
                     SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => widget.viewModel.bookLabAppointment(context, center),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorPalette.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          "Book Appointment",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => widget.viewModel.bookLabAppointment(context, center),
+                            icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
+                            label: Text("Book Appointment"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorPalette.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
                           ),
                         ),
-                      ),
+                        SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _makeCall(center.mainContactNumber),
+                          icon: Icon(Icons.phone, color: Colors.white),
+                          label: Text("Call"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

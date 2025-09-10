@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BloodBankRequestScreen extends StatefulWidget {
   const BloodBankRequestScreen({super.key});
@@ -260,6 +261,24 @@ class RequestCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (request.user.phoneNumber != null && request.user.phoneNumber!.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => _makeCall(request.user.phoneNumber!),
+                    icon: const Icon(Icons.phone, size: 16),
+                    label: const Text('Call'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.primaryColor,
+                      side: BorderSide(color: theme.primaryColor),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                if (request.user.phoneNumber != null && request.user.phoneNumber!.isNotEmpty)
+                  const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () => context.read<BloodBankRequestViewModel>().acceptRequest(
                     request.requestId!,
@@ -288,6 +307,21 @@ class RequestCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+        print('Could not launch phone call to $phoneNumber');
+      }
+    } catch (e) {
+      // Handle error
+      print('Error making phone call: $e');
+    }
   }
 
   void _showPrescriptionDialog(BuildContext context, BloodBankRequest request) {

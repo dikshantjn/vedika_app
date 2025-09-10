@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
 
@@ -12,6 +13,19 @@ class DraggableHospitalList extends StatelessWidget {
     required this.expandedItems,
     required this.onHospitalTap,
   });
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
 
   Widget buildDetailRow(String key, String value) {
     return Padding(
@@ -267,24 +281,44 @@ class DraggableHospitalList extends StatelessWidget {
                                 ),
 
                                 SizedBox(height: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.bookAppointment,
-                                      arguments: hospital,
-                                    );
-                                  },
-                                  icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
-                                  label: Text("Book Bed"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.bookAppointment,
+                                            arguments: hospital,
+                                          );
+                                        },
+                                        icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
+                                        label: Text("Book Bed"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                          foregroundColor: Colors.white,
+                                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(width: 12),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _makeCall(hospital.contactNumber),
+                                      icon: Icon(Icons.phone, color: Colors.white),
+                                      label: Text("Call"),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],

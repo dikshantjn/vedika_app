@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -21,22 +22,27 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   void initState() {
     super.initState();
     // Initialize bypass payment values if they exist
-    final booking = widget.viewModel.bookingRequests
-        .where((b) => b.requestId == widget.requestId)
-        .firstOrNull;
-    
-    if (booking != null) {
-      widget.viewModel.setPaymentBypassed(booking.isPaymentBypassed);
-      if (booking.isPaymentBypassed) {
-        widget.viewModel.bypassReasonController.text = booking.bypassReason ?? '';
-        widget.viewModel.bypassApprovedByController.text = booking.bypassApprovedBy ?? '';
+    // Use addPostFrameCallback to avoid calling setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final booking = widget.viewModel.bookingRequests
+          .where((b) => b.requestId == widget.requestId)
+          .firstOrNull;
+      
+      if (booking != null) {
+        widget.viewModel.setPaymentBypassed(booking.isPaymentBypassed);
+        if (booking.isPaymentBypassed) {
+          widget.viewModel.bypassReasonController.text = booking.bypassReason ?? '';
+          widget.viewModel.bypassApprovedByController.text = booking.bypassApprovedBy ?? '';
+        }
       }
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<AmbulanceBookingRequestViewModel>(
+      builder: (context, viewModel, child) {
+        return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: ColorPalette.primaryColor,
@@ -59,12 +65,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               // Locations Section
               _buildSectionTitle("Locations", Icons.location_on_outlined),
               _buildTextField(
-                widget.viewModel.pickupLocationController,
+                viewModel.pickupLocationController,
                 "Pickup Location",
                 prefixIcon: Icons.my_location,
               ),
               _buildTextField(
-                widget.viewModel.dropLocationController,
+                viewModel.dropLocationController,
                 "Drop Location",
                 prefixIcon: Icons.location_on,
               ),
@@ -84,11 +90,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     Row(
                       children: [
                         Checkbox(
-                          value: widget.viewModel.isPaymentBypassed,
+                          value: viewModel.isPaymentBypassed,
                           onChanged: (value) {
-                            setState(() {
-                              widget.viewModel.setPaymentBypassed(value ?? false);
-                            });
+                            viewModel.setPaymentBypassed(value ?? false);
                           },
                           activeColor: ColorPalette.primaryColor,
                         ),
@@ -123,16 +127,16 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               const SizedBox(height: 24),
 
               // Conditional Sections based on Payment Bypass
-              if (widget.viewModel.isPaymentBypassed) ...[
+              if (viewModel.isPaymentBypassed) ...[
                 _buildSectionTitle("Payment Waive Details", Icons.note_alt),
                 _buildTextField(
-                  widget.viewModel.bypassReasonController,
+                  viewModel.bypassReasonController,
                   "Reason for Waive",
                   prefixIcon: Icons.description,
                   maxLines: 3,
                 ),
                 _buildTextField(
-                  widget.viewModel.bypassApprovedByController,
+                  viewModel.bypassApprovedByController,
                   "Approved By",
                   prefixIcon: Icons.person,
                 ),
@@ -140,17 +144,17 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 // Fare Details Section
                 _buildSectionTitle("Fare Details", Icons.currency_rupee),
                 _buildNumberField(
-                  widget.viewModel.totalDistanceController,
+                  viewModel.totalDistanceController,
                   "Total Distance (km)",
                   prefixIcon: Icons.route,
                 ),
                 _buildNumberField(
-                  widget.viewModel.costPerKmController,
+                  viewModel.costPerKmController,
                   "Cost per KM",
                   prefixIcon: Icons.attach_money,
                 ),
                 _buildNumberField(
-                  widget.viewModel.baseChargeController,
+                  viewModel.baseChargeController,
                   "Base Charge",
                   prefixIcon: Icons.price_change,
                 ),
@@ -166,9 +170,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonFormField<String>(
-                  value: widget.viewModel.selectedVehicleType != null && 
-                         widget.viewModel.vehicleTypes.contains(widget.viewModel.selectedVehicleType)
-                      ? widget.viewModel.selectedVehicleType
+                  value: viewModel.selectedVehicleType != null && 
+                         viewModel.vehicleTypes.contains(viewModel.selectedVehicleType)
+                      ? viewModel.selectedVehicleType
                       : null,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.directions_car, color: Colors.grey),
@@ -183,7 +187,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         style: TextStyle(color: Colors.grey),
                       ),
                     ),
-                    ...widget.viewModel.vehicleTypes.map((String type) {
+                    ...viewModel.vehicleTypes.map((String type) {
                       return DropdownMenuItem<String>(
                         value: type,
                         child: Text(
@@ -196,9 +200,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   ],
                   onChanged: (String? newValue) {
                     if (newValue != null) {
-                      setState(() {
-                        widget.viewModel.setSelectedVehicleType(newValue);
-                      });
+                      viewModel.setSelectedVehicleType(newValue);
                     }
                   },
                   isExpanded: true,
@@ -242,7 +244,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               flex: 2,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : () async {
-                  if (widget.viewModel.selectedVehicleType == null || widget.viewModel.selectedVehicleType!.isEmpty) {
+                  if (viewModel.selectedVehicleType == null || viewModel.selectedVehicleType!.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         behavior: SnackBarBehavior.floating,
@@ -254,8 +256,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   }
 
                   // Validate bypass fields if payment is bypassed
-                  if (widget.viewModel.isPaymentBypassed) {
-                    if (widget.viewModel.bypassReasonController.text.trim().isEmpty) {
+                  if (viewModel.isPaymentBypassed) {
+                    if (viewModel.bypassReasonController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           behavior: SnackBarBehavior.floating,
@@ -265,7 +267,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       );
                       return;
                     }
-                    if (widget.viewModel.bypassApprovedByController.text.trim().isEmpty) {
+                    if (viewModel.bypassApprovedByController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           behavior: SnackBarBehavior.floating,
@@ -278,7 +280,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   }
                   
                   setState(() => _isLoading = true);
-                  final success = await widget.viewModel.addOrUpdateServiceDetails(widget.requestId);
+                  final success = await viewModel.addOrUpdateServiceDetails(widget.requestId);
                   if (context.mounted) {
                     setState(() => _isLoading = false);
                     if (success) {
@@ -287,7 +289,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         SnackBar(
                           behavior: SnackBarBehavior.floating,
                           content: Text(
-                            widget.viewModel.isPaymentBypassed 
+                            viewModel.isPaymentBypassed 
                               ? 'Service details updated with payment bypass'
                               : 'Service details have been updated successfully'
                           ),
@@ -337,6 +339,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

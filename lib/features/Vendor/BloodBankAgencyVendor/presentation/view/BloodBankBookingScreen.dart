@@ -6,6 +6,7 @@ import '../../data/model/BloodBankBooking.dart';
 import '../../../../../core/auth/data/models/UserModel.dart';
 import 'ProcessBloodBankBookingScreen.dart';
 import '../../../../../features/orderHistory/data/reports/blood_bank_invoice_pdf.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BloodBankBookingScreen extends StatefulWidget {
   const BloodBankBookingScreen({Key? key}) : super(key: key);
@@ -207,7 +208,7 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
                 _showBookingDetailsBottomSheet(context, booking, user, bloodRequestDetails);
               }
             },
-            child: _buildBookingCard(booking, user, bloodRequestDetails),
+            child: _buildBookingCard(booking, user, bloodRequestDetails, _tabController.index),
           ),
         );
       },
@@ -480,7 +481,7 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
     );
   }
 
-  Widget _buildBookingCard(BloodBankBooking booking, UserModel user, Map<String, dynamic>? bloodRequestDetails) {
+  Widget _buildBookingCard(BloodBankBooking booking, UserModel user, Map<String, dynamic>? bloodRequestDetails, int tabIndex) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.purple[50],
@@ -544,7 +545,7 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
                 if (user != null) ...[
                   _buildInfoRow(Icons.person, 'Patient', user.name!),
                   if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
-                    _buildInfoRow(Icons.phone, 'Phone', user.phoneNumber!),
+                    _buildPhoneRow(Icons.phone, 'Phone', user.phoneNumber!, tabIndex),
                 ],
                 const SizedBox(height: 16),
                 if (bloodRequestDetails != null) ...[
@@ -623,6 +624,82 @@ class _BloodBankBookingScreenState extends State<BloodBankBookingScreen> with Si
         ],
       ),
     );
+  }
+
+  Widget _buildPhoneRow(IconData icon, String label, String value, int tabIndex) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: Colors.purple[700],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.purple[700],
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (tabIndex == 0) // Only show call button in confirmed tab
+                      const SizedBox(width: 8),
+                    if (tabIndex == 0) // Only show call button in confirmed tab
+                      OutlinedButton.icon(
+                        onPressed: () => _makeCall(value),
+                        icon: const Icon(Icons.phone, size: 16),
+                        label: const Text('Call'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.purple[700],
+                          side: BorderSide(color: Colors.purple[700]!),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          minimumSize: const Size(0, 32),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+        print('Could not launch phone call to $phoneNumber');
+      }
+    } catch (e) {
+      // Handle error
+      print('Error making phone call: $e');
+    }
   }
 
   Widget _buildStatusChip(String status) {

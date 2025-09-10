@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
@@ -6,6 +7,19 @@ class BookingDetailsCard extends StatelessWidget {
   final AmbulanceBooking booking; // ✅ make it final
 
   const BookingDetailsCard({super.key, required this.booking});
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +41,7 @@ class BookingDetailsCard extends StatelessWidget {
       child: Column(
         children: [
           _buildDetailRow("Customer Name", booking.user.name ?? "-"),
-          _buildDetailRow("Phone", booking.user.phoneNumber!),
+          _buildPhoneRow("Phone", booking.user.phoneNumber!),
           _buildDetailRow("Requested On",
               DateFormat('d MMM yyyy, h:mm a').format(booking.timestamp)),
           _buildStatusRow("Status", booking.status),
@@ -56,6 +70,50 @@ class BookingDetailsCard extends StatelessWidget {
               textAlign: TextAlign.right,
               style: const TextStyle(fontSize: 16, color: Colors.black87),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoneRow(String title, String phoneNumber) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                phoneNumber,
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _makeCall(phoneNumber),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.phone,
+                    size: 18,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
