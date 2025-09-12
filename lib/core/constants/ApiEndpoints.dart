@@ -1,8 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://localhost:5000";  // Current IP address
-  static const String baseUrl = "http://localhost:5000/api";
-  // Current IP address
+  static const String socketUrl = "http://10.0.2.2:5000";  // Current IP address
+  static const String baseUrl = "http://10.0.2.2:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -11,11 +10,6 @@ class ApiEndpoints {
   // static const String socketUrl = "https://f8186641a964.ngrok-free.app";
   // static const String baseUrl = "https://f8186641a964.ngrok-free.app/api";
 
-  // Debug function to print actual URL
-  static void printEndpointUrl(String endpoint) {
-    print('🔗 Full API URL: $endpoint');
-    print('🌐 Base URL: $baseUrl');
-  }
 
   // 📌 Auth APIs
   static const String verifyOtp = '$baseUrl/otp/verify-otp';
@@ -48,7 +42,6 @@ class ApiEndpoints {
   static const String generateMeetingUrl = '$baseUrl/clinic-appointments/appointments';  // NEW: endpoint for generating meeting URL
   static const String completeClinicAppointment = '$baseUrl/clinic-appointments/complete';  // NEW: endpoint for marking appointment as completed after meeting ends
   static const String getClinicAppointmentsByUserId = '$baseUrl/clinic-appointments/user'; // Example: /clinic-appointments/user/:userId
-  static const String getUserClinicAppointments = '$baseUrl/clinic-appointments/user'; // For current user appointments
   static const String getPendingClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending
   static const String getCompletedClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/completed
   static const String getOngoingMeetings = '$baseUrl/clinic-appointments/ongoing-meetings';
@@ -241,4 +234,11 @@ class ApiEndpoints {
   // 📌 SpeakAI
   static const String speakAIIntent = '$baseUrl/speakAI/intent';
 
+  // 📌 Membership APIs
+  static const String getMembershipPlans = '$baseUrl/membership/plans';
+  static const String createMembershipOrder = '$baseUrl/membership/order';
+  static const String verifyMembershipPayment = '$baseUrl/membership/verify-payment';
+
+  // Build URL: Get user's current membership plan
+  static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';
 }

@@ -44,7 +44,6 @@ class UserService {
       // Debug logs
       print('🔍 DEBUG: Making profile update request');
       print('🔗 Using edit profile endpoint instead of update profile');
-      ApiEndpoints.printEndpointUrl(ApiEndpoints.editUserProfile);
       print('📦 Request Data: ${jsonEncode(requestData)}');
       print('🔑 Token: $token');
 
