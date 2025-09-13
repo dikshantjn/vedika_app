@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/HospitalProfile.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class DraggableHospitalList extends StatelessWidget {
   final List<HospitalProfile> hospitals;
@@ -25,6 +26,16 @@ class DraggableHospitalList extends StatelessWidget {
     } catch (e) {
       // Handle error
     }
+  }
+
+  void _navigateToMyOrders(BuildContext context) {
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 2; // Bed Booking tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 2}, // Bed Booking tab index
+    );
   }
 
   Widget buildDetailRow(String key, String value) {
@@ -133,13 +144,31 @@ class DraggableHospitalList extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                "Nearby Hospitals",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey[800],
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Nearby Hospitals",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey[800],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _navigateToMyOrders(context),
+                    icon: Icon(Icons.history, size: 16),
+                    label: Text("My Orders"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue[600],
+                      side: BorderSide(color: Colors.blue[600]!),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (hospitals.isEmpty)
                 Flexible(

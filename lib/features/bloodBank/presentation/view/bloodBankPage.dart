@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/Bloo
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodBankDetailsBottomSheet.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class BloodBankMapScreen extends StatefulWidget {
   @override
@@ -25,8 +26,15 @@ class _BloodBankMapScreenState extends State<BloodBankMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => BloodBankViewModel(context)..ensureLocationEnabled(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocationProvider>(
+          create: (_) => LocationProvider()..initializeLocation(),
+        ),
+        ChangeNotifierProvider<BloodBankViewModel>(
+          create: (context) => BloodBankViewModel(context)..ensureLocationEnabled(),
+        ),
+      ],
       child: Consumer<BloodBankViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
@@ -68,57 +76,54 @@ class _BloodBankMapScreenState extends State<BloodBankMapScreen> {
             ),
             body: Stack(
               children: [
-                // Google Map
-                if (viewModel.isLoadingLocation)
-                  const Center(child: CircularProgressIndicator())
-                else if (viewModel.currentPosition == null)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.location_off,
-                          size: 48,
-                          color: Colors.grey,
+                // Google Map - render immediately with a sensible default, then animate when location arrives
+                GoogleMap(
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                    viewModel.setMapController(controller);
+                  },
+                  initialCameraPosition: CameraPosition(
+                    // Default to Pune to avoid blank screen while location resolves
+                    target: viewModel.currentPosition ?? const LatLng(18.5204, 73.8567),
+                    zoom: 13.5,
+                  ),
+                  markers: viewModel.markers,
+                  myLocationEnabled: true,
+                  compassEnabled: true,
+                  zoomControlsEnabled: true,
+                  mapToolbarEnabled: false,
+                  myLocationButtonEnabled: false,
+                  onTap: (_) {
+                    if (viewModel.isSidePanelOpen) {
+                      viewModel.toggleSidePanel();
+                    }
+                  },
+                ),
+
+                // Small loading badge while resolving location (non-blocking)
+                if (viewModel.isLoadingLocation) Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+                    ),
+                    child: Row(
+                      children: const [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          "Location not available",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => viewModel.ensureLocationEnabled(),
-                          child: Text("Retry"),
-                        ),
+                        SizedBox(width: 8),
+                        Text('Fetching location...', style: TextStyle(fontSize: 12)),
                       ],
                     ),
-                  )
-                else
-                  GoogleMap(
-                    onMapCreated: (GoogleMapController controller) {
-                      _mapController = controller;
-                      viewModel.setMapController(controller);
-                    },
-                    initialCameraPosition: CameraPosition(
-                      target: viewModel.currentPosition!,
-                      zoom: 14,
-                    ),
-                    markers: viewModel.markers,
-                    myLocationEnabled: true,
-                    compassEnabled: true,
-                    zoomControlsEnabled: true,
-                    mapToolbarEnabled: false,
-                    myLocationButtonEnabled: false,
-                    onTap: (_) {
-                      if (viewModel.isSidePanelOpen) {
-                        viewModel.toggleSidePanel();
-                      }
-                    },
                   ),
+                ),
 
                 // Side Panel
                 if (viewModel.isSidePanelOpen)

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
@@ -413,5 +414,15 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       return _appointments.first.user;
     }
     return null;
+  }
+
+  /// Fetch clinic invoice bytes
+  Future<Uint8List> fetchClinicInvoiceBytes(String appointmentId) async {
+    try {
+      return await _service.fetchClinicInvoiceBytes(appointmentId);
+    } catch (e) {
+      print("ViewModel Error fetching clinic invoice: $e");
+      rethrow;
+    }
   }
 } 

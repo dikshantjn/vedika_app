@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart'
     show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class DraggableClinicList extends StatelessWidget {
   final List<DoctorClinicProfile> clinics;
@@ -29,6 +30,16 @@ class DraggableClinicList extends StatelessWidget {
     } catch (e) {
       // Handle error
     }
+  }
+
+  void _navigateToMyOrders(BuildContext context) {
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 5; // Clinic tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 5}, // Clinic tab index
+    );
   }
 
   Widget buildDetailRow(IconData icon, String key, String value) {
@@ -139,13 +150,31 @@ class DraggableClinicList extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                "Nearby Clinics",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: DoctorConsultationColorPalette.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Nearby Clinics",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: DoctorConsultationColorPalette.textPrimary,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _navigateToMyOrders(context),
+                    icon: Icon(Icons.history, size: 16),
+                    label: Text("My Orders"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: DoctorConsultationColorPalette.primaryBlue,
+                      side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (clinics.isEmpty || clinics.length != expandedItems.length)
                 Flexible(

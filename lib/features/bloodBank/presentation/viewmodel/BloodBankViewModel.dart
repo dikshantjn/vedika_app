@@ -17,6 +17,8 @@ import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 
 class BloodBankViewModel extends ChangeNotifier {
   final BuildContext context;
@@ -349,6 +351,7 @@ class BloodBankViewModel extends ChangeNotifier {
 
   // Optimized location check
   Future<void> ensureLocationEnabled() async {
+    // Short-circuit if already available
     if (_currentPosition != null) {
       _isLoadingLocation = false;
       notifyListeners();
@@ -356,6 +359,25 @@ class BloodBankViewModel extends ChangeNotifier {
     }
 
     try {
+      // Try to use shared LocationProvider first for faster readiness
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      if (!locationProvider.isInitialized) {
+        await locationProvider.initializeLocation();
+      }
+
+      final lpPos = locationProvider.getCurrentLocation();
+      if (lpPos != null) {
+        _currentPosition = lpPos;
+        _isLoadingLocation = false;
+        notifyListeners();
+
+        // Fetch agencies after getting location and move camera
+        await _fetchBloodBankAgencies();
+        await _moveCameraTo(lpPos);
+        return;
+      }
+
+      // Fallback to direct location plugin if LocationProvider couldn't resolve
       Location location = Location();
       bool serviceEnabled = await location.serviceEnabled();
 
@@ -378,12 +400,12 @@ class BloodBankViewModel extends ChangeNotifier {
 
       LocationData userLocation = await location.getLocation();
       if (userLocation.latitude != null && userLocation.longitude != null) {
-        _isLoadingLocation = false;
         _currentPosition = LatLng(userLocation.latitude!, userLocation.longitude!);
+        _isLoadingLocation = false;
         notifyListeners();
 
-        // Fetch agencies after getting location
-        _fetchBloodBankAgencies();
+        await _fetchBloodBankAgencies();
+        await _moveCameraTo(_currentPosition!);
       } else {
         _handleLocationError();
       }
@@ -461,6 +483,19 @@ class BloodBankViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> _moveCameraTo(LatLng position, {double zoom = 14}) async {
+    if (_mapController == null || !_isMapReady) return;
+    try {
+      await _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: position, zoom: zoom),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error animating camera: $e');
+    }
   }
 
   // Optimized blood bank agency markers

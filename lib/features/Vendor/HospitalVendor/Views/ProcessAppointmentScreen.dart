@@ -110,7 +110,9 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  widget.booking.user.name?[0].toUpperCase() ?? 'U',
+                                  (widget.booking.user.name?.isNotEmpty == true) 
+                                    ? widget.booking.user.name![0].toUpperCase() 
+                                    : 'U',
                                   style: const TextStyle(
                                     color: HospitalVendorColorPalette.textInverse,
                                     fontWeight: FontWeight.bold,
@@ -233,44 +235,7 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
-                                    ? HospitalVendorColorPalette.successGreen.withOpacity(0.1)
-                                    : HospitalVendorColorPalette.warningYellow.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
-                                        ? Icons.check_circle
-                                        : Icons.pending,
-                                    size: 20,
-                                    color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
-                                        ? HospitalVendorColorPalette.successGreen
-                                        : HospitalVendorColorPalette.warningYellow,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
-                                        ? 'COMPLETED'
-                                        : widget.booking.paymentStatus.toUpperCase(),
-                                    style: TextStyle(
-                                      color: (viewModel.isPaymentCompleted || widget.booking.paymentStatus.toLowerCase() == 'paid')
-                                          ? HospitalVendorColorPalette.successGreen
-                                          : HospitalVendorColorPalette.warningYellow,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            _buildPaymentStatusChip(viewModel),
                           ],
                         ),
                       ],
@@ -278,40 +243,19 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Notify User Button
-                if (!viewModel.isPaymentCompleted && widget.booking.paymentStatus.toLowerCase() != 'paid')
+                // Action Button based on status
+                if (_shouldShowActionButton(viewModel))
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: viewModel.isLoading || viewModel.isNotifyingPayment
-                          ? null
-                          : () => viewModel.notifyPayment(widget.booking.bedBookingId!),
-                      icon: viewModel.isLoading || viewModel.isNotifyingPayment
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: HospitalVendorColorPalette.textInverse,
-                              ),
-                            )
-                          : const Icon(Icons.notifications, size: 20),
+                      onPressed: _getButtonAction(viewModel),
+                      icon: _getButtonIcon(viewModel),
                       label: Text(
-                        viewModel.isNotifyingPayment
-                            ? 'Waiting for Payment...'
-                            : viewModel.isLoading 
-                                ? 'Sending...' 
-                                : widget.booking.status == 'WaitingForPayment'
-                                    ? 'Notify Again About Payment'
-                                    : 'Notify User About Payment',
+                        _getButtonText(viewModel),
                         style: const TextStyle(fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: viewModel.isNotifyingPayment
-                            ? HospitalVendorColorPalette.warningYellow
-                            : widget.booking.status == 'WaitingForPayment'
-                                ? HospitalVendorColorPalette.warningYellow
-                                : HospitalVendorColorPalette.primaryBlue,
+                        backgroundColor: _getButtonColor(viewModel),
                         foregroundColor: HospitalVendorColorPalette.textInverse,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -371,5 +315,153 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildPaymentStatusChip(ProcessAppointmentViewModel viewModel) {
+    final isCompleted = widget.booking.status.toLowerCase() == 'completed' || 
+                       widget.booking.paymentStatus.toLowerCase() == 'paid' ||
+                       viewModel.isPaymentCompleted;
+    final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
+    final isPending = widget.booking.status.toLowerCase() == 'pending';
+
+    Color chipColor;
+    Color textColor;
+    IconData icon;
+    String statusText;
+
+    if (isCompleted) {
+      chipColor = HospitalVendorColorPalette.successGreen;
+      textColor = HospitalVendorColorPalette.successGreen;
+      icon = Icons.check_circle;
+      statusText = 'COMPLETED';
+    } else if (isWaitingForPayment) {
+      chipColor = HospitalVendorColorPalette.warningYellow;
+      textColor = HospitalVendorColorPalette.warningYellow;
+      icon = Icons.pending;
+      statusText = 'WAITING FOR PAYMENT';
+    } else if (isPending) {
+      chipColor = HospitalVendorColorPalette.primaryBlue;
+      textColor = HospitalVendorColorPalette.primaryBlue;
+      icon = Icons.schedule;
+      statusText = 'PENDING';
+    } else {
+      chipColor = HospitalVendorColorPalette.warningYellow;
+      textColor = HospitalVendorColorPalette.warningYellow;
+      icon = Icons.pending;
+      statusText = widget.booking.status.toUpperCase();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: textColor,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            statusText,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _shouldShowActionButton(ProcessAppointmentViewModel viewModel) {
+    final isCompleted = widget.booking.status.toLowerCase() == 'completed' || 
+                       widget.booking.paymentStatus.toLowerCase() == 'paid' ||
+                       viewModel.isPaymentCompleted;
+    return !isCompleted;
+  }
+
+  VoidCallback? _getButtonAction(ProcessAppointmentViewModel viewModel) {
+    if (viewModel.isLoading || viewModel.isNotifyingPayment) return null;
+    
+    final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
+    final isPending = widget.booking.status.toLowerCase() == 'pending';
+    
+    if (isPending) {
+      return () => viewModel.acceptAppointment(widget.booking.bedBookingId!);
+    } else if (isWaitingForPayment) {
+      return () => viewModel.notifyPayment(widget.booking.bedBookingId!);
+    } else {
+      return () => viewModel.notifyPayment(widget.booking.bedBookingId!);
+    }
+  }
+
+  Widget _getButtonIcon(ProcessAppointmentViewModel viewModel) {
+    if (viewModel.isLoading || viewModel.isNotifyingPayment) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: HospitalVendorColorPalette.textInverse,
+        ),
+      );
+    }
+    
+    final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
+    final isPending = widget.booking.status.toLowerCase() == 'pending';
+    
+    if (isPending) {
+      return const Icon(Icons.check, size: 20);
+    } else if (isWaitingForPayment) {
+      return const Icon(Icons.notifications, size: 20);
+    } else {
+      return const Icon(Icons.notifications, size: 20);
+    }
+  }
+
+  String _getButtonText(ProcessAppointmentViewModel viewModel) {
+    if (viewModel.isNotifyingPayment) {
+      return 'Waiting for Payment...';
+    }
+    if (viewModel.isLoading) {
+      return 'Sending...';
+    }
+    
+    final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
+    final isPending = widget.booking.status.toLowerCase() == 'pending';
+    
+    if (isPending) {
+      return 'Accept Appointment';
+    } else if (isWaitingForPayment) {
+      return 'Notify Again About Payment';
+    } else {
+      return 'Notify User About Payment';
+    }
+  }
+
+  Color _getButtonColor(ProcessAppointmentViewModel viewModel) {
+    if (viewModel.isNotifyingPayment) {
+      return HospitalVendorColorPalette.warningYellow;
+    }
+    
+    final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
+    final isPending = widget.booking.status.toLowerCase() == 'pending';
+    
+    if (isPending) {
+      return HospitalVendorColorPalette.successGreen;
+    } else if (isWaitingForPayment) {
+      return HospitalVendorColorPalette.warningYellow;
+    } else {
+      return HospitalVendorColorPalette.primaryBlue;
+    }
   }
 } 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/AmbulanceOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/ambulance_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 
 class AmbulanceTab extends StatefulWidget {
   @override
@@ -473,7 +473,7 @@ class _AmbulanceTabState extends State<AmbulanceTab> with AutomaticKeepAliveClie
                   ),
                   SizedBox(
                     width: double.infinity,
-                    child: _DownloadInvoiceButton(booking: booking),
+                    child: _ViewInvoiceButton(booking: booking, viewModel: viewModel),
                   ),
                   const SizedBox(height: 10),
                 ],
@@ -554,15 +554,16 @@ class _AmbulanceTabState extends State<AmbulanceTab> with AutomaticKeepAliveClie
   }
 }
 
-class _DownloadInvoiceButton extends StatefulWidget {
+class _ViewInvoiceButton extends StatefulWidget {
   final AmbulanceBooking booking;
-  const _DownloadInvoiceButton({Key? key, required this.booking}) : super(key: key);
+  final AmbulanceOrderViewModel viewModel;
+  const _ViewInvoiceButton({Key? key, required this.booking, required this.viewModel}) : super(key: key);
 
   @override
-  State<_DownloadInvoiceButton> createState() => _DownloadInvoiceButtonState();
+  State<_ViewInvoiceButton> createState() => _ViewInvoiceButtonState();
 }
 
-class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> with AutomaticKeepAliveClientMixin {
+class _ViewInvoiceButtonState extends State<_ViewInvoiceButton> with AutomaticKeepAliveClientMixin {
   bool _isLoading = false;
   bool _isDisposed = false;
 
@@ -594,9 +595,9 @@ class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> with Aut
                 strokeWidth: 2.2,
               ),
             )
-          : const Icon(Icons.download, size: 20, color: Colors.white),
+          : const Icon(Icons.receipt_long, size: 20, color: Colors.white),
       label: Text(
-        _isLoading ? 'Generating Invoice...' : 'Download Invoice',
+        _isLoading ? 'Opening Invoice...' : 'View Invoice',
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
       ),
       style: ElevatedButton.styleFrom(
@@ -613,7 +614,14 @@ class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> with Aut
               
               setState(() => _isLoading = true);
               try {
-                await generateAndDownloadAmbulanceInvoicePDF(widget.booking);
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => InvoiceViewerScreen(
+                      orderId: widget.booking.requestId,
+                      categoryLabel: 'Ambulance Service',
+                    ),
+                  ),
+                );
               } finally {
                 // Check if widget is still mounted before calling setState again
                 if (!mounted || _isDisposed) return;

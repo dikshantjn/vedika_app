@@ -205,7 +205,73 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
   Widget _buildSearchAndFilters() {
     return Container(
       margin: const EdgeInsets.all(16),
-      child: MedicineDeliverySearchBar(),
+      child: Column(
+        children: [
+          MedicineDeliverySearchBar(),
+          SizedBox(height: 16),
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.track_changes_rounded,
+            label: 'Track Your Order',
+            color: ColorPalette.primaryColor,
+            onPressed: () => _navigateToTrackOrder(),
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _buildActionButton(
+            icon: Icons.history_rounded,
+            label: 'Order History',
+            color: Colors.blue[600]!,
+            onPressed: () => _navigateToOrderHistory(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          size: 18,
+          color: Colors.white,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          elevation: 2,
+        ),
+      ),
     );
   }
 
@@ -603,7 +669,12 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
     launchUrl(uri);
   }
 
-  
+  void _navigateToTrackOrder() {
+    Navigator.pushNamed(context, '/trackOrder');
+  }
 
+  void _navigateToOrderHistory() {
+    Navigator.pushNamed(context, '/orderHistory');
+  }
 
 }

@@ -9,7 +9,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/C
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/ErrorState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomClinicAppointmentInfoDialog.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/clinic_appointment_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CabBookingBottomSheet.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/RescheduleAppointmentBottomSheet.dart';
 
@@ -652,8 +652,8 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : Icon(Icons.download),
-                            label: Text(_isGeneratingInvoice ? 'Generating...' : 'Download Invoice'),
+                              : Icon(Icons.receipt_long),
+                            label: Text(_isGeneratingInvoice ? 'Opening...' : 'View Invoice'),
                             onPressed: _isGeneratingInvoice 
                               ? null 
                               : () async {
@@ -661,21 +661,22 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                                     setState(() {
                                       _isGeneratingInvoice = true;
                                     });
-                                    await generateAndDownloadClinicAppointmentInvoicePDF(appointment);
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => InvoiceViewerScreen(
+                                          orderId: appointment.clinicAppointmentId,
+                                          categoryLabel: 'Clinic Appointment',
+                                        ),
+                                      ),
+                                    );
                                     if (context.mounted) {
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Invoice downloaded successfully'),
-                                          backgroundColor: DoctorConsultationColorPalette.successGreen,
-                                        ),
-                                      );
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Failed to download invoice'),
+                                          content: Text('Failed to open invoice: $e'),
                                           backgroundColor: DoctorConsultationColorPalette.errorRed,
                                         ),
                                       );

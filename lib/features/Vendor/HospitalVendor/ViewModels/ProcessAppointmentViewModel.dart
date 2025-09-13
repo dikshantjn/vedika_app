@@ -125,6 +125,23 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
     _currentBookingId = bookingId;
   }
 
+  Future<void> acceptAppointment(String bookingId) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Call the API to accept the appointment
+      await _hospitalService.acceptAppointment(bookingId);
+      
+    } catch (e) {
+      _error = 'Failed to accept appointment. Please try again.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> notifyPayment(String appointmentId) async {
     try {
       _isLoading = true;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BedBookingOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/bed_booking_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:intl/intl.dart';
 
 class BedBookingTab extends StatefulWidget {
@@ -773,12 +773,12 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                   ),
                   const SizedBox(height: 30),
                   
-                  // Download Invoice Button
+                  // View Invoice Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isGeneratingInvoice ? null : _generateInvoice,
+                      onPressed: _isGeneratingInvoice ? null : _viewInvoice,
                       icon: _isGeneratingInvoice
                           ? const SizedBox(
                               width: 20,
@@ -788,9 +788,9 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Icon(Icons.download, color: Colors.white),
+                          : const Icon(Icons.receipt_long, color: Colors.white),
                       label: Text(
-                        _isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                        _isGeneratingInvoice ? 'Opening Invoice...' : 'View Invoice',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -846,26 +846,25 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
     );
   }
 
-  Future<void> _generateInvoice() async {
+  Future<void> _viewInvoice() async {
     setState(() {
       _isGeneratingInvoice = true;
     });
 
     try {
-      await generateAndDownloadBedBookingInvoicePDF(widget.order);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invoice generated successfully!'),
-            backgroundColor: Colors.green,
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InvoiceViewerScreen(
+            orderId: widget.order.bedBookingId!,
+            categoryLabel: 'Hospital Bed Booking',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate invoice: $e'),
+            content: Text('Failed to open invoice: $e'),
             backgroundColor: Colors.red,
           ),
         );

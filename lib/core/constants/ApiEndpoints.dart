@@ -274,6 +274,21 @@ class ApiEndpoints {
   static String markNotificationAsRead(String notificationId) => '$baseUrl/notifications/$notificationId/read'; // PUT /notifications/:notificationId/read
   static String deleteNotification(String notificationId) => '$baseUrl/notifications/$notificationId'; // DELETE /notifications/:notificationId
 
+  // 📌 Ambulance Invoice API
+  static String getAmbulanceInvoice = '$baseUrl/ambulance-invoce/ambulance/invoice'; // GET /ambulance-invoce/ambulance/invoice/:bookingId
+
+  // 📌 Hospital Invoice API
+  static String getHospitalInvoice = '$baseUrl/hospital-invoice'; // GET /hospital-invoice/:bookingId/invoice
+
+  // 📌 Lab Test Invoice API
+  static String getLabTestInvoice = '$baseUrl/lab-invoice/invoice'; // GET /lab-invoice/invoice/:bookingId
+
+  // 📌 Blood Bank Invoice API
+  static String getBloodBankInvoice = '$baseUrl/blood-bank-invoice/invoice'; // GET /blood-bank-invoice/invoice/:bookingId
+
+  // 📌 Clinic Invoice API
+  static String getClinicInvoice = '$baseUrl/clinic-invoice/invoice'; // GET /clinic-invoice/invoice/:appointmentId
+
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';
 }

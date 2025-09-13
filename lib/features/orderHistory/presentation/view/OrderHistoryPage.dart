@@ -213,9 +213,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepA
               // Check if widget is still mounted before accessing context
               if (!mounted || _isDisposed) return;
               
-              final scope = MainScreenScope.maybeOf(context);
-              if (scope != null) {
-                scope.setIndex(0);
+              if (MainScreenNavigator.instance.canGoBack) {
+                MainScreenNavigator.instance.goBack();
               } else {
                 Navigator.pop(context);
               }

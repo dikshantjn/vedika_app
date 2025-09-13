@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class LabBottomSheet extends StatefulWidget {
   final LabSearchViewModel viewModel;
@@ -27,6 +29,16 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
     } catch (e) {
       // Handle error
     }
+  }
+
+  void _navigateToMyOrders(BuildContext context) {
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 3; // Lab Test tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 3}, // Lab Test tab index
+    );
   }
 
   @override
@@ -67,15 +79,33 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.science_outlined, color: ColorPalette.primaryColor, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      "Nearby Diagnostic Centers",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                    Row(
+                      children: [
+                        Icon(Icons.science_outlined, color: ColorPalette.primaryColor, size: 24),
+                        SizedBox(width: 12),
+                        Text(
+                          "Nearby Labs",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _navigateToMyOrders(context),
+                      icon: Icon(Icons.history, size: 16),
+                      label: Text("My Orders"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ColorPalette.primaryColor,
+                        side: BorderSide(color: ColorPalette.primaryColor),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   ],

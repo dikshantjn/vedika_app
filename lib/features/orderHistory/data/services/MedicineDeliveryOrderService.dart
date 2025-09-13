@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -63,6 +64,37 @@ class MedicineDeliveryOrderService {
     } catch (e) {
       print('Error downloading medicine delivery invoice: $e');
       throw Exception('Failed to download invoice: $e');
+    }
+  }
+
+  // Fetch medicine delivery invoice bytes (for preview in viewer)
+  Future<Uint8List> fetchMedicineDeliveryInvoiceBytes(String orderId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.downloadMedicineDeliveryInvoice}/$orderId',
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: const {
+            'Accept': 'application/pdf',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List<int>) {
+          return Uint8List.fromList(data);
+        }
+        if (data is Uint8List) {
+          return data;
+        }
+        throw Exception('Unexpected response type for PDF');
+      } else {
+        throw Exception('Failed to fetch invoice');
+      }
+    } catch (e) {
+      print('Error fetching invoice bytes: $e');
+      rethrow;
     }
   }
 }

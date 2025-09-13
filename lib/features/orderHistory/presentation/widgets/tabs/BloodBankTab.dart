@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/blood_bank_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:intl/intl.dart';
 
 class BloodBankTab extends StatefulWidget {
@@ -255,26 +255,25 @@ class BloodBankBookingBottomSheet extends StatefulWidget {
 class _BloodBankBookingBottomSheetState extends State<BloodBankBookingBottomSheet> {
   bool _isGeneratingInvoice = false;
 
-  Future<void> _generateInvoice() async {
+  Future<void> _viewInvoice() async {
     setState(() {
       _isGeneratingInvoice = true;
     });
 
     try {
-      await generateAndDownloadBloodBankInvoicePDF(widget.booking);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invoice generated successfully!'),
-            backgroundColor: Colors.green,
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InvoiceViewerScreen(
+            orderId: widget.booking.bookingId!,
+            categoryLabel: 'Blood Bank',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate invoice: $e'),
+            content: Text('Failed to open invoice: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -441,12 +440,12 @@ class _BloodBankBookingBottomSheetState extends State<BloodBankBookingBottomShee
                   ),
                   const SizedBox(height: 30),
 
-                  // Download Invoice Button
+                  // View Invoice Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isGeneratingInvoice ? null : _generateInvoice,
+                      onPressed: _isGeneratingInvoice ? null : _viewInvoice,
                       icon: _isGeneratingInvoice
                           ? const SizedBox(
                               width: 20,
@@ -456,9 +455,9 @@ class _BloodBankBookingBottomSheetState extends State<BloodBankBookingBottomShee
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Icon(Icons.download, color: Colors.white),
+                          : const Icon(Icons.receipt_long, color: Colors.white),
                       label: Text(
-                        _isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                        _isGeneratingInvoice ? 'Opening Invoice...' : 'View Invoice',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

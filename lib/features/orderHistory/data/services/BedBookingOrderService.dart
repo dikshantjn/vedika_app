@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
@@ -35,6 +36,37 @@ class BedBookingOrderService {
       rethrow;
     } catch (e) {
       print("❌ Fetch Exception: $e");
+      rethrow;
+    }
+  }
+
+  // Fetch hospital invoice bytes (for preview in viewer)
+  Future<Uint8List> fetchHospitalInvoiceBytes(String bookingId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getHospitalInvoice}/$bookingId/invoice',
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: const {
+            'Accept': 'application/pdf',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List<int>) {
+          return Uint8List.fromList(data);
+        }
+        if (data is Uint8List) {
+          return data;
+        }
+        throw Exception('Unexpected response type for PDF');
+      } else {
+        throw Exception('Failed to fetch hospital invoice');
+      }
+    } catch (e) {
+      print('Error fetching hospital invoice bytes: $e');
       rethrow;
     }
   }

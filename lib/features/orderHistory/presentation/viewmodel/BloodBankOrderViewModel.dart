@@ -1,12 +1,15 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/repositories/BloodBankOrderRepository.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/services/BloodBankOrderService.dart';
 
 class BloodBankOrderViewModel extends ChangeNotifier {
   final BloodBankOrderRepository _repository = BloodBankOrderRepository();
   final AuthRepository _authRepository = AuthRepository();
+  final BloodBankOrderService _service = BloodBankOrderService();
 
   List<BloodBankBooking> _bookings = [];
   bool _isLoading = false;
@@ -61,6 +64,16 @@ class BloodBankOrderViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = "Failed to cancel booking.";
       notifyListeners();
+    }
+  }
+
+  /// Fetch blood bank invoice bytes
+  Future<Uint8List> fetchBloodBankInvoiceBytes(String bookingId) async {
+    try {
+      return await _service.fetchBloodBankInvoiceBytes(bookingId);
+    } catch (e) {
+      print("ViewModel Error fetching blood bank invoice: $e");
+      rethrow;
     }
   }
 }

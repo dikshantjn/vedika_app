@@ -5,6 +5,8 @@ import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankAgen
 import 'package:geolocator/geolocator.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'dart:io';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodRequestDetailsBottomSheet.dart';
 
@@ -186,6 +188,19 @@ class _BloodTypeSelectionDialogState extends State<BloodTypeSelectionDialog> {
     }
   }
 
+  void _navigateToMyOrders(BuildContext context) {
+    // Close the current dialog first
+    Navigator.pop(context);
+    
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 4; // Blood Bank tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 4}, // Blood Bank tab index
+    );
+  }
+
   Future<void> _pickFile() async {
     setState(() {
       _isUploading = true;
@@ -324,42 +339,63 @@ class _BloodTypeSelectionDialogState extends State<BloodTypeSelectionDialog> {
           // Title Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
+            child: Column(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: ColorPalette.primaryColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.bloodtype,
-                    color: ColorPalette.primaryColor,
-                    size: 24,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: ColorPalette.primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.bloodtype,
+                        color: ColorPalette.primaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Select Blood Types",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "Choose the blood types you need",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Select Blood Types",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _navigateToMyOrders(context),
+                    icon: Icon(Icons.history, size: 16),
+                    label: Text("My Orders"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ColorPalette.primaryColor,
+                      side: BorderSide(color: ColorPalette.primaryColor),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        "Choose the blood types you need",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],

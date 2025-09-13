@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/MedicineDeliveryOrderHistoryViewModel.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 
 import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
 import 'package:provider/provider.dart';
@@ -690,9 +691,9 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Icon(Icons.download, size: 20, color: Colors.white),
+                    : const Icon(Icons.receipt_long, size: 20, color: Colors.white),
                 label: Text(
-                  _isLoading ? 'Generating Invoice...' : 'Download Invoice',
+                  _isLoading ? 'Opening Invoice...' : 'View Invoice',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -708,11 +709,19 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with
                         if (!mounted || _isDisposed) return;
 
                         setState(() => _isLoading = true);
-                        await widget.viewModel.downloadInvoice(widget.order.orderId);
-
-                        // Check if widget is still mounted before calling setState again
-                        if (!mounted || _isDisposed) return;
-                        setState(() => _isLoading = false);
+                        try {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => InvoiceViewerScreen(
+                                orderId: widget.order.orderId,
+                                categoryLabel: 'Medicine Delivery',
+                              ),
+                            ),
+                          );
+                        } finally {
+                          if (!mounted || _isDisposed) return;
+                          setState(() => _isLoading = false);
+                        }
                       },
               ),
             ),

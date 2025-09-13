@@ -87,9 +87,8 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepA
                   leading: IconButton(
                     icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
                     onPressed: () {
-                      final scope = MainScreenScope.maybeOf(context);
-                      if (scope != null) {
-                        scope.setIndex(0);
+                      if (MainScreenNavigator.instance.canGoBack) {
+                        MainScreenNavigator.instance.goBack();
                       } else {
                         Navigator.pop(context);
                       }

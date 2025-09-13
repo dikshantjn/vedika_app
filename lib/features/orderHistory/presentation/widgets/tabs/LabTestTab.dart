@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/LabTestOrderViewModel.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/lab_test_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
 import 'package:intl/intl.dart';
@@ -725,12 +725,12 @@ class _LabTestInvoiceBottomSheetState extends State<LabTestInvoiceBottomSheet> {
                   ),
                   const SizedBox(height: 30),
                   
-                  // Download Invoice Button
+                  // View Invoice Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: _isGeneratingInvoice ? null : _generateInvoice,
+                      onPressed: _isGeneratingInvoice ? null : _viewInvoice,
                       icon: _isGeneratingInvoice
                           ? const SizedBox(
                               width: 20,
@@ -740,9 +740,9 @@ class _LabTestInvoiceBottomSheetState extends State<LabTestInvoiceBottomSheet> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Icon(Icons.download, color: Colors.white),
+                          : const Icon(Icons.receipt_long, color: Colors.white),
                       label: Text(
-                        _isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                        _isGeneratingInvoice ? 'Opening Invoice...' : 'View Invoice',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -798,26 +798,25 @@ class _LabTestInvoiceBottomSheetState extends State<LabTestInvoiceBottomSheet> {
     );
   }
 
-  Future<void> _generateInvoice() async {
+  Future<void> _viewInvoice() async {
     setState(() {
       _isGeneratingInvoice = true;
     });
 
     try {
-      await generateAndDownloadLabTestInvoicePDF(widget.order);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invoice generated successfully!'),
-            backgroundColor: Colors.green,
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InvoiceViewerScreen(
+            orderId: widget.order.bookingId!,
+            categoryLabel: 'Lab Test',
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate invoice: $e'),
+            content: Text('Failed to open invoice: $e'),
             backgroundColor: Colors.red,
           ),
         );
