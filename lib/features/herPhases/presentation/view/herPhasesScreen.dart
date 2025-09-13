@@ -519,6 +519,65 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                 ),
               ),
 
+            // Educational Information Section (only shown after predict)
+            if (_events.isNotEmpty)
+              Container(
+                margin: EdgeInsets.all(16),
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Understanding Your Cycle",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    _buildInfoItem(
+                      color: prePeriodColor,
+                      title: "Pre-Period:",
+                      description: "Days just before your periods having symptoms like mood swings, food cravings, fatigue, tender breasts irritability are pre-period days.",
+                    ),
+                    SizedBox(height: 12),
+
+                    _buildInfoItem(
+                      color: periodColor,
+                      title: "Period Days:",
+                      description: "It refers to time in your menstrual cycle when you bleed (it lasts for 3 to 7 days, which is normal).",
+                    ),
+                    SizedBox(height: 12),
+
+                    _buildInfoItem(
+                      color: ovulationColor,
+                      title: "Peak Ovulation:",
+                      description: "It is the most fertile time in your menstrual cycle.",
+                    ),
+                    SizedBox(height: 12),
+
+                    _buildInfoItem(
+                      color: fertileColor,
+                      title: "Fertile Days:",
+                      description: "The five days leading up to ovulation, plus the day of ovulation and the day after ovulation significantly increases your chances of conception.",
+                    ),
+                  ],
+                ),
+              ),
+
             // Disclaimer Section (only after Predict)
             if (_events.isNotEmpty)
               Container(
@@ -673,6 +732,58 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
         fillColor: Colors.grey[50],
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
+    );
+  }
+
+  Widget _buildInfoItem({
+    required Color color,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 18,
+          height: 18,
+          margin: EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.25),
+                blurRadius: 2,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                height: 1.4,
+              ),
+              children: [
+                TextSpan(
+                  text: title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                TextSpan(
+                  text: " $description",
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
