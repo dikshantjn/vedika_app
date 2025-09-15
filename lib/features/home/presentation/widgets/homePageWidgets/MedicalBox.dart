@@ -123,6 +123,8 @@ class MedicalBoxRow extends StatelessWidget {
         onTap: () {
           if (route == "/bloodbank") {
             Navigator.pushNamed(context, AppRoutes.bloodBank);
+          } else if (route == "/blogs") {
+            Navigator.pushNamed(context, AppRoutes.blogCategories);
           } else {
             Navigator.pushNamed(context, route);
           }

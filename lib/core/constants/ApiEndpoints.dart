@@ -243,6 +243,8 @@ class ApiEndpoints {
   static const String generateMedicineOrderInvoice = '$baseUrl/orders/medicine-order-generate-invoice';  // NEW: endpoint for generating medicine order invoice
   static const String getPrescriptionData = '$baseUrl/orders';  // NEW: endpoint for generating medicine order invoice
   static const String blogPosts = '$baseUrl/blogs/posts';
+  static const String blogCategories = '$baseUrl/blog-categories/categories';
+  static String blogPostsByCategory(String categoryId) => '$baseUrl/blogs/posts/$categoryId';
 
   // 📌 SpeakAI
   static const String speakAIIntent = '$baseUrl/speakAI/intent';

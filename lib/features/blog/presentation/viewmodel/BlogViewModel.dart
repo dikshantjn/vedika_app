@@ -16,7 +16,7 @@ class BlogViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Only use fetchAllBlogs for loading blogs
+  // Load all blogs
   Future<void> loadAllBlogs() async {
     print('[BlogViewModel] Loading all blogs...');
     _setLoading(true);
@@ -30,6 +30,24 @@ class BlogViewModel extends ChangeNotifier {
       _setError('Failed to load blogs: $e');
     } finally {
       print('[BlogViewModel] Done loading.');
+      _setLoading(false);
+    }
+  }
+
+  // Load blogs by category
+  Future<void> loadBlogsByCategory(String categoryId) async {
+    print('[BlogViewModel] Loading blogs for category: $categoryId');
+    _setLoading(true);
+    _clearError();
+    try {
+      _blogs = await _blogService.fetchBlogsByCategory(categoryId);
+      print('[BlogViewModel] Loaded blogs for category: ' + _blogs.length.toString());
+      notifyListeners();
+    } catch (e) {
+      print('[BlogViewModel] Error: ' + e.toString());
+      _setError('Failed to load blogs for category: $e');
+    } finally {
+      print('[BlogViewModel] Done loading blogs for category.');
       _setLoading(false);
     }
   }

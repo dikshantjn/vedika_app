@@ -33,6 +33,7 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/Diagnostic
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogListPage.dart';
+import 'package:vedika_healthcare/features/blog/presentation/view/BlogCategoriesPage.dart';
 import 'package:vedika_healthcare/features/membership/presentation/view/MembershipPage.dart';
 import 'package:vedika_healthcare/features/settings/presentation/view/SettingsPage.dart';
 import 'package:vedika_healthcare/features/help/presentation/view/HelpCenterPage.dart';
@@ -107,6 +108,7 @@ class AppRoutes {
   static const String vedikaPlus = '/vedikaPlus';
   static const String membership = '/membership';
   static const String blogs = '/blogs';
+  static const String blogCategories = '/blog-categories';
   static const String settingsPage = '/settingsPage';
   static const String helpCenter = '/helpCenter';
   static const String productList = '/productList';
@@ -274,6 +276,10 @@ class AppRoutes {
       ),
       blogs: (context) => _MainScreenRoute(
         child: BlogListPage(),
+        index: 9,
+      ),
+      blogCategories: (context) => _MainScreenRoute(
+        child: BlogCategoriesPage(),
         index: 9,
       ),
       settingsPage: (context) => _MainScreenRoute(

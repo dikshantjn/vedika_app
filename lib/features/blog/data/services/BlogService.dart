@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
+import 'package:vedika_healthcare/features/blog/data/models/BlogCategoryModel.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 
 class BlogService {
-  static const String baseUrl = 'https://api.vedikahealthcare.com'; // Replace with your actual API base URL
-  
+
   // Fetch all blogs from the new API
   Future<List<BlogModel>> fetchAllBlogs() async {
     try {
@@ -27,6 +27,65 @@ class BlogService {
       } else {
         print('[BlogService] Failed to load blogs, status: ' + response.statusCode.toString());
         throw Exception('Failed to load blogs');
+      }
+    } catch (e) {
+      print('[BlogService] Exception: ' + e.toString());
+      return [];
+    }
+  }
+
+  // Fetch all blog categories
+  Future<List<BlogCategoryModel>> fetchBlogCategories() async {
+    try {
+      print('[BlogService] Fetching blog categories from: ' + ApiEndpoints.blogCategories);
+      final response = await http.get(
+        Uri.parse(ApiEndpoints.blogCategories),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List) {
+          return data.map((e) => BlogCategoryModel.fromJson(e)).toList();
+        } else {
+          print('[BlogService] API response is not a list.');
+          return [];
+        }
+      } else {
+        print('[BlogService] Failed to load categories, status: ' + response.statusCode.toString());
+        throw Exception('Failed to load categories');
+      }
+    } catch (e) {
+      print('[BlogService] Exception: ' + e.toString());
+      return [];
+    }
+  }
+
+  // Fetch blogs by category
+  Future<List<BlogModel>> fetchBlogsByCategory(String categoryId) async {
+    try {
+      print('[BlogService] Fetching blogs for category: $categoryId');
+      final response = await http.get(
+        Uri.parse(ApiEndpoints.blogPostsByCategory(categoryId)),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map && data['success'] == true && data['posts'] is List) {
+          return (data['posts'] as List).map((e) => BlogModel.fromJson(e)).toList();
+        } else if (data is List) {
+          // Handle case where API returns list directly
+          return data.map((e) => BlogModel.fromJson(e)).toList();
+        } else {
+          print('[BlogService] API response does not contain posts.');
+          return [];
+        }
+      } else {
+        print('[BlogService] Failed to load blogs for category, status: ' + response.statusCode.toString());
+        throw Exception('Failed to load blogs for category');
       }
     } catch (e) {
       print('[BlogService] Exception: ' + e.toString());
