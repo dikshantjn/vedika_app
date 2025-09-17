@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/product_order_invoice_pdf.dart';
 import 'package:printing/printing.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 class ProductOrdersTab extends StatefulWidget {
   const ProductOrdersTab({Key? key}) : super(key: key);
@@ -100,193 +101,242 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
   }
 
   Widget _buildOrderCard(ProductOrder order) {
-    String formattedDate = DateFormat('dd MMMM yyyy, hh:mm a').format(order.placedAt);
+    final formattedDate = DateFormat('EEE, MMM d, yyyy').format(order.placedAt);
+    final itemCount = order.items?.length ?? 0;
 
-    return InkWell(
-      onTap: () => _showOrderDetails(order),
-      child: Container(
-      margin: const EdgeInsets.only(bottom: 16),
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ColorPalette.primaryColor.withOpacity(0.1),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: DoctorConsultationColorPalette.shadowLight,
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ColorPalette.primaryColor.withOpacity(0.05),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => _showOrderDetails(order),
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with date and status
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.backgroundCard,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Order #${order.orderId.substring(0, 8)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_rounded,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Placed on: $formattedDate',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
+                    _buildStatusChip('delivered'),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Delivered',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Order Items',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...order.items!.map((item) {
-                  final product = item.vendorProduct;
-                  if (product == null) return const SizedBox.shrink();
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.grey[200]!,
-                        width: 1,
+              ),
+              
+              // Product info
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                      child: Icon(
+                        Icons.shopping_cart_rounded, 
+                        size: 30, 
+                        color: DoctorConsultationColorPalette.primaryBlue,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        if (product.images.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: product.images.first,
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey[200],
-                                child: const Center(child: CircularProgressIndicator()),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.error),
-                              ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Product Order',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: DoctorConsultationColorPalette.textPrimary,
                             ),
                           ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          SizedBox(height: 4),
+                          Text(
+                            'Order #${order.orderId.substring(0, 8)}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: DoctorConsultationColorPalette.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
                             children: [
-                              Text(
-                                product.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              Icon(
+                                Icons.inventory_rounded,
+                                size: 16,
+                                color: DoctorConsultationColorPalette.primaryBlue,
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(width: 6),
                               Text(
-                                'Quantity: ${item.quantity}',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '₹${item.priceAtPurchase.toStringAsFixed(2)}',
+                                '$itemCount Items',
                                 style: TextStyle(
-                                  color: ColorPalette.primaryColor,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: DoctorConsultationColorPalette.textSecondary,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  );
-                }).toList(),
-                const Divider(),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: ColorPalette.primaryColor.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Total Amount:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          '₹${order.totalAmount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: ColorPalette.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
+              
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: DoctorConsultationColorPalette.borderLight,
+              ),
+              
+              // Order info footer
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          DateFormat('hh:mm a').format(order.placedAt),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.payment,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          '₹${_calculateTotalAmount(order).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.primaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildStatusChip(String status) {
+    Color chipColor;
+    IconData statusIcon;
+    
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        chipColor = DoctorConsultationColorPalette.successGreen;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'shipped':
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.local_shipping_rounded;
+        break;
+      case 'processing':
+        chipColor = DoctorConsultationColorPalette.primaryBlue;
+        statusIcon = Icons.schedule;
+        break;
+      case 'pending':
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.schedule;
+        break;
+      case 'cancelled':
+        chipColor = DoctorConsultationColorPalette.errorRed;
+        statusIcon = Icons.cancel_outlined;
+        break;
+      default:
+        chipColor = Colors.grey;
+        statusIcon = Icons.info_outline;
+    }
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: chipColor, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            statusIcon,
+            size: 14,
+            color: chipColor,
+          ),
+          SizedBox(width: 4),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
-      ),
       ),
     );
   }
@@ -689,4 +739,4 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
       });
     }
   }
-} 
+}

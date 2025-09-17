@@ -494,7 +494,7 @@ class _TransientHostPageState extends State<_TransientHostPage> {
             Icon(Icons.home, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              'Welcome to Vedika Healthcare',
+              'Welcome to Vedika Healthtech',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),

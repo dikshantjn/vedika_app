@@ -132,15 +132,15 @@ class _CompanyInfoSectionState extends State<CompanyInfoSection> {
                   // Phone Number
                   _buildTextField(
                     controller: viewModel.phoneNumberController,
-                    label: 'Phone Number',
-                    hint: 'Enter your phone number',
+                    label: 'Contact Number',
+                    hint: 'Enter your Contact number',
                     keyboardType: TextInputType.phone,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter phone number';
+                        return 'Please enter Contact number';
                       }
                       if (!RegExp(r'^\+?[0-9]{10,13}$').hasMatch(value)) {
-                        return 'Please enter a valid phone number';
+                        return 'Please enter a valid Contact number';
                       }
                       return null;
                     },

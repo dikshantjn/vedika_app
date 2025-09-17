@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
@@ -245,9 +246,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ],
         ),
         child: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.pop(context),
-          color: categoryColor,
+            icon: Icon(
+             Icons.arrow_back_ios_new,
+              size: 20,
+              color: categoryColor,
+            ),
+          onPressed: () {
+            if (MainScreenNavigator.instance.canGoBack) {
+              MainScreenNavigator.instance.goBack();
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
       ),
       actions: [
@@ -685,8 +695,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           }
 
                           if (cartViewModel.isInCart) {
-                            // Navigate to cart using AppRoutes
-                            Navigator.pushNamed(context, AppRoutes.goToCart);
+                            // Navigate to cart using AppRoutes and request product tab
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.newCartScreen,
+                              arguments: {
+                                'initialTab': 'products',
+                                'tabIndex': 1,
+                                'openProducts': true,
+                              },
+                            );
                           } else {
                             try {
                               await cartViewModel.addToCart(

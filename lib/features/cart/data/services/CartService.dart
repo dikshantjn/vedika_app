@@ -11,11 +11,7 @@ class CartService {
     String? authToken,
   }) async {
     try {
-      print('🔄 [CartService] Starting API call to get pending payment orders...');
-      print('📍 [CartService] URL: ${ApiEndpoints.getPendingPaymentOrders}/$userId/pending-payments');
-      print('👤 [CartService] User ID: $userId');
-      print('🔑 [CartService] Auth Token: ${authToken != null ? 'Present' : 'Not provided'}');
-      
+
       final response = await _dio.get(
         '${ApiEndpoints.getPendingPaymentOrders}/$userId/pending-payments',
         options: Options(
@@ -25,18 +21,9 @@ class CartService {
         ),
       );
 
-      print('✅ [CartService] API Response received');
-      print('📊 [CartService] Status Code: ${response.statusCode}');
-      print('📄 [CartService] Response Headers: ${response.headers}');
-      print('📝 [CartService] Response Data: ${response.data}');
-
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🎯 [CartService] Parsing response data...');
-        print('📊 [CartService] Response success: ${responseData['success']}');
-        print('📊 [CartService] Response count: ${responseData['count']}');
-        print('📊 [CartService] Response data length: ${responseData['data']?.length ?? 'null'}');
-        
+
         final result = {
           'success': true,
           'data': responseData['data'] ?? [],
@@ -44,9 +31,7 @@ class CartService {
           'message': responseData['message'] ?? 'Pending payment orders retrieved successfully',
         };
         
-        print('✅ [CartService] Successfully parsed response');
-        print('📊 [CartService] Final result: $result');
-        
+
         return result;
       } else {
         print('❌ [CartService] API returned non-200 status code');
@@ -77,25 +62,19 @@ class CartService {
     }
   }
 
-  // Place medicine order after payment
+  // Place one or more medicine orders after payment
   Future<Map<String, dynamic>> placeMedicineOrder({
-    required String orderId,
+    required List<String> orderIds,
     required String addressId,
     required String paymentId,
     String? authToken,
   }) async {
     try {
-      print('🔄 [CartService] Starting API call to place medicine order...');
-      print('📍 [CartService] URL: ${ApiEndpoints.placeMedicineOrder}');
-      print('📦 [CartService] Order ID: $orderId');
-      print('🏠 [CartService] Address ID: $addressId');
-      print('💳 [CartService] Payment ID: $paymentId');
-      print('🔑 [CartService] Auth Token: ${authToken != null ? 'Present' : 'Not provided'}');
 
       final response = await _dio.post(
         ApiEndpoints.placeMedicineOrder,
         data: {
-          'orderId': orderId,
+          'orderIds': orderIds,
           'addressId': addressId,
           'paymentId': paymentId,
         },
@@ -107,16 +86,8 @@ class CartService {
         ),
       );
 
-      print('✅ [CartService] API Response received');
-      print('📊 [CartService] Status Code: ${response.statusCode}');
-      print('📄 [CartService] Response Headers: ${response.headers}');
-      print('📝 [CartService] Response Data: ${response.data}');
-
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🎯 [CartService] Parsing response data...');
-        print('📊 [CartService] Response success: ${responseData['success']}');
-        print('📊 [CartService] Response message: ${responseData['message']}');
 
         final result = {
           'success': true,
@@ -124,8 +95,6 @@ class CartService {
           'message': responseData['message'] ?? 'Order placed successfully',
         };
 
-        print('✅ [CartService] Successfully parsed response');
-        print('📊 [CartService] Final result: $result');
 
         return result;
       } else {
@@ -163,10 +132,6 @@ class CartService {
     String? authToken,
   }) async {
     try {
-      print('🔄 [CartService] Starting API call to get medicine cart count...');
-      print('📍 [CartService] URL: ${ApiEndpoints.getMedicineCartCount}/$userId');
-      print('👤 [CartService] User ID: $userId');
-      print('🔑 [CartService] Auth Token: ${authToken != null ? 'Present' : 'Not provided'}');
 
       final response = await _dio.get(
         '${ApiEndpoints.getMedicineCartCount}/$userId',
@@ -177,25 +142,15 @@ class CartService {
         ),
       );
 
-      print('✅ [CartService] API Response received');
-      print('📊 [CartService] Status Code: ${response.statusCode}');
-      print('📄 [CartService] Response Headers: ${response.headers}');
-      print('📝 [CartService] Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🎯 [CartService] Parsing response data...');
-        print('📊 [CartService] Response success: ${responseData['success']}');
-        print('📊 [CartService] Response cart count: ${responseData['medicineCartCount']}');
 
         final result = {
           'success': true,
           'medicineCartCount': responseData['medicineCartCount'] ?? 0,
           'message': responseData['message'] ?? 'Cart count retrieved successfully',
         };
-
-        print('✅ [CartService] Successfully parsed response');
-        print('📊 [CartService] Final result: $result');
 
         return result;
       } else {
@@ -225,52 +180,5 @@ class CartService {
       print('📊 [CartService] Stack trace: $stackTrace');
       throw Exception('Error getting medicine cart count: $e');
     }
-  }
-
-  // Mock data methods for development
-  List<Map<String, dynamic>> getMockCartItems() {
-    return [
-      {
-        'id': '1',
-        'name': 'Vitamin D3 1000IU',
-        'price': 299.0,
-        'quantity': 2,
-        'image': 'https://via.placeholder.com/80x80',
-        'brand': 'HealthVit',
-      },
-      {
-        'id': '2',
-        'name': 'Omega-3 Fish Oil Capsules',
-        'price': 450.0,
-        'quantity': 1,
-        'image': 'https://via.placeholder.com/80x80',
-        'brand': 'NutriLife',
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> getMockMedicineOrders() {
-    return [
-      {
-        'orderId': 'MED-001-2024',
-        'medicalStoreName': 'HealthCare Pharmacy',
-        'amount': 450.0,
-        'note': 'Skip paracetamol if fever not present',
-        'status': 'pending',
-        'orderDate': '2024-01-15',
-        'storePhone': '+91 98765 43210',
-        'prescriptionFiles': 2,
-      },
-      {
-        'orderId': 'MED-002-2024',
-        'medicalStoreName': 'MedPlus Store',
-        'amount': 320.0,
-        'note': 'Full course treatment',
-        'status': 'confirmed',
-        'orderDate': '2024-01-14',
-        'storePhone': '+91 98765 43211',
-        'prescriptionFiles': 1,
-      },
-    ];
   }
 }

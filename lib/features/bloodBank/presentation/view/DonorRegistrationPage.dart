@@ -69,7 +69,7 @@ class _DonorRegistrationFormState extends State<DonorRegistrationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTextField("Full Name", _nameController, Icons.person),
-                  _buildTextField("Phone Number", _phoneController, Icons.phone, isNumber: true),
+                  _buildTextField("Contact Number", _phoneController, Icons.phone, isNumber: true),
                   _buildTextField("City", _cityController, Icons.location_city),
                   _buildTextField("State", _stateController, Icons.map),
                   _buildTextField("Country", _countryController, Icons.public),

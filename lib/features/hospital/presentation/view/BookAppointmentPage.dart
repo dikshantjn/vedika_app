@@ -122,7 +122,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               SizedBox(height: 10),
               _buildInfoItem("Full Name"),
               _buildInfoItem("Age & Gender"),
-              _buildInfoItem("Phone Number"),
+              _buildInfoItem("Contact Number"),
               _buildInfoItem("Address"),
               SizedBox(height: 20),
               ElevatedButton(

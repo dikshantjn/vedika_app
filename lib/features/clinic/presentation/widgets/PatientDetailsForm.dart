@@ -55,7 +55,7 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
             ),
 
             // Phone Number Field
-            _buildTextField("Phone Number", controller: _phoneController, isPhoneNumber: true),
+            _buildTextField("Contact Number", controller: _phoneController, isPhoneNumber: true),
 
             // Address Field
             _buildTextField("Address", controller: _addressController),
@@ -98,7 +98,7 @@ class _PatientDetailsFormState extends State<PatientDetailsForm> {
           }
           if (isPhoneNumber) {
             if (value.length != 10 || int.tryParse(value) == null) {
-              return "Enter a valid 10-digit phone number";
+              return "Enter a valid 10-digit Contact number";
             }
           }
           return null;

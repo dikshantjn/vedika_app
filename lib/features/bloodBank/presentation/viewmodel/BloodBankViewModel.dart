@@ -967,9 +967,9 @@ class BloodBankViewModel extends ChangeNotifier {
                   if (phoneNumber != null && phoneNumber.isNotEmpty) {
                     launchUrl(Uri.parse('tel:$phoneNumber'));
                   } else {
-                    _logger.w("Phone number not available for booking ${booking.bookingId}");
+                    _logger.w("Contact number not available for booking ${booking.bookingId}");
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Phone number is not available")),
+                      SnackBar(content: Text("Contact number is not available")),
                     );
                   }
                 },

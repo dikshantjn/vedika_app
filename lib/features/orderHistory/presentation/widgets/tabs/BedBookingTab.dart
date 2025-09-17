@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooki
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BedBookingOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:intl/intl.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 class BedBookingTab extends StatefulWidget {
   final String userId;
@@ -99,149 +100,212 @@ class _AppointmentTabState extends State<BedBookingTab> {
   }
 
   Widget _buildOrderItem(BuildContext context, BedBooking order) {
-    return GestureDetector(
-      onTap: () => _showInvoiceBottomSheet(context, order),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
+    final formattedDate =
+        DateFormat('EEE, MMM d, yyyy').format(order.createdAt);
+    final hospitalName = order.hospital.name;
+    final hospitalLocation = '${order.hospital.city}, ${order.hospital.state}';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: DoctorConsultationColorPalette.shadowLight,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => _showInvoiceBottomSheet(context, order),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hospital Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.local_hospital,
-                    color: Colors.blue,
-                    size: 24,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with date and status
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.backgroundCard,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          order.hospital.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueGrey,
-                          ),
+                        Icon(
+                          Icons.local_hospital_rounded,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(width: 8),
                         Text(
-                          '${order.hospital.city}, ${order.hospital.state}',
+                          formattedDate,
                           style: TextStyle(
+                            fontWeight: FontWeight.w600,
                             fontSize: 14,
-                            color: Colors.grey.shade600,
+                            color: DoctorConsultationColorPalette.textPrimary,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Icon(
-                    Icons.receipt_long,
-                    color: Colors.blue.shade400,
-                    size: 20,
-                  ),
-                ],
+                    _buildStatusChip(order.status),
+                  ],
+                ),
               ),
-            ),
-            // Booking Details
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Bed Type and Price
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+
+              // Hospital info
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: DoctorConsultationColorPalette
+                          .primaryBlue
+                          .withOpacity(0.1),
+                      child: Icon(
+                        Icons.local_hospital_rounded,
+                        size: 30,
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                      ),
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.bed,
-                            color: Colors.blueGrey,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
                           Text(
-                            order.bedType,
-                            style: const TextStyle(
+                            hospitalName,
+                            style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blueGrey,
+                              fontWeight: FontWeight.bold,
+                              color: DoctorConsultationColorPalette.textPrimary,
                             ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Bed Booking Service',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  DoctorConsultationColorPalette.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 16,
+                                color:
+                                    DoctorConsultationColorPalette.primaryBlue,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                hospitalLocation,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: DoctorConsultationColorPalette
+                                      .textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(20),
+                    ),
+                  ],
+                ),
+              ),
+
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: DoctorConsultationColorPalette.borderLight,
+              ),
+              // Booking info footer
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.bed_rounded,
+                              size: 16,
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              order.bedType,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color:
+                                    DoctorConsultationColorPalette.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          '₹${order.price}',
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.payment,
+                              size: 16,
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              '₹${order.price}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color:
+                                    DoctorConsultationColorPalette.primaryBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          order.timeSlot,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
+                            fontSize: 13,
+                            color: DoctorConsultationColorPalette.textSecondary,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Date and Time
-                  Row(
-                    children: [
-                      _buildDetailItem(
-                        icon: Icons.calendar_today,
-                        label: 'Date',
-                        value: order.bookingDate.toString().split(' ')[0],
-                      ),
-                      const SizedBox(width: 16),
-                      _buildDetailItem(
-                        icon: Icons.access_time,
-                        label: 'Time',
-                        value: order.timeSlot,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Status Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStatusChip(order.status),
-                      _buildPaymentStatusChip(order.paymentStatus),
-                    ],
-                  ),
-                ],
+                        SizedBox(width: 16),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -256,92 +320,54 @@ class _AppointmentTabState extends State<BedBookingTab> {
     );
   }
 
-  Widget _buildDetailItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Expanded(
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: Colors.blueGrey,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.blueGrey,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatusChip(String status) {
     Color chipColor;
-    String displayStatus;
+    IconData statusIcon;
+
     switch (status.toLowerCase()) {
       case 'completed':
-        chipColor = Colors.green;
-        displayStatus = 'Completed';
+        chipColor = DoctorConsultationColorPalette.successGreen;
+        statusIcon = Icons.check_circle;
         break;
       case 'accepted':
-        chipColor = Colors.blue;
-        displayStatus = 'Accepted';
+        chipColor = DoctorConsultationColorPalette.primaryBlue;
+        statusIcon = Icons.check_circle_outline;
         break;
       case 'pending':
-        chipColor = Colors.orange;
-        displayStatus = 'Pending';
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.schedule;
         break;
       case 'rejected':
-        chipColor = Colors.red;
-        displayStatus = 'Rejected';
+        chipColor = DoctorConsultationColorPalette.errorRed;
+        statusIcon = Icons.cancel_outlined;
         break;
       default:
         chipColor = Colors.grey;
-        displayStatus = status;
+        statusIcon = Icons.info_outline;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.1),
+        color: chipColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: chipColor.withOpacity(0.3)),
+        border: Border.all(color: chipColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _getStatusIcon(status),
+            statusIcon,
+            size: 14,
             color: chipColor,
-            size: 16,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 4),
           Text(
-            displayStatus,
+            status.toUpperCase(),
             style: TextStyle(
               color: chipColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -437,16 +463,18 @@ class BedBookingInvoiceBottomSheet extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<BedBookingInvoiceBottomSheet> createState() => _BedBookingInvoiceBottomSheetState();
+  State<BedBookingInvoiceBottomSheet> createState() =>
+      _BedBookingInvoiceBottomSheetState();
 }
 
-class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSheet> {
+class _BedBookingInvoiceBottomSheetState
+    extends State<BedBookingInvoiceBottomSheet> {
   bool _isGeneratingInvoice = false;
 
   @override
   Widget build(BuildContext context) {
     final indiaFormat = DateFormat('dd MMM yyyy, hh:mm a');
-    
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
@@ -493,7 +521,7 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                     ],
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Booking ID
                   Container(
                     width: double.infinity,
@@ -519,12 +547,15 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Flexible(
-                              child: Text('Booking Date:', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              child: Text('Booking Date:',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey)),
                             ),
                             Flexible(
                               child: Text(
                                 indiaFormat.format(widget.order.bookingDate),
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -535,12 +566,15 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Flexible(
-                              child: Text('Time Slot:', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              child: Text('Time Slot:',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey)),
                             ),
                             Flexible(
                               child: Text(
                                 widget.order.timeSlot,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -550,7 +584,7 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Hospital Details
                   Container(
                     width: double.infinity,
@@ -565,7 +599,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.local_hospital, color: Colors.blue.shade600, size: 20),
+                            Icon(Icons.local_hospital,
+                                color: Colors.blue.shade600, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Hospital Details',
@@ -580,23 +615,26 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                         const SizedBox(height: 12),
                         Text(
                           widget.order.hospital.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${widget.order.hospital.address}, ${widget.order.hospital.city}, ${widget.order.hospital.state}',
-                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.grey.shade600),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Contact: ${widget.order.hospital.contactNumber}',
-                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.grey.shade600),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Patient Details
                   Container(
                     width: double.infinity,
@@ -611,7 +649,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.person, color: Colors.green.shade600, size: 20),
+                            Icon(Icons.person,
+                                color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Patient Details',
@@ -633,7 +672,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           'Phone: ${widget.order.user.phoneNumber}',
                           style: const TextStyle(fontSize: 14),
                         ),
-                        if (widget.order.user.emailId != null && widget.order.user.emailId!.isNotEmpty)
+                        if (widget.order.user.emailId != null &&
+                            widget.order.user.emailId!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
@@ -645,7 +685,7 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Service Details
                   Container(
                     width: double.infinity,
@@ -660,7 +700,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.bed, color: Colors.orange.shade600, size: 20),
+                            Icon(Icons.bed,
+                                color: Colors.orange.shade600, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Service Details',
@@ -677,12 +718,15 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Flexible(
-                              child: Text('Bed Type:', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              child: Text('Bed Type:',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey)),
                             ),
                             Flexible(
                               child: Text(
                                 widget.order.bedType,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -693,12 +737,15 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Flexible(
-                              child: Text('Duration:', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              child: Text('Duration:',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey)),
                             ),
                             const Flexible(
                               child: Text(
                                 '1 Day',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                                 textAlign: TextAlign.end,
                               ),
                             ),
@@ -708,7 +755,7 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Cost Breakdown
                   Container(
                     width: double.infinity,
@@ -723,7 +770,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.receipt, color: Colors.green.shade600, size: 20),
+                            Icon(Icons.receipt,
+                                color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Cost Breakdown',
@@ -736,7 +784,8 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _buildCostRow('Bed Charges (1 Day)', widget.order.price),
+                        _buildCostRow(
+                            'Bed Charges (1 Day)', widget.order.price),
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
@@ -772,7 +821,7 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                     ),
                   ),
                   const SizedBox(height: 30),
-                  
+
                   // View Invoice Button
                   SizedBox(
                     width: double.infinity,
@@ -785,12 +834,15 @@ class _BedBookingInvoiceBottomSheetState extends State<BedBookingInvoiceBottomSh
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.receipt_long, color: Colors.white),
                       label: Text(
-                        _isGeneratingInvoice ? 'Opening Invoice...' : 'View Invoice',
+                        _isGeneratingInvoice
+                            ? 'Opening Invoice...'
+                            : 'View Invoice',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

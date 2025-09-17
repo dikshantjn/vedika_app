@@ -15,6 +15,7 @@ class NewCartScreen extends StatefulWidget {
 class _NewCartScreenState extends State<NewCartScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  bool _initialIndexApplied = false;
 
   @override
   void initState() {
@@ -29,6 +30,29 @@ class _NewCartScreenState extends State<NewCartScreen>
         _refreshCartData();
       }
     };
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialIndexApplied) return;
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      int? desiredIndex = args['tabIndex'] as int?;
+      final String? initialTab = args['initialTab'] as String?;
+      final bool openProducts = (args['openProducts'] as bool?) ?? false;
+
+      if (initialTab != null && initialTab.toLowerCase() == 'products') {
+        desiredIndex = 1;
+      }
+      if (openProducts) {
+        desiredIndex = 1;
+      }
+      if (desiredIndex != null && desiredIndex >= 0 && desiredIndex < 2) {
+        _tabController.index = desiredIndex;
+        _initialIndexApplied = true;
+      }
+    }
   }
 
   @override

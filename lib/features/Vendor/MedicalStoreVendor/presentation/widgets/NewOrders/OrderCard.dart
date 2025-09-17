@@ -152,7 +152,7 @@ class _OrderCardState extends State<OrderCard> {
                 ),
                 SizedBox(height: 1),
                 Text(
-                  widget.order.user?.phoneNumber ?? 'No phone number',
+                  widget.order.user?.phoneNumber ?? 'No Contact number',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

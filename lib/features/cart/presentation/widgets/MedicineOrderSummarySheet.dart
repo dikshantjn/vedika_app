@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/cart/data/services/CartPaymentService.dart';
 import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
@@ -36,7 +38,7 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
   
   // Razorpay configuration (you should move these to environment variables)
   static const String _razorpayKey = 'rzp_test_YOUR_KEY_HERE'; // Replace with your actual key
-  static const String _appName = 'Vedika Healthcare';
+  static const String _appName = 'Vedika Healthtech';
   
   // Order placement state
   bool _isOrderPlaced = false;
@@ -53,7 +55,8 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
   
   void _initializePaymentService() {
     _paymentService = CartPaymentService();
-    _cartViewModel = CartViewModel();
+    // Use the global CartViewModel from Provider instead of creating a new instance
+    _cartViewModel = Provider.of<CartViewModel>(context, listen: false);
     
     // Set up payment callbacks
     _paymentService.onPaymentSuccess = _handlePaymentSuccess;
@@ -106,7 +109,7 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Medicine Order Summary',
+          'Order Summary',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -368,14 +371,14 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
     );
   }
 
-    void _handleOrderPlacementRequired(String orderId, String addressId, String paymentId) {
-    print('🎯 [MedicineOrderSummarySheet] Order placement required for: $orderId');
-    print('📊 [MedicineOrderSummarySheet] Available orders: ${widget.medicineOrders.length}');
-    print('📊 [MedicineOrderSummarySheet] Order IDs: ${widget.medicineOrders.map((o) => o.orderId).toList()}');
+  void _handleOrderPlacementRequired(String orderId, String addressId, String paymentId) {
+    
     
     // Call the view model to handle order placement
+    // Collect all order IDs shown in this sheet (place all at once)
+    final ids = widget.medicineOrders.map((o) => o.orderId).toList();
     _cartViewModel.handlePaymentSuccess(
-      orderId: orderId,
+      orderIds: ids,
       addressId: addressId,
       paymentId: paymentId,
     ).then((success) {
@@ -385,23 +388,20 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
           // Find the order from the current widget's medicineOrders instead of the view model
           try {
             if (widget.medicineOrders.isNotEmpty) {
-              _placedOrderDetails = widget.medicineOrders.firstWhere(
-                (order) => order.orderId == orderId,
-                orElse: () => widget.medicineOrders.first,
-              );
+              _placedOrderDetails = widget.medicineOrders.first;
             } else {
-              print('⚠️ [MedicineOrderSummarySheet] No orders available in widget');
+              
               _placedOrderDetails = null;
             }
           } catch (e) {
-            print('🚨 [MedicineOrderSummarySheet] Error finding order: $e');
+            
             // If we can't find the order, set to null
             _placedOrderDetails = null;
           }
 
           // If we still don't have order details, create a minimal one
           if (_placedOrderDetails == null) {
-            print('⚠️ [MedicineOrderSummarySheet] Creating fallback order details');
+            
             // We'll handle this in the UI by showing basic information
           }
         });
@@ -409,7 +409,16 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
         // Clear the cart after successful order placement
         widget.onOrderPlaced?.call();
 
-        print('✅ [MedicineOrderSummarySheet] Cart cleared after successful order placement');
+        // Refresh medicine cart count after successful placement
+        try {
+          StorageService.getUserId().then((uid) {
+            if (uid != null) {
+              _cartViewModel.fetchMedicineCartCount(userId: uid);
+            }
+          });
+        } catch (_) {}
+
+        
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -429,7 +438,6 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
         // Don't close the sheet, let the order placement callback handle it
       });
       
-      print('🎯 [MedicineOrderSummarySheet] Payment success received, waiting for order placement...');
     }
   }
   
@@ -440,7 +448,6 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
         _isPaymentFailed = true;
       });
       
-      print('❌ [MedicineOrderSummarySheet] Payment failed: ${response.message}');
     }
   }
 

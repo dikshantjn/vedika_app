@@ -11,7 +11,7 @@ import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWid
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/TestimonialSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/FeaturedArticlesSection.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/JustForYouSection.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
 import 'package:vedika_healthcare/features/home/presentation/widgets/homePageWidgets/MedicalBox.dart';
@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _setupCartCountListener() {
-    final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+    final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
     cartViewModel.onCartCountUpdate = () {
       if (mounted) {
         setState(() {
@@ -774,7 +774,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 icon: Icon(Icons.shopping_cart_outlined, color: ColorPalette.primaryColor),
               ),
             ),
-            if (cartViewModel.medicineCartCount > 0)
+            if (cartViewModel.cartCount > 0)
               Positioned(
                 right: 4,
                 top: 4,
@@ -786,7 +786,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   constraints: BoxConstraints(minWidth: 18, minHeight: 18),
                   child: Text(
-                    cartViewModel.medicineCartCount.toString(),
+                    cartViewModel.cartCount.toString(),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,

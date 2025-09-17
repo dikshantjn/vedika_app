@@ -178,7 +178,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        widget.order.user?.phoneNumber ?? 'No phone number',
+                        widget.order.user?.phoneNumber ?? 'No Contact number',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[600],

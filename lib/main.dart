@@ -266,7 +266,7 @@ class MyApp extends StatelessWidget {
 
           return MaterialApp(
             showPerformanceOverlay: false,
-            title: 'Vedika Healthcare',
+            title: 'Vedika Healthtech',
             debugShowCheckedModeBanner: false,
             useInheritedMediaQuery: enableDevicePreview && !kReleaseMode, // Conditional for device preview
             locale: enableDevicePreview && !kReleaseMode ? DevicePreview.locale(context) : null, // Conditional for device preview

@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/MedicineOrderHistoryViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CustomOrderInfoDialog.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/invoice_pdf.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 class MedicineTab extends StatefulWidget {
   const MedicineTab({Key? key}) : super(key: key);
@@ -90,89 +91,185 @@ class _MedicineTabState extends State<MedicineTab> with AutomaticKeepAliveClient
       return Container(); // Return empty container if disposed
     }
     
-    final dateTime = (order.createdAt);
-    final formattedDate = DateFormat('dd MMMM yyyy').format(dateTime);
-    final formattedTime = DateFormat('hh:mm a').format(dateTime);
+    final dateTime = order.createdAt;
+    final formattedDate = DateFormat('EEE, MMM d, yyyy').format(dateTime);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: DoctorConsultationColorPalette.shadowLight,
             blurRadius: 8,
-            spreadRadius: 2,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Order ID & Info Icon
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+            if (!mounted || _isDisposed) return;
+            _showOrderDetailsBottomSheet(context, order);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Order #${order.orderId}',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              // Header with date and status
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.backgroundCard,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.medication_rounded,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildStatusChip(order.orderStatus),
+                  ],
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.info_outline, color: Colors.blueGrey),
-                onPressed: () {
-                  // Check if widget is still mounted before showing dialog
-                  if (!mounted || _isDisposed) return;
-                  _showOrderDetailsBottomSheet(context, order);
-                },
+              
+              // Medicine info
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                      child: Icon(
+                        Icons.medication_rounded, 
+                        size: 30, 
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                      ),
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Medicine Order',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: DoctorConsultationColorPalette.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Order #${order.orderId}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: DoctorConsultationColorPalette.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.shopping_bag_rounded,
+                                size: 16,
+                                color: DoctorConsultationColorPalette.primaryBlue,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                '${order.orderItems.length} Items',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: DoctorConsultationColorPalette.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Items Row
-          Text(
-            'Items: ${order.orderItems.length}',
-            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Status Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildStatusChip(order.orderStatus),
-              Text(
-                'Total: ₹${order.totalAmount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+              
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: DoctorConsultationColorPalette.borderLight,
+              ),
+              
+              // Order info footer
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          DateFormat('hh:mm a').format(dateTime),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.payment,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          '₹${order.totalAmount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: DoctorConsultationColorPalette.primaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 8),
-
-          // Date and Time Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                formattedDate,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              Text(
-                formattedTime,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -183,39 +280,64 @@ class _MedicineTabState extends State<MedicineTab> with AutomaticKeepAliveClient
       return Container(); // Return empty container if disposed
     }
     
-    String formattedStatus = status.replaceAllMapped(
-        RegExp(r'([a-z])([A-Z])'), (match) => '${match.group(1)} ${match.group(2)}');
-
     Color chipColor;
+    IconData statusIcon;
+    
     switch (status.toLowerCase()) {
       case 'delivered':
-        chipColor = Colors.green;
+        chipColor = DoctorConsultationColorPalette.successGreen;
+        statusIcon = Icons.check_circle;
         break;
       case 'shipped':
-        chipColor = Colors.orange;
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.local_shipping_rounded;
         break;
       case 'processing':
-        chipColor = Colors.blue;
+        chipColor = DoctorConsultationColorPalette.primaryBlue;
+        statusIcon = Icons.schedule;
         break;
       case 'outfordelivery':
-        chipColor = Colors.yellow.shade700;
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.delivery_dining_rounded;
         break;
       case 'pending':
-        chipColor = Colors.grey;
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.schedule;
+        break;
+      case 'cancelled':
+        chipColor = DoctorConsultationColorPalette.errorRed;
+        statusIcon = Icons.cancel_outlined;
         break;
       default:
         chipColor = Colors.grey;
+        statusIcon = Icons.info_outline;
     }
-
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: chipColor,
+        color: chipColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: chipColor, width: 1),
       ),
-      child: Text(
-        formattedStatus,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            statusIcon,
+            size: 14,
+            color: chipColor,
+          ),
+          SizedBox(width: 4),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

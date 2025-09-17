@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/cart/data/services/CartService.dart';
+import 'package:vedika_healthcare/features/cart/data/services/ProductCartService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'dart:convert';
 
@@ -26,6 +28,7 @@ class CartViewModel extends ChangeNotifier {
 
   // Medicine Cart Count
   int _medicineCartCount = 0;
+  int _productCartCount = 0;
   bool _isLoadingCartCount = false;
   String? _cartCountError;
 
@@ -35,6 +38,8 @@ class CartViewModel extends ChangeNotifier {
 
   // Callback for cart count updates
   Function()? onCartCountUpdate;
+  // Callback for medicine orders updates (to refresh MedicineOrderTab)
+  Function()? onMedicineOrdersUpdate;
 
   // Getters
   List<Map<String, dynamic>> get productCart => _productCart;
@@ -51,6 +56,8 @@ class CartViewModel extends ChangeNotifier {
 
   // Medicine Cart Count getters
   int get medicineCartCount => _medicineCartCount;
+  int get productCartCount => _productCartCount;
+  int get cartCount => _medicineCartCount + _productCartCount;
   bool get isLoadingCartCount => _isLoadingCartCount;
   String? get cartCountError => _cartCountError;
 
@@ -61,7 +68,7 @@ class CartViewModel extends ChangeNotifier {
 
   // Socket connection initialization
   void initSocketConnection() async {
-    debugPrint("🚀 Initializing socket connection for cart updates...");
+    
     try {
       String? userId = await StorageService.getUserId();
       if (userId == null) {
@@ -90,42 +97,53 @@ class CartViewModel extends ChangeNotifier {
 
       // Set up event listeners
       _socket!.onConnect((_) {
-        debugPrint('✅ Socket connected for cart updates');
+        
         _socket!.emit('register', userId);
       });
 
       _socket!.onConnectError((data) {
-        debugPrint('❌ Socket connection error: $data');
+        
         _attemptReconnect();
       });
 
       _socket!.onError((data) {
-        debugPrint('❌ Socket error: $data');
+        
       });
 
       _socket!.onDisconnect((_) {
-        debugPrint('❌ Socket disconnected');
+        
         _attemptReconnect();
+      });
+
+      // Product cart count updates
+      _socket!.on('cart:updateCount', (data) async {
+        try {
+          final payload = data is String ? json.decode(data) : data as Map<String, dynamic>;
+          final count = payload['count'] as int?;
+          if (count != null) {
+            updateProductCartCount(count);
+          } else {
+            
+          }
+        } catch (e, st) {
+          
+        }
       });
 
       // Add event listener for orderStatusUpdated
       _socket!.on('orderStatusUpdated', (data) async {
-        debugPrint('📦 Order status update received in CartViewModel: $data');
         await _handleOrderStatusUpdate(data);
       });
 
       // Add ping/pong handlers
       _socket!.on('ping', (_) {
-        debugPrint('📡 Received ping');
         _socket!.emit('pong');
-        debugPrint('📡 Sent pong');
       });
 
       // Connect to the socket
       _socket!.connect();
-      debugPrint('🔄 Attempting to connect socket for cart updates...');
     } catch (e) {
-      debugPrint("❌ Socket connection error: $e");
+      
       _attemptReconnect();
     }
   }
@@ -133,7 +151,7 @@ class CartViewModel extends ChangeNotifier {
   void _attemptReconnect() {
     Future.delayed(Duration(seconds: 2), () {
       if (_socket != null && !_socket!.connected) {
-        debugPrint('🔄 Attempting to reconnect...');
+        
         _socket!.connect();
       }
     });
@@ -141,27 +159,31 @@ class CartViewModel extends ChangeNotifier {
 
   Future<void> _handleOrderStatusUpdate(dynamic data) async {
     try {
-      debugPrint('📦 Processing order status update in CartViewModel: $data');
-
       // Parse the data if it's a string
       Map<String, dynamic> orderData = data is String ? json.decode(data) : data;
-      debugPrint('📦 Parsed data: $orderData');
+
+      // Update medicine cart count if provided
+      final int? medCount = orderData['medicineCartCount'] as int?;
+      if (medCount != null) {
+        updateMedicineCartCount(medCount);
+      }
+
+      // Notify listeners to refresh medicine orders UI
+      if (onMedicineOrdersUpdate != null) {
+        onMedicineOrdersUpdate!();
+      }
 
       final medicineCartCount = orderData['medicineCartCount'];
 
       if (medicineCartCount != null) {
-        debugPrint('✅ Cart count update received: $medicineCartCount');
 
         // Update the cart count
         updateMedicineCartCount(medicineCartCount);
-
-        debugPrint('✅ Cart count updated successfully: $medicineCartCount');
       } else {
-        debugPrint('❌ Missing medicineCartCount in data: $orderData');
+        
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error handling order status update in CartViewModel: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
+      
     }
   }
 
@@ -308,13 +330,19 @@ class CartViewModel extends ChangeNotifier {
   }
 
   void updateMedicineCartCount(int count) {
-    if (_medicineCartCount != count) {
-      _medicineCartCount = count;
-      if (!_disposed) notifyListeners();
-      // Trigger callback if set
-      if (onCartCountUpdate != null) {
-        onCartCountUpdate!();
-      }
+    _medicineCartCount = count;
+    if (!_disposed) notifyListeners();
+    // Trigger callback even if count is unchanged
+    if (onCartCountUpdate != null) {
+      onCartCountUpdate!();
+    }
+  }
+
+  void updateProductCartCount(int count) {
+    _productCartCount = count;
+    if (!_disposed) notifyListeners();
+    if (onCartCountUpdate != null) {
+      onCartCountUpdate!();
     }
   }
 
@@ -324,7 +352,6 @@ class CartViewModel extends ChangeNotifier {
     String? authToken,
   }) async {
     try {
-      print('🎯 [CartViewModel] Fetching medicine cart count for user: $userId');
       setLoadingCartCount(true);
       clearCartCountError();
 
@@ -336,16 +363,31 @@ class CartViewModel extends ChangeNotifier {
       if (result['success'] == true) {
         final count = result['medicineCartCount'] as int;
         updateMedicineCartCount(count);
-        print('✅ [CartViewModel] Medicine cart count updated: $count');
         return true;
       } else {
-        print('❌ [CartViewModel] Failed to get cart count: ${result['message']}');
         setCartCountError(result['message'] ?? 'Failed to get cart count');
         return false;
       }
     } catch (e) {
-      print('🚨 [CartViewModel] Error fetching cart count: $e');
       setCartCountError('Error fetching cart count: $e');
+      return false;
+    } finally {
+      setLoadingCartCount(false);
+    }
+  }
+
+  /// Fetch product cart count from API
+  Future<bool> fetchProductCartCount() async {
+    try {
+      setLoadingCartCount(true);
+      clearCartCountError();
+
+      final service = ProductCartService(Dio());
+      final count = await service.getProductCartCount();
+      updateProductCartCount(count);
+      return true;
+    } catch (e) {
+      setCartCountError('Error fetching product cart count: $e');
       return false;
     } finally {
       setLoadingCartCount(false);
@@ -354,18 +396,17 @@ class CartViewModel extends ChangeNotifier {
 
   /// Handle payment success and place the medicine order
   Future<bool> handlePaymentSuccess({
-    required String orderId,
+    required List<String> orderIds,
     required String addressId,
     required String paymentId,
     String? authToken,
   }) async {
     try {
-      print('🎯 [CartViewModel] Handling payment success for order: $orderId');
       setPlacingOrder(true);
       clearOrderPlacementError();
 
       final result = await _cartService.placeMedicineOrder(
-        orderId: orderId,
+        orderIds: orderIds,
         addressId: addressId,
         paymentId: paymentId,
         authToken: authToken,
@@ -376,15 +417,16 @@ class CartViewModel extends ChangeNotifier {
         print('📊 [CartViewModel] Order details: ${result['data']}');
         
         // Update the order status in local list if it exists
-        final orderIndex = _medicineOrders.indexWhere((order) => order.orderId == orderId);
-        if (orderIndex != -1) {
-          // Create a new Order with updated fields
-          final updatedOrder = _medicineOrders[orderIndex].copyWith(
-            status: 'payment_completed',
-            addressId: addressId,
-            paymentId: paymentId,
-          );
-          _medicineOrders[orderIndex] = updatedOrder;
+        for (final id in orderIds) {
+          final orderIndex = _medicineOrders.indexWhere((order) => order.orderId == id);
+          if (orderIndex != -1) {
+            final updatedOrder = _medicineOrders[orderIndex].copyWith(
+              status: 'payment_completed',
+              addressId: addressId,
+              paymentId: paymentId,
+            );
+            _medicineOrders[orderIndex] = updatedOrder;
+          }
         }
         
         if (!_disposed) notifyListeners();
@@ -400,106 +442,6 @@ class CartViewModel extends ChangeNotifier {
       return false;
     } finally {
       setPlacingOrder(false);
-    }
-  }
-
-  // Initialize with mock data (for development)
-  void initializeWithMockData() {
-    // Mock product cart data
-    _productCart = [
-      {
-        'id': '1',
-        'name': 'Vitamin D3 1000IU',
-        'price': 299.0,
-        'quantity': 2,
-        'image': 'https://via.placeholder.com/80x80',
-        'brand': 'HealthVit',
-      },
-      {
-        'id': '2',
-        'name': 'Omega-3 Fish Oil Capsules',
-        'price': 450.0,
-        'quantity': 1,
-        'image': 'https://via.placeholder.com/80x80',
-        'brand': 'NutriLife',
-      },
-    ];
-
-    // Mock medicine orders data
-    _medicineOrders = [
-      Order(
-        orderId: 'MED-001-2024',
-        vendorId: 'vendor-001',
-        prescriptionId: 'prescription-001',
-        userId: 'user-001',
-        totalAmount: 450.0,
-        platformFee: 0.0,
-        status: 'pending',
-        note: 'Skip paracetamol if fever not present',
-        createdAt: DateTime(2024, 1, 15),
-        updatedAt: DateTime(2024, 1, 15),
-        vendor: OrderVendor(
-          vendorId: 'vendor-001',
-          name: 'HealthCare Pharmacy',
-        ),
-      ),
-      Order(
-        orderId: 'MED-002-2024',
-        vendorId: 'vendor-002',
-        prescriptionId: 'prescription-002',
-        userId: 'user-001',
-        totalAmount: 320.0,
-        platformFee: 0.0,
-        status: 'confirmed',
-        note: 'Full course treatment',
-        createdAt: DateTime(2024, 1, 14),
-        updatedAt: DateTime(2024, 1, 14),
-        vendor: OrderVendor(
-          vendorId: 'vendor-002',
-          name: 'MedPlus Store',
-        ),
-      ),
-    ];
-
-    if (!_disposed) notifyListeners();
-  }
-
-  // Checkout Methods
-  Future<bool> checkoutProducts() async {
-    try {
-      setProductLoading(true);
-      clearProductError();
-      
-      // TODO: Implement actual checkout API call
-      await Future.delayed(Duration(seconds: 2)); // Simulate API call
-      
-      // Clear cart after successful checkout
-      clearProductCart();
-      return true;
-    } catch (e) {
-      setProductError('Checkout failed: $e');
-      return false;
-    } finally {
-      setProductLoading(false);
-    }
-  }
-
-  Future<bool> cancelMedicineOrder(String orderId) async {
-    try {
-      setMedicineLoading(true);
-      clearMedicineError();
-      
-      // TODO: Implement actual cancel API call
-      await Future.delayed(Duration(seconds: 1)); // Simulate API call
-      
-      // Remove order from local list
-      removeMedicineOrder(orderId);
-      return true;
-    } catch (e) {
-      setMedicineError('Failed to cancel order: $e');
-      return false;
-    } finally {
-      setMedicineLoading(false);
     }
   }
 

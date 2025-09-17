@@ -87,7 +87,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      widget.prescription.userPhone ?? 'No phone number',
+                      widget.prescription.userPhone ?? 'No Contact number',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -257,7 +257,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  widget.prescription.userPhone ?? 'No phone number',
+                  widget.prescription.userPhone ?? 'No Contact number',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

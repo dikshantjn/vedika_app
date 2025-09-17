@@ -1497,12 +1497,12 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
                   SizedBox(height: 16),
                   _buildTextField(
                     controller: _phoneController,
-                    label: "Phone Number",
+                    label: "Contact Number",
                     icon: Icons.phone,
                     keyboardType: TextInputType.phone,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter phone number';
+                        return 'Please enter Contact number';
                       }
                       return null;
                     },
@@ -1878,7 +1878,7 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
               SizedBox(height: 10),
               _buildInfoItem("Full Name"),
               _buildInfoItem("Age & Gender"),
-              _buildInfoItem("Phone Number"),
+              _buildInfoItem("Contact Number"),
               _buildInfoItem("Address"),
               SizedBox(height: 20),
               ElevatedButton(

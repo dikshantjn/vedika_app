@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/CategoryColorPalette.dart';
@@ -237,16 +238,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ],
             ),
             child: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-              color: categoryColor,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 40,
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                size: 20,
+                color: categoryColor,
               ),
+              onPressed: () {
+                if (MainScreenNavigator.instance.canGoBack) {
+                  MainScreenNavigator.instance.goBack();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
           ),
           const SizedBox(width: 16),

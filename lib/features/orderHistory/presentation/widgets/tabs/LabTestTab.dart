@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/vie
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
 import 'package:intl/intl.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 class LabTestTab extends StatefulWidget {
   @override
@@ -104,152 +105,228 @@ class _LabTestTabState extends State<LabTestTab> {
   }
 
   Widget _buildOrderItem(BuildContext context, LabTestBooking order) {
-    return GestureDetector(
-      onTap: () => _showInvoiceBottomSheet(context, order),
-      child: Card(
+    final formattedDate = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(order.bookingDate ?? DateTime.now().toString()));
+    final labName = order.diagnosticCenter?.name ?? 'Unknown Lab';
+    final testCount = order.selectedTests?.length ?? 0;
+    final testInfo = testCount > 1 ? "$testCount Tests" : order.selectedTests?.first ?? "No tests";
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
         color: Colors.white,
-        elevation: 2,
-        margin: EdgeInsets.only(bottom: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: DoctorConsultationColorPalette.shadowLight,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => _showInvoiceBottomSheet(context, order),
+          borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.blue.withOpacity(0.1),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.science_outlined,
-                        color: Colors.blue,
-                        size: 24,
-                      ),
-                    ),
+              // Header with date and status
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: DoctorConsultationColorPalette.backgroundCard,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          order.diagnosticCenter?.name ?? 'Unknown Lab',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueGrey[800],
-                          ),
+                        Icon(
+                          Icons.science_outlined,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(width: 8),
                         Text(
-                          '${order.bookingDate} at ${order.bookingTime}',
+                          formattedDate,
                           style: TextStyle(
+                            fontWeight: FontWeight.w600,
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: DoctorConsultationColorPalette.textPrimary,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Row(
-                    children: [
-                      _buildStatusChip(order.bookingStatus ?? 'Unknown'),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.receipt_long,
-                        color: Colors.blue.shade400,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Divider(color: Colors.grey.withOpacity(0.2)),
-              SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildInfoPill(
-                    icon: Icons.science_outlined,
-                    label: (order.selectedTests?.length ?? 0) > 1
-                        ? "${order.selectedTests?.length ?? 0} Tests"
-                        : order.selectedTests?.first ?? "No tests",
-                  ),
-                  _buildInfoPill(
-                    icon: Icons.location_on_outlined,
-                    label: order.homeCollectionRequired == true ? "Home Collection" : "At Center",
-                  ),
-                  Text(
-                    "₹${order.totalAmount?.toStringAsFixed(0) ?? '0'}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                ],
-              ),
-              if (order.reportUrls != null && order.reportUrls!.isNotEmpty) ...[
-                SizedBox(height: 16),
-                Text(
-                  'Test Reports',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey[800],
-                  ),
+                    _buildStatusChip(order.bookingStatus ?? 'Unknown'),
+                  ],
                 ),
-                SizedBox(height: 8),
-                ...order.reportUrls!.entries.map((entry) => Padding(
-                  padding: EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          entry.key,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                          ),
-                        ),
+              ),
+              
+              // Lab info
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
+                      child: Icon(
+                        Icons.science_outlined, 
+                        size: 30, 
+                        color: DoctorConsultationColorPalette.primaryBlue,
                       ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ReportViewScreen(
-                                reportUrl: entry.value,
-                                testName: entry.key,
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            labName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: DoctorConsultationColorPalette.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Lab Test Booking',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: DoctorConsultationColorPalette.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                order.homeCollectionRequired == true 
+                                    ? Icons.home_work_rounded 
+                                    : Icons.location_on_rounded,
+                                size: 16,
+                                color: DoctorConsultationColorPalette.primaryBlue,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                order.homeCollectionRequired == true ? "Home Collection" : "At Center",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: DoctorConsultationColorPalette.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: DoctorConsultationColorPalette.borderLight,
+              ),
+              
+              // Order info footer
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 16,
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              order.bookingTime ?? 'N/A',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color: DoctorConsultationColorPalette.textPrimary,
                               ),
                             ),
-                          );
-                        },
-                        icon: Icon(Icons.visibility_outlined, size: 16),
-                        label: Text("View Report"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                          side: BorderSide(color: Colors.blue),
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          textStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.payment,
+                              size: 16,
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              '₹${order.totalAmount?.toStringAsFixed(0) ?? '0'}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: DoctorConsultationColorPalette.primaryBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.science_outlined,
+                          size: 16,
+                          color: DoctorConsultationColorPalette.primaryBlue,
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            testInfo,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: DoctorConsultationColorPalette.textSecondary,
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                    if (order.reportUrls != null && order.reportUrls!.isNotEmpty) ...[
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 16,
+                            color: DoctorConsultationColorPalette.successGreen,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            '${order.reportUrls!.length} Report(s) Available',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: DoctorConsultationColorPalette.successGreen,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                )).toList(),
-              ],
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -298,33 +375,55 @@ class _LabTestTabState extends State<LabTestTab> {
 
   Widget _buildStatusChip(String status) {
     Color chipColor;
+    IconData statusIcon;
+    
     switch (status.toLowerCase()) {
       case 'completed':
-        chipColor = Colors.green;
+        chipColor = DoctorConsultationColorPalette.successGreen;
+        statusIcon = Icons.check_circle;
         break;
       case 'ongoing':
-        chipColor = Colors.orange;
+        chipColor = DoctorConsultationColorPalette.warningYellow;
+        statusIcon = Icons.schedule;
         break;
       case 'pending':
-        chipColor = Colors.blue;
+        chipColor = DoctorConsultationColorPalette.primaryBlue;
+        statusIcon = Icons.check_circle_outline;
+        break;
+      case 'cancelled':
+        chipColor = DoctorConsultationColorPalette.errorRed;
+        statusIcon = Icons.cancel_outlined;
         break;
       default:
         chipColor = Colors.grey;
+        statusIcon = Icons.info_outline;
     }
-
+    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(30),
+        color: chipColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: chipColor, width: 1),
       ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: chipColor,
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            statusIcon,
+            size: 14,
+            color: chipColor,
+          ),
+          SizedBox(width: 4),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              color: chipColor,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

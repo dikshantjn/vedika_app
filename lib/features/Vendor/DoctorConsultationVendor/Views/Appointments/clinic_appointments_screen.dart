@@ -426,7 +426,7 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  appointment.user?.phoneNumber ?? 'No phone number',
+                                  appointment.user?.phoneNumber ?? 'No Contact number',
                                   style: TextStyle(
                                     color: DoctorConsultationColorPalette.textSecondary,
                                     fontSize: 14,
@@ -756,7 +756,7 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  appointment.user?.phoneNumber ?? 'No phone number',
+                                  appointment.user?.phoneNumber ?? 'No Contact number',
                                   style: TextStyle(
                                     color: DoctorConsultationColorPalette.textSecondary,
                                     fontSize: 14,
@@ -1093,7 +1093,7 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     try {
       if (phoneNumber == null || phoneNumber.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Phone number not available')),
+          const SnackBar(content: Text('Contact number not available')),
         );
         return;
       }
@@ -2166,7 +2166,7 @@ class _AppointmentDetailsSheetState extends State<_AppointmentDetailsSheet> {
     try {
       if (phoneNumber == null || phoneNumber.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Phone number not available')),
+          const SnackBar(content: Text('Contact number not available')),
         );
         return;
       }

@@ -204,7 +204,7 @@ class PersonalProfileHeader extends StatelessWidget {
                           Text(
                             viewModel.personalProfile!.phoneNumber.isNotEmpty
                                 ? viewModel.personalProfile!.phoneNumber
-                                : 'Phone Number not available',
+                                : 'Contact Number not available',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: Colors.white,

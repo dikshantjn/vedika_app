@@ -1402,8 +1402,16 @@ class _ProductBoxContentState extends State<_ProductBoxContent> {
                   child: _buildActionButton(
                     _isProductInCart ? 'Go to Cart' : 'Add to Cart',
                     _isProductInCart
-                        ? () {
-                            Navigator.pushNamed(context, AppRoutes.goToCart);
+                          ? () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.newCartScreen,
+                              arguments: {
+                                'initialTab': 'products',
+                                'tabIndex': 1, // fallback index for products tab if screen expects an int
+                                'openProducts': true,
+                              },
+                            );
                           }
                         : () async {
                             if (widget.product.productId == null) {

@@ -213,7 +213,7 @@ class _EditPersonalProfileScreenState extends State<EditPersonalProfileScreen> {
                             _buildSectionTitle('Personal Information'),
                             const SizedBox(height: 16),
                             _buildTextField(nameController, 'Full Name', Icons.person_outline, isRequired: true),
-                            _buildTextField(contactController, 'Phone Number', Icons.phone_outlined, isRequired: true),
+                            _buildTextField(contactController, 'Contact Number', Icons.phone_outlined, isRequired: true),
                             _buildTextField(
                               emailController, 
                               'Email Address', 

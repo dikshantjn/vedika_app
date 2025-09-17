@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/ProductCartViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseAddressSheet.dart';
 import 'package:vedika_healthcare/features/cart/presentation/widgets/ProductOrderSummarySheet.dart';
 
@@ -11,65 +13,49 @@ class ProductOrderTab extends StatefulWidget {
 }
 
 class _ProductOrderTabState extends State<ProductOrderTab> {
-  // Mock data for demonstration
-  final List<Map<String, dynamic>> _products = [
-    {
-      'id': '1',
-      'name': 'Beipos 1.5%W/V Bottle Of 5ml Eye Drops',
-      'description': '5ml Eye Drop in Bottle',
-      'price': 302.79,
-      'originalPrice': 305.85,
-      'quantity': 1,
-      'image': 'assets/ai.png', // Using local asset instead of placeholder
-      'brand': 'Beipos',
-      'deliveryDate': '31 Aug - 1 Sep',
-      'isPrescription': true,
-    },
-    {
-      'id': '2',
-      'name': 'Vitamin D3 1000IU',
-      'description': '60 Tablets',
-      'price': 299.0,
-      'originalPrice': 399.0,
-      'quantity': 2,
-      'image': 'assets/ai.png', // Using local asset instead of placeholder
-      'brand': 'HealthVit',
-      'deliveryDate': '31 Aug - 1 Sep',
-      'isPrescription': false,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[50],
-      child: Column(
-        children: [
-          Expanded(
-            child: _products.isEmpty ? _buildEmptyState() : _buildProductList(),
-          ),
-          if (_products.isNotEmpty) _buildBottomCheckoutBar(),
-        ],
+    return ChangeNotifierProvider<ProductCartViewModel>(
+      create: (_) => ProductCartViewModel()..loadCart(),
+      child: Consumer<ProductCartViewModel>(
+        builder: (context, vm, _) {
+          final hasItems = vm.items.isNotEmpty;
+          return Container(
+            color: Colors.grey[50],
+            child: Column(
+              children: [
+                Expanded(
+                  child: vm.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : (hasItems ? _buildProductList(vm) : _buildEmptyState()),
+                ),
+                if (hasItems) _buildBottomCheckoutBar(vm),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProductList() {
+  Widget _buildProductList(ProductCartViewModel vm) {
     return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: _products.length,
-      itemBuilder: (context, index) {
-        return _buildProductCard(_products[index], index);
-      },
+      padding: const EdgeInsets.all(16),
+      itemCount: vm.items.length,
+      itemBuilder: (context, index) => _buildProductCard(vm, index),
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> product, int index) {
-    final discount = ((product['originalPrice'] - product['price']) / product['originalPrice'] * 100).round();
-    
+  Widget _buildProductCard(ProductCartViewModel vm, int index) {
+    final item = vm.items[index];
+    final name = item.productName ?? 'Product';
+    final price = item.price ?? 0.0;
+    final qty = item.quantity ?? 0;
+    final category = item.category;
+
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -83,44 +69,40 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
       ),
       child: Row(
         children: [
-          // Product Image with Rx indicator
-          Stack(
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: AssetImage(product['image']),
+          // Product Image with fallback icon on error
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                ? Image.network(
+                    item.imageUrl!,
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              if (product['isPrescription'])
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[600],
-                      borderRadius: BorderRadius.circular(8),
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[100],
+                        child: Icon(
+                          Icons.shopping_bag,
+                          color: Colors.grey[400],
+                          size: 28,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[100],
+                    child: Icon(
+                      Icons.shopping_bag,
+                      color: Colors.grey[400],
+                      size: 28,
                     ),
-                    child: Text(
-                      'Rx',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
-                ),
-            ],
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           
           // Product Details
           Expanded(
@@ -128,7 +110,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product['name'],
+                  name,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -137,61 +119,33 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 4),
-                Text(
-                  product['description'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                const SizedBox(height: 8),
+                if (category != null && category.isNotEmpty)
+                  Text(
+                    category,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
+                if (category != null && category.isNotEmpty)
+                  const SizedBox(height: 6),
                 // Price row with proper overflow handling
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children: [
                     Text(
-                      'MRP ₹${product['originalPrice'].toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    Text(
-                      '₹${product['price'].toStringAsFixed(2)}',
+                      '₹${price.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: ColorPalette.primaryColor,
                       ),
                     ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$discount% OFF',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red[600],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Delivery by ${product['deliveryDate']}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
-                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -201,7 +155,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
             children: [
               // Remove button
               IconButton(
-                onPressed: () => _removeProduct(index),
+                onPressed: () => vm.removeItem(item.cartId!),
                 icon: Icon(
                   Icons.delete_outline,
                   color: Colors.red[400],
@@ -210,7 +164,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                 padding: EdgeInsets.all(8),
                 constraints: BoxConstraints(minWidth: 32, minHeight: 32),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               
               // Quantity controls with increment/decrement
               Container(
@@ -224,11 +178,11 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                   children: [
                     // Decrement button
                     GestureDetector(
-                      onTap: () => _updateQuantity(index, -1),
+                      onTap: () => vm.decrementQuantity(item.cartId!),
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: (qty <= 1) ? Colors.grey[100] : Colors.white,
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(12),
                             bottomLeft: Radius.circular(12),
@@ -237,7 +191,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                         child: Icon(
                           Icons.remove,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: (qty <= 1) ? Colors.grey[300] : Colors.grey[600],
                         ),
                       ),
                     ),
@@ -247,7 +201,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                       width: 40,
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        '${product['quantity']}',
+                        '$qty',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -259,7 +213,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
                     
                     // Increment button
                     GestureDetector(
-                      onTap: () => _updateQuantity(index, 1),
+                      onTap: () => vm.incrementQuantity(item.cartId!),
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -325,7 +279,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
     );
   }
 
-  Widget _buildBottomCheckoutBar() {
+  Widget _buildBottomCheckoutBar(ProductCartViewModel vm) {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -341,11 +295,32 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
       ),
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '₹${vm.total.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: ColorPalette.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           // Checkout button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _products.isNotEmpty ? _proceedToCheckout : null,
+              onPressed: vm.items.isNotEmpty ? () => _proceedToCheckout(vm) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: ColorPalette.primaryColor,
                 foregroundColor: Colors.white,
@@ -378,56 +353,7 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
     );
   }
 
-  void _updateQuantity(int index, int change) {
-    setState(() {
-      final newQuantity = _products[index]['quantity'] + change;
-      if (newQuantity > 0) {
-        _products[index]['quantity'] = newQuantity;
-      }
-    });
-  }
-
-    void _removeProduct(int index) {
-    setState(() {
-      _products.removeAt(index);
-    });
-  }
-
-  void _clearCart() {
-    setState(() {
-      _products.clear();
-      print('🧹 [ProductOrderTab] Cart cleared successfully');
-    });
-
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Cart cleared successfully! Order placed.'),
-        backgroundColor: Colors.green[600],
-        duration: Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showProductOrderSummarySheet(BuildContext context, String addressId) {
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return ProductOrderSummarySheet(
-          products: _products,
-          addressId: addressId,
-          onOrderPlaced: _clearCart, // Pass the callback to clear cart
-        );
-      },
-    );
-  }
-
-  Future<void> _proceedToCheckout() async {
+  Future<void> _proceedToCheckout(ProductCartViewModel vm) async {
     final String? selectedAddressId = await showModalBottomSheet<String>(
       backgroundColor: Colors.white,
       context: context,
@@ -445,8 +371,34 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
       },
     );
 
-    if (selectedAddressId != null) {
-      _showProductOrderSummarySheet(context, selectedAddressId);
-    }
+    if (!mounted) return;
+    if (selectedAddressId == null) return;
+
+    // Build summary input from vm.items
+    final products = vm.items.map((it) => {
+          'image': it.imageUrl ?? '',
+          'name': it.productName ?? 'Product',
+          'description': it.category ?? '',
+          'price': (it.price ?? 0.0),
+          'quantity': (it.quantity ?? 0),
+        }).toList();
+
+    await showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return ProductOrderSummarySheet(
+          products: products,
+          addressId: selectedAddressId,
+          onOrderPlaced: () async {
+            await vm.loadCart();
+          },
+        );
+      },
+    );
   }
 }

@@ -151,7 +151,7 @@ class ClinicPaymentService {
     var options = {
       'key': ApiConstants.razorpayApiKey,
       'amount': amount * 100, // Convert to smallest currency unit (paise)
-      'name': 'Vedika Healthcare',
+      'name': 'Vedika Healthtech',
       'description': 'Doctor Consultation Fee',
       'prefill': {
         'contact': patientPhone ?? '',
