@@ -12,6 +12,7 @@ import 'package:vedika_healthcare/features/orderHistory/data/services/BedBooking
 import 'package:vedika_healthcare/features/orderHistory/data/services/LabTestOrderService.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/BloodBankOrderService.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/ClinicAppointmentOrderService.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/services/ProductOrderService.dart';
 
 class InvoiceViewerScreen extends StatefulWidget {
   final String orderId;
@@ -30,6 +31,7 @@ class _InvoiceViewerScreenState extends State<InvoiceViewerScreen> {
   final LabTestOrderService _labTestService = LabTestOrderService();
   final BloodBankOrderService _bloodBankService = BloodBankOrderService();
   final ClinicAppointmentOrderService _clinicService = ClinicAppointmentOrderService();
+  final ProductOrderService _productOrderService = ProductOrderService();
   final PdfViewerController _pdfController = PdfViewerController();
 
   Uint8List? _pdfBytes;
@@ -61,6 +63,8 @@ class _InvoiceViewerScreenState extends State<InvoiceViewerScreen> {
         bytes = await _bloodBankService.fetchBloodBankInvoiceBytes(widget.orderId);
       } else if (widget.categoryLabel.toLowerCase().contains('clinic')) {
         bytes = await _clinicService.fetchClinicInvoiceBytes(widget.orderId);
+      } else if (widget.categoryLabel.toLowerCase().contains('product')) {
+        bytes = await _productOrderService.fetchProductOrderInvoiceBytes(widget.orderId);
       } else {
         bytes = await _medicineService.fetchMedicineDeliveryInvoiceBytes(widget.orderId);
       }

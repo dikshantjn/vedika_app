@@ -5,8 +5,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/O
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/ProductOrder.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:vedika_healthcare/features/orderHistory/data/reports/product_order_invoice_pdf.dart';
-import 'package:printing/printing.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
 class ProductOrdersTab extends StatefulWidget {
@@ -18,7 +17,6 @@ class ProductOrdersTab extends StatefulWidget {
 
 class _ProductOrdersTabState extends State<ProductOrdersTab> {
   bool _isGeneratingInvoice = false;
-  bool _isLoading = false;
 
   // Calculate subtotal from order items with proper null safety
   double _calculateSubtotal(ProductOrder order) {
@@ -615,7 +613,7 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
                     ),
                     const SizedBox(height: 30),
 
-                    // Download Invoice Button
+                    // Generate Invoice Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -626,13 +624,22 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
                                 setState(() {
                                   _isGeneratingInvoice = true;
                                 });
-                                
-                                await _downloadInvoice(order);
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => InvoiceViewerScreen(
+                                      orderId: order.orderId,
+                                      categoryLabel: 'Product Order',
+                                    ),
+                                  ),
+                                );
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                }
                               } catch (e) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Failed to download invoice'),
+                                    SnackBar(
+                                      content: Text('Failed to open invoice: $e'),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
@@ -667,12 +674,12 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
                                 ),
                               ),
                             Icon(
-                              _isGeneratingInvoice ? Icons.hourglass_empty : Icons.download,
+                              _isGeneratingInvoice ? Icons.hourglass_empty : Icons.receipt_long,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _isGeneratingInvoice ? 'Generating Invoice...' : 'Download Invoice',
+                              _isGeneratingInvoice ? 'Opening Invoice...' : 'Generate Invoice',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -715,28 +722,5 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
     );
   }
 
-  Future<void> _downloadInvoice(ProductOrder order) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final pdfBytes = await ProductOrderInvoicePdf.generate(order);
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename: 'order_invoice_${order.orderId.substring(0, 8)}.pdf'
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to generate invoice. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+  // Invoice is now viewed via InvoiceViewerScreen
 }
