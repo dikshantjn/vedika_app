@@ -105,6 +105,8 @@ dependencies:
   share_plus: ^11.0.0
   googleapis_auth: ^2.0.0
   googleapis: ^14.0.0
+  table_calendar: ^3.0.9
+
 
   # Charts
   fl_chart: ^1.0.0
