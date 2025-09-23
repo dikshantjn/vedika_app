@@ -34,6 +34,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
   late AnimationController _animationController;
   int _currentStep = 0;
   List<String> _requiredFields = [];
+  bool _autoCompleted = false;
 
   final List<String> _bloodGroups = [
     'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
@@ -167,7 +168,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
     }
   }
 
-  Step _buildStep(String title, Widget content) {
+  Step _buildStep(String id, String title, Widget content) {
+    final index = _requiredFields.indexOf(id);
     return Step(
       title: Text(
         title,
@@ -180,8 +182,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
         duration: const Duration(milliseconds: 300),
         child: content,
       ),
-      isActive: _requiredFields.indexOf(title.toLowerCase()) <= _currentStep,
-      state: _requiredFields.indexOf(title.toLowerCase()) < _currentStep 
+      isActive: index >= 0 && index <= _currentStep,
+      state: index >= 0 && index < _currentStep 
           ? StepState.complete 
           : StepState.indexed,
     );
@@ -201,6 +203,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
     
     if (_shouldShowField('name')) {
       steps.add(_buildStep(
+        'name',
         'Personal Info',
         _buildTextField(
           controller: _nameController,
@@ -218,6 +221,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
 
     if (_shouldShowField('location')) {
       steps.add(_buildStep(
+        'location',
         'Location',
         _buildTextField(
           controller: _addressController,
@@ -236,6 +240,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
 
     if (_shouldShowField('emergencyContactNumber')) {
       steps.add(_buildStep(
+        'emergencyContactNumber',
         'Emergency Contact',
         _buildTextField(
           controller: _emergencyContactController,
@@ -254,6 +259,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
 
     if (_shouldShowField('dateOfBirth')) {
       steps.add(_buildStep(
+        'dateOfBirth',
         'Date of Birth',
         _buildDatePicker(),
       ));
@@ -261,12 +267,32 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
 
     if (_shouldShowField('bloodGroup')) {
       steps.add(_buildStep(
+        'bloodGroup',
         'Blood Group',
         _buildBloodGroupDropdown(),
       ));
     }
 
+    // If no steps are required, auto-complete and avoid building Stepper
+    if (steps.isEmpty) {
+      if (!_autoCompleted) {
+        _autoCompleted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.onComplete();
+          }
+        });
+      }
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Clamp current step to valid range to satisfy Stepper assertion
+    final int currentStepIndex = _currentStep >= steps.length ? steps.length - 1 : (_currentStep < 0 ? 0 : _currentStep);
+
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Column(
@@ -295,7 +321,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
               ),
             ),
             LinearProgressIndicator(
-              value: (_currentStep + 1) / steps.length,
+              value: steps.isEmpty ? 1 : (_currentStep + 1) / steps.length,
               backgroundColor: Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
               minHeight: 2,
@@ -311,17 +337,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> with Sing
                   ),
                   child: Stepper(
                     type: StepperType.vertical,
-                    currentStep: _currentStep,
+                    currentStep: currentStepIndex,
                     onStepContinue: () {
-                      if (_currentStep < steps.length - 1) {
-                        setState(() => _currentStep++);
+                      if (currentStepIndex < steps.length - 1) {
+                        setState(() => _currentStep = currentStepIndex + 1);
                       } else {
                         _saveProfile();
                       }
                     },
                     onStepCancel: () {
-                      if (_currentStep > 0) {
-                        setState(() => _currentStep--);
+                      if (currentStepIndex > 0) {
+                        setState(() => _currentStep = currentStepIndex - 1);
                       }
                     },
                     onStepTapped: (index) {

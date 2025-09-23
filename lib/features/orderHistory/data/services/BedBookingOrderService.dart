@@ -16,8 +16,6 @@ class BedBookingOrderService {
         ),
       );
 
-      print("✅ Fetch Completed Appointments Response: ${response.statusCode}, Data: ${response.data}");
-
       if (response.statusCode == 200) {
         final data = response.data;
         if (data != null && data.containsKey('bookings')) {

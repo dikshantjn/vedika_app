@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTestAppointmentViewModel.dart';
@@ -15,6 +16,7 @@ import 'dart:io';
 
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestStorageService.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class BookLabTestAppointmentPage extends StatefulWidget {
   final DiagnosticCenter center;
@@ -365,9 +367,27 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
               ),
             ],
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () {
+              final scope = MainScreenScope.maybeOf(context);
+              if (scope != null) {
+                scope.setIndex(0);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+          ),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (MainScreenNavigator.instance.canGoBack) {
+            MainScreenNavigator.instance.goBack();
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(

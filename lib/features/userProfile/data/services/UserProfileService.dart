@@ -39,14 +39,10 @@ class UserProfileService {
   // Get User Profile by userId
   Future<PersonalProfile?> getUserProfile(String userId) async {
     try {
-      print("Fetching user profile for userId: $userId");
       final String url = "${ApiEndpoints.getUserProfile}/$userId";
-      print("GET Request URL: $url");
 
       final response = await _dio.get(url);
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Data: ${response.data}");
 
       if (response.statusCode == 200 && response.data != null) {
         return PersonalProfile.fromJson(response.data);
@@ -60,7 +56,6 @@ class UserProfileService {
   // Save User Profile (Create or Update)
   Future<bool> saveUserProfile(PersonalProfile profile) async {
     try {
-      print("Saving user profile...");
       final String url = ApiEndpoints.saveUserProfile;
       print("POST Request URL: $url");
       print("Request Body: ${json.encode(profile.toJson())}");
@@ -83,7 +78,7 @@ class UserProfileService {
   // Edit User Profile
   Future<bool> editUserProfile(String userId, PersonalProfile profile) async {
     try {
-      print("Editing user profile for userId: $userId");
+      // Debug print removed
       final String url = "${ApiEndpoints.editUserProfile}/$userId";
       print("PUT Request URL: $url");
       print("Request Body: ${json.encode(profile.toJson())}");

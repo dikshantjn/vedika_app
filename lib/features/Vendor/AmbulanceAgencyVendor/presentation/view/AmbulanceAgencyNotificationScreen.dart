@@ -67,7 +67,7 @@ class AmbulanceAgencyNotificationScreen extends StatelessWidget {
           // Right: Notification Icon
           Icon(
             icon,
-            color: Colors.cyan,
+            color: Color(0xFF38A3A5),
             size: 28, // Icon size adjusted
           ),
         ],

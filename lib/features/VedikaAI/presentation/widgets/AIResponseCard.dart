@@ -5,7 +5,6 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Model
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 import 'package:vedika_healthcare/features/VedikaAI/data/models/AIChatResponse.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductCartViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/ProductCartService.dart';

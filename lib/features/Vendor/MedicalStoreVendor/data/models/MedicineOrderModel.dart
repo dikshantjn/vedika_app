@@ -56,10 +56,6 @@ class MedicineOrderModel {
   });
 
   factory MedicineOrderModel.fromJson(Map<String, dynamic> json) {
-    print("🔍 Parsing order with ID: ${json['orderId']}");
-    print("📦 jsonPrescription = ${json['prescription']?['jsonPrescription']}");
-    print("👤 User = ${json['User']}");
-    print("🛒 Carts = ${json['Carts']}");
 
     return MedicineOrderModel(
       orderId: json['orderId'] ?? 'ORD-UNKNOWN',

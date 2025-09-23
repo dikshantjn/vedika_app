@@ -6,7 +6,7 @@ import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/Us
 import 'package:vedika_healthcare/features/userProfile/presentation/viewmodel/UserPersonalProfileViewModel.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/MedicalProfileTab/MedicalProfileTab.dart';
 import 'package:vedika_healthcare/features/userProfile/presentation/widgets/PersonalProfileTab/PersonalProfileTab.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class UserProfilePage extends StatefulWidget {
   @override
@@ -35,7 +35,6 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      drawer: DrawerMenu(),
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(120.0),
         child: Container(
@@ -67,7 +66,14 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
                       Row(
                         children: [
                           GestureDetector(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () {
+                              final scope = MainScreenScope.maybeOf(context);
+                              if (scope != null) {
+                                scope.setIndex(0);
+                              } else {
+                                Navigator.pop(context);
+                              }
+                            },
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(

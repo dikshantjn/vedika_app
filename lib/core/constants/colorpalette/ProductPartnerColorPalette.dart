@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
 class ProductPartnerColorPalette {
-  // Primary Colors - Modern Purple Theme
-  static const Color primary = Color(0xFF6B4EFF);
-  static const Color primaryLight = Color(0xFF8A7AFF);
-  static const Color primaryDark = Color(0xFF4B3DBF);
+  // Primary Colors - Unified App Teal Theme
+  static const Color primary = Color(0xFF38A3A5);
+  static const Color primaryLight = Color(0xFF5FC2C4);
+  static const Color primaryDark = Color(0xFF2B7F80);
 
-  // Secondary Colors - Teal Accent
-  static const Color secondary = Color(0xFF00D4C8);
-  static const Color secondaryLight = Color(0xFF4DE1D7);
-  static const Color secondaryDark = Color(0xFF009C94);
+  // Secondary Colors - Complementary Teal Accents
+  static const Color secondary = Color(0xFF7CD6D0);
+  static const Color secondaryLight = Color(0xFF9BDDDD);
+  static const Color secondaryDark = Color(0xFF2E8C8E);
 
   // Status Colors - Softer, Modern Tones
-  static const Color success = Color(0xFF00C48C);
+  static const Color success = Color(0xFF27AE60);
   static const Color warning = Color(0xFFFFB547);
   static const Color error = Color(0xFFFF5C5C);
-  static const Color info = Color(0xFF4E8AFF);
+  static const Color info = Color(0xFF38A3A5);
 
   // Background Colors - Clean, Light Theme
   static const Color background = Color(0xFFFFFFFF);
@@ -33,12 +33,12 @@ class ProductPartnerColorPalette {
 
   // Chart Colors - Vibrant but Professional
   static const List<Color> chartColors = [
-    Color(0xFF6B4EFF),
-    Color(0xFF00C48C),
+    Color(0xFF38A3A5),
+    Color(0xFF5FC2C4),
+    Color(0xFF9BDDDD),
+    Color(0xFF27AE60),
     Color(0xFFFFB547),
     Color(0xFFFF5C5C),
-    Color(0xFF4E8AFF),
-    Color(0xFF00D4C8),
   ];
 
   // Overview Box Colors - Soft, Modern Gradients
@@ -55,7 +55,7 @@ class ProductPartnerColorPalette {
   // Shadow
   static List<BoxShadow> cardShadow = [
     BoxShadow(
-      color: const Color(0xFF6B4EFF).withOpacity(0.05),
+      color: const Color(0xFF38A3A5).withOpacity(0.08),
       blurRadius: 10,
       offset: const Offset(0, 4),
     ),

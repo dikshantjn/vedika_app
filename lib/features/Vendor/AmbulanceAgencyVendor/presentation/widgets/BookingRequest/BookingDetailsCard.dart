@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 class BookingDetailsCard extends StatelessWidget {
@@ -12,7 +13,7 @@ class BookingDetailsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.cyan.shade50,
+        color: ColorPalette.lighterPrimary,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

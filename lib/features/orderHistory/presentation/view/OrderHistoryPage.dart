@@ -10,7 +10,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tab
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ClinicAppointmentTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ProductOrdersTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/OrderHistoryViewModel.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
 class OrderHistoryPage extends StatefulWidget {
@@ -18,9 +18,13 @@ class OrderHistoryPage extends StatefulWidget {
   _OrderHistoryPageState createState() => _OrderHistoryPageState();
 }
 
-class _OrderHistoryPageState extends State<OrderHistoryPage> {
+class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepAliveClientMixin {
   int _selectedIndex = 0;
   String? _userId;
+  bool _isDisposed = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -28,33 +32,111 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     _loadUserId();
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Future<void> _loadUserId() async {
-    final userId = await StorageService.getUserId();
-    setState(() {
-      _userId = userId;
-    });
+    try {
+      if (_isDisposed) return;
+      final userId = await StorageService.getUserId();
+      if (!_isDisposed && mounted) {
+        setState(() {
+          _userId = userId;
+        });
+      }
+    } catch (e) {
+      print('OrderHistoryPage - Error loading user ID: $e');
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      print('OrderHistoryPage - didChangeDependencies called on disposed widget, skipping');
+      return;
+    }
+    
     // Get the initialTab from route arguments
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (args != null && args.containsKey('initialTab')) {
-      _selectedIndex = args['initialTab'] as int;
+    try {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      print('OrderHistoryPage - Route arguments: $args (type: ${args.runtimeType})');
+      
+      if (args != null) {
+        // Check if args is a Map<String, dynamic>
+        if (args is Map<String, dynamic>) {
+          print('OrderHistoryPage - Arguments is Map<String, dynamic>');
+          if (args.containsKey('initialTab')) {
+            final initialTab = args['initialTab'];
+            print('OrderHistoryPage - initialTab value: $initialTab (type: ${initialTab.runtimeType})');
+            if (initialTab is int) {
+              // Ensure the index is within valid bounds
+              if (initialTab >= 0 && initialTab < verticalTitles.length) {
+                _selectedIndex = initialTab;
+                print('OrderHistoryPage - Set selected index to: $_selectedIndex');
+              } else {
+                print('Warning: initialTab index out of bounds: $initialTab (max: ${verticalTitles.length - 1})');
+                _selectedIndex = 0; // Default to first tab
+              }
+            } else {
+              print('Warning: initialTab is not an int: ${initialTab.runtimeType}');
+              _selectedIndex = 0; // Default to first tab
+            }
+          } else {
+            print('OrderHistoryPage - No initialTab found in arguments');
+          }
+        } else {
+          // Log the unexpected argument type for debugging
+          print('Warning: OrderHistoryPage received unexpected argument type: ${args.runtimeType}');
+          print('Arguments: $args');
+          // Try to extract any useful information from the arguments
+          if (args.toString().contains('VendorProduct')) {
+            print('Warning: VendorProduct object detected in route arguments');
+          }
+          // Reset to default tab to prevent errors
+          _selectedIndex = 0;
+        }
+      } else {
+        print('OrderHistoryPage - No route arguments provided');
+      }
+    } catch (e, stackTrace) {
+      // Log any errors that occur during argument processing
+      print('Error processing route arguments in OrderHistoryPage: $e');
+      print('Stack trace: $stackTrace');
+      // Reset to default tab to prevent errors
+      _selectedIndex = 0;
     }
   }
 
   List<Widget> get _verticals {
-    return [
-      MedicineTab(),
-      AmbulanceTab(),
-      _userId != null ? BedBookingTab(userId: _userId!) : const Center(child: CircularProgressIndicator()),
-      LabTestTab(),
-      BloodBankTab(),
-      ClinicAppointmentTab(),
-      ProductOrdersTab(),
-    ];
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      print('OrderHistoryPage - _verticals getter called on disposed widget, returning empty list');
+      return [const Center(child: Text('Widget disposed'))];
+    }
+    
+    try {
+      return [
+        MedicineTab(),
+        AmbulanceTab(),
+        _userId != null ? BedBookingTab(userId: _userId!) : const Center(child: CircularProgressIndicator()),
+        LabTestTab(),
+        BloodBankTab(),
+        ClinicAppointmentTab(),
+        ProductOrdersTab(),
+      ];
+    } catch (e) {
+      print('Error creating vertical tabs: $e');
+      // Return a fallback widget if there's an error
+      return [
+        const Center(child: Text('Error loading tabs')),
+      ];
+    }
   }
 
   final List<String> _verticalTitles = [
@@ -67,8 +149,39 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     'Products',
   ];
 
+  // Getter to ensure titles are always available
+  List<String> get verticalTitles {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      print('OrderHistoryPage - verticalTitles getter called on disposed widget, returning default titles');
+      return ['Orders'];
+    }
+    
+    if (_verticalTitles.isEmpty) {
+      print('Warning: _verticalTitles is empty, returning default titles');
+      return ['Orders'];
+    }
+    return _verticalTitles;
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      print('OrderHistoryPage - build called on disposed widget, returning empty container');
+      return Container(); // Return empty container if disposed
+    }
+    
+    print('OrderHistoryPage - build method called, selectedIndex: $_selectedIndex');
+    
+    // Ensure selectedIndex is within bounds
+    if (_selectedIndex < 0 || _selectedIndex >= verticalTitles.length) {
+      print('Warning: selectedIndex out of bounds, resetting to 0');
+      _selectedIndex = 0;
+    }
+    
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ClinicAppointmentViewModel()),
@@ -81,6 +194,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           foregroundColor: Colors.white,
           centerTitle: true,
           elevation: 6,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () {
+              // Check if widget is still mounted before accessing context
+              if (!mounted || _isDisposed) return;
+              
+              final scope = MainScreenScope.maybeOf(context);
+              if (scope != null) {
+                scope.setIndex(0);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
           title: Text(
             "Order History",
             style: TextStyle(
@@ -105,14 +232,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               padding: EdgeInsets.symmetric(vertical: 10),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: _verticalTitles.length,
+                itemCount: verticalTitles.length,
                 padding: EdgeInsets.symmetric(horizontal: 10),
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: EdgeInsets.symmetric(horizontal: 6),
                     child: ChoiceChip(
                       label: Text(
-                        _verticalTitles[index],
+                        verticalTitles[index],
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
@@ -120,6 +247,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       ),
                       selected: _selectedIndex == index,
                       onSelected: (selected) {
+                        // Check if widget is still mounted before calling setState
+                        if (!mounted || _isDisposed) return;
+                        
                         setState(() {
                           _selectedIndex = index;
                         });
@@ -146,8 +276,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             ),
           ),
         ),
-        drawer: DrawerMenu(),
-        body: _verticals[_selectedIndex],
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _verticals,
+        ),
       ),
     );
   }

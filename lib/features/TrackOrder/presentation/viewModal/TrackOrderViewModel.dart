@@ -132,7 +132,6 @@ class TrackOrderViewModel extends ChangeNotifier {
 
       // Connect to the socket
       _socket!.connect();
-      debugPrint('🔄 Attempting to connect socket...');
     } catch (e) {
       debugPrint("❌ Socket connection error: $e");
       _attemptReconnect();
@@ -472,11 +471,8 @@ class TrackOrderViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    debugPrint("📦 Starting to fetch active ambulance bookings...");
-
     try {
       String? userId = await StorageService.getUserId();
-      debugPrint("👤 User ID: $userId");
 
       if (userId == null) {
         debugPrint("❌ User ID not found");
@@ -484,11 +480,6 @@ class TrackOrderViewModel extends ChangeNotifier {
       }
 
       _ambulanceBookings = await _service.fetchActiveAmbulanceBookings(userId);
-      debugPrint("✅ Ambulance bookings fetched: ${_ambulanceBookings.length}");
-
-      for (var booking in _ambulanceBookings) {
-        debugPrint("🚑 Booking ID: ${booking.requestId}, Status: ${booking.status}");
-      }
 
       _error = null;
     } catch (e, stackTrace) {
@@ -500,7 +491,6 @@ class TrackOrderViewModel extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
-      debugPrint("📦 Done fetching ambulance bookings.");
     }
   }
 
@@ -508,8 +498,6 @@ class TrackOrderViewModel extends ChangeNotifier {
   Future<void> fetchBloodBankBookings() async {
     _isLoading = true;
     notifyListeners();
-
-    debugPrint("📦 Starting to fetch blood bank bookings...");
 
     try {
       String? userId = await StorageService.getUserId();
@@ -520,23 +508,17 @@ class TrackOrderViewModel extends ChangeNotifier {
       }
 
       _bloodBankBookings = await _service.getBookings(userId, token);
-      debugPrint("✅ Blood bank bookings fetched: ${_bloodBankBookings.length}");
 
-      for (var booking in _bloodBankBookings) {
-        debugPrint("🩸 Booking ID: ${booking.bookingId}, Status: ${booking.status}");
-      }
 
       _error = null;
     } catch (e, stackTrace) {
       debugPrint("❌ Error fetching blood bank bookings: $e");
-      debugPrint("🔍 Stack Trace:\n$stackTrace");
 
       _bloodBankBookings = [];
       _error = "No Blood Bank Bookings Found";
     } finally {
       _isLoading = false;
       notifyListeners();
-      debugPrint("📦 Done fetching blood bank bookings.");
     }
   }
 
@@ -545,11 +527,9 @@ class TrackOrderViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    debugPrint("📦 Starting to fetch product orders...");
 
     try {
       String? userId = await StorageService.getUserId();
-      debugPrint("👤 User ID: $userId");
 
       if (userId == null) {
         debugPrint("❌ User ID not found");
@@ -557,11 +537,8 @@ class TrackOrderViewModel extends ChangeNotifier {
       }
 
       _productOrders = await _service.fetchProductOrders(userId);
-      debugPrint("✅ Product orders fetched: ${_productOrders.length}");
 
       for (var order in _productOrders) {
-        debugPrint("📦 Order ID: ${order.orderId}, Status: ${order.status}");
-        debugPrint("📦 Order Items: ${order.items?.length ?? 0} items");
       }
 
       _error = null;
@@ -574,7 +551,6 @@ class TrackOrderViewModel extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
-      debugPrint("📦 Done fetching product orders.");
     }
   }
 

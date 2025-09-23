@@ -7,7 +7,7 @@ import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/Blood
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/TrackingOrderCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/Widgets/ProductOrderTrackingCard.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:flutter/rendering.dart';
 
 class TrackOrderScreen extends StatefulWidget {
@@ -17,20 +17,34 @@ class TrackOrderScreen extends StatefulWidget {
   _TrackOrderScreenState createState() => _TrackOrderScreenState();
 }
 
-class _TrackOrderScreenState extends State<TrackOrderScreen> {
+class _TrackOrderScreenState extends State<TrackOrderScreen> with AutomaticKeepAliveClientMixin {
+  bool _isInitialized = false;
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
-    debugPrint('🚀 TrackOrderScreen initState');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
-      debugPrint('🔄 Initializing viewModel');
-      viewModel.initSocketConnection();
-    });
+    // Only print once during actual initialization
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only initialize once when the widget is first accessed
+    if (!_isInitialized) {
+      _isInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
+          viewModel.initSocketConnection();
+        }
+      });
+    }
   }
 
   Future<void> _refreshData() async {
-    debugPrint('🔄 Refreshing data');
     final viewModel = Provider.of<TrackOrderViewModel>(context, listen: false);
     await Future.wait([
       viewModel.fetchOrdersAndCartItems(),
@@ -42,7 +56,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🏗️ Building TrackOrderScreen');
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -51,6 +65,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
           statusBarIconBrightness: Brightness.light,
         ),
         child: SafeArea(
+          top: false,
           child: RefreshIndicator(
             onRefresh: _refreshData,
             color: ColorPalette.primaryColor,
@@ -62,6 +77,22 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                   pinned: true,
                   elevation: 0,
                   backgroundColor: ColorPalette.primaryColor,
+                  systemOverlayStyle: SystemUiOverlayStyle(
+                    statusBarColor: ColorPalette.primaryColor,
+                    statusBarIconBrightness: Brightness.light,
+                    statusBarBrightness: Brightness.dark,
+                  ),
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    onPressed: () {
+                      final scope = MainScreenScope.maybeOf(context);
+                      if (scope != null) {
+                        scope.setIndex(0);
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
                   flexibleSpace: FlexibleSpaceBar(
                     title: Text(
                       'Track Orders',
@@ -104,23 +135,18 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                 SliverToBoxAdapter(
                   child: Consumer<TrackOrderViewModel>(
                     builder: (context, viewModel, child) {
-                      debugPrint('🔄 Consumer rebuilding');
                       if (viewModel.isLoading) {
-                        debugPrint('⏳ Showing loading state');
                         return _buildLoadingState();
                       }
                       if (viewModel.error != null) {
-                        debugPrint('❌ Showing error state: ${viewModel.error}');
                         return _buildErrorState(viewModel.error!);
                       }
                       if (viewModel.orders.isEmpty && 
                           viewModel.ambulanceBookings.isEmpty && 
                           viewModel.bloodBankBookings.isEmpty &&
                           viewModel.productOrders.isEmpty) {
-                        debugPrint('📭 Showing empty state');
                         return _buildEmptyState();
                       }
-                      debugPrint('📦 Building orders list');
                       return _buildOrdersList(viewModel);
                     },
                   ),
@@ -186,12 +212,6 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   }
 
   Widget _buildOrdersList(TrackOrderViewModel viewModel) {
-    debugPrint('🔄 Building orders list');
-    debugPrint('📦 Product Orders count: ${viewModel.productOrders.length}');
-    debugPrint('🩸 Blood Bank Bookings count: ${viewModel.bloodBankBookings.length}');
-    debugPrint('🚑 Ambulance Bookings count: ${viewModel.ambulanceBookings.length}');
-    debugPrint('💊 Medicine Orders count: ${viewModel.orders.length}');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(

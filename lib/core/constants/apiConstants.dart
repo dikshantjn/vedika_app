@@ -1,6 +1,6 @@
 class ApiConstants {
   // Use your actual keys here
-  static const String razorpayApiKey = "rzp_test_uMMypIJ2X2bn1N";
+  static const String razorpayApiKey = "rzp_test_R7wuZ7PnhxSIOE";
 
   // PhonePe credentials
   static const String phonePeMerchantId = "M2202R7N3WE25"; // Test merchant ID

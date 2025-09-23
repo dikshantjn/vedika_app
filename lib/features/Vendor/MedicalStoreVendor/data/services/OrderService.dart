@@ -22,7 +22,6 @@ class OrderService {
         throw Exception('Failed to load orders');
       }
     } catch (e, stackTrace) {
-      print("🛑 Error fetching orders: $e");
       print("📍 StackTrace: $stackTrace");
       throw Exception("Error fetching orders");
     }

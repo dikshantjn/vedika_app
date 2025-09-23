@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/widgets/LabBottomSheet.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class LabSearchPage extends StatefulWidget {
   @override
@@ -29,7 +29,6 @@ class _LabSearchPageState extends State<LabSearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: DrawerMenu(),
       body: Consumer<LabSearchViewModel>(
         builder: (context, viewModel, child) {
           return Stack(
@@ -341,8 +340,15 @@ class _LabSearchPageState extends State<LabSearchPage> {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.menu, color: Colors.black87),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+            onPressed: () {
+              final scope = MainScreenScope.maybeOf(context);
+              if (scope != null) {
+                scope.setIndex(0);
+              } else {
+                Navigator.pop(context);
+              }
+            },
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
           ),

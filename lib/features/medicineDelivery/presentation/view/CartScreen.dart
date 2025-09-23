@@ -5,9 +5,10 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineProduct.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/cart/CheckoutSection.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/home/data/models/ProductCart.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
+import 'package:flutter/foundation.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -21,7 +22,14 @@ class _CartScreenState extends State<CartScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CartAndPlaceOrderViewModel>(context, listen: false).fetchOrdersAndCartItems();
+      // Only fetch if cart data hasn't been initialized yet
+      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+      if (!cartViewModel.hasInitialized) {
+        debugPrint("🔄 Cart not initialized, fetching data...");
+        cartViewModel.fetchOrdersAndCartItems();
+      } else {
+        debugPrint("📦 Using existing cart data: ${cartViewModel.cacheStatus}");
+      }
     });
   }
 
@@ -34,6 +42,17 @@ class _CartScreenState extends State<CartScreen> {
         backgroundColor: Colors.white,
         foregroundColor: ColorPalette.primaryColor,
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: ColorPalette.primaryColor),
+          onPressed: () {
+            final scope = MainScreenScope.maybeOf(context);
+            if (scope != null) {
+              scope.setIndex(0);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text(
           'My Cart',
           style: TextStyle(
@@ -50,7 +69,6 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ],
       ),
-      drawer: DrawerMenu(),
       body: Consumer<CartAndPlaceOrderViewModel>(
         builder: (context, cartViewModel, child) {
           final cartItems = cartViewModel.cartItems;
@@ -71,35 +89,42 @@ class _CartScreenState extends State<CartScreen> {
           return Column(
             children: [
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (cartItems.isNotEmpty) ...[
-                      Text(
-                        'Medicine Items',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    debugPrint("🔄 Pull to refresh triggered");
+                    final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+                    await cartViewModel.refreshCartData();
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (cartItems.isNotEmpty) ...[
+                        Text(
+                          'Medicine Items',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 16),
-                      ...cartItems.map((item) => _buildCartItem(context, cartViewModel, item)),
-                      SizedBox(height: 24),
-                    ],
-                    if (productCartItems.isNotEmpty) ...[
-                      Text(
-                        'Product Items',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                        SizedBox(height: 16),
+                        ...cartItems.map((item) => _buildCartItem(context, cartViewModel, item)),
+                        SizedBox(height: 24),
+                      ],
+                      if (productCartItems.isNotEmpty) ...[
+                        Text(
+                          'Product Items',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 16),
-                      ...productCartItems.map((item) => _buildProductCartItem(context, item, cartViewModel)),
+                        SizedBox(height: 16),
+                        ...productCartItems.map((item) => _buildProductCartItem(context, item, cartViewModel)),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               CheckoutSection(cartViewModel: cartViewModel),

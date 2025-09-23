@@ -48,8 +48,7 @@ class BloodBankAgencyService {
       
       final response = await _dio.get('${ApiEndpoints.getAllBloodBankAgencies}');
       
-      _logger.i('Response received: ${response.data}');
-      
+
       if (response.statusCode == 200) {
         if (response.data is List) {
           final List<dynamic> data = response.data;
@@ -192,7 +191,6 @@ class BloodBankAgencyService {
   // Get bookings for a specific vendor
   Future<List<BloodBankBooking>> getBookings(String userId, String token) async {
     try {
-      _logger.i('Fetching blood bank bookings for user: $userId');
 
       // Make the API call
       final response = await _dio.get(
@@ -205,7 +203,6 @@ class BloodBankAgencyService {
         ),
       );
 
-      _logger.d('API Response: ${response.data}');
 
       // Check if the request was successful
       if (response.statusCode == 200) {

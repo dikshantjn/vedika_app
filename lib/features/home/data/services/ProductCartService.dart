@@ -11,7 +11,7 @@ class ProductCartService {
   Future<bool> checkProductInCart(String productId) async {
     try {
       String? userId = await StorageService.getUserId();
-      print('Checking cart status for userId: $userId, productId: $productId');
+      // Debug print removed
       
       final response = await _dio.post(
         ApiEndpoints.checkProductInCart,

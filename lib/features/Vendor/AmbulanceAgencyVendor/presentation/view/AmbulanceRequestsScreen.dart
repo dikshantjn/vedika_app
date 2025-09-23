@@ -233,10 +233,10 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
                 },
                 child: Text(
                   showProceedButton ? 'Proceed Request' : 'Accept Request',
-                  style: const TextStyle(color: Colors.cyan),
+                  style: const TextStyle(color: Color(0xFF38A3A5)),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.cyan),
+                  side: const BorderSide(color: Color(0xFF38A3A5)),
                   padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
                   minimumSize: const Size(0, 30),
                 ),

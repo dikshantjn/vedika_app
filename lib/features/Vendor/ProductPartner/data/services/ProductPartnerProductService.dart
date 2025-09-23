@@ -87,8 +87,6 @@ class ProductPartnerProductService {
         ),
       );
 
-      print('Response status code: ${response.statusCode}');
-      print('Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic> && response.data['product'] != null) {
@@ -97,7 +95,6 @@ class ProductPartnerProductService {
           return VendorProduct.fromJson(productData);
         } else {
           print('Error: Invalid response format');
-          print('Response data: ${response.data}');
           throw Exception('Invalid response format: product data not found');
         }
       } else {
@@ -138,7 +135,6 @@ class ProductPartnerProductService {
       );
 
       print('Response status code: ${response.statusCode}');
-      print('Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         print('Product deleted successfully');

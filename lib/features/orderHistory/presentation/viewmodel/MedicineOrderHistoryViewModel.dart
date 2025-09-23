@@ -16,6 +16,5 @@ class MedicineOrderHistoryViewModel {
   Future<void> fetchOrdersByUser() async {
     String? userId = await StorageService.getUserId();
     _orders = await _repository.getOrdersByUser(userId!);
-    print("_orders ${_orders.toString()}");
   }
 }

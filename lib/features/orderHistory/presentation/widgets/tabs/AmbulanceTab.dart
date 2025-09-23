@@ -9,10 +9,14 @@ class AmbulanceTab extends StatefulWidget {
   State<AmbulanceTab> createState() => _AmbulanceTabState();
 }
 
-class _AmbulanceTabState extends State<AmbulanceTab> {
+class _AmbulanceTabState extends State<AmbulanceTab> with AutomaticKeepAliveClientMixin {
   final AmbulanceOrderViewModel viewModel = AmbulanceOrderViewModel();
   List<AmbulanceBooking> bookings = [];
   bool isLoading = true;
+  bool _isDisposed = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -20,16 +24,32 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
     _loadBookings();
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Future<void> _loadBookings() async {
+    if (_isDisposed) return;
     await viewModel.loadCompletedOrders();
-    setState(() {
-      bookings = viewModel.orders; // get the updated orders
-      isLoading = false;
-    });
+    if (!_isDisposed && mounted) {
+      setState(() {
+        bookings = viewModel.orders; // get the updated orders
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -39,11 +59,18 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadBookings,
+      onRefresh: () {
+        // Check if widget is still mounted before refreshing
+        if (!mounted || _isDisposed) return Future.value();
+        return _loadBookings();
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
         itemCount: bookings.length,
         itemBuilder: (context, index) {
+          // Check if widget is still mounted before building items
+          if (!mounted || _isDisposed) return Container();
+          
           final booking = bookings[index];
           return _buildBookingCard(context, booking);
         },
@@ -53,11 +80,20 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
 
 
   Widget _buildBookingCard(BuildContext context, AmbulanceBooking booking) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     final formattedDate =
     DateFormat('dd MMMM yyyy hh:mm a').format(booking.timestamp);
 
     return GestureDetector(
-      onTap: () => _showBookingDetailsBottomSheet(context, booking),
+      onTap: () {
+        // Check if widget is still mounted before showing dialog
+        if (!mounted || _isDisposed) return;
+        _showBookingDetailsBottomSheet(context, booking);
+      },
       child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -191,6 +227,9 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
   }
 
   void _showBookingDetailsBottomSheet(BuildContext context, AmbulanceBooking booking) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) return;
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -463,6 +502,11 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
   }
 
   Widget _buildStatusChip(String status) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     Color chipColor;
     switch (status.toLowerCase()) {
       case 'completed':
@@ -492,6 +536,11 @@ class _AmbulanceTabState extends State<AmbulanceTab> {
   }
 
   Color _statusColor(String status) {
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Colors.grey; // Return default color if disposed
+    }
+    
     switch (status.toLowerCase()) {
       case 'completed':
         return Colors.green;
@@ -513,11 +562,28 @@ class _DownloadInvoiceButton extends StatefulWidget {
   State<_DownloadInvoiceButton> createState() => _DownloadInvoiceButtonState();
 }
 
-class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> {
+class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> with AutomaticKeepAliveClientMixin {
   bool _isLoading = false;
+  bool _isDisposed = false;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if widget is still mounted and not disposed
+    if (_isDisposed || !mounted) {
+      return Container(); // Return empty container if disposed
+    }
+    
     return ElevatedButton.icon(
       icon: _isLoading
           ? SizedBox(
@@ -542,11 +608,16 @@ class _DownloadInvoiceButtonState extends State<_DownloadInvoiceButton> {
       onPressed: _isLoading
           ? null
           : () async {
+              // Check if widget is still mounted before proceeding
+              if (!mounted || _isDisposed) return;
+              
               setState(() => _isLoading = true);
               try {
                 await generateAndDownloadAmbulanceInvoicePDF(widget.booking);
               } finally {
-                if (mounted) setState(() => _isLoading = false);
+                // Check if widget is still mounted before calling setState again
+                if (!mounted || _isDisposed) return;
+                setState(() => _isLoading = false);
               }
             },
     );

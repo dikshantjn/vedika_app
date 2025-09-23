@@ -9,7 +9,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBookingRazorPayService.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/AmbulanceSearchViewModel.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class AmbulanceSearchPage extends StatefulWidget {
   @override
@@ -57,8 +57,18 @@ class _AmbulanceSearchPageState extends State<AmbulanceSearchPage>
           backgroundColor: ColorPalette.primaryColor,
           centerTitle: true,
           foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () {
+              final scope = MainScreenScope.maybeOf(context);
+              if (scope != null) {
+                scope.setIndex(0);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
         ),
-        drawer: DrawerMenu(),
       body: ChangeNotifierProvider.value(
         value: _viewModel,
         child: Consumer<AmbulanceSearchViewModel>(

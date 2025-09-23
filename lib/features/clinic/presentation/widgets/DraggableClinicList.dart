@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart'
+    show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
 
 class DraggableClinicList extends StatelessWidget {
   final List<DoctorClinicProfile> clinics;
@@ -23,7 +26,8 @@ class DraggableClinicList extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: DoctorConsultationColorPalette.primaryBlue, size: 16),
+              Icon(icon,
+                  color: DoctorConsultationColorPalette.primaryBlue, size: 16),
               SizedBox(width: 8),
               Text(
                 key,
@@ -151,25 +155,28 @@ class DraggableClinicList extends StatelessWidget {
                     itemBuilder: (_, index) {
                       var clinic = clinics[index];
                       bool isExpanded = expandedItems[index];
-                      
+
                       // Get location data
                       final latLng = _getLatLngFromLocation(clinic.location);
 
                       return GestureDetector(
-                        onTap: () => onClinicTap(index, latLng.latitude, latLng.longitude),
+                        onTap: () => onClinicTap(
+                            index, latLng.latitude, latLng.longitude),
                         child: AnimatedContainer(
                           duration: Duration(milliseconds: 300),
                           padding: EdgeInsets.all(16),
                           margin: EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: DoctorConsultationColorPalette.backgroundCard,
+                            color:
+                                DoctorConsultationColorPalette.backgroundCard,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: DoctorConsultationColorPalette.borderLight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: DoctorConsultationColorPalette.shadowLight,
+                                color:
+                                    DoctorConsultationColorPalette.shadowLight,
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
@@ -179,7 +186,8 @@ class DraggableClinicList extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -187,13 +195,17 @@ class DraggableClinicList extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
-                                        color: DoctorConsultationColorPalette.textPrimary,
+                                        color: DoctorConsultationColorPalette
+                                            .textPrimary,
                                       ),
                                     ),
                                   ),
                                   Icon(
-                                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                    isExpanded
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
+                                    color: DoctorConsultationColorPalette
+                                        .primaryBlue,
                                   ),
                                 ],
                               ),
@@ -201,7 +213,8 @@ class DraggableClinicList extends StatelessWidget {
                                 children: [
                                   Icon(
                                     Icons.location_on,
-                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                    color: DoctorConsultationColorPalette
+                                        .primaryBlue,
                                     size: 16,
                                   ),
                                   SizedBox(width: 8),
@@ -209,7 +222,8 @@ class DraggableClinicList extends StatelessWidget {
                                     child: Text(
                                       clinic.address,
                                       style: TextStyle(
-                                        color: DoctorConsultationColorPalette.textSecondary,
+                                        color: DoctorConsultationColorPalette
+                                            .textSecondary,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -217,43 +231,60 @@ class DraggableClinicList extends StatelessWidget {
                                 ],
                               ),
                               if (isExpanded) ...[
-                                Divider(color: DoctorConsultationColorPalette.borderLight),
-                                buildDetailRow(Icons.phone, "Phone:", clinic.phoneNumber),
-                                buildDetailRow(Icons.monetization_on, "Consultation Fee:", "₹${clinic.consultationFeesRange}"),
-                                buildDetailRow(Icons.calendar_today, "Available Days:", clinic.consultationDays.join(", ")),
-                                buildDetailRow(Icons.access_time, "Experience:", "${clinic.experienceYears} years"),
-                                Divider(color: DoctorConsultationColorPalette.borderLight),
+                                Divider(
+                                    color: DoctorConsultationColorPalette
+                                        .borderLight),
+                                buildDetailRow(
+                                    Icons.phone, "Phone:", clinic.phoneNumber),
+                                buildDetailRow(
+                                    Icons.monetization_on,
+                                    "Consultation Fee:",
+                                    "₹${clinic.consultationFeesRange}"),
+                                buildDetailRow(
+                                    Icons.calendar_today,
+                                    "Available Days:",
+                                    clinic.consultationDays.join(", ")),
+                                buildDetailRow(Icons.access_time, "Experience:",
+                                    "${clinic.experienceYears} years"),
+                                Divider(
+                                    color: DoctorConsultationColorPalette
+                                        .borderLight),
                                 SizedBox(height: 10),
                                 Text(
                                   "Specializations",
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: DoctorConsultationColorPalette.textPrimary,
+                                    color: DoctorConsultationColorPalette
+                                        .textPrimary,
                                   ),
                                 ),
                                 SizedBox(height: 8),
                                 Wrap(
-                                  children: clinic.specializations.map<Widget>(
-                                    (spec) => buildSpecializationChip(spec)
-                                  ).toList(),
+                                  children: clinic.specializations
+                                      .map<Widget>((spec) =>
+                                          buildSpecializationChip(spec))
+                                      .toList(),
                                 ),
                                 SizedBox(height: 12),
                                 ElevatedButton.icon(
                                   onPressed: () {
-                                    // Push to the Book Appointment screen with clinic data
                                     Navigator.pushNamed(
                                       context,
                                       AppRoutes.bookClinicAppointment,
                                       arguments: clinic,
                                     );
                                   },
-                                  icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
+                                  icon: Icon(Icons.bookmark_outline_sharp,
+                                      color: Colors.white),
                                   label: Text("Book Appointment"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
+                                    backgroundColor:
+                                        DoctorConsultationColorPalette
+                                            .primaryBlue,
                                     foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),

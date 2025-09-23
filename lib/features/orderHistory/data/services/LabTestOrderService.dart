@@ -9,20 +9,17 @@ class LabTestOrderService {
 
   Future<List<LabTestBooking>> getCompletedLabTestOrders(String userId) async {
     try {
-      _logger.i('Fetching completed lab test orders for user: $userId');
-      
+
       final response = await http.get(
         Uri.parse('${ApiEndpoints.getCompletedLabTestBookingsByUserId}/$userId'),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
-        _logger.i('API Response: $responseData');
-        
+
         if (responseData['success'] == true && responseData['data'] != null) {
           final List<dynamic> bookingsData = responseData['data'];
-          _logger.i('Successfully fetched ${bookingsData.length} lab test orders');
-          
+
           return bookingsData.map((bookingData) {
             final Map<String, dynamic> bookingDetails = bookingData['bookingDetails'];
             final Map<String, dynamic> diagnosticCenterDetails = bookingData['diagnosticCenterDetails'];
@@ -38,7 +35,6 @@ class LabTestOrderService {
             return LabTestBooking.fromJson(combinedData);
           }).toList();
         } else {
-          _logger.e('API response indicates failure: ${responseData['message']}');
           throw Exception(responseData['message'] ?? 'Failed to load completed lab test orders');
         }
       } else {

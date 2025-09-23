@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 class LabTestColorPalette {
-  // Primary Colors - Medical Blue Theme
-  static const Color primaryBlue = Color(0xFF1A5F7A);  // Deep medical blue
-  static const Color primaryBlueLight = Color(0xFF2C88B0);  // Lighter medical blue
-  static const Color primaryBlueLighter = Color(0xFF4BA3C3);  // Soft medical blue
-  static const Color primaryBlueLightest = Color(0xFFE8F4F8);  // Very light medical blue
-  static const Color primaryBlueBackground = Color(0xFFF5F9FB);  // Subtle blue background
+  // Primary Colors - Unified Teal Theme
+  static const Color primaryBlue = Color(0xFF38A3A5);
+  static const Color primaryBlueLight = Color(0xFF5FC2C4);
+  static const Color primaryBlueLighter = Color(0xFF9BDDDD);
+  static const Color primaryBlueLightest = Color(0xFFEAFBFB);
+  static const Color primaryBlueBackground = Color(0xFFF2FBFB);
 
-  // Secondary Colors - Teal Accents
-  static const Color secondaryTeal = Color(0xFF2A9D8F);  // Professional teal
-  static const Color secondaryTealLight = Color(0xFF64B5AC);  // Light teal
-  static const Color secondaryTealDark = Color(0xFF1A7A6F);  // Dark teal
+  // Secondary Colors - Complementary Teal Accents
+  static const Color secondaryTeal = Color(0xFF2E8C8E);
+  static const Color secondaryTealLight = Color(0xFF7CD6D0);
+  static const Color secondaryTealDark = Color(0xFF2B7F80);
 
   // Background Colors - Clean and Minimal
   static const Color backgroundPrimary = Color(0xFFFAFBFC);  // Clean white background
@@ -32,7 +32,7 @@ class LabTestColorPalette {
   static const Color successGreen = Color(0xFF27AE60);  // Professional green
   static const Color warningYellow = Color(0xFFF1C40F);  // Soft warning yellow
   static const Color errorRed = Color(0xFFE74C3C);  // Medical alert red
-  static const Color infoBlue = Color(0xFF3498DB);  // Information blue
+  static const Color infoBlue = Color(0xFF38A3A5);  // Information teal
 
   // Shadow Colors - Subtle Depth
   static const Color shadowLight = Color(0x0A000000);  // Very subtle shadow
@@ -40,6 +40,6 @@ class LabTestColorPalette {
   static const Color shadowDark = Color(0x33000000);  // Medium shadow
 
   // Progress Colors - Medical Progress Indicators
-  static const Color progressActive = Color(0xFF2A9D8F);  // Teal progress
+  static const Color progressActive = Color(0xFF2E8C8E);  // Teal progress
   static const Color progressInactive = Color(0xFFECF0F1);  // Light gray progress
 } 

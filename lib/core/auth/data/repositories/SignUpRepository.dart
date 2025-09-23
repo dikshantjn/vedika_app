@@ -25,7 +25,6 @@ class SignUpRepository {
         },
       );
 
-      print("📩 API Response: ${response.statusCode} - ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;

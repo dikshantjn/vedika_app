@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/clinic/data/models/Clinic.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 
 class ClinicConsultationTypePage extends StatelessWidget {
   final Clinic? clinic;
@@ -24,6 +25,17 @@ class ClinicConsultationTypePage extends StatelessWidget {
         backgroundColor: DoctorConsultationColorPalette.primaryBlue,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () {
+            final scope = MainScreenScope.maybeOf(context);
+            if (scope != null) {
+              scope.setIndex(0);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(

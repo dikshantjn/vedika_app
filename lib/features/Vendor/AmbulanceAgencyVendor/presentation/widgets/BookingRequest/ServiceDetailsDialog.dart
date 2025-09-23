@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
@@ -36,12 +37,12 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.cyan.withOpacity(0.1),
+                        color: ColorPalette.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.medical_services,
-                        color: Colors.cyan,
+                        color: ColorPalette.primaryColor,
                         size: 24,
                       ),
                     ),
@@ -223,7 +224,7 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
                         },
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          backgroundColor: Colors.cyan,
+                          backgroundColor: ColorPalette.primaryColor,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -265,7 +266,7 @@ class _ServiceDetailsDialogState extends State<ServiceDetailsDialog> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.cyan),
+          Icon(icon, size: 20, color: ColorPalette.primaryColor),
           const SizedBox(width: 8),
           Text(
             title,

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
-import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodBankDetailsBottomSheet.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
 
@@ -36,6 +36,17 @@ class _BloodBankMapScreenState extends State<BloodBankMapScreen> {
               elevation: 0,
               centerTitle: true,
               backgroundColor: ColorPalette.primaryColor,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                onPressed: () {
+                  final scope = MainScreenScope.maybeOf(context);
+                  if (scope != null) {
+                    scope.setIndex(0);
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
               title: const Text(
                 "Blood Banks",
                 style: TextStyle(
@@ -55,7 +66,6 @@ class _BloodBankMapScreenState extends State<BloodBankMapScreen> {
                 ),
               ],
             ),
-            drawer: DrawerMenu(),
             body: Stack(
               children: [
                 // Google Map

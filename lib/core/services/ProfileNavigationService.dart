@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/services/ProfileCompletionService.dart';
-import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/CompleteProfileScreen.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
 
 class ProfileNavigationService {
   static Future<Widget> checkProfileCompletionAndNavigate({
@@ -15,16 +16,25 @@ class ProfileNavigationService {
       
       // Get userId from secure storage
       final userId = await StorageService.getUserId();
-      print('UserId from storage: $userId');
+      // Debug print removed
       
       if (userId == null || userId.isEmpty) {
-        print('No userId found, returning to destination');
+        // Debug print removed
         return destination;
       }
 
-      // Get user profile and check completion
-      final profileService = ProfileCompletionService();
-      final isComplete = await profileService.isProfileComplete(userId, serviceType);
+      // Fast-path: use preloaded cache if available
+      final profileVM = context.read<ProfileCompletionViewModel>();
+      final cached = profileVM.isComplete(serviceType);
+      bool isComplete;
+      if (cached != null) {
+        print('Using cached profile completion for $serviceType: $cached');
+        isComplete = cached;
+      } else {
+        print('No cached result for $serviceType, calling service...');
+        final profileService = ProfileCompletionService();
+        isComplete = await profileService.isProfileComplete(userId, serviceType);
+      }
       print('Profile completion status: $isComplete');
 
       if (isComplete) {

@@ -542,11 +542,12 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       isLoading.value = false;
     }
   }
-
+  int count = 0;
   /// ✅ Fetch active ambulance bookings for current user
   Future<void> fetchActiveAmbulanceBookings() async {
     if (!_mounted) return; // Don't proceed if disposed
-
+    count +=1;
+    print("Ambulance api count $count");
     _isLoading = true;
     _safeNotifyListeners();
 
@@ -554,7 +555,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
 
     try {
       String? userId = await StorageService.getUserId();
-      debugPrint("👤 User ID: $userId");
 
       if (userId == null) {
         debugPrint("❌ User ID not found");
@@ -562,7 +562,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       }
 
       _ambulanceBookings = await _trackOrderService.fetchActiveAmbulanceBookings(userId);
-      debugPrint("✅ Ambulance bookings fetched: ${_ambulanceBookings.length}");
 
       for (var booking in _ambulanceBookings) {
         debugPrint("🚑 Booking ID: ${booking.requestId}, Status: ${booking.status}");
@@ -581,7 +580,6 @@ class AmbulanceSearchViewModel extends ChangeNotifier {
       _isLoading = false;
         _safeNotifyListeners();
       }
-      debugPrint("📦 Done fetching ambulance bookings.");
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/ProcessOrderScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/invoice_pdf.dart';
+import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class OrdersWidget extends StatefulWidget {
   final MedicineOrderViewModel viewModel;
@@ -61,7 +62,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       case "ReadyForPickup":
         return Colors.purple;
       case "OutForDelivery":
-        return Colors.cyan;
+        return ColorPalette.primaryColor;
       case "Delivered":
         return Colors.green.shade600;
       case "Cancelled":
