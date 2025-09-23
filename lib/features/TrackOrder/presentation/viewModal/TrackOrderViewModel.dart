@@ -14,7 +14,6 @@ import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/Pro
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class TrackOrderViewModel extends ChangeNotifier {
   final TrackOrderService _service = TrackOrderService(); // Service instance
