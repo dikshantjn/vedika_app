@@ -19,7 +19,7 @@ class HerPhasesViewModel {
     DateTime lastPeriod = DateTime.parse(lastPeriodDate);
     List<CyclePrediction> results = [];
 
-    // ✅ Start from the NEXT cycle (skip the current one)
+    //  Start from the NEXT cycle (skip the current one)
     for (int i = 1; i <= 3; i++) {
       DateTime nextPeriod = lastPeriod.add(Duration(days: cycleLength * i));
 
@@ -65,10 +65,10 @@ class HerPhasesViewModel {
     Map<DateTime, String> events = {};
     DateTime lastPeriod = DateTime.parse(lastPeriodDate);
 
-    // ✅ Show ONLY the user-entered lastPeriodDate (no other predictions in that month)
+    //  Show ONLY the user-entered lastPeriodDate (no other predictions in that month)
     events[_normalizeDate(lastPeriod)] = "Period";
 
-    // ✅ Add predictions ONLY for future cycles (not the current month)
+    // Add predictions ONLY for future cycles (not the current month)
     for (var prediction in predictions) {
       DateTime nextPeriod = prediction.nextPeriodDateTime;
       DateTime ovulation = prediction.ovulationDateTime;
