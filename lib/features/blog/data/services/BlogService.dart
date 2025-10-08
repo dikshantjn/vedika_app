@@ -4,7 +4,6 @@ import 'package:vedika_healthcare/features/blog/data/models/BlogModel.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 
 class BlogService {
-  static const String baseUrl = 'https://api.vedikahealthcare.com'; // Replace with your actual API base URL
   
   // Fetch all blogs from the new API
   Future<List<BlogModel>> fetchAllBlogs() async {
