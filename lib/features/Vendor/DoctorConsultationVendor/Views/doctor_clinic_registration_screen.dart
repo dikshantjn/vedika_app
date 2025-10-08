@@ -308,7 +308,7 @@ class _DoctorClinicRegistrationScreenState extends State<DoctorClinicRegistratio
           errors.add('Passwords do not match');
         }
         if (_phoneController.text.isEmpty) {
-          errors.add('Phone Number is required');
+          errors.add('Contact Number is required');
         }
         if (_licenseNumberController.text.isEmpty) {
           errors.add('License Number is required');
@@ -513,11 +513,11 @@ class _DoctorClinicRegistrationScreenState extends State<DoctorClinicRegistratio
         ),
         const SizedBox(height: 16),
         _buildTextField(
-          label: 'Phone Number',
+          label: 'Contact Number',
           controller: _phoneController,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter phone number';
+              return 'Please enter Contact number';
             }
             return null;
           },

@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
-import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/view/medicineOrderScreen.dart';
-import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
-import 'package:vedika_healthcare/features/labTest/presentation/view/LabSearchPage.dart';
-import 'package:vedika_healthcare/features/home/data/services/CategoryService.dart';
-import 'package:vedika_healthcare/features/home/presentation/view/ProductListScreen.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
-import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';

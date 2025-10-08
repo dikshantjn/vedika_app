@@ -5,7 +5,8 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
+import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
+import 'package:share_plus/share_plus.dart';
 
 class DrawerMenu extends StatefulWidget {
   final void Function(int index)? onSelectIndex;
@@ -38,7 +39,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
   @override
   Widget build(BuildContext context) {
     final userViewModel = context.watch<UserViewModel>();
-    final notificationViewModel = context.watch<NotificationViewModel>();
+    final notificationViewModel = context.watch<CoreNotificationViewModel>();
 
     return Drawer(
       backgroundColor: Colors.white,
@@ -63,6 +64,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
           _buildDivider(),
           _buildSectionTitle("More"),
           _buildSection(context, [
+            _buildInviteItem(context),
             _buildDrawerItem(context, Icons.settings_rounded, "Settings",
                 AppRoutes.settingsPage),
             _buildDrawerItem(context, Icons.help_rounded, "Help Center",
@@ -442,8 +444,8 @@ class _DrawerMenuState extends State<DrawerMenu> {
   }
 
   Widget _buildNotificationItem(
-      BuildContext context, NotificationViewModel viewModel) {
-    final unreadCount = viewModel.notifications.where((n) => !n.isRead).length;
+      BuildContext context, CoreNotificationViewModel viewModel) {
+    final unreadCount = viewModel.unreadCount;
 
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -516,6 +518,117 @@ class _DrawerMenuState extends State<DrawerMenu> {
 
   Widget _buildSection(BuildContext context, List<Widget> items) {
     return Column(children: items);
+  }
+
+  Widget _buildInviteItem(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ColorPalette.primaryColor.withOpacity(0.1),
+            ColorPalette.primaryColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ColorPalette.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _shareApp(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        ColorPalette.primaryColor,
+                        ColorPalette.primaryColor.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.share_rounded, color: Colors.white, size: 20),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Invite Friends",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "Share Vedika Healthtech with your friends",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareApp(BuildContext context) async {
+    try {
+      const String appLink = "https://play.google.com/store/apps/details?id=com.vedika.healthcare";
+      const String appName = "Vedika Healthcare";
+      const String message = """Hey! I've been using $appName and it's been amazing for managing my health needs. 
+
+📱 Download the app here: $appLink
+
+✨ Features:
+• Order medicines online
+• Consult with doctors
+• Track health records
+• Get health insights
+• And much more!
+
+Join me on Vedika Healthcare for better health management! 🏥""";
+
+      await Share.share(
+        message,
+        subject: 'Join me on $appName',
+      );
+    } catch (e) {
+      // Show error message if sharing fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to share. Please try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildAppVersion() {

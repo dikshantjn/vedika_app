@@ -1,4 +1,5 @@
 // ViewModel: BedBookingOrderViewModel.dart
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/BedBookingOrderService.dart';
@@ -26,5 +27,15 @@ class BedBookingOrderViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Fetch hospital invoice bytes
+  Future<Uint8List> fetchHospitalInvoiceBytes(String bookingId) async {
+    try {
+      return await _service.fetchHospitalInvoiceBytes(bookingId);
+    } catch (e) {
+      print("ViewModel Error fetching hospital invoice: $e");
+      rethrow;
+    }
   }
 }

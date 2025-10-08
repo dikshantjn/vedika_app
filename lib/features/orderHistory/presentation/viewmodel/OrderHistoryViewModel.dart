@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/ProductOrder.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/OrderHistoryService.dart';
+import 'package:vedika_healthcare/features/orderHistory/data/services/ProductOrderService.dart';
 
 class OrderHistoryViewModel extends ChangeNotifier {
   final OrderHistoryService _service = OrderHistoryService();
+  final ProductOrderService _productOrderService = ProductOrderService();
   
   List<ProductOrder> _deliveredProductOrders = [];
   bool _isLoading = false;
@@ -33,5 +36,9 @@ class OrderHistoryViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<Uint8List> fetchProductOrderInvoiceBytes(String orderId) async {
+    return await _productOrderService.fetchProductOrderInvoiceBytes(orderId);
   }
 } 

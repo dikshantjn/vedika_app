@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/apiConstants.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
@@ -13,12 +14,14 @@ import 'package:vedika_healthcare/features/hospital/presentation/widgets/Hospita
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/PatientDetailsForm.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/widgets/TimeSlotSelection.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
-import 'package:vedika_healthcare/core/navigation/MainScreen.dart' show MainScreenNavigator;
+import 'package:vedika_healthcare/core/navigation/MainScreen.dart'
+    show MainScreenNavigator;
 
 class BookAppointmentPage extends StatefulWidget {
   final HospitalProfile hospital;
 
-  const BookAppointmentPage({Key? key, required this.hospital}) : super(key: key);
+  const BookAppointmentPage({Key? key, required this.hospital})
+      : super(key: key);
 
   @override
   State<BookAppointmentPage> createState() => _BookAppointmentPageState();
@@ -36,14 +39,16 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<BookAppointmentViewModel>(context, listen: false);
+      final viewModel =
+          Provider.of<BookAppointmentViewModel>(context, listen: false);
       viewModel.selectHospital(widget.hospital);
     });
     _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
-    final showTitle = _scrollController.hasClients && _scrollController.offset > 120;
+    final showTitle =
+        _scrollController.hasClients && _scrollController.offset > 120;
     if (showTitle != _showAppBarTitle) {
       setState(() {
         _showAppBarTitle = showTitle;
@@ -56,6 +61,33 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not make the call'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showInfoPopup(BuildContext context) {
@@ -74,11 +106,15 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: ColorPalette.primaryColor, size: 50),
+              Icon(Icons.info_outline,
+                  color: ColorPalette.primaryColor, size: 50),
               SizedBox(height: 10),
               Text(
                 "Information Shared with Hospital",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 10),
@@ -86,17 +122,19 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               SizedBox(height: 10),
               _buildInfoItem("Full Name"),
               _buildInfoItem("Age & Gender"),
-              _buildInfoItem("Phone Number"),
+              _buildInfoItem("Contact Number"),
               _buildInfoItem("Address"),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ColorPalette.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 ),
-                child: Text("Got It", style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: Text("Got It",
+                    style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ],
           ),
@@ -119,9 +157,11 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   }
 
   Future<void> _handleBookingConfirmation(BuildContext context) async {
-    final viewModel = Provider.of<BookAppointmentViewModel>(context, listen: false);
-    
-    if (viewModel.selectedPatientType == "Other" && !_patientFormKey.currentState!.validate()) {
+    final viewModel =
+        Provider.of<BookAppointmentViewModel>(context, listen: false);
+
+    if (viewModel.selectedPatientType == "Other" &&
+        !_patientFormKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please complete all patient details")),
       );
@@ -144,7 +184,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
       final result = await _hospitalService.createBedBooking(
         vendorId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
         userId: userId!,
-        hospitalId: widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
+        hospitalId:
+            widget.hospital.vendorId ?? widget.hospital.generatedId ?? '',
         wardId: viewModel.selectedWard!.wardId,
         bedType: viewModel.selectedWard!.wardType,
         price: viewModel.selectedWard!.pricePerDay,
@@ -255,18 +296,19 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
-                                          onPressed: () {
-                        Navigator.pop(context); // Close the dialog first
-                        // Then navigate back using MainScreenNavigator
-                        if (MainScreenNavigator.instance.canGoBack) {
-                          MainScreenNavigator.instance.goBack();
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      },
+                    onPressed: () {
+                      Navigator.pop(context); // Close the dialog first
+                      // Then navigate back using MainScreenNavigator
+                      if (MainScreenNavigator.instance.canGoBack) {
+                        MainScreenNavigator.instance.goBack();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColor,
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -401,6 +443,17 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
+            child: Icon(Icons.phone, color: Colors.white),
+          ),
+          onPressed: () => _makeCall(widget.hospital.contactNumber),
+        ),
+        IconButton(
+          icon: Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
             child: Icon(Icons.share, color: Colors.white),
           ),
           onPressed: () {},
@@ -510,7 +563,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, BookAppointmentViewModel viewModel, HospitalBookingPaymentService razorpayService) {
+  Widget _buildBody(BuildContext context, BookAppointmentViewModel viewModel,
+      HospitalBookingPaymentService razorpayService) {
     return Container(
       padding: EdgeInsets.only(top: 16),
       child: Column(
@@ -725,8 +779,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               height: 1.5,
             ),
           ),
-            SizedBox(height: 20),
-          _buildInfoRow(Icons.location_on, "Address", "${widget.hospital.address}, ${widget.hospital.city}"),
+          SizedBox(height: 20),
+          _buildInfoRow(Icons.location_on, "Address",
+              "${widget.hospital.address}, ${widget.hospital.city}"),
           _buildInfoRow(Icons.phone, "Contact", widget.hospital.contactNumber),
           _buildInfoRow(Icons.email, "Email", widget.hospital.email),
           _buildInfoRow(Icons.person, "Owner", widget.hospital.ownerName),
@@ -782,7 +837,10 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
     );
   }
 
-  Widget _buildBookingSection(BuildContext context, BookAppointmentViewModel viewModel, HospitalBookingPaymentService razorpayService) {
+  Widget _buildBookingSection(
+      BuildContext context,
+      BookAppointmentViewModel viewModel,
+      HospitalBookingPaymentService razorpayService) {
     return Container(
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(16),
@@ -888,19 +946,20 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               itemCount: viewModel.wards.length,
               itemBuilder: (context, index) {
                 final ward = viewModel.wards[index];
-                final isSelected = ward.wardId == viewModel.selectedWard?.wardId;
-                
+                final isSelected =
+                    ward.wardId == viewModel.selectedWard?.wardId;
+
                 return InkWell(
                   onTap: () => viewModel.selectWard(ward),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected 
+                      color: isSelected
                           ? ColorPalette.primaryColor.withOpacity(0.1)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected 
-                            ? ColorPalette.primaryColor 
+                        color: isSelected
+                            ? ColorPalette.primaryColor
                             : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
@@ -915,14 +974,15 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                               Container(
                                 padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? ColorPalette.primaryColor.withOpacity(0.1)
+                                  color: isSelected
+                                      ? ColorPalette.primaryColor
+                                          .withOpacity(0.1)
                                       : Colors.grey.shade50,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.bed_outlined,
-                                  color: isSelected 
+                                  color: isSelected
                                       ? ColorPalette.primaryColor
                                       : Colors.grey[600],
                                   size: 24,
@@ -938,7 +998,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: isSelected 
+                                    color: isSelected
                                         ? ColorPalette.primaryColor
                                         : Colors.black87,
                                   ),
@@ -964,7 +1024,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: isSelected 
+                                    color: isSelected
                                         ? ColorPalette.primaryColor
                                         : Colors.black87,
                                   ),
@@ -972,21 +1032,22 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: ward.availableBeds > 0 
+                                  color: ward.availableBeds > 0
                                       ? Colors.green.withOpacity(0.1)
                                       : Colors.red.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  ward.availableBeds > 0 
+                                  ward.availableBeds > 0
                                       ? '${ward.availableBeds} Available'
                                       : 'Full',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w500,
-                                    color: ward.availableBeds > 0 
+                                    color: ward.availableBeds > 0
                                         ? Colors.green
                                         : Colors.red,
                                   ),
@@ -1001,7 +1062,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 );
               },
             ),
-          
           SizedBox(height: 20),
           if (viewModel.selectedWard != null) ...[
             const SizedBox(height: 24),
@@ -1073,8 +1133,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
           ],
-
-          if (viewModel.selectedWard != null && viewModel.selectedDate != null && viewModel.selectedTimeSlot != null) ...[
+          if (viewModel.selectedWard != null &&
+              viewModel.selectedDate != null &&
+              viewModel.selectedTimeSlot != null) ...[
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
@@ -1126,8 +1187,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                             child: Container(
                               padding: EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: viewModel.selectedPatientType == "Self" 
-                                    ? ColorPalette.primaryColor 
+                                color: viewModel.selectedPatientType == "Self"
+                                    ? ColorPalette.primaryColor
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
                               ),
@@ -1138,8 +1199,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                                     "Self",
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: viewModel.selectedPatientType == "Self" 
-                                          ? Colors.white 
+                                      color: viewModel.selectedPatientType ==
+                                              "Self"
+                                          ? Colors.white
                                           : ColorPalette.primaryColor,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1149,8 +1211,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                                     onTap: () => _showInfoPopup(context),
                                     child: Icon(
                                       Icons.info_outline,
-                                      color: viewModel.selectedPatientType == "Self" 
-                                          ? Colors.white 
+                                      color: viewModel.selectedPatientType ==
+                                              "Self"
+                                          ? Colors.white
                                           : ColorPalette.primaryColor,
                                       size: 20,
                                     ),
@@ -1167,8 +1230,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                             child: Container(
                               padding: EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: viewModel.selectedPatientType == "Other" 
-                                    ? ColorPalette.primaryColor 
+                                color: viewModel.selectedPatientType == "Other"
+                                    ? ColorPalette.primaryColor
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(30),
                               ),
@@ -1177,9 +1240,10 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                                   "Other",
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: viewModel.selectedPatientType == "Other" 
-                                        ? Colors.white 
-                                        : ColorPalette.primaryColor,
+                                    color:
+                                        viewModel.selectedPatientType == "Other"
+                                            ? Colors.white
+                                            : ColorPalette.primaryColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1198,8 +1262,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               ),
             ),
           ],
-
-          if (viewModel.selectedWard != null && viewModel.selectedDate != null && viewModel.selectedTimeSlot != null) ...[
+          if (viewModel.selectedWard != null &&
+              viewModel.selectedDate != null &&
+              viewModel.selectedTimeSlot != null) ...[
             const SizedBox(height: 24),
             Container(
               padding: EdgeInsets.all(16),
@@ -1271,8 +1336,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       )
                     else
                       Icon(
-                        _bookingStatus == 'accepted' 
-                            ? Icons.payment 
+                        _bookingStatus == 'accepted'
+                            ? Icons.payment
                             : Icons.check_circle,
                         size: 20,
                       ),

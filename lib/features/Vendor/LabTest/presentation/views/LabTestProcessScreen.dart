@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/LabTestColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/viewModels/LabTestProcessViewModel.dart';
@@ -23,6 +24,19 @@ class LabTestProcessScreen extends StatelessWidget {
 
 class _LabTestProcessScreenContent extends StatelessWidget {
   const _LabTestProcessScreenContent({Key? key}) : super(key: key);
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +183,7 @@ class _LabTestProcessScreenContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow(
+                _buildPhoneRow(
                   icon: Icons.phone_outlined,
                   title: "Phone",
                   value: booking.user?.phoneNumber ?? "N/A",
@@ -861,6 +875,72 @@ class _LabTestProcessScreenContent extends StatelessWidget {
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: LabTestColorPalette.primaryBlue,
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: LabTestColorPalette.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        color: LabTestColorPalette.textPrimary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                  if (value != "N/A" && value.isNotEmpty)
+                    const SizedBox(width: 8),
+                  if (value != "N/A" && value.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed: () => _makeCall(value),
+                      icon: const Icon(Icons.phone, size: 16),
+                      label: const Text('Call'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: LabTestColorPalette.primaryBlue,
+                        side: BorderSide(color: LabTestColorPalette.primaryBlue),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: const Size(0, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

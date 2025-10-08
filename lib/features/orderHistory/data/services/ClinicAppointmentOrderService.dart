@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
@@ -80,6 +81,172 @@ class ClinicAppointmentOrderService {
       throw Exception('Error cancelling appointment: ${e.message}');
     } catch (e) {
       throw Exception('Error cancelling appointment: $e');
+    }
+  }
+
+  // Cancel an appointment with reason
+  Future<Map<String, dynamic>> cancelAppointmentWithReason({
+    required String appointmentId,
+    required String cancelReason,
+  }) async {
+    try {
+      print('[ClinicAppointmentOrderService] Cancelling appointment: ID=$appointmentId, reason=$cancelReason');
+      
+      final String url = '${ApiEndpoints.cancelClinicAppointment}/$appointmentId/cancel';
+      print('[ClinicAppointmentOrderService] Making PUT request to: $url');
+      
+      final response = await _dio.put(
+        url,
+        data: {
+          'cancelBy': 'user',
+          'cancelReason': cancelReason,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('[ClinicAppointmentOrderService] Response status code: ${response.statusCode}');
+      print('[ClinicAppointmentOrderService] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        print('[ClinicAppointmentOrderService] Successfully cancelled appointment');
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Appointment cancelled successfully',
+          'appointment': response.data['appointment'],
+        };
+      } else {
+        print('[ClinicAppointmentOrderService] Failed to cancel appointment: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to cancel appointment: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('[ClinicAppointmentOrderService] Error cancelling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Error cancelling appointment: $e',
+      };
+    }
+  }
+
+  // Reschedule a clinic appointment
+  Future<Map<String, dynamic>> rescheduleClinicAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.rescheduleClinicAppointment}/$appointmentId/reschedule',
+        data: {
+          'date': date,
+          'time': time,
+          'by': 'user',
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Appointment rescheduled successfully',
+          'appointment': response.data['appointment'],
+          'bookedSlot': response.data['bookedSlot'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data['message'] ?? 'Failed to reschedule appointment: ${response.statusCode}',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: $e',
+      };
+    }
+  }
+
+  // Update appointment attendance status
+  Future<Map<String, dynamic>> updateAppointmentAttendance({
+    required String appointmentId,
+    required String status, // "no_call" or "no_show"
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.updateAppointmentAttendance}/$appointmentId/attendance',
+        data: {
+          'role': 'user',
+          'status': status,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Attendance status updated successfully',
+          'appointment': response.data['appointment'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data['message'] ?? 'Failed to update attendance: ${response.statusCode}',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': 'Error updating attendance: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error updating attendance: $e',
+      };
+    }
+  }
+
+  // Fetch clinic invoice bytes (for preview in viewer)
+  Future<Uint8List> fetchClinicInvoiceBytes(String appointmentId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getClinicInvoice}/$appointmentId',
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: const {
+            'Accept': 'application/pdf',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List<int>) {
+          return Uint8List.fromList(data);
+        }
+        if (data is Uint8List) {
+          return data;
+        }
+        throw Exception('Unexpected response type for PDF');
+      } else {
+        throw Exception('Failed to fetch clinic invoice');
+      }
+    } catch (e) {
+      print('Error fetching clinic invoice bytes: $e');
+      rethrow;
     }
   }
 } 

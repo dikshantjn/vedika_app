@@ -19,6 +19,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
 
   Map<DateTime, String> _events = {};
   List<CyclePrediction> _predictions = [];
+  final _calendarKey = GlobalKey();
 
   // Focus calendar on predicted month (updated on predict)
   DateTime _focusedDay = DateTime.now();
@@ -73,14 +74,26 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
     }
   }
 
-  void _calculate() {
+  Future<void> _calculate() async {
     if (_formKey.currentState!.validate()) {
       final viewModel = HerPhasesViewModel();
-      final result = viewModel.predictCycle3Months(
-        name: _nameController.text,
-        lastPeriodDate: _dateController.text,
-        cycleLength: int.tryParse(_cycleController.text) ?? 28,
-      );
+      List<CyclePrediction> result = [];
+      try {
+        result = await viewModel.submitAndPredict(
+          userName: _nameController.text,
+          phoneNumber: _mobileController.text.isEmpty ? null : _mobileController.text,
+          lastPeriodDate: _dateController.text,
+          cycleLength: int.tryParse(_cycleController.text) ?? 28,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit data. Please try again.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
 
       setState(() {
         _predictions = result;
@@ -109,6 +122,11 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
         // _highlightToday = false;
       });
 
+      // Scroll to calendar once it is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCalendar();
+      });
+
       // Debug print
       for (var prediction in result) {
         print("Cycle ${prediction.cycle} (${prediction.month}) Prediction for ${prediction.name}");
@@ -129,6 +147,18 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
   }
 
   DateTime _normalize(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  void _scrollToCalendar() {
+    final context = _calendarKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        alignment: 0.0,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +329,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
             // Calendar Section (only shown after predict)
             if (_events.isNotEmpty)
               Container(
+                key: _calendarKey,
                 margin: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,

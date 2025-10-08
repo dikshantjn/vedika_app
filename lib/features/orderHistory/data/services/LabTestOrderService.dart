@@ -1,50 +1,88 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
-import 'package:logger/logger.dart';
 
 class LabTestOrderService {
-  final Logger _logger = Logger();
+  final Dio _dio = Dio();
 
+  // Fetch completed lab test orders for a user
   Future<List<LabTestBooking>> getCompletedLabTestOrders(String userId) async {
     try {
-
-      final response = await http.get(
-        Uri.parse('${ApiEndpoints.getCompletedLabTestBookingsByUserId}/$userId'),
+      final response = await _dio.get(
+        '${ApiEndpoints.getCompletedLabTestBookingsByUserId}/$userId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-
-        if (responseData['success'] == true && responseData['data'] != null) {
-          final List<dynamic> bookingsData = responseData['data'];
-
-          return bookingsData.map((bookingData) {
-            final Map<String, dynamic> bookingDetails = bookingData['bookingDetails'];
-            final Map<String, dynamic> diagnosticCenterDetails = bookingData['diagnosticCenterDetails'];
-            final Map<String, dynamic> userDetails = bookingData['userDetails'];
+        final data = response.data;
+        if (data != null && data.containsKey('data')) {
+          final bookings = data['data'] as List;
+          return bookings.map((booking) {
+            // Transform the nested structure to flat structure expected by LabTestBooking
+            final bookingDetails = booking['bookingDetails'] as Map<String, dynamic>;
+            final diagnosticCenterDetails = booking['diagnosticCenterDetails'] as Map<String, dynamic>;
+            final userDetails = booking['userDetails'] as Map<String, dynamic>;
             
-            // Combine all details into a single map for LabTestBooking.fromJson
-            final Map<String, dynamic> combinedData = {
+            // Create a flat structure by combining all details
+            final flatBooking = {
               ...bookingDetails,
-              'diagnosticCenter': diagnosticCenterDetails,
               'user': userDetails,
+              'diagnosticCenter': diagnosticCenterDetails,
             };
             
-            return LabTestBooking.fromJson(combinedData);
+            return LabTestBooking.fromJson(flatBooking);
           }).toList();
         } else {
-          throw Exception(responseData['message'] ?? 'Failed to load completed lab test orders');
+          print("❌ Fetch Error: Completed lab test bookings data is missing");
+          throw Exception("Completed lab test bookings data is missing");
         }
       } else {
-        _logger.e('Failed to load completed lab test orders. Status code: ${response.statusCode}');
-        _logger.e('Response body: ${response.body}');
-        throw Exception('Failed to load completed lab test orders');
+        print("❌ Fetch Error: ${response.statusCode} - ${response.data}");
+        throw Exception('Failed to fetch completed lab test bookings: ${response.data}');
       }
-    } catch (e, stackTrace) {
-      _logger.e('Error fetching completed lab test orders', error: e, stackTrace: stackTrace);
-      throw Exception('Error fetching completed lab test orders: $e');
+    } on DioException catch (e) {
+      print("❌ Fetch DioException: ${e.message}");
+      print("❌ Fetch Error Response: ${e.response?.data}");
+      rethrow;
+    } catch (e) {
+      print("❌ Fetch Exception: $e");
+      rethrow;
     }
   }
-} 
+
+  // Fetch lab test invoice bytes (for preview in viewer)
+  Future<Uint8List> fetchLabTestInvoiceBytes(String bookingId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getLabTestInvoice}/$bookingId',
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: const {
+            'Accept': 'application/pdf',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List<int>) {
+          return Uint8List.fromList(data);
+        }
+        if (data is Uint8List) {
+          return data;
+        }
+        throw Exception('Unexpected response type for PDF');
+      } else {
+        throw Exception('Failed to fetch lab test invoice');
+      }
+    } catch (e) {
+      print('Error fetching lab test invoice bytes: $e');
+      rethrow;
+    }
+  }
+}

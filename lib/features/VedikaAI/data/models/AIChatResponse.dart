@@ -8,6 +8,9 @@ enum AIIntent {
   labSearch,
   productSearch,
   hospitalSearch,
+  orderMedicinePrescription,
+  ambulanceSearch,
+  bloodBankSearch,
   generalHelp,
 }
 
@@ -46,6 +49,16 @@ class AIChatResponse {
           return AIIntent.productSearch;
         case 'hospital_search':
           return AIIntent.hospitalSearch;
+        case 'ORDER_MEDICINE_PRESCRIPTION':
+        case 'order_medicine_prescription':
+          return AIIntent.orderMedicinePrescription;
+        case 'AMBULANCE_SEARCH':
+        case 'ambulance_search':
+          return AIIntent.ambulanceSearch;
+        case 'BLOODBANK_SEARCH':
+        case 'bloodbank_search':
+        case 'blood_bank_search':
+          return AIIntent.bloodBankSearch;
         case 'general_help':
         default:
           return AIIntent.generalHelp;
@@ -108,6 +121,12 @@ class AIChatResponse {
           return 'product_search';
         case AIIntent.hospitalSearch:
           return 'hospital_search';
+        case AIIntent.orderMedicinePrescription:
+          return 'order_medicine_prescription';
+        case AIIntent.ambulanceSearch:
+          return 'ambulance_search';
+        case AIIntent.bloodBankSearch:
+          return 'bloodbank_search';
         case AIIntent.generalHelp:
           return 'general_help';
       }

@@ -127,28 +127,7 @@ class _ProcessOrderScreenState extends State<ProcessOrderScreen> with SingleTick
     return Scaffold(
       backgroundColor: Colors.grey[50],
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        elevation: 0,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        title: Text(
-          "Process Order",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: MedicalStoreVendorColorPalette.primaryColor,
-        actions: [
-          Container(
-            margin: EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ],
-      ),
+
       body: Consumer<MedicineOrderViewModel>(
         builder: (context, viewModel, child) {
           return Column(

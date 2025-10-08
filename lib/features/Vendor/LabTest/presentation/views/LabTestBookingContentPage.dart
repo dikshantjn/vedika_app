@@ -55,6 +55,19 @@ class _BookingsContentState extends State<LabTestBookingContentPage> with Single
     await _viewModel.init();
   }
 
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
   @override
   void dispose() {
     _viewModel.removeListener(_onBookingUpdated);
@@ -86,10 +99,10 @@ class _BookingsContentState extends State<LabTestBookingContentPage> with Single
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                BookingListView(type: 'upcoming'),
-                BookingListView(type: 'today'),
-                BookingListView(type: 'past'),
+              children: [
+                BookingListView(type: 'upcoming', onCall: _makeCall),
+                BookingListView(type: 'today', onCall: _makeCall),
+                BookingListView(type: 'past', onCall: _makeCall),
               ],
             ),
           ),
@@ -101,10 +114,12 @@ class _BookingsContentState extends State<LabTestBookingContentPage> with Single
 
 class BookingListView extends StatelessWidget {
   final String type;
+  final Function(String) onCall;
 
   const BookingListView({
     Key? key,
     required this.type,
+    required this.onCall,
   }) : super(key: key);
 
   @override
@@ -156,6 +171,7 @@ class BookingListView extends StatelessWidget {
                 type: type,
                 onAccept: () => viewModel.acceptBooking(bookings[index].bookingId!),
                 onProcess: () => viewModel.processBooking(bookings[index].bookingId!),
+                onCall: onCall,
               );
             },
           ),
@@ -248,6 +264,7 @@ class BookingCard extends StatelessWidget {
   final String type;
   final VoidCallback onAccept;
   final VoidCallback onProcess;
+  final Function(String) onCall;
 
   const BookingCard({
     Key? key,
@@ -255,6 +272,7 @@ class BookingCard extends StatelessWidget {
     required this.type,
     required this.onAccept,
     required this.onProcess,
+    required this.onCall,
   }) : super(key: key);
 
   @override
@@ -503,80 +521,116 @@ class BookingCard extends StatelessWidget {
     final bool isLoading = viewModel.isLoading;
     
     if (type == 'upcoming') {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: OutlinedButton(
-          onPressed: isLoading ? null : onAccept,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: LabTestColorPalette.primaryBlue,
-            side: BorderSide(
-              color: isLoading 
-                  ? LabTestColorPalette.borderMedium 
-                  : LabTestColorPalette.primaryBlue,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          child: isLoading
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: LabTestColorPalette.primaryBlue,
-                  ),
-                )
-              : const Text(
-                  'ACCEPT',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      return Row(
+        children: [
+          if (booking.user?.phoneNumber != null && booking.user!.phoneNumber!.isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: () => onCall(booking.user!.phoneNumber!),
+              icon: const Icon(Icons.phone, size: 16),
+              label: const Text('Call'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: LabTestColorPalette.primaryBlue,
+                side: BorderSide(color: LabTestColorPalette.primaryBlue),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-        ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          if (booking.user?.phoneNumber != null && booking.user!.phoneNumber!.isNotEmpty)
+            const SizedBox(width: 8),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: isLoading ? null : onAccept,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: LabTestColorPalette.primaryBlue,
+              side: BorderSide(
+                color: isLoading 
+                    ? LabTestColorPalette.borderMedium 
+                    : LabTestColorPalette.primaryBlue,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: isLoading
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: LabTestColorPalette.primaryBlue,
+                    ),
+                  )
+                : const Text(
+                    'ACCEPT',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ],
       );
     } else if (type == 'today') {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: OutlinedButton(
-          onPressed: isLoading ? null : () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LabTestProcessScreen(booking: booking),
-              ),
-            ).then((value) {
-              // Refresh data when coming back from process screen if needed
-              if (value == true) {
-                onProcess();
-              }
-            });
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: LabTestColorPalette.primaryBlue,
-            side: BorderSide(
-              color: isLoading 
-                  ? LabTestColorPalette.borderMedium 
-                  : LabTestColorPalette.primaryBlue,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          child: isLoading
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: LabTestColorPalette.primaryBlue,
-                  ),
-                )
-              : const Text(
-                  'PROCESS',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      return Row(
+        children: [
+          if (booking.user?.phoneNumber != null && booking.user!.phoneNumber!.isNotEmpty)
+            OutlinedButton.icon(
+              onPressed: () => onCall(booking.user!.phoneNumber!),
+              icon: const Icon(Icons.phone, size: 16),
+              label: const Text('Call'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: LabTestColorPalette.primaryBlue,
+                side: BorderSide(color: LabTestColorPalette.primaryBlue),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
-        ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          if (booking.user?.phoneNumber != null && booking.user!.phoneNumber!.isNotEmpty)
+            const SizedBox(width: 8),
+          const Spacer(),
+          OutlinedButton(
+            onPressed: isLoading ? null : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LabTestProcessScreen(booking: booking),
+                ),
+              ).then((value) {
+                // Refresh data when coming back from process screen if needed
+                if (value == true) {
+                  onProcess();
+                }
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: LabTestColorPalette.primaryBlue,
+              side: BorderSide(
+                color: isLoading 
+                    ? LabTestColorPalette.borderMedium 
+                    : LabTestColorPalette.primaryBlue,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: isLoading
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: LabTestColorPalette.primaryBlue,
+                    ),
+                  )
+                : const Text(
+                    'PROCESS',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ],
       );
     } else {
       return const SizedBox.shrink(); // No button for past bookings

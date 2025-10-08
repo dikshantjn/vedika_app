@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/LogoutPage.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
+import 'package:vedika_healthcare/features/NewMedicineDelivery/presentation/view/MedicineDeliveryScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/AmbulanceAgencyMainScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/BloodBankBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/view/VendorBloodBankMainScreen.dart';
@@ -10,16 +11,16 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Models/Hospital
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Views/HospitalDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestDashboardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Dashboard/VendorMedicalStoreDashBoard.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/NewOrdersScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Views/VendorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/view/AmbulanceSearchPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/DonorRegistrationPage.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/EnableBloodBankLocationServiceScreen.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/view/bloodBankPage.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
+import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicAppointmentPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicConsultationTypePage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorConsultationPage.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorDetailPage.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/features/herPhases/presentation/view/herPhasesScreen.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
@@ -33,6 +34,7 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/Diagnostic
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/views/VendorProductPartnerDashBoardScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogListPage.dart';
+import 'package:vedika_healthcare/features/blog/presentation/view/BlogCategoriesPage.dart';
 import 'package:vedika_healthcare/features/membership/presentation/view/MembershipPage.dart';
 import 'package:vedika_healthcare/features/settings/presentation/view/SettingsPage.dart';
 import 'package:vedika_healthcare/features/help/presentation/view/HelpCenterPage.dart';
@@ -40,6 +42,8 @@ import 'package:vedika_healthcare/features/home/presentation/view/ProductListScr
 import 'package:vedika_healthcare/features/home/presentation/view/ProductDetailScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/VendorProduct.dart';
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
+import 'package:vedika_healthcare/features/VedikaAI/presentation/view/AIChatScreen.dart';
+import 'package:vedika_healthcare/features/cart/presentation/view/NewCartScreen.dart';
 
 // Singleton navigation controller for better performance
 class NavigationController {
@@ -106,6 +110,7 @@ class AppRoutes {
   static const String membership = '/membership';
   static const String blogs = '/blogs';
   static const String herPhases = "/herPhases";
+  static const String blogCategories = '/blog-categories';
   static const String settingsPage = '/settingsPage';
   static const String helpCenter = '/helpCenter';
   static const String productList = '/productList';
@@ -147,12 +152,27 @@ class AppRoutes {
   static const String VendorDeliveryPartnerDashBoard = '/VendorDeliveryPartnerDashBoard';
   static const String VendorProductPartnerDashBoard = '/VendorProductPartnerDashBoard';
   static const String bloodBankBooking = '/bloodBankBooking';
+  static const String aiChat = '/aiChat';
+  static const String newMedicineOrderScreen = '/newMedicineOrderScreen';
+  static const String newCartScreen = '/newCartScreen';
+
+  // medical store vendor
+  static const String newOrderScreen = '/newOrderScreen';
 
   // Optimized route mapping with lazy initialization
   static Map<String, WidgetBuilder> getRoutes() {
     final nav = NavigationController.instance;
 
     return {
+
+      // medical store vendor
+      newOrderScreen: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        final initialTab = args?['initialTab'] as int?;
+        return NewOrdersScreen(initialTab: initialTab);
+      },
+      newCartScreen: (context) => const NewCartScreen(),
+
       // Primary routes
       home: (context) => const MainScreen(),
       login: (context) => UserLoginScreen(),
@@ -161,7 +181,11 @@ class AppRoutes {
 
       // Vendor routes (direct navigation - no MainScreen wrapper needed)
       vendor: (context) => VendorRegistrationPage(),
-      VendorMedicalStoreDashBoard: (context) => VendorMedicalStoreDashBoardScreen(),
+      VendorMedicalStoreDashBoard: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        final initialIndex = args?['initialIndex'] as int?;
+        return VendorMedicalStoreDashBoardScreen(initialIndex: initialIndex);
+      },
       VendorHospitalDashBoard: (context) => HospitalDashboardScreen(),
       VendorClinicDashBoard: (context) => DoctorDashboardScreen(),
       AmbulanceAgencyDashboard: (context) => AmbulanceAgencyMainScreen(),
@@ -198,6 +222,16 @@ class AppRoutes {
       membership: (context) => const MembershipPage(),
 
       // MainScreen-integrated routes (optimized)
+      aiChat: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        return _MainScreenRoute(
+          child: AIChatScreen(
+            initialQuery: args?['initialQuery'] ?? '',
+          ),
+          index: 9,
+          hideBottomNav: true,
+        );
+      },
       bloodBank: (context) => _MainScreenRoute(
         child: BloodBankMapScreen(),
         index: 9,
@@ -208,6 +242,10 @@ class AppRoutes {
       ),
       medicineOrder: (context) => _MainScreenRoute(
         child: MedicineOrderScreen(),
+        index: 9,
+      ),
+      newMedicineOrderScreen: (context) => _MainScreenRoute(
+        child: MedicineDeliveryScreen(),
         index: 9,
       ),
       hospital: (context) => _MainScreenRoute(
@@ -242,8 +280,11 @@ class AppRoutes {
         child: BlogListPage(),
         index: 9,
       ),
-      herPhases: (context) => HerPhasesScreen(),
-
+      herPhases: (context) =>  HerPhasesScreen(),
+      blogCategories: (context) => _MainScreenRoute(
+        child: BlogCategoriesPage(),
+        index: 9,
+      ),
       settingsPage: (context) => _MainScreenRoute(
         child: SettingsPage(),
         index: 9,
@@ -298,7 +339,7 @@ class AppRoutes {
         final clinic = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
           builder: (context) => _MainScreenRoute(
-            child: BookClinicAppointmentPage(doctor: clinic),
+            child: ClinicAppointmentPage(doctor: clinic, isOnline: false),
             index: 9,
           ),
         );
@@ -316,7 +357,7 @@ class AppRoutes {
         final doctor = settings.arguments as DoctorClinicProfile;
         return MaterialPageRoute(
           builder: (context) => _MainScreenRoute(
-            child: OnlineDoctorDetailPage(doctor: doctor),
+            child: ClinicAppointmentPage(doctor: doctor, isOnline: true),
             index: 9,
           ),
         );
@@ -335,10 +376,14 @@ class AppRoutes {
 class _MainScreenRoute extends StatelessWidget {
   final Widget? child;
   final int? index;
+  final bool isFromNotification; // New parameter to prevent auto-pop during notification navigation
+  final bool hideBottomNav;
 
   const _MainScreenRoute({
     this.child,
     this.index,
+    this.isFromNotification = false, // Default to false
+    this.hideBottomNav = false,
   });
 
   @override
@@ -349,17 +394,25 @@ class _MainScreenRoute extends StatelessWidget {
         // Update existing MainScreen
         if (child != null && index != null) {
           MainScreenNavigator.instance.navigateToIndexWithChild(index!, child!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         } else if (index != null) {
           MainScreenNavigator.instance.navigateToIndex(index!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         } else if (child != null) {
           MainScreenNavigator.instance.navigateToTransientChild(child!);
+          MainScreenNavigator.instance.setBottomNavVisible(!hideBottomNav);
         }
-        Navigator.pop(context);
+        // Only pop if not from notification navigation
+        if (!isFromNotification) {
+          Navigator.pop(context);
+        }
       } else {
         // Create new MainScreen
         Navigator.pushReplacementNamed(context, '/home', arguments: {
           if (index != null) 'initialIndex': index,
           if (child != null) 'transientChild': child,
+          'isFromNotification': isFromNotification, // Pass the flag
+          'hideBottomNav': hideBottomNav,
         });
       }
     });

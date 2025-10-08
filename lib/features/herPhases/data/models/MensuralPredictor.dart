@@ -69,3 +69,36 @@ class CyclePrediction {
     };
   }
 }
+
+class HerPhasesRequest {
+  final String? userId; // optional
+  final String userName;
+  final String? phoneNumber; // optional
+  final String lastPeriodDate;
+  final int cycleLength;
+
+  HerPhasesRequest({
+    this.userId,
+    required this.userName,
+    this.phoneNumber,
+    required this.lastPeriodDate,
+    required this.cycleLength,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      'user_name': userName,
+      'last_period_date': lastPeriodDate,
+      'cycle_length': cycleLength,
+    };
+
+    if (userId != null && userId!.isNotEmpty) {
+      data['user_id'] = userId;
+    }
+    if (phoneNumber != null && phoneNumber!.isNotEmpty) {
+      data['phone_number'] = phoneNumber;
+    }
+
+    return data;
+  }
+}

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSearchViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/DiagnosticCenter.dart';
+import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class LabBottomSheet extends StatefulWidget {
   final LabSearchViewModel viewModel;
@@ -14,6 +17,29 @@ class LabBottomSheet extends StatefulWidget {
 
 class _LabBottomSheetState extends State<LabBottomSheet> {
   Map<int, bool> expandedStates = {};
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  void _navigateToMyOrders(BuildContext context) {
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 3; // Lab Test tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 3}, // Lab Test tab index
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,15 +79,33 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.science_outlined, color: ColorPalette.primaryColor, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      "Nearby Diagnostic Centers",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                    Row(
+                      children: [
+                        Icon(Icons.science_outlined, color: ColorPalette.primaryColor, size: 24),
+                        SizedBox(width: 12),
+                        Text(
+                          "Nearby Labs",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _navigateToMyOrders(context),
+                      icon: Icon(Icons.history, size: 16),
+                      label: Text("My Orders"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ColorPalette.primaryColor,
+                        side: BorderSide(color: ColorPalette.primaryColor),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   ],
@@ -252,27 +296,40 @@ class _LabBottomSheetState extends State<LabBottomSheet> {
                     ),
 
                     SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => widget.viewModel.bookLabAppointment(context, center),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorPalette.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          "Book Appointment",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => widget.viewModel.bookLabAppointment(context, center),
+                            icon: Icon(Icons.bookmark_outline_sharp, color: Colors.white),
+                            label: Text("Book Appointment"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ColorPalette.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
                           ),
                         ),
-                      ),
+                        SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _makeCall(center.mainContactNumber),
+                          icon: Icon(Icons.phone, color: Colors.white),
+                          label: Text("Call"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

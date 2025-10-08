@@ -152,7 +152,7 @@ class UserLoginViewModel extends ChangeNotifier {
   /// Resends OTP using the stored phone number
   Future<void> resendOtp() async {
     if (_phoneNumber.isEmpty) {
-      _setError("Phone number is not available.");
+      _setError("Contact number is not available.");
       return;
     }
     await sendOtp(_phoneNumber);

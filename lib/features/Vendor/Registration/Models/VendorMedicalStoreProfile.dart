@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 class VendorMedicalStoreProfile {
+  final String? storeId;
   final String? vendorId;
   final String? generatedId;
   final String name;
@@ -29,6 +32,7 @@ class VendorMedicalStoreProfile {
    List<String> photos;  // Changed to List<String>
 
   VendorMedicalStoreProfile({
+    this.storeId,
     this.vendorId,
     this.generatedId,
     required this.name,
@@ -61,6 +65,7 @@ class VendorMedicalStoreProfile {
 
   factory VendorMedicalStoreProfile.fromJson(Map<String, dynamic> json) {
     return VendorMedicalStoreProfile(
+      storeId: json['storeId'],
       vendorId: json['vendorId'],
       generatedId: json['generatedId'],
       name: json['name'],
@@ -95,8 +100,30 @@ class VendorMedicalStoreProfile {
 // ✅ **Helper function to handle single string or list**
   static List<String> _convertToList(dynamic data) {
     if (data == null) return [];
-    if (data is List) return List<String>.from(data);
-    if (data is String) return [data];  // Convert single string to list
+    if (data is List) {
+      // Handle list of strings or objects
+      List<String> result = [];
+      for (var item in data) {
+        if (item is String) {
+          result.add(item);
+        } else if (item is Map<String, dynamic>) {
+          // Handle objects like {"name": "medicine", "brand": "generic"}
+          if (item['name'] != null) {
+            result.add(item['name'].toString());
+          }
+        }
+      }
+      return result;
+    }
+    if (data is String) {
+      // Try to parse JSON string, if it fails return as single item
+      try {
+        List<dynamic> parsed = jsonDecode(data);
+        return _convertToList(parsed);
+      } catch (e) {
+        return [data];  // Convert single string to list
+      }
+    }
     return [];
   }
 
@@ -104,6 +131,7 @@ class VendorMedicalStoreProfile {
 
   Map<String, dynamic> toJson() {
     return {
+      "storeId": storeId,
       "vendorId": vendorId,
       "generatedId": generatedId,
       "name": name,

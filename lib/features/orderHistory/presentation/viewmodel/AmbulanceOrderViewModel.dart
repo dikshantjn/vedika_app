@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
@@ -31,6 +32,16 @@ class AmbulanceOrderViewModel extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Fetch ambulance invoice bytes
+  Future<Uint8List> fetchAmbulanceInvoiceBytes(String bookingId) async {
+    try {
+      return await _repository.fetchAmbulanceInvoiceBytes(bookingId);
+    } catch (e) {
+      print("ViewModel Error fetching ambulance invoice: $e");
+      rethrow;
     }
   }
 }

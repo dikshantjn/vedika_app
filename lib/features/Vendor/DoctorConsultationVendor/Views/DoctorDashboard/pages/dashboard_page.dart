@@ -112,14 +112,38 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: profile != null && profile.profilePicture.isNotEmpty
                   ? CircleAvatar(
                       radius: 22,
-                      backgroundImage: NetworkImage(profile.profilePicture),
+                      backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                      child: Image.network(
+                        profile.profilePicture,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: DoctorConsultationColorPalette.primaryBlue,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            color: DoctorConsultationColorPalette.primaryBlue,
+                            size: 20,
+                          );
+                        },
+                      ),
                     )
                   : CircleAvatar(
                       radius: 22,
                       backgroundColor: DoctorConsultationColorPalette.backgroundCard,
                       child: Text(
-                        profile != null && profile.doctorName.isNotEmpty 
-                            ? profile.doctorName[0].toUpperCase() 
+                        profile != null && profile.doctorName.isNotEmpty
+                            ? profile.doctorName[0].toUpperCase()
                             : 'D',
                         style: TextStyle(
                           fontSize: 18,
@@ -152,34 +176,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 10,
-                      color: viewModel.isActive 
-                          ? DoctorConsultationColorPalette.successGreen
-                          : DoctorConsultationColorPalette.errorRed,
-                    ),
-                    const SizedBox(width: 6),
-                Text(
-                      viewModel.isActive ? 'Active' : 'Inactive',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
                 ),

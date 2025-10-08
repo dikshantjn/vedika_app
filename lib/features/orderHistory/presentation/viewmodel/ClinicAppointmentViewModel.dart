@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
@@ -269,6 +270,138 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Cancel an appointment with reason
+  Future<Map<String, dynamic>> cancelAppointmentWithReason({
+    required String appointmentId,
+    required String cancelReason,
+  }) async {
+    if (_isActionInProgress) {
+      return {
+        'success': false,
+        'message': 'Another action is in progress. Please wait.',
+      };
+    }
+    
+    _isActionInProgress = true;
+    notifyListeners();
+    
+    try {
+      print('[ClinicAppointmentViewModel] Cancelling appointment with reason: ID=$appointmentId, reason=$cancelReason');
+      
+      final result = await _service.cancelAppointmentWithReason(
+        appointmentId: appointmentId,
+        cancelReason: cancelReason,
+      );
+      
+      if (result['success']) {
+        print('[ClinicAppointmentViewModel] Success - refreshing appointments...');
+        // Update local list after successful cancellation
+        await fetchUserClinicAppointments();
+        return {
+          'success': true,
+          'message': result['message'],
+        };
+      } else {
+        print('[ClinicAppointmentViewModel] Failed - setting error message');
+        return {
+          'success': false,
+          'message': result['message'],
+        };
+      }
+    } catch (e) {
+      print('[ClinicAppointmentViewModel] Exception occurred: $e');
+      return {
+        'success': false,
+        'message': 'Failed to cancel appointment: ${e.toString()}',
+      };
+    } finally {
+      _isActionInProgress = false;
+      notifyListeners();
+    }
+  }
+
+  // Reschedule a clinic appointment
+  Future<Map<String, dynamic>> rescheduleAppointment({
+    required String appointmentId,
+    required String date,
+    required String time,
+  }) async {
+    if (_isActionInProgress) {
+      return {
+        'success': false,
+        'message': 'Another action is in progress. Please wait.',
+      };
+    }
+    
+    _isActionInProgress = true;
+    notifyListeners();
+    
+    try {
+      final result = await _service.rescheduleClinicAppointment(
+        appointmentId: appointmentId,
+        date: date,
+        time: time,
+      );
+      
+      if (result['success']) {
+        // Update local list after successful rescheduling
+        await fetchUserClinicAppointments();
+      }
+      
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('Error rescheduling appointment: $e');
+      return {
+        'success': false,
+        'message': 'Error rescheduling appointment: $e',
+      };
+    } finally {
+      _isActionInProgress = false;
+      notifyListeners();
+    }
+  }
+
+  // Update appointment attendance status
+  Future<Map<String, dynamic>> updateAppointmentAttendance({
+    required String appointmentId,
+    required String status, // "no_call" or "no_show"
+  }) async {
+    if (_isActionInProgress) {
+      return {
+        'success': false,
+        'message': 'Another action is in progress. Please wait.',
+      };
+    }
+    
+    _isActionInProgress = true;
+    notifyListeners();
+    
+    try {
+      final result = await _service.updateAppointmentAttendance(
+        appointmentId: appointmentId,
+        status: status,
+      );
+      
+      if (result['success']) {
+        // Update local list after successful attendance update
+        await fetchUserClinicAppointments();
+      }
+      
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('Error updating attendance: $e');
+      return {
+        'success': false,
+        'message': 'Error updating attendance: $e',
+      };
+    } finally {
+      _isActionInProgress = false;
+      notifyListeners();
+    }
+  }
   
   // Refresh appointments data
   Future<void> refreshAppointments() async {
@@ -281,5 +414,15 @@ class ClinicAppointmentViewModel extends ChangeNotifier {
       return _appointments.first.user;
     }
     return null;
+  }
+
+  /// Fetch clinic invoice bytes
+  Future<Uint8List> fetchClinicInvoiceBytes(String appointmentId) async {
+    try {
+      return await _service.fetchClinicInvoiceBytes(appointmentId);
+    } catch (e) {
+      print("ViewModel Error fetching clinic invoice: $e");
+      rethrow;
+    }
   }
 } 

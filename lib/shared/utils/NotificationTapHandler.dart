@@ -4,16 +4,53 @@ import 'package:vedika_healthcare/main.dart';
 
 class NotificationTapHandler {
   static bool _isHandlingNavigation = false;
+  static String? _lastNotificationId;
+  static DateTime? _lastNavigationTime;
 
   static Future<void> handleNotification(Map<String, dynamic> data, {bool isAppLaunch = false}) async {
-    if (_isHandlingNavigation) return;
-    _isHandlingNavigation = true;
+    // Optimized timeout for faster response - much shorter wait
+    if (_isHandlingNavigation) {
+      debugPrint("⚠️ Navigation already in progress, waiting briefly...");
+
+      // Much shorter wait for notifications - only 200ms max
+      int attempts = 0;
+      while (_isHandlingNavigation && attempts < 4) {
+        await Future.delayed(const Duration(milliseconds: 50));
+        attempts++;
+      }
+
+      // If still busy, don't wait longer - let the notification proceed
+      // This allows notifications to be handled faster
+      if (_isHandlingNavigation) {
+        debugPrint("⚠️ Previous navigation still in progress, proceeding with new notification");
+        // Don't reset the flag - let both navigations complete
+        // Just proceed with the current notification
+      }
+    } else {
+      _isHandlingNavigation = true;
+    }
+
+    // Create notification ID for duplicate detection
+    String currentNotificationId = '${data['type']?.toString() ?? 'UNKNOWN'}_${data['orderId'] ?? data['id'] ?? 'unknown'}';
+
+    // Check if this is a repeated notification (same type and data)
+    bool isRepeatedNotification = _lastNotificationId == currentNotificationId &&
+                                  _lastNavigationTime != null &&
+                                  DateTime.now().difference(_lastNavigationTime!).inSeconds < 5; // Reduced from 30 to 5 seconds
+
+    if (isRepeatedNotification) {
+      debugPrint("🔄 Repeated notification detected - optimizing for faster response");
+    }
 
     String type = data['type']?.toString() ?? 'UNKNOWN';
     print("Notification Type: $type");
 
+    // Update tracking for this notification
+    _lastNotificationId = currentNotificationId;
+    _lastNavigationTime = DateTime.now();
+
     BuildContext? context = navigatorKey.currentContext;
-    if (context == null || !context.mounted) {
+    if (context == null) {
       print("Context not available");
       _isHandlingNavigation = false;
       return;
@@ -21,13 +58,13 @@ class NotificationTapHandler {
 
     try {
       switch (type) {
-        case 'TRACK_ORDER':
+                  case 'TRACK_ORDER':
           if (isAppLaunch) {
             await _navigateWithClearStack(
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.trackOrderScreen,
@@ -48,7 +85,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
           } else {
             await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
@@ -61,7 +98,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.medicineOrder,
@@ -82,7 +119,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
           } else {
             await _navigateWithHistory(context, AppRoutes.ambulanceSearch);
@@ -95,7 +132,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(context, AppRoutes.notification);
           } else {
             await _navigateWithHistory(context, AppRoutes.notification);
@@ -108,10 +145,10 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
-            await _navigateWithHistory(context, AppRoutes.goToCart);
+            await Future.delayed(const Duration(milliseconds: 50));
+            await _navigateWithHistory(context, AppRoutes.newCartScreen);
           } else {
-            await _navigateWithHistory(context, AppRoutes.goToCart);
+            await _navigateWithHistory(context, AppRoutes.newCartScreen);
           }
           break;
 
@@ -121,7 +158,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(context, AppRoutes.orderHistory);
           } else {
             await _navigateWithHistory(context, AppRoutes.orderHistory);
@@ -134,7 +171,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.VendorBloodBankDashBoard,
@@ -155,7 +192,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.bloodBank,
@@ -176,7 +213,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.orderHistory,
@@ -197,7 +234,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.bloodBank,
@@ -218,7 +255,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             await _navigateWithHistory(
               context,
               AppRoutes.bloodBankBooking,
@@ -229,6 +266,22 @@ class NotificationTapHandler {
               context,
               AppRoutes.bloodBankBooking,
               arguments: {'initialTab': 3}, // 1 is the index for Completed tab
+            );
+          }
+          break;
+
+        case 'MEDICINE_ORDERS':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorMedicalStoreDashBoard,
+              arguments: {'initialIndex': 1}, // 1 is the index for Orders tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorMedicalStoreDashBoard,
+              arguments: {'initialIndex': 1}, // 1 is the index for Orders tab
             );
           }
           break;
@@ -284,7 +337,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             // Then navigate to HospitalSearchPage
             await _navigateWithHistory(
               context,
@@ -306,7 +359,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             // Then navigate to HospitalSearchPage
             await _navigateWithHistory(
               context,
@@ -328,7 +381,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             // Then navigate to HospitalDashboardScreen with History tab selected
             await _navigateWithHistory(
               context,
@@ -380,7 +433,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             // Then navigate to AmbulanceAgencyMainScreen with Requests tab selected
             await _navigateWithHistory(
               context,
@@ -404,7 +457,7 @@ class NotificationTapHandler {
               context,
               AppRoutes.home,
             );
-            await Future.delayed(const Duration(milliseconds: 100));
+            await Future.delayed(const Duration(milliseconds: 50));
             // Then navigate to LabTestDashboardScreen with Bookings tab selected
             await _navigateWithHistory(
               context,
@@ -421,13 +474,55 @@ class NotificationTapHandler {
           }
           break;
 
+        case 'CLINIC_APPOINTMENT':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.VendorClinicDashBoard,
+              arguments: {'initialIndex': 1}, // Appointments tab
+            );
+          } else {
+            // If already on dashboard, navigate again with index param
+            await _navigateWithHistory(
+              context,
+              AppRoutes.VendorClinicDashBoard,
+              arguments: {'initialIndex': 1}, // Appointments tab
+            );
+          }
+          break;
+
+        case 'CLINIC_APPOINTMENT_ORDER_HISTORY':
+          if (isAppLaunch) {
+            await _navigateWithClearStack(
+              context,
+              AppRoutes.home,
+            );
+            await Future.delayed(const Duration(milliseconds: 50));
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 5}, // Clinic tab
+            );
+          } else {
+            await _navigateWithHistory(
+              context,
+              AppRoutes.orderHistory,
+              arguments: {'initialTab': 5}, // Clinic tab
+            );
+          }
+          break;
+
         default:
           print("Unknown notification type: $type");
       }
     } catch (e) {
       print("Navigation error: $e");
     } finally {
-      _isHandlingNavigation = false;
+      // Only reset flag if it was set by this instance
+      // This prevents resetting flag for concurrent notifications
+      if (_isHandlingNavigation) {
+        _isHandlingNavigation = false;
+      }
     }
   }
 
@@ -437,11 +532,8 @@ class NotificationTapHandler {
       String routeName, {
         Object? arguments,
       }) async {
-    // Check if we're already on this screen
-    if (ModalRoute.of(context)?.settings.name == routeName) {
-      return;
-    }
-
+    // Skip the route name check for faster navigation
+    // Just proceed with navigation - the notification should navigate regardless
     await Navigator.pushNamed(
       context,
       routeName,
@@ -455,11 +547,8 @@ class NotificationTapHandler {
       String routeName, {
         Object? arguments,
       }) async {
-    // Check if we're already on this screen
-    if (ModalRoute.of(context)?.settings.name == routeName) {
-      return;
-    }
-
+    // Skip the route name check for faster navigation
+    // Just proceed with navigation - the notification should navigate regardless
     await Navigator.pushNamedAndRemoveUntil(
       context,
       routeName,

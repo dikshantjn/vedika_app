@@ -32,7 +32,7 @@ Future<void> generateAndDownloadBloodBankInvoicePDF(BloodBankBooking booking) as
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          'VEDIKA HEALTHCARE',
+                          'VEDIKA HEALTHTECH',
                           style: pw.TextStyle(
                             font: boldFont,
                             fontSize: 24,

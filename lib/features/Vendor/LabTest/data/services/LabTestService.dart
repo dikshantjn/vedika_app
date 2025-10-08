@@ -115,7 +115,7 @@ class LabTestService {
         if (response.data != null && response.data['message'] != null) {
           errorMessage += response.data['message'];
         } else {
-          errorMessage += 'Email or phone number is already registered';
+          errorMessage += 'Email or Contact number is already registered';
         }
         _logger.e(errorMessage);
         throw Exception(errorMessage);
@@ -134,7 +134,7 @@ class LabTestService {
           if (e.response?.data != null && e.response?.data['message'] != null) {
             errorMessage += e.response?.data['message'];
           } else {
-            errorMessage += 'Email or phone number is already registered';
+            errorMessage += 'Email or Contact number is already registered';
           }
           _logger.e(errorMessage);
           throw Exception(errorMessage);

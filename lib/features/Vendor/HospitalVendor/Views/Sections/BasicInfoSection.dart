@@ -82,14 +82,14 @@ class BasicInfoSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _buildTextField(
-          label: 'Phone Number',
+          label: 'Contact Number',
           controller: viewModel.phoneController,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter phone number';
+              return 'Please enter Contact number';
             }
             if (value.length != 10) {
-              return 'Phone number must be 10 digits';
+              return 'Contact number must be 10 digits';
             }
             return null;
           },

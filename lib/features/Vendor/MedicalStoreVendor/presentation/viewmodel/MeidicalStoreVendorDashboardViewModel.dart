@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineOrderModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicineReturnRequestModel.dart';
@@ -12,6 +14,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistrati
 import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedicalStoreProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/NewOrders/NewOrdersService.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
@@ -19,7 +22,11 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   final VendorLoginService _loginService = VendorLoginService();
   final VendorService _vendorService = VendorService();
   final MedicalStoreVendorService _medicalStoreService = MedicalStoreVendorService();
-
+  final NewOrdersService _newOrdersService = NewOrdersService();
+  
+  // Socket connection for real-time updates
+  IO.Socket? _socket;
+  bool _disposed = false;
   // Store Information
   String? _storeName;
   String? _storeAddress;
@@ -58,6 +65,10 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   bool _isActive = false; // Default inactive
   String _status = "Offline"; // New status field
 
+  // ✅ Prescription Count
+  int _prescriptionCount = 0;
+  bool _isLoadingPrescriptions = false;
+
   // ✅ Time Filter for Analytics
   String _selectedTimeFilter = 'Today';
   List<String> _timeFilterOptions = ['Today', 'Week', 'Month', 'Year'];
@@ -67,6 +78,8 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
   String get status => _status;
   String get selectedTimeFilter => _selectedTimeFilter;
   List<String> get timeFilterOptions => _timeFilterOptions;
+  int get prescriptionCount => _prescriptionCount;
+  bool get isLoadingPrescriptions => _isLoadingPrescriptions;
 
   // ✅ Fetch Store Information
   Future<void> fetchStoreInformation() async {
@@ -96,12 +109,145 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
     try {
       bool currentStatus = await _vendorService.getVendorStatus(vendorId!); // API call to get status
       _isActive = currentStatus;
+      
+      // Also fetch prescription count when initializing
+      await fetchPrescriptionCount();
+      
+      // Initialize socket connection for real-time updates
+      await _initializeSocketConnection();
     } catch (e) {
       print("Error fetching vendor status: $e");
     }
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // ✅ Fetch Prescription Count
+  Future<void> fetchPrescriptionCount() async {
+    String? vendorId = await _loginService.getVendorId();
+    
+    if (vendorId == null) {
+      print("Error: Vendor ID is null");
+      return;
+    }
+
+    _isLoadingPrescriptions = true;
+    notifyListeners();
+
+    try {
+      final prescriptions = await _newOrdersService.getPrescriptions(vendorId);
+      _prescriptionCount = prescriptions.length;
+      print("📊 [DashboardViewModel] Fetched ${_prescriptionCount} prescriptions");
+    } catch (e) {
+      print("Error fetching prescription count: $e");
+      _prescriptionCount = 0;
+    }
+
+    _isLoadingPrescriptions = false;
+    notifyListeners();
+  }
+
+  // ✅ Refresh Prescription Count (for real-time updates)
+  Future<void> refreshPrescriptionCount() async {
+    print('🔄 [DashboardViewModel] Manually refreshing prescription count...');
+    await fetchPrescriptionCount();
+  }
+
+  // ✅ Force Refresh Prescription Count (for debugging)
+  Future<void> forceRefreshPrescriptionCount() async {
+    print('🔄 [DashboardViewModel] Force refreshing prescription count...');
+    _prescriptionCount = 0; // Reset to 0 first
+    notifyListeners();
+    await fetchPrescriptionCount();
+  }
+
+  // ✅ Initialize Socket Connection for Real-time Updates
+  Future<void> _initializeSocketConnection() async {
+    try {
+      String? vendorId = await _loginService.getVendorId();
+      if (vendorId == null) {
+        print("❌ [DashboardViewModel] Vendor ID not found for socket connection");
+        return;
+      }
+
+      print("🚀 [DashboardViewModel] Initializing socket connection for prescription count updates...");
+
+      // Close existing socket if any
+      _socket?.disconnect();
+      _socket?.dispose();
+
+      _socket = IO.io(ApiEndpoints.socketUrl, <String, dynamic>{
+        'transports': ['websocket', 'polling'],
+        'query': {'vendorId': vendorId},
+      });
+
+      // Set up event listeners
+      _socket!.onConnect((_) {
+        print('✅ [DashboardViewModel] Socket connected for prescription count updates');
+        _socket!.emit('registerVendor', vendorId);
+      });
+
+      _socket!.onConnectError((data) {
+        print('❌ [DashboardViewModel] Socket connection error: $data');
+        _attemptReconnect();
+      });
+
+      _socket!.onError((data) {
+        print('❌ [DashboardViewModel] Socket error: $data');
+      });
+
+      _socket!.onDisconnect((_) {
+        print('❌ [DashboardViewModel] Socket disconnected');
+        _attemptReconnect();
+      });
+
+      // Handle updatePrescriptionCount event
+      _socket!.on('updatePrescriptionCount', (data) async {
+        print('🔄 [DashboardViewModel] updatePrescriptionCount event received: $data');
+        print('🔄 [DashboardViewModel] Socket connected: ${_socket?.connected}');
+        print('🔄 [DashboardViewModel] Disposed: $_disposed');
+        await _handlePrescriptionCountUpdate(data);
+      });
+
+      // Add ping/pong handlers
+      _socket!.on('ping', (_) {
+        _socket!.emit('pong');
+      });
+
+      // Connect to the socket
+      _socket!.connect();
+      print('🔄 [DashboardViewModel] Attempting to connect socket for prescription count updates...');
+    } catch (e) {
+      print("❌ [DashboardViewModel] Socket connection error: $e");
+      _attemptReconnect();
+    }
+  }
+
+  // ✅ Handle Prescription Count Update from Socket
+  Future<void> _handlePrescriptionCountUpdate(dynamic data) async {
+    try {
+      print('🔄 [DashboardViewModel] Processing prescription count update: $data');
+      print('🔄 [DashboardViewModel] Current prescription count before update: $_prescriptionCount');
+      
+      // Refresh prescription count when updatePrescriptionCount event is received
+      await refreshPrescriptionCount();
+      
+      print('✅ [DashboardViewModel] Prescription count refreshed after update event');
+      print('✅ [DashboardViewModel] New prescription count: $_prescriptionCount');
+    } catch (e) {
+      print('❌ [DashboardViewModel] Error handling prescription count update: $e');
+    }
+  }
+
+  // ✅ Attempt Socket Reconnection
+  void _attemptReconnect() {
+    Future.delayed(Duration(seconds: 3), () {
+      if (_socket != null && !_socket!.connected && !_disposed) {
+        print('🔄 [DashboardViewModel] Attempting to reconnect socket...');
+        _socket!.connect();
+      }
+    });
   }
 
   // ✅ Toggle Vendor Status (Activate/Deactivate)
@@ -230,5 +376,14 @@ class MedicalStoreVendorDashboardViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // ✅ Dispose method to clean up socket connection
+  @override
+  void dispose() {
+    _disposed = true;
+    _socket?.disconnect();
+    _socket?.dispose();
+    super.dispose();
   }
 }

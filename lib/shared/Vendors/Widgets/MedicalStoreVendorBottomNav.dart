@@ -5,12 +5,14 @@ class MedicalStoreVendorBottomNav extends StatelessWidget {
   final Function(int) onTabSelected;
   final int currentIndex;
   final bool isSpecialPage; // New parameter to handle special pages
+  final int prescriptionCount; // New parameter for prescription count
 
   const MedicalStoreVendorBottomNav({
     Key? key,
     required this.onTabSelected,
     required this.currentIndex,
     this.isSpecialPage = false, // Default to false
+    this.prescriptionCount = 0, // Default to 0
   }) : super(key: key);
 
   @override
@@ -50,7 +52,7 @@ class MedicalStoreVendorBottomNav extends StatelessWidget {
           elevation: 5,
           items: [
             _buildNavItem(Icons.dashboard, "Dashboard"),
-            _buildNavItem(Icons.shopping_cart, "Orders"),
+            _buildNavItemWithBadge(Icons.shopping_cart, "Orders", prescriptionCount),
             _buildNavItem(Icons.inventory, "Products"),
             _buildNavItem(Icons.assignment_return, "Returns"),
             _buildNavItem(Icons.person, "Profile"),
@@ -63,6 +65,42 @@ class MedicalStoreVendorBottomNav extends StatelessWidget {
   BottomNavigationBarItem _buildNavItem(IconData icon, String label) {
     return BottomNavigationBarItem(
       icon: Icon(icon, size: 26),
+      label: label,
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItemWithBadge(IconData icon, String label, int count) {
+    return BottomNavigationBarItem(
+      icon: Stack(
+        children: [
+          Icon(icon, size: 26),
+          if (count > 0)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: Text(
+                  count > 99 ? '99+' : count.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
       label: label,
     );
   }

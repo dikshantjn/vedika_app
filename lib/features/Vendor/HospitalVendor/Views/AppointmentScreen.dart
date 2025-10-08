@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/HospitalVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/models/BedBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/HospitalVendor/ViewModels/AppointmentViewModel.dart';
@@ -198,6 +199,19 @@ class BedBookingCard extends StatelessWidget {
     required this.viewModel,
   }) : super(key: key);
 
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isPending = booking.status.toLowerCase() == 'pending';
@@ -243,7 +257,9 @@ class BedBookingCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      booking.user.name?[0].toUpperCase() ?? 'U',
+                      (booking.user.name?.isNotEmpty == true) 
+                          ? booking.user.name![0].toUpperCase() 
+                          : 'U',
                       style: const TextStyle(
                         color: HospitalVendorColorPalette.primaryBlue,
                         fontWeight: FontWeight.bold,
@@ -323,7 +339,7 @@ class BedBookingCard extends StatelessWidget {
                   Colors.orange,
                 ),
                 const SizedBox(height: 12),
-                _buildInfoRow(
+                _buildContactRow(
                   Icons.phone,
                   'Contact',
                   booking.user.phoneNumber,
@@ -464,6 +480,66 @@ class BedBookingCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactRow(IconData icon, String label, String value, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: HospitalVendorColorPalette.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: () => _makeCall(value),
+          icon: const Icon(Icons.phone, size: 16),
+          label: const Text('Call'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: HospitalVendorColorPalette.primaryBlue,
+            side: BorderSide(color: HospitalVendorColorPalette.primaryBlue),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            minimumSize: const Size(0, 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ],

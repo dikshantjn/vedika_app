@@ -37,9 +37,14 @@ class DoctorDrawerMenu extends StatelessWidget {
                   onTap: () => _navigateToPage(context, 2),
                 ),
                 _buildDrawerItem(
+                  icon: Icons.schedule_outlined,
+                  title: 'Time Slots',
+                  onTap: () => _navigateToPage(context, 3),
+                ),
+                _buildDrawerItem(
                   icon: Icons.person_outline,
                   title: 'Profile',
-                  onTap: () => _navigateToPage(context, 3),
+                  onTap: () => _navigateToPage(context, 4),
                 ),
                 const Divider(height: 1),
                 _buildDrawerItem(
@@ -110,20 +115,32 @@ class DoctorDrawerMenu extends StatelessWidget {
                 radius: 40,
                 backgroundColor: Colors.white,
                 child: profile.profilePicture.isNotEmpty
-                  ? CircleAvatar(
-                      radius: 37,
-                      backgroundImage: NetworkImage(profile.profilePicture),
+                  ? ClipOval(
+                      child: Image.network(
+                        profile.profilePicture,
+                        width: 74,
+                        height: 74,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return CircleAvatar(
+                            radius: 37,
+                            backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                            child: const Icon(
+                              Icons.person,
+                              size: 36,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      ),
                     )
                   : CircleAvatar(
                       radius: 37,
                       backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-                      child: Text(
-                        profile.doctorName.isNotEmpty ? profile.doctorName[0].toUpperCase() : 'D',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: DoctorConsultationColorPalette.primaryBlue,
-                        ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 36,
+                        color: Colors.grey,
                       ),
                     ),
               ),

@@ -91,6 +91,10 @@ class BloodBankDetailsBottomSheet extends StatelessWidget {
                   color: Colors.blue,
                 ),
                 
+                // Phone number with call button
+                SizedBox(height: 10),
+                _buildPhoneCard(),
+                
                 // Website (if available)
                 if (agency.website != null) ...[
                   SizedBox(height: 10),
@@ -187,6 +191,75 @@ class BloodBankDetailsBottomSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildPhoneCard() {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.phone, color: Colors.green, size: 16),
+          SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Phone",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  agency.phoneNumber,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: () => _makeCall(agency.phoneNumber),
+            icon: Icon(Icons.phone, size: 16),
+            label: Text("Call"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+        print('Could not launch phone call to $phoneNumber');
+      }
+    } catch (e) {
+      // Handle error
+      print('Error making phone call: $e');
+    }
   }
 
   Future<void> _launchUrl(String url) async {

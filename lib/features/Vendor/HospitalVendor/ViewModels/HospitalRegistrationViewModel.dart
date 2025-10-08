@@ -360,8 +360,8 @@ class HospitalRegistrationViewModel extends ChangeNotifier {
         return false;
       }
       if (phone.isEmpty) {
-        _error = 'Phone number is required';
-        _logger.e('Registration failed: Phone number is required');
+        _error = 'Contact number is required';
+        _logger.e('Registration failed: Contact number is required');
         _isLoading = false;
         notifyListeners();
         return false;

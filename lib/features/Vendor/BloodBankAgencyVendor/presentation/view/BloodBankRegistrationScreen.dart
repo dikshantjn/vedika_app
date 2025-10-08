@@ -158,7 +158,7 @@ class BloodBankRegistrationScreen extends StatelessWidget {
                                     }
                                     if (viewModel.phoneNumberController.text.isEmpty) {
                                       isBasicInfoValid = false;
-                                      basicInfoErrors.add('Phone Number');
+                                      basicInfoErrors.add('Contact Number');
                                     }
                                     if (viewModel.emailController.text.isEmpty) {
                                       isBasicInfoValid = false;
@@ -291,7 +291,7 @@ class BloodBankRegistrationScreen extends StatelessWidget {
               isRequired: true,
             ),
             _buildTextFieldWithIcon(
-              "Phone Number",
+              "Contact Number",
               viewModel.phoneNumberController,
               Icons.phone,
               keyboardType: TextInputType.phone,

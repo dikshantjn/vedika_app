@@ -99,7 +99,7 @@ class ProductPartnerViewModel extends ChangeNotifier {
       _validationErrors.add('Location is required');
     }
     if (phoneNumberController.text.isEmpty) {
-      _validationErrors.add('Phone number is required');
+      _validationErrors.add('Contact number is required');
     }
     if (licenseDetails.isEmpty) {
       _validationErrors.add('At least one license is required');

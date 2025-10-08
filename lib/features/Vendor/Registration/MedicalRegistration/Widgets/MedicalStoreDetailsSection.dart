@@ -27,7 +27,7 @@ class _MedicalStoreDetailsSectionState extends State<MedicalStoreDetailsSection>
             _buildTextField(widget.viewModel.gstNumberController, "GST Number", Icons.confirmation_number),
             _buildTextField(widget.viewModel.panNumberController, "PAN Number", Icons.credit_card),
             _buildTextField(widget.viewModel.emailController, "Email Address", Icons.email, isEmail: true),
-            _buildTextField(widget.viewModel.contactNumberController, "Phone Number", Icons.phone, isNumber: true),
+            _buildTextField(widget.viewModel.contactNumberController, "Contact Number", Icons.phone, isNumber: true),
             _buildTextField(widget.viewModel.ownerNameController, "Owner Name", Icons.person, isNumber: false),
             _buildTextField(widget.viewModel.licenseNumberController, "License Number", Icons.card_membership), // Added License Number field
 
@@ -72,7 +72,7 @@ class _MedicalStoreDetailsSectionState extends State<MedicalStoreDetailsSection>
         validator: (value) {
           if (value!.isEmpty) return "Please enter $label";
           if (isEmail && !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return "Enter a valid email";
-          if (isNumber && value.length < 10) return "Enter a valid phone number";
+          if (isNumber && value.length < 10) return "Enter a valid Contact number";
           return null;
         },
       ),

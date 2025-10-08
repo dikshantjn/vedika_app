@@ -8,7 +8,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
+import 'package:vedika_healthcare/features/cart/index.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
@@ -75,16 +75,23 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
 
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-      final cartViewModel = Provider.of<CartAndPlaceOrderViewModel>(context, listen: false);
+      final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
       final membershipViewModel = Provider.of<MembershipViewModel>(context, listen: false);
       final profileCompletionVM = Provider.of<ProfileCompletionViewModel>(context, listen: false);
-
-      await cartViewModel.fetchOrdersAndCartItems();
 
       await Future.wait([
         authViewModel.checkLoginStatus(),
         vendorAuthViewModel.checkLoginStatus(),
       ]);
+
+      // Fetch cart counts if user is logged in
+      if (authViewModel.isLoggedIn) {
+        final userId = await StorageService.getUserId();
+        if (userId != null && userId.isNotEmpty) {
+          await cartViewModel.fetchMedicineCartCount(userId: userId);
+          await cartViewModel.fetchProductCartCount();
+        }
+      }
 
       if (!mounted) return;
 
@@ -97,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
           // Preload profile completion for all services once at startup
           await profileCompletionVM.preloadAll(userId);
         }
-        debugPrint('🚨 SPLASH: Navigating to AppRoutes.home after successful initialization');
+        
         Navigator.pushReplacementNamed(context, AppRoutes.home);
 
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
@@ -107,7 +114,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
         _navigateToLogin();
       }
     } catch (e) {
-      print("❌ Error during initialization: $e");
+      
       _navigateToLogin();
     } finally {
       _timeoutTimer?.cancel();
@@ -152,10 +159,9 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                 children: [
                   // Logo animation
                   Container(
-                    width: 120,
                     height: 120,
+                    width: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -166,14 +172,12 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                       ],
                     ),
                     child: Center(
-                      child: ClipOval(
-                        child: Container(
-                          width: 130,
-                          height: 110,
-                          child: Image.asset(
-                            'assets/logo/Logo.png',
-                            fit: BoxFit.cover,
-                          ),
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        child: Image.asset(
+                          'assets/logo/Logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -195,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                     child: Column(
                   children: [
                         const Text(
-                          'Vedika Health Care',
+                          'Vedika Healthtech',
                       style: TextStyle(
                             fontSize: 28,
                         fontWeight: FontWeight.bold,

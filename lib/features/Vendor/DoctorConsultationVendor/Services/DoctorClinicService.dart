@@ -126,7 +126,7 @@ class DoctorClinicService {
     if (profile.password.isEmpty) errors['password'] = 'Password is required';
     if (profile.password.length < 6) errors['password'] = 'Password must be at least 6 characters';
     if (profile.confirmPassword != profile.password) errors['confirmPassword'] = 'Passwords do not match';
-    if (profile.phoneNumber.isEmpty) errors['phoneNumber'] = 'Phone number is required';
+    if (profile.phoneNumber.isEmpty) errors['phoneNumber'] = 'Contact number is required';
     if (profile.licenseNumber.isEmpty) errors['licenseNumber'] = 'License number is required';
     
     // Professional details validation

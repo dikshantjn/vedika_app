@@ -88,29 +88,21 @@ class _userLoginScreenState extends State<UserLoginScreen> {
       width: 120,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            ColorPalette.primaryColor,
-            ColorPalette.primaryColor.withOpacity(0.7),
-          ],
-        ),
         boxShadow: [
           BoxShadow(
-            color: ColorPalette.primaryColor.withOpacity(0.3),
+            color: ColorPalette.primaryColor.withOpacity(0.2),
             blurRadius: 15,
             offset: Offset(0, 5),
           ),
         ],
       ),
       child: Center(
-        child: ClipOval(
-          child: Container(
-            width: 130,
-            height: 110,
-            child: Image.asset(
-              'assets/logo/Logo.png',
-              fit: BoxFit.cover,
-            ),
+        child: Container(
+          width: 120,
+          height: 120,
+          child: Image.asset(
+            'assets/logo/Logo.png',
+            fit: BoxFit.contain,
           ),
         ),
       ),
@@ -121,7 +113,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     return Column(
       children: [
         Text(
-          "Welcome to Vedika Healthcare",
+          "Welcome to Vedika Healthtech",
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -185,7 +177,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              "Enter your mobile number to continue",
+              "Enter your Contact number to continue",
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -267,7 +259,7 @@ class _userLoginScreenState extends State<UserLoginScreen> {
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
-                hintText: "Enter mobile number",
+                hintText: "Enter Contact number",
                 hintStyle: TextStyle(
                   color: Colors.grey.shade400,
                   fontSize: 15,
@@ -276,8 +268,8 @@ class _userLoginScreenState extends State<UserLoginScreen> {
                 contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),
               validator: (value) {
-                if (value == null || value.isEmpty) return "Please enter your phone number";
-                if (value.length != 10) return "Enter a valid 10-digit phone number";
+                if (value == null || value.isEmpty) return "Please enter your Contact number";
+                if (value.length != 10) return "Enter a valid 10-digit Contact number";
                 return null;
               },
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/NewOrdersScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Orders/MedicineOrderPage.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Products/MedicalProductsProductScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/Profile/MedicalStoreVendorProfileContent.dart';
@@ -11,6 +12,13 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/shared/Vendors/Widgets/MedicalStoreVendorDrawerMenu.dart';
 
 class VendorMedicalStoreDashBoardScreen extends StatefulWidget {
+  final int? initialIndex;
+
+  const VendorMedicalStoreDashBoardScreen({
+    Key? key,
+    this.initialIndex,
+  }) : super(key: key);
+
   @override
   _VendorMedicalStoreDashBoardScreenState createState() =>
       _VendorMedicalStoreDashBoardScreenState();
@@ -22,6 +30,11 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
   @override
   void initState() {
     super.initState();
+    // Set initial index from widget parameter
+    if (widget.initialIndex != null) {
+      _currentIndex = widget.initialIndex!;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MedicalStoreVendorDashboardViewModel>(context, listen: false)
           .fetchVendorStatus();
@@ -30,7 +43,8 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
 
   final List<Widget> _pages = [
     const DashboardContent(),
-    MedicineOrderPage(),
+    // MedicineOrderPage(),
+    NewOrdersScreen(),
     MedicalProductsProductScreen(),
     const Center(child: Text("Returns Page", style: TextStyle(fontSize: 24))),
     MedicalStoreVendorProfileContent(),
@@ -60,10 +74,15 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
         actions: [_buildAppBarActions()],
       ),
       body: _pages[_currentIndex],
-      bottomNavigationBar: MedicalStoreVendorBottomNav(
-        currentIndex: _currentIndex,
-        onTabSelected: _onTabSelected,
-        isSpecialPage: _currentIndex >= 5,
+      bottomNavigationBar: Consumer<MedicalStoreVendorDashboardViewModel>(
+        builder: (context, viewModel, child) {
+          return MedicalStoreVendorBottomNav(
+            currentIndex: _currentIndex,
+            onTabSelected: _onTabSelected,
+            isSpecialPage: _currentIndex >= 5,
+            prescriptionCount: viewModel.prescriptionCount,
+          );
+        },
       ),
     );
   }

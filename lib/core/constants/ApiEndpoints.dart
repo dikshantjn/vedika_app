@@ -1,14 +1,14 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://localhost:5000";  // Current IP address
-  static const String baseUrl = "http://localhost:5000/api";  // Current IP address
+  static const String socketUrl = "http://10.242.226.210:5000";  // Current IP address
+  static const String baseUrl = "http://10.242.226.210:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
-  // static const String socketUrl = "https://f8186641a964.ngrok-free.app";
-  // static const String baseUrl = "https://f8186641a964.ngrok-free.app/api";
+  // static const String socketUrl = "https://947a075b3d46.ngrok-free.app";
+  // static const String baseUrl = "https://947a075b3d46.ngrok-free.app/api";
 
 
   // 📌 Auth APIs
@@ -43,10 +43,17 @@ class ApiEndpoints {
   static const String completeClinicAppointment = '$baseUrl/clinic-appointments/complete';  // NEW: endpoint for marking appointment as completed after meeting ends
   static const String getClinicAppointmentsByUserId = '$baseUrl/clinic-appointments/user'; // Example: /clinic-appointments/user/:userId
   static const String getPendingClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending
+  static const String getPendingOnlineClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending/online
+  static const String getPendingOfflineClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/pending/offline
   static const String getCompletedClinicAppointmentsByVendor = '$baseUrl/clinic-appointments/vendor'; // E.g. /clinic-appointments/vendor/:vendorId/completed
   static const String getOngoingMeetings = '$baseUrl/clinic-appointments/ongoing-meetings';
   static const String shareHealthRecords = '$baseUrl/clinic-appointments/share-health-records';
   static const String getHealthRecordsByAppointmentId = '$baseUrl/clinic-appointments/health-records';  // NEW: endpoint for getting health records by appointment ID
+  static const String updateClinicAppointmentNote = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/note
+  static const String uploadClinicAppointmentFiles = '$baseUrl/clinic-appointments'; // POST /clinic-appointments/:appointmentId/files
+  static const String rescheduleClinicAppointment = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/reschedule
+  static const String updateAppointmentAttendance = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/attendance
+  static const String cancelClinicAppointment = '$baseUrl/clinic-appointments'; // PUT /clinic-appointments/:appointmentId/cancel
 
   // 📌 Medicine Product APIs
   static const String addProduct = '$baseUrl/medicineProduct/add-product';
@@ -91,7 +98,6 @@ class ApiEndpoints {
   static const String getDeliveryAddresses = '$baseUrl/deliveryAddress/getDeliveryAddress';
   static const String deleteDeliveryAddress = '$baseUrl/deliveryAddress/deleteDeliveryAddress';
   static const String placedOrderWithPayment = '$baseUrl/orders/update-order';
-  static const String updateOrderStatus = '$baseUrl/orders';
   static const String trackOrder = '$baseUrl/orders';
   static const String updatePrescriptionStatus = '$baseUrl/orders';
   static const String enableSelfDelivery = '$baseUrl/orders';  // PATCH to enable self delivery
@@ -123,6 +129,7 @@ class ApiEndpoints {
   static const String getProductCartItems = '$baseUrl/product-cart/get-cart-items';  // Get product cart items
   static const String deleteProductCartItem = '$baseUrl/product-cart/delete-cart-item';  // Delete product cart item
   static const String updateProductCartQuantity = '$baseUrl/product-cart/update-cart-item-qantity';  // Update product cart quantity
+  static const String getProductCartCount = '$baseUrl/product-cart/get-cart-count';  // Get product cart count by user ID
 
   static const String registerAmbulanceAgency = '$baseUrl/ambulance/register-agency';
   static const String getAmbulanceAgencyProfile = '$baseUrl/ambulance/profile';
@@ -183,6 +190,13 @@ class ApiEndpoints {
   static const String addWard = "$baseUrl/hospitals/wards";
   static const String editWard = "$baseUrl/hospitals/wards";
 
+  // 📌 Clinic Time Slots APIs
+  static const String getClinicTimeslotsByVendor = '$baseUrl/clinic-timeslots/vendor'; // /clinic-timeslots/vendor/:vendorId
+  static const String getClinicTimeslotsByVendorAndDate = '$baseUrl/clinic-timeslots/vendor'; // /clinic-timeslots/vendor/:vendorId/date/:date
+  static const String createClinicTimeslot = '$baseUrl/clinic-timeslots'; // POST /clinic-timeslots
+  static const String updateClinicTimeslot = '$baseUrl/clinic-timeslots'; // PUT /clinic-timeslots/:timeSlotID
+  static const String deleteClinicTimeslot = '$baseUrl/clinic-timeslots'; // DELETE /clinic-timeslots/:timeSlotID
+
   // 📌 Lab Test APIs
   static const String uploadFile = '$baseUrl/lab-test/upload-file';
   static const String uploadMultipleFiles = '$baseUrl/lab-test/upload-multiple-files';
@@ -230,15 +244,59 @@ class ApiEndpoints {
   static const String generateMedicineOrderInvoice = '$baseUrl/orders/medicine-order-generate-invoice';  // NEW: endpoint for generating medicine order invoice
   static const String getPrescriptionData = '$baseUrl/orders';  // NEW: endpoint for generating medicine order invoice
   static const String blogPosts = '$baseUrl/blogs/posts';
+  static const String blogCategories = '$baseUrl/blog-categories/categories';
+  static String blogPostsByCategory(String categoryId) => '$baseUrl/blogs/posts/$categoryId';
 
   // 📌 SpeakAI
   static const String speakAIIntent = '$baseUrl/speakAI/intent';
+
+  // 📌 Her Phases APIs
+  static const String herPhases = '$baseUrl/herPhases';
 
   // 📌 Membership APIs
   static const String getMembershipPlans = '$baseUrl/membership/plans';
   static const String createMembershipOrder = '$baseUrl/membership/order';
   static const String verifyMembershipPayment = '$baseUrl/membership/verify-payment';
-  static const String herPhasesCreate = '$baseUrl/herPhases';
+
+  // 📌 Medicine Delivery APIs
+  static const String getMedicalStores = '$baseUrl/medicine-delivery/medicalstores';
+  static const String sendPrescription = '$baseUrl/medicine-delivery/send';
+  static const String getPendingPrescriptions = '$baseUrl/medicine-delivery/prescriptions/pending';
+  static const String acceptPrescription = '$baseUrl/medicine-delivery/prescriptions';
+  static const String rejectPrescription = '$baseUrl/medicine-delivery/prescriptions';
+  static const String getOrdersByVendor = '$baseUrl/medicine-delivery/orders/vendor';
+  static const String updateOrderPayment = '$baseUrl/medicine-delivery/orders';
+  static const String updateOrderNote = '$baseUrl/medicine-delivery/orders';
+  static const String updateOrderStatus = '$baseUrl/medicine-delivery/update-status'; // Update order status
+  static const String getPendingPaymentOrders = '$baseUrl/medicine-delivery/orders/user'; // Get orders waiting for payment
+  static const String placeMedicineOrder = '$baseUrl/medicine-delivery/place-medicine-order'; // Place medicine order after payment
+  static const String getActiveMedicineDeliveryOrders = '$baseUrl/medicine-delivery/orders/active'; // Get active medicine delivery orders by user ID
+  static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
+  static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
+  static const String getMedicineCartCount = '$baseUrl/medicine-delivery/medicine-cart-count'; // Get medicine cart count by user ID
+
+  // 📌 Notification APIs
+  static const String getNotifications = '$baseUrl/notifications'; // GET /notifications?userId=:userId or ?vendorId=:vendorId
+  static String markNotificationAsRead(String notificationId) => '$baseUrl/notifications/$notificationId/read'; // PUT /notifications/:notificationId/read
+  static String deleteNotification(String notificationId) => '$baseUrl/notifications/$notificationId'; // DELETE /notifications/:notificationId
+
+  // 📌 Ambulance Invoice API
+  static String getAmbulanceInvoice = '$baseUrl/ambulance-invoce/ambulance/invoice'; // GET /ambulance-invoce/ambulance/invoice/:bookingId
+
+  // 📌 Hospital Invoice API
+  static String getHospitalInvoice = '$baseUrl/hospital-invoice'; // GET /hospital-invoice/:bookingId/invoice
+
+  // 📌 Lab Test Invoice API
+  static String getLabTestInvoice = '$baseUrl/lab-invoice/invoice'; // GET /lab-invoice/invoice/:bookingId
+
+  // 📌 Blood Bank Invoice API
+  static String getBloodBankInvoice = '$baseUrl/blood-bank-invoice/invoice'; // GET /blood-bank-invoice/invoice/:bookingId
+
+  // 📌 Clinic Invoice API
+  static String getClinicInvoice = '$baseUrl/clinic-invoice/invoice'; // GET /clinic-invoice/invoice/:appointmentId
+
+  // 📌 Product Order Invoice API
+  static const String getProductOrderInvoice = '$baseUrl/product-order/orders'; // GET /product-order/orders/:orderId/invoice
 
   // Build URL: Get user's current membership plan
   static String userCurrentMembership(String userId) => '$baseUrl/membership/user/$userId/current-plan';

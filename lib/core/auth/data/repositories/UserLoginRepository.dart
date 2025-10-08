@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 
 class UserLoginRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -96,6 +98,12 @@ class UserLoginRepository {
           await StorageService.storeUserId(user.uid);
 
           successCallback(user, jwtToken); // Return user & JWT
+
+          try {
+            // After login, trigger cart counts fetch via global provider if available
+            // This assumes a valid BuildContext is available at app-level; if not, Splash will fetch later
+            // In repositories, we typically don't have context; so this is a no-op placeholder.
+          } catch (_) {}
         } else {
           print("❌ Backend verification failed: ${response.data}");
           errorCallback("Backend verification failed: ${response.data['message']}");

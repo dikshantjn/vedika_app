@@ -4,7 +4,7 @@ import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart'
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/AmbulanceTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/LabTestTab.dart';
-import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/MedicineTab.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/MedicineDeliveryOrderHistoryTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BedBookingTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/BloodBankTab.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tabs/ClinicAppointmentTab.dart';
@@ -12,6 +12,11 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/tab
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/OrderHistoryViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+
+// Simple navigation bridge to pass intents when OrderHistory is embedded in MainScreen
+class OrderHistoryNavigation {
+  static int? initialTab;
+}
 
 class OrderHistoryPage extends StatefulWidget {
   @override
@@ -66,6 +71,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepA
     try {
       final args = ModalRoute.of(context)?.settings.arguments;
       print('OrderHistoryPage - Route arguments: $args (type: ${args.runtimeType})');
+      // Fallback to static bridge if args are not available due to MainScreen routing
+      if (args == null && OrderHistoryNavigation.initialTab != null) {
+        _selectedIndex = OrderHistoryNavigation.initialTab!.clamp(0, verticalTitles.length - 1);
+        print('OrderHistoryPage - Using bridge initialTab: $_selectedIndex');
+        // Clear after use to avoid stale reuse
+        OrderHistoryNavigation.initialTab = null;
+        return;
+      }
       
       if (args != null) {
         // Check if args is a Map<String, dynamic>
@@ -122,7 +135,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepA
     
     try {
       return [
-        MedicineTab(),
+        MedicineDeliveryOrderHistoryTab(),
         AmbulanceTab(),
         _userId != null ? BedBookingTab(userId: _userId!) : const Center(child: CircularProgressIndicator()),
         LabTestTab(),
@@ -200,9 +213,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> with AutomaticKeepA
               // Check if widget is still mounted before accessing context
               if (!mounted || _isDisposed) return;
               
-              final scope = MainScreenScope.maybeOf(context);
-              if (scope != null) {
-                scope.setIndex(0);
+              if (MainScreenNavigator.instance.canGoBack) {
+                MainScreenNavigator.instance.goBack();
               } else {
                 Navigator.pop(context);
               }

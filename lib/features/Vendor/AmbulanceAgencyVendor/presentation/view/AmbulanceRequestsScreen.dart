@@ -2,6 +2,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/view/ProcessBookingScreen.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingRequestViewModel.dart';
 import 'package:vedika_healthcare/features/ambulance/data/models/AmbulanceBooking.dart';
@@ -25,6 +26,33 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
   Future<void> _onRefresh() async {
     await Provider.of<AmbulanceBookingRequestViewModel>(context, listen: false)
         .fetchPendingBookings();
+  }
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not make the call'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -158,10 +186,30 @@ class _AmbulanceRequestsScreenState extends State<AmbulanceRequestsScreen> {
           ),
           const SizedBox(height: 6),
 
-          // Mobile Number
-          Text(
-            "Mob No: ${booking.user.phoneNumber}",
-            style: const TextStyle(fontSize: 16, color: Colors.black54),
+          // Mobile Number with Call Icon
+          Row(
+            children: [
+              Text(
+                "Mob No: ${booking.user.phoneNumber}",
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _makeCall(booking.user.phoneNumber!),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.phone,
+                    size: 18,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
 

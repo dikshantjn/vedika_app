@@ -11,7 +11,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/blog/presentation/view/BlogDetailPage.dart';
 
 class BlogListPage extends StatefulWidget {
-  const BlogListPage({Key? key}) : super(key: key);
+  final String? categoryId;
+  final String? categoryName;
+  
+  const BlogListPage({
+    Key? key,
+    this.categoryId,
+    this.categoryName,
+  }) : super(key: key);
 
   @override
   State<BlogListPage> createState() => _BlogListPageState();
@@ -24,7 +31,11 @@ class _BlogListPageState extends State<BlogListPage> {
   void initState() {
     super.initState();
     _viewModel = BlogViewModel();
-    _viewModel.loadAllBlogs();
+    if (widget.categoryId != null) {
+      _viewModel.loadBlogsByCategory(widget.categoryId!);
+    } else {
+      _viewModel.loadAllBlogs();
+    }
   }
 
   @override
@@ -52,9 +63,9 @@ class _BlogListPageState extends State<BlogListPage> {
               },
             ),
           ),
-          title: const Text(
-            'Health Blog',
-            style: TextStyle(
+          title: Text(
+            widget.categoryName ?? 'Health Blog',
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

@@ -56,8 +56,33 @@ class ProductCartService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Parse the response data into ProductCart model
-        final responseData = response.data['cartItem'];
-        return ProductCart.fromJson(responseData);
+        final raw = response.data;
+        print('[Home.ProductCartService] addToCart ◀ status: ${response.statusCode} data: $raw');
+        Map<String, dynamic>? item;
+
+        if (raw is Map<String, dynamic>) {
+          if (raw['cartItem'] is Map<String, dynamic>) {
+            item = raw['cartItem'] as Map<String, dynamic>;
+          } else if (raw['data'] is Map<String, dynamic>) {
+            final data = raw['data'] as Map<String, dynamic>;
+            if (data['cartItem'] is Map<String, dynamic>) {
+              item = data['cartItem'] as Map<String, dynamic>;
+            } else if (_looksLikeCartItem(data)) {
+              item = data;
+            }
+          } else if (raw.containsKey('count')) {
+            // Backend returned only { message, count }. Use the requested cartItem as the basis.
+            print('[Home.ProductCartService] addToCart response contains count=${raw['count']}, constructing item from request');
+            return cartItem;
+          } else if (_looksLikeCartItem(raw)) {
+            item = raw;
+          }
+        }
+
+        if (item == null) {
+          throw Exception('Unexpected addToCart response shape: ${raw.runtimeType}');
+        }
+        return ProductCart.fromJson(item);
       } else {
         throw Exception('Failed to add item to cart: ${response.statusMessage}');
       }
@@ -72,6 +97,10 @@ class ProductCartService {
       print('Error adding to cart: $e');
       throw Exception('Failed to add item to cart: $e');
     }
+  }
+
+  bool _looksLikeCartItem(Map<String, dynamic> m) {
+    return m.containsKey('cartId') || m.containsKey('productId') || m.containsKey('userId');
   }
 
   Future<List<ProductCart>> getProductCartItems() async {

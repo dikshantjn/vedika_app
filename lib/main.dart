@@ -14,6 +14,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
+import 'package:vedika_healthcare/features/NewMedicineDelivery/presentation/viewmodel/MedicineDeliveryViewModel.dart';
 import 'package:vedika_healthcare/features/TrackOrder/presentation/viewModal/TrackOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceAgencyViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceBookingHistoryViewModel.dart';
@@ -41,6 +42,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineOrderViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MedicineProductViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/viewmodels/product_partner_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
@@ -67,8 +69,6 @@ import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabSea
 import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTestAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
-import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
-import 'package:vedika_healthcare/features/notifications/presentation/viewmodel/NotificationViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
@@ -78,8 +78,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:vedika_healthcare/features/notifications/data/models/AppNotification.dart';
-import 'package:vedika_healthcare/features/notifications/data/adapters/AppNotificationAdapter.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
@@ -90,22 +88,19 @@ import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/blog/presentation/viewmodel/BlogViewModel.dart';
 import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
+import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicTimeslotViewModel.dart';
+import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 // Device Preview Configuration
-const bool enableDevicePreview = false; // Set to false to disable device preview
+const bool enableDevicePreview = true; // Set to false to disable device preview
 
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
 }
-
-// Future<void> getWifiIpAddress() async {
-//   final info = NetworkInfo();
-//   String? ip = await info.getWifiIP();
-//   print("Connected Wi-Fi IP Address: $ip");
-// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,38 +108,27 @@ void main() async {
   // Initialize Hive
   await Hive.initFlutter();
   
-  // Register adapters
-  Hive.registerAdapter(AppNotificationAdapter());
-  
-  // Open boxes
-  await Hive.openBox<AppNotification>('notifications');
   
   await Firebase.initializeApp();
   WidgetsBinding.instance.addObserver(AppLifecycleObserver());
 
   // Initialize FCM Service
   final fcmService = FCMService();
-  final notificationRepository = NotificationRepository();
-  await notificationRepository.init();
-  final notificationViewModel = NotificationViewModel(notificationRepository);
 
   // Handle initial notification (app opened from terminated state)
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage != null) {
-    final notification = AppNotification.fromPayload({
-      'notification': {
-        'title': initialMessage.notification?.title ?? '',
-        'body': initialMessage.notification?.body ?? '',
-      },
-      'data': initialMessage.data,
-    });
-    await notificationViewModel.addNotification(notification);
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      fcmService.handleNotificationTap(
+    // Use a more reliable approach for initial notification handling
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (navigatorKey.currentContext != null && navigatorKey.currentContext!.mounted) {
+        fcmService.handleNotificationTapWithAppLaunch(
           jsonEncode(initialMessage.data),
-          navigatorKey.currentContext!
-      );
+          navigatorKey.currentContext!,
+          isAppLaunch: true, // Explicitly mark as app launch
+        );
+      } else {
+        debugPrint("⚠️ Context not ready for initial notification, will handle when ready");
+      }
     });
   }
 
@@ -152,21 +136,12 @@ void main() async {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     debugPrint('Got a message whilst in the foreground!');
     debugPrint('Message data: ${message.data}');
-    
+
     if (message.notification != null) {
       debugPrint('Message also contained a notification: ${message.notification}');
-      
-      // Create notification object
-      final notification = AppNotification.fromPayload({
-        'notification': {
-          'title': message.notification!.title,
-          'body': message.notification!.body,
-        },
-        'data': message.data,
-      });
-      
-      // Save notification
-      await notificationViewModel.addNotification(notification);
+
+      // FCM service will handle showing the notification
+      // CoreNotificationViewModel will be updated when the notification page is opened
     }
   });
 
@@ -214,13 +189,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LabSearchViewModel()),
         ChangeNotifierProvider(create: (_) => LabTestAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => ClinicSearchViewModel()),
+        ChangeNotifierProvider(create: (_) => BookClinicAppointmentViewModel()),
         ChangeNotifierProvider(create: (_) => AppointmentViewModel()),
-        Provider(create: (_) => NotificationRepository()),
-        ChangeNotifierProvider(
-          create: (context) => NotificationViewModel(
-            context.read<NotificationRepository>(),
-          ),
-        ),
+        ChangeNotifierProvider(create: (_) => ClinicAppointmentViewModel()),
+        ChangeNotifierProvider(create: (_) => CoreNotificationViewModel()),
         ChangeNotifierProvider(create: (_) => UserPersonalProfileViewModel()),
         ChangeNotifierProvider(create: (_) => UserMedicalProfileViewModel()),
         ChangeNotifierProvider(create: (_) => HealthRecordViewModel()),
@@ -267,7 +239,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => BedBookingOrderViewModel()),
         ChangeNotifierProvider(create: (context) => DoctorClinicRegistrationViewModel()),
         ChangeNotifierProvider(create: (context) => DoctorClinicProfileViewModel()),
-        ChangeNotifierProvider(create: (context) => ClinicAppointmentViewModel()),
         ChangeNotifierProvider(create: (context) => ClinicAppointmentHistoryViewModel()),
         ChangeNotifierProvider(create: (context) => OnlineDoctorConsultationViewModel()),
         ChangeNotifierProvider(create: (context) => DiagnosticCenterProfileViewModel()),
@@ -280,6 +251,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => BlogViewModel()),
         ChangeNotifierProvider(create: (_) => MembershipViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileCompletionViewModel()),
+        ChangeNotifierProvider(create: (_) => MedicineDeliveryViewModel()),
+        ChangeNotifierProvider(create: (_) => NewOrdersViewModel()),
+        ChangeNotifierProvider(create: (_) => CartViewModel()),
+        ChangeNotifierProvider(create: (_) => DoctorClinicTimeslotViewModel()),
 
       ],
       child: Builder(
@@ -291,7 +266,7 @@ class MyApp extends StatelessWidget {
 
           return MaterialApp(
             showPerformanceOverlay: false,
-            title: 'Vedika Healthcare',
+            title: 'Vedika Healthtech',
             debugShowCheckedModeBanner: false,
             useInheritedMediaQuery: enableDevicePreview && !kReleaseMode, // Conditional for device preview
             locale: enableDevicePreview && !kReleaseMode ? DevicePreview.locale(context) : null, // Conditional for device preview

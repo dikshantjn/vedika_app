@@ -32,7 +32,8 @@ class MedicalBoxRow extends StatelessWidget {
         "icon": Icons.medication_rounded,
         "bgColor": MedicalBoxColors.medicine,
         "textColor": MedicalBoxColors.medicineText,
-        "route": "/medicine-order"
+        // "route": "/medicine-order"
+        "route": "/newMedicineOrderScreen"
       },
       {
         "title": "Hospital",
@@ -130,6 +131,8 @@ class MedicalBoxRow extends StatelessWidget {
         onTap: () {
           if (route == "/bloodbank") {
             Navigator.pushNamed(context, AppRoutes.bloodBank);
+          } else if (route == "/blogs") {
+            Navigator.pushNamed(context, AppRoutes.blogCategories);
           } else {
             Navigator.pushNamed(context, route);
           }

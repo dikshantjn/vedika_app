@@ -127,8 +127,8 @@ class CabBookingBottomSheet extends StatelessWidget {
             child: GridView.count(
               shrinkWrap: true,
               crossAxisCount: 3,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
               children: [
                 _buildCabOption(
                   context,
@@ -184,38 +184,48 @@ class CabBookingBottomSheet extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openCabApp(context, packageName, appUrl),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey[200]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                logoAsset,
-                height: 40,
-                width: 40,
-                fit: BoxFit.contain,
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.3), width: 1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Image.asset(
+                  logoAsset,
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.local_taxi,
+                      color: DoctorConsultationColorPalette.primaryBlue,
+                      size: 32,
+                    );
+                  },
+                ),
               ),
-              SizedBox(height: 8),
+              SizedBox(height: 4),
               Text(
                 name,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: Colors.black87,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

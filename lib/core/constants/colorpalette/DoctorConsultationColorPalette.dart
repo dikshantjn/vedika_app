@@ -2,57 +2,58 @@ import 'package:flutter/material.dart';
 
 class DoctorConsultationColorPalette {
   // Primary Colors
-  static const Color primaryBlue = Color(0xFF328E6E); // Dark Green
-  static const Color primaryBlueLight = Color(0xFF67AE6E); // Medium Green
-  static const Color primaryBlueDark = Color(0xFF1F6E53); // Darker Green
+  static const Color primaryColor = Color(0xFF38A3A5);  // Teal primary
+  static const Color primaryBlue = primaryColor; // Alias for backward compatibility
+  static const Color primaryBlueLight = Color(0xFF5BB8BA); // Lighter Teal
+  static const Color primaryBlueDark = Color(0xFF2E8284); // Darker Teal
 
   // Secondary Colors
-  static const Color secondaryTeal = Color(0xFF90C67C); // Light Green
-  static const Color secondaryTealLight = Color(0xFFE1EEBC); // Very Light Green/Yellow
-  static const Color secondaryTealDark = Color(0xFF729C62); // Medium-Dark Green
+  static const Color secondaryTeal = Color(0xFF7CC9CB); // Light Teal
+  static const Color secondaryTealLight = Color(0xFFE8F8F9); // Very Light Teal/Blue tint
+  static const Color secondaryTealDark = Color(0xFF4F9A9C); // Medium-Dark Teal
 
   // Background Colors
-  static const Color backgroundPrimary = Color(0xFFF8FBF4); // Very Light Green tint
+  static const Color backgroundPrimary = Color(0xFFF0F9FA); // Very Light Teal/Blue tint
   static const Color backgroundSecondary = Color(0xFFFFFFFF); // White
-  static const Color backgroundCard = Color(0xFFF3F9E9); // Very Light Green/Yellow tint
+  static const Color backgroundCard = Color(0xFFE8F4F5); // Very Light Teal/Blue tint
 
   // Text Colors
-  static const Color textPrimary = Color(0xFF2C3E30); // Dark Green-Gray for text
-  static const Color textSecondary = Color(0xFF5D6E60); // Medium Green-Gray
-  static const Color textHint = Color(0xFF8FA492); // Light Green-Gray
+  static const Color textPrimary = Color(0xFF1A4A4D); // Dark Teal-Gray for text
+  static const Color textSecondary = Color(0xFF4A6B6D); // Medium Teal-Gray
+  static const Color textHint = Color(0xFF7A9A9C); // Light Teal-Gray
   static const Color textWhite = Color(0xFFFFFFFF); // White
 
   // Border Colors
-  static const Color borderLight = Color(0xFFD5E8C0); // Light Green border
-  static const Color borderMedium = Color(0xFFBBD6A7); // Medium Green border
-  static const Color borderDark = Color(0xFF90C67C); // Same as secondaryTeal
+  static const Color borderLight = Color(0xFFB8E0E2); // Light Teal border
+  static const Color borderMedium = Color(0xFF8FCFD1); // Medium Teal border
+  static const Color borderDark = Color(0xFF7CC9CB); // Same as secondaryTeal
 
   // Status Colors
-  static const Color successGreen = Color(0xFF67AE6E); // Same as primaryBlueLight
+  static const Color successGreen = Color(0xFF5BB8BA); // Same as primaryBlueLight
   static const Color errorRed = Color(0xFFE57373); // Soft Red that matches palette
   static const Color warningYellow = Color(0xFFFFD54F); // Soft Yellow that matches palette
-  static const Color infoBlue = Color(0xFF328E6E); // Same as primaryBlue
+  static const Color infoBlue = Color(0xFF38A3A5); // Same as primaryColor
 
   // Progress Indicator Colors
-  static const Color progressActive = primaryBlue;
-  static const Color progressInactive = Color(0xFFE1EEBC); // Very Light Green/Yellow
-  static const Color progressBackground = Color(0xFFF8FBF4); // Very Light Green tint
+  static const Color progressActive = primaryColor;
+  static const Color progressInactive = Color(0xFFE8F8F9); // Very Light Teal/Blue
+  static const Color progressBackground = Color(0xFFF0F9FA); // Very Light Teal/Blue tint
 
   // Button Colors
-  static const Color buttonPrimary = primaryBlue;
+  static const Color buttonPrimary = primaryColor;
   static const Color buttonSecondary = secondaryTeal;
-  static const Color buttonDisabled = Color(0xFFCCDDBF); // Light Green-Gray
+  static const Color buttonDisabled = Color(0xFFB8D7D9); // Light Teal-Gray
 
   // Shadow Colors
-  static const Color shadowLight = Color(0x1A328E6E); // Light shadow with primary color
-  static const Color shadowMedium = Color(0x33328E6E); // Medium shadow with primary color
-  static const Color shadowDark = Color(0x4D328E6E); // Dark shadow with primary color
+  static const Color shadowLight = Color(0x1A38A3A5); // Light shadow with primary color
+  static const Color shadowMedium = Color(0x3338A3A5); // Medium shadow with primary color
+  static const Color shadowDark = Color(0x4D38A3A5); // Dark shadow with primary color
 
   // Gradient Colors
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryBlue, primaryBlueDark],
+    colors: [primaryColor, primaryBlueDark],
   );
 
   static const LinearGradient secondaryGradient = LinearGradient(

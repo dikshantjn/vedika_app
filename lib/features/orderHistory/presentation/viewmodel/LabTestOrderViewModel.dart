@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/Vendor/LabTest/data/models/LabTestBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/services/LabTestOrderService.dart';
@@ -25,6 +26,16 @@ class LabTestOrderViewModel extends ChangeNotifier {
       _isLoading = false;
       _error = e.toString();
       notifyListeners();
+    }
+  }
+
+  /// Fetch lab test invoice bytes
+  Future<Uint8List> fetchLabTestInvoiceBytes(String bookingId) async {
+    try {
+      return await _service.fetchLabTestInvoiceBytes(bookingId);
+    } catch (e) {
+      print("ViewModel Error fetching lab test invoice: $e");
+      rethrow;
     }
   }
 } 

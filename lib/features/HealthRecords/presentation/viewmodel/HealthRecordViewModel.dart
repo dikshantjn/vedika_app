@@ -5,7 +5,6 @@ import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/HealthRecords/data/models/HealthRecord.dart';
 import 'package:vedika_healthcare/features/HealthRecords/data/Service/HealthRecordService.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'dart:typed_data';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -68,8 +67,7 @@ class HealthRecordViewModel extends ChangeNotifier {
       // First delete the record from the API
       print('🗑️ Deleting record from API...');
       print('   Record ID: $healthRecordId');
-      print('   API Endpoint: ${ApiEndpoints.deleteHealthRecord}/$healthRecordId');
-      
+
       await _service.deleteRecord(healthRecordId);
       print('✅ Record deleted from API successfully');
 

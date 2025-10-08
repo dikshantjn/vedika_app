@@ -8,9 +8,7 @@ import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModa
 import 'package:provider/provider.dart';
 
 class ChooseAddressSheet extends StatefulWidget {
-  final VoidCallback onAddressConfirmed;
-
-  const ChooseAddressSheet({Key? key, required this.onAddressConfirmed}) : super(key: key);
+  const ChooseAddressSheet({Key? key}) : super(key: key);
 
   @override
   _ChooseAddressSheetState createState() => _ChooseAddressSheetState();
@@ -40,6 +38,7 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
     if (viewModel.addresses.isNotEmpty) {
       setState(() {
         selectedAddressId = viewModel.addresses.first.addressId;
+        print('DEBUG: Initialized selectedAddressId to: $selectedAddressId');
       });
     }
     
@@ -244,10 +243,12 @@ class _ChooseAddressSheetState extends State<ChooseAddressSheet> {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
+                print('DEBUG: Selecting address with ID: ${address.addressId}');
                 setState(() {
                   selectedAddressId = address.addressId;
                   showAddressList = false;
                 });
+                print('DEBUG: selectedAddressId is now: $selectedAddressId');
               },
               child: Padding(
                 padding: const EdgeInsets.all(16),

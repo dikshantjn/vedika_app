@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart'
     show MainScreenNavigator;
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
-import 'package:vedika_healthcare/features/clinic/presentation/view/BookClinicAppointmentPage.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
 class DraggableClinicList extends StatelessWidget {
   final List<DoctorClinicProfile> clinics;
@@ -17,6 +18,29 @@ class DraggableClinicList extends StatelessWidget {
     required this.expandedItems,
     required this.onClinicTap,
   });
+
+  Future<void> _makeCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        // Handle error - could show a snackbar or dialog
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  void _navigateToMyOrders(BuildContext context) {
+    // Set bridge for MainScreen-integrated OrderHistory
+    OrderHistoryNavigation.initialTab = 5; // Clinic tab index
+    Navigator.pushNamed(
+      context,
+      AppRoutes.orderHistory,
+      arguments: {'initialTab': 5}, // Clinic tab index
+    );
+  }
 
   Widget buildDetailRow(IconData icon, String key, String value) {
     return Padding(
@@ -126,13 +150,31 @@ class DraggableClinicList extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                "Nearby Clinics",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: DoctorConsultationColorPalette.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Nearby Clinics",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: DoctorConsultationColorPalette.textPrimary,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _navigateToMyOrders(context),
+                    icon: Icon(Icons.history, size: 16),
+                    label: Text("My Orders"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: DoctorConsultationColorPalette.primaryBlue,
+                      side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (clinics.isEmpty || clinics.length != expandedItems.length)
                 Flexible(
@@ -267,28 +309,49 @@ class DraggableClinicList extends StatelessWidget {
                                       .toList(),
                                 ),
                                 SizedBox(height: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.bookClinicAppointment,
-                                      arguments: clinic,
-                                    );
-                                  },
-                                  icon: Icon(Icons.bookmark_outline_sharp,
-                                      color: Colors.white),
-                                  label: Text("Book Appointment"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        DoctorConsultationColorPalette
-                                            .primaryBlue,
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.bookClinicAppointment,
+                                            arguments: clinic,
+                                          );
+                                        },
+                                        icon: Icon(Icons.bookmark_outline_sharp,
+                                            color: Colors.white),
+                                        label: Text("Book Appointment"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              DoctorConsultationColorPalette
+                                                  .primaryBlue,
+                                          foregroundColor: Colors.white,
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 12, horizontal: 16),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(width: 12),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _makeCall(clinic.phoneNumber),
+                                      icon: Icon(Icons.phone, color: Colors.white),
+                                      label: Text("Call"),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 12, horizontal: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],
