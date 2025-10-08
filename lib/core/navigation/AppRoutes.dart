@@ -22,6 +22,7 @@ import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicConsul
 import 'package:vedika_healthcare/features/clinic/presentation/view/ClinicSearchPage.dart';
 import 'package:vedika_healthcare/features/clinic/presentation/view/OnlineDoctorConsultationPage.dart';
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
+import 'package:vedika_healthcare/features/herPhases/presentation/view/herPhasesScreen.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 import 'package:vedika_healthcare/features/hospital/presentation/view/HospitalSearchPage.dart';
 import 'package:vedika_healthcare/features/labTest/presentation/view/BookLabTestAppointmentPage.dart';
@@ -108,6 +109,7 @@ class AppRoutes {
   static const String vedikaPlus = '/vedikaPlus';
   static const String membership = '/membership';
   static const String blogs = '/blogs';
+  static const String herPhases = "/herPhases";
   static const String blogCategories = '/blog-categories';
   static const String settingsPage = '/settingsPage';
   static const String helpCenter = '/helpCenter';
@@ -278,6 +280,7 @@ class AppRoutes {
         child: BlogListPage(),
         index: 9,
       ),
+      herPhases: (context) =>  HerPhasesScreen(),
       blogCategories: (context) => _MainScreenRoute(
         child: BlogCategoriesPage(),
         index: 9,

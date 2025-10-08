@@ -88,29 +88,21 @@ class _userLoginScreenState extends State<UserLoginScreen> {
       width: 120,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            ColorPalette.primaryColor,
-            ColorPalette.primaryColor.withOpacity(0.7),
-          ],
-        ),
         boxShadow: [
           BoxShadow(
-            color: ColorPalette.primaryColor.withOpacity(0.3),
+            color: ColorPalette.primaryColor.withOpacity(0.2),
             blurRadius: 15,
             offset: Offset(0, 5),
           ),
         ],
       ),
       child: Center(
-        child: ClipOval(
-          child: Container(
-            width: 130,
-            height: 110,
-            child: Image.asset(
-              'assets/logo/Logo.png',
-              fit: BoxFit.cover,
-            ),
+        child: Container(
+          width: 120,
+          height: 120,
+          child: Image.asset(
+            'assets/logo/Logo.png',
+            fit: BoxFit.contain,
           ),
         ),
       ),

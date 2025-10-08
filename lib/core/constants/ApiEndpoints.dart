@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.39:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.39:5000/api";  // Current IP address
+  static const String socketUrl = "http://10.242.226.210:5000";  // Current IP address
+  static const String baseUrl = "http://10.242.226.210:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -249,6 +249,9 @@ class ApiEndpoints {
 
   // 📌 SpeakAI
   static const String speakAIIntent = '$baseUrl/speakAI/intent';
+
+  // 📌 Her Phases APIs
+  static const String herPhases = '$baseUrl/herPhases';
 
   // 📌 Membership APIs
   static const String getMembershipPlans = '$baseUrl/membership/plans';

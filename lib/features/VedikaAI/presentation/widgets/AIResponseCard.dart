@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/ProductCartViewModel.dart';
 import 'package:vedika_healthcare/features/home/data/services/ProductCartService.dart';
 import 'package:dio/dio.dart';
-import 'package:vedika_healthcare/features/hospital/presentation/view/BookAppointmentPage.dart';
 
 class AIResponseCard extends StatelessWidget {
   final AIChatResponse response;

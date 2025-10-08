@@ -159,10 +159,9 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                 children: [
                   // Logo animation
                   Container(
-                    width: 120,
                     height: 120,
+                    width: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -173,14 +172,12 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                       ],
                     ),
                     child: Center(
-                      child: ClipOval(
-                        child: Container(
-                          width: 130,
-                          height: 110,
-                          child: Image.asset(
-                            'assets/logo/Logo.png',
-                            fit: BoxFit.cover,
-                          ),
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        child: Image.asset(
+                          'assets/logo/Logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

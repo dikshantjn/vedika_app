@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 import '../../data/models/MensuralPredictor.dart';
+import '../../data/services/herPhasesService.dart';
+import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 
 class HerPhasesViewModel {
   static String formatDate(DateTime date) {
@@ -106,5 +108,36 @@ class HerPhasesViewModel {
     }
 
     return events;
+  }
+
+  Future<List<CyclePrediction>> submitAndPredict({
+    String? userId,
+    required String userName,
+    String? phoneNumber,
+    required String lastPeriodDate,
+    required int cycleLength,
+  }) async {
+    // If userId not provided, try reading from storage via UserService
+    String? effectiveUserId = userId;
+    if (effectiveUserId == null || effectiveUserId.isEmpty) {
+      final userService = UserService();
+      effectiveUserId = await userService.getCurrentUserId();
+    }
+    final service = HerPhasesService();
+    final request = HerPhasesRequest(
+      userId: effectiveUserId,
+      userName: userName,
+      phoneNumber: phoneNumber,
+      lastPeriodDate: lastPeriodDate,
+      cycleLength: cycleLength,
+    );
+
+    await service.addHerPhases(request);
+
+    return predictCycle3Months(
+      name: userName,
+      lastPeriodDate: lastPeriodDate,
+      cycleLength: cycleLength,
+    );
   }
 }

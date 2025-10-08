@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
 class UserService {
   final Dio _dio = Dio();
@@ -105,6 +106,15 @@ class UserService {
       }
     } catch (error) {
       return false;
+    }
+  }
+
+  // Get currently logged-in user's ID from secure storage
+  Future<String?> getCurrentUserId() async {
+    try {
+      return await StorageService.getUserId();
+    } catch (_) {
+      return null;
     }
   }
 }
