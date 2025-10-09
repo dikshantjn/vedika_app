@@ -4,6 +4,11 @@ import '../../data/services/herPhasesService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 
 class HerPhasesViewModel {
+  /// Normalize a date to year-month-day (drop time component)
+  static DateTime normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
   static String formatDate(DateTime date) {
     return DateFormat('dd MMMM yyyy').format(date);
   }
@@ -12,38 +17,34 @@ class HerPhasesViewModel {
     return DateFormat('dd MMMM').format(date);
   }
 
-  /// Predict only the NEXT 2 cycles (skip current month cycle)
-  List<CyclePrediction> predictCycle3Months({
+  /// Predict the next 3 cycles based on lastPeriodDate (in dd-MM-yyyy)
+  List<MensuralPredictor> predictCycle3Months({
     required String name,
     required String lastPeriodDate,
     required int cycleLength,
   }) {
-    DateTime lastPeriod = DateTime.parse(lastPeriodDate);
-    List<CyclePrediction> results = [];
+    // Parse input date in dd-MM-yyyy
+    final DateTime lastPeriod = DateFormat('dd-MM-yyyy').parse(lastPeriodDate);
+    final List<MensuralPredictor> results = [];
 
-    //  Start from the NEXT cycle (skip the current one)
     for (int i = 1; i <= 3; i++) {
-      DateTime nextPeriod = lastPeriod.add(Duration(days: cycleLength * i));
+      final DateTime nextPeriod = lastPeriod.add(Duration(days: cycleLength * i));
+      final DateTime ovulation = nextPeriod.subtract(const Duration(days: 14));
+      final DateTime cycleStartForThis = lastPeriod.add(Duration(days: cycleLength * (i - 1)));
 
-      // Ovulation is typically 14 days before the next period
-      DateTime ovulation = nextPeriod.subtract(const Duration(days: 14));
-
-      // Fertile window: 5 days (4 before + ovulation day + 1 after)
-      DateTime fertileStart = ovulation.subtract(const Duration(days: 4));
-      DateTime fertileEnd = ovulation.add(const Duration(days: 1));
-
-      results.add(CyclePrediction(
-        name: name,
-        cycle: i,
-        month: DateFormat('MMMM').format(nextPeriod),
+      results.add(MensuralPredictor(
+        userId: null,
+        userName: name,
+        phoneNumber: null,
+        emailId: null,
         lastPeriodDate: lastPeriodDate,
         cycleLength: cycleLength,
-        cycleStartDate: formatDate(lastPeriod.add(Duration(days: cycleLength * (i - 1)))),
-        nextPeriod: formatDate(nextPeriod),
+        cycleStartDate: formatDate(cycleStartForThis),
+        nextPeriodDate: formatDate(nextPeriod),
         ovulationDate: formatDate(ovulation),
-        fertileWindow:
-        "${formatDayOnly(fertileStart)} to ${formatDayOnly(fertileEnd)}",
-        cycleStartDateTime: lastPeriod.add(Duration(days: cycleLength * (i - 1))),
+        cycle: i,
+        month: DateFormat('MMMM').format(nextPeriod),
+        cycleStartDateTime: cycleStartForThis,
         nextPeriodDateTime: nextPeriod,
         ovulationDateTime: ovulation,
       ));
@@ -56,16 +57,38 @@ class HerPhasesViewModel {
     return DateTime(date.year, date.month, date.day);
   }
 
+  /// Compute which day the calendar should focus on after predictions
+  /// Prefers the first predicted next period date; otherwise falls back to the
+  /// entered last period date; and finally to today when parsing fails.
+  static DateTime computeFocusedDay(
+    List<MensuralPredictor> predictions,
+    String lastPeriodDate,
+  ) {
+    if (predictions.isNotEmpty) {
+      return predictions.first.nextPeriodDateTime;
+    }
+
+    if (lastPeriodDate.isNotEmpty) {
+      try {
+        // Parse dd-MM-yyyy
+        return DateFormat('dd-MM-yyyy').parse(lastPeriodDate);
+      } catch (_) {
+        // ignore and fall through to now
+      }
+    }
+    return DateTime.now();
+  }
+
   /// Collects all events for calendar highlighting
   /// Shows:
   /// - ONLY the entered lastPeriodDate in the past month (no predictions in that month)
   /// - Predicted fertile/ovulation/period/pre-period ONLY for NEXT 2 cycles
   Map<DateTime, String> getAllEvents(
-      List<CyclePrediction> predictions,
+      List<MensuralPredictor> predictions,
       String lastPeriodDate,
       ) {
     Map<DateTime, String> events = {};
-    DateTime lastPeriod = DateTime.parse(lastPeriodDate);
+    DateTime lastPeriod = DateFormat('dd-MM-yyyy').parse(lastPeriodDate);
 
     //  Show ONLY the user-entered lastPeriodDate (no other predictions in that month)
     events[_normalizeDate(lastPeriod)] = "Period";
@@ -110,10 +133,11 @@ class HerPhasesViewModel {
     return events;
   }
 
-  Future<List<CyclePrediction>> submitAndPredict({
+  Future<List<MensuralPredictor>> submitAndPredict({
     String? userId,
     required String userName,
     String? phoneNumber,
+    String? emailId,
     required String lastPeriodDate,
     required int cycleLength,
   }) async {
@@ -124,20 +148,82 @@ class HerPhasesViewModel {
       effectiveUserId = await userService.getCurrentUserId();
     }
     final service = HerPhasesService();
-    final request = HerPhasesRequest(
-      userId: effectiveUserId,
-      userName: userName,
-      phoneNumber: phoneNumber,
-      lastPeriodDate: lastPeriodDate,
-      cycleLength: cycleLength,
-    );
-
-    await service.addHerPhases(request);
-
-    return predictCycle3Months(
+    // Compute first cycle details for the payload
+    final List<MensuralPredictor> predictions = predictCycle3Months(
       name: userName,
       lastPeriodDate: lastPeriodDate,
       cycleLength: cycleLength,
     );
+    final MensuralPredictor first = predictions.first;
+
+    // Send unified model to backend (includes inputs and first-cycle derived fields)
+    // Convert lastPeriodDate (dd-MM-yyyy) to API-required yyyy-MM-dd
+    final DateTime last = DateFormat('dd-MM-yyyy').parse(lastPeriodDate);
+    final String apiLastPeriod = DateFormat('yyyy-MM-dd').format(last);
+
+    final payload = MensuralPredictor(
+      userId: effectiveUserId,
+      userName: userName,
+      phoneNumber: phoneNumber,
+      emailId: emailId,
+      lastPeriodDate: apiLastPeriod,
+      cycleLength: cycleLength,
+      cycleStartDate: first.cycleStartDate,
+      nextPeriodDate: first.nextPeriodDate,
+      ovulationDate: first.ovulationDate,
+      cycle: first.cycle,
+      month: first.month,
+      cycleStartDateTime: first.cycleStartDateTime,
+      nextPeriodDateTime: first.nextPeriodDateTime,
+      ovulationDateTime: first.ovulationDateTime,
+    );
+
+    await service.addHerPhases(payload);
+
+    return predictions;
+  }
+
+  /// Optionally send/update contact preferences without reusing predictions from UI.
+  /// This recomputes first-cycle fields and submits payload including phone/email.
+  Future<void> submitContactInfo({
+    String? userId,
+    required String userName,
+    String? phoneNumber,
+    String? emailId,
+    required String lastPeriodDate,
+    required int cycleLength,
+  }) async {
+    String? effectiveUserId = userId;
+    if (effectiveUserId == null || effectiveUserId.isEmpty) {
+      final userService = UserService();
+      effectiveUserId = await userService.getCurrentUserId();
+    }
+
+    final service = HerPhasesService();
+    final List<MensuralPredictor> predictions = predictCycle3Months(
+      name: userName,
+      lastPeriodDate: lastPeriodDate,
+      cycleLength: cycleLength,
+    );
+    final MensuralPredictor first = predictions.first;
+
+    final payload = MensuralPredictor(
+      userId: effectiveUserId,
+      userName: userName,
+      phoneNumber: phoneNumber,
+      emailId: emailId,
+      lastPeriodDate: lastPeriodDate,
+      cycleLength: cycleLength,
+      cycleStartDate: first.cycleStartDate,
+      nextPeriodDate: first.nextPeriodDate,
+      ovulationDate: first.ovulationDate,
+      cycle: first.cycle,
+      month: first.month,
+      cycleStartDateTime: first.cycleStartDateTime,
+      nextPeriodDateTime: first.nextPeriodDateTime,
+      ovulationDateTime: first.ovulationDateTime,
+    );
+
+    await service.addHerPhases(payload);
   }
 }

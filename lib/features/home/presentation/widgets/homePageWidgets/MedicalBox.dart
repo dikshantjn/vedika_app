@@ -20,7 +20,6 @@ class MedicalBoxRow extends StatelessWidget {
     final List<Map<String, dynamic>> items = [
       {
         "title": "Ambulance",
-        "subtitle": "Emergency",
         "icon": Icons.emergency_rounded,
         "bgColor": MedicalBoxColors.ambulance,
         "textColor": MedicalBoxColors.ambulanceText,
@@ -28,7 +27,6 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Medicine",
-        "subtitle": "Order",
         "icon": Icons.medication_rounded,
         "bgColor": MedicalBoxColors.medicine,
         "textColor": MedicalBoxColors.medicineText,
@@ -37,7 +35,6 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Hospital",
-        "subtitle": "Book",
         "icon": Icons.local_hospital_rounded,
         "bgColor": MedicalBoxColors.hospital,
         "textColor": MedicalBoxColors.hospitalText,
@@ -45,7 +42,6 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Doctor",
-        "subtitle": "Consult",
         "icon": Icons.medical_services_rounded,
         "bgColor": MedicalBoxColors.clinic,
         "textColor": MedicalBoxColors.clinicText,
@@ -53,7 +49,6 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Lab Test",
-        "subtitle": "Book",
         "icon": Icons.science_rounded,
         "bgColor": MedicalBoxColors.labTest,
         "textColor": MedicalBoxColors.labTestText,
@@ -61,7 +56,6 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Blood",
-        "subtitle": "Order",
         "icon": Icons.bloodtype_rounded,
         "bgColor": MedicalBoxColors.bloodBank,
         "textColor": MedicalBoxColors.bloodBankText,
@@ -69,15 +63,13 @@ class MedicalBoxRow extends StatelessWidget {
       },
       {
         "title": "Blog",
-        "subtitle": "Health",
         "icon": Icons.article_rounded,
-        "bgColor": Colors.orange.shade50,
-        "textColor": Colors.deepOrange,
+        "bgColor": Colors.blue.shade50,
+        "textColor": Colors.lightBlueAccent,
         "route": "/blogs"
       },
       {
         "title": "Her Phases",
-        "subtitle": "Health",
         "icon": Icons.timelapse,
         "bgColor": Colors.orange.shade50,
         "textColor": Colors.deepOrange,
@@ -100,7 +92,6 @@ class MedicalBoxRow extends StatelessWidget {
             child: _buildMedicalBox(
               context: context,
               title: item["title"],
-              subtitle: item["subtitle"],
               icon: item["icon"],
               bgColor: item["bgColor"],
               textColor: item["textColor"],
@@ -117,7 +108,6 @@ class MedicalBoxRow extends StatelessWidget {
   Widget _buildMedicalBox({
     required BuildContext context,
     required String title,
-    required String subtitle,
     required IconData icon,
     required Color bgColor,
     required Color textColor,
@@ -151,49 +141,115 @@ class MedicalBoxRow extends StatelessWidget {
               ),
             ],
           ),
-          child: Padding(
-            padding: EdgeInsets.all(isTablet ? 12 : 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Icon(
-                    icon,
-                    size: isTablet ? 28 : 20,
-                    color: textColor,
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: isTablet ? 13 : 11,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
+          child: Stack(
+            children: [
+              // Subtle radial glow
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment( -0.4, -0.6),
+                      radius: 1.2,
+                      colors: [
+                        Colors.white.withOpacity(0.0),
+                        textColor.withOpacity(0.06),
+                        textColor.withOpacity(0.10),
+                      ],
+                      stops: const [0.3, 0.75, 1.0],
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: isTablet ? 11 : 9,
-                      color: textColor.withOpacity(0.8),
+              ),
+              // Top-left organic pill
+              Positioned(
+                top: -10,
+                left: -14,
+                child: Transform.rotate(
+                  angle: -0.35,
+                  child: Container(
+                    width: isTablet ? 70 : 52,
+                    height: isTablet ? 30 : 22,
+                    decoration: BoxDecoration(
+                      color: textColor.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(28),
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-            ),
+              ),
+              // Top-right soft circle
+              Positioned(
+                top: -10,
+                right: -10,
+                child: Container(
+                  width: isTablet ? 58 : 44,
+                  height: isTablet ? 58 : 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: textColor.withOpacity(0.12),
+                  ),
+                ),
+              ),
+              // Bottom-left rounded stripe
+              Positioned(
+                bottom: -10,
+                left: -8,
+                child: Transform.rotate(
+                  angle: 0.22,
+                  child: Container(
+                    width: isTablet ? 64 : 48,
+                    height: isTablet ? 16 : 12,
+                    decoration: BoxDecoration(
+                      color: textColor.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              // Bottom-right small circle
+              Positioned(
+                bottom: 8,
+                right: 10,
+                child: Container(
+                  width: isTablet ? 12 : 8,
+                  height: isTablet ? 12 : 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: textColor.withOpacity(0.14),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(isTablet ? 12 : 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Icon(
+                        icon,
+                        size: isTablet ? 28 : 26,
+                        color: textColor,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: isTablet ? 13 : 12,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../viewmodel/herPhasesViewmodel.dart';
 import '../../data/models/MensuralPredictor.dart';
+import '../../../../core/constants/colorpalette/ColorPalette.dart';
 
 class HerPhasesScreen extends StatefulWidget {
   @override
@@ -13,20 +15,30 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
-  final _mobileController = TextEditingController();
   final _dateController = TextEditingController();
   final _cycleController = TextEditingController();
+  final HerPhasesViewModel _viewModel = HerPhasesViewModel();
+  final ScrollController _scrollController = ScrollController();
+  final _legendKey = GlobalKey();
+
+  // Consent/contact controllers
+  final _consentPhoneController = TextEditingController();
+  final _consentEmailController = TextEditingController();
 
   Map<DateTime, String> _events = {};
-  List<CyclePrediction> _predictions = [];
+  List<MensuralPredictor> _predictions = [];
   final _calendarKey = GlobalKey();
 
   // Focus calendar on predicted month (updated on predict)
   DateTime _focusedDay = DateTime.now();
+  bool _showPredictButton = true;
+  bool _isAtBottom = false;
 
   // Interactive legend state:
   String? _highlightedCategory; // matches event strings: "Period","Fertile",...
   bool _highlightToday = false;
+  bool _showDetails = false;
+  bool _consent = false;
 
   // Colors
   final Color periodColor = Color(0xFFFF6B6B);
@@ -34,15 +46,33 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
   final Color postPeriodColor = Color(0xFF6C5CE7);
   final Color ovulationColor = Color(0xFFFFA726);
   final Color fertileColor = Color(0xFF66BB6A);
-  final Color headerColor = Color(0xFF4ECDC4);
+  final Color headerColor = ColorPalette.primaryColor;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _mobileController.dispose();
     _dateController.dispose();
     _cycleController.dispose();
+    _scrollController.dispose();
+    _consentPhoneController.dispose();
+    _consentEmailController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (!_scrollController.hasClients) return;
+      final double max = _scrollController.position.maxScrollExtent;
+      final double pixels = _scrollController.position.pixels;
+      final bool atBottom = (max - pixels) <= 24.0; // within 24px of bottom
+      if (atBottom != _isAtBottom) {
+        setState(() {
+          _isAtBottom = atBottom;
+        });
+      }
+    });
   }
 
   Future<void> _pickDate() async {
@@ -69,19 +99,21 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
     if (pickedDate != null) {
       setState(() {
         _dateController.text =
-        "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+        "${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}";
       });
     }
   }
 
   Future<void> _calculate() async {
     if (_formKey.currentState!.validate()) {
-      final viewModel = HerPhasesViewModel();
-      List<CyclePrediction> result = [];
+      List<MensuralPredictor> result = [];
       try {
-        result = await viewModel.submitAndPredict(
+        result = await _viewModel.submitAndPredict(
           userName: _nameController.text,
-          phoneNumber: _mobileController.text.isEmpty ? null : _mobileController.text,
+          phoneNumber: _consent ? _consentPhoneController.text.trim() : null,
+          emailId: _consent && _consentEmailController.text.trim().isNotEmpty
+              ? _consentEmailController.text.trim()
+              : null,
           lastPeriodDate: _dateController.text,
           cycleLength: int.tryParse(_cycleController.text) ?? 28,
         );
@@ -99,23 +131,10 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
         _predictions = result;
 
         // NOTE: getAllEvents now needs the lastPeriodDate so it can show only that date in its month
-        _events = viewModel.getAllEvents(result, _dateController.text);
+        _events = _viewModel.getAllEvents(result, _dateController.text);
 
-        // Focus calendar on the first predicted month (if available)
-        if (result.isNotEmpty) {
-          _focusedDay = result.first.nextPeriodDateTime;
-        } else {
-          // fallback to the entered date
-          if (_dateController.text.isNotEmpty) {
-            try {
-              _focusedDay = DateTime.parse(_dateController.text);
-            } catch (e) {
-              _focusedDay = DateTime.now();
-            }
-          } else {
-            _focusedDay = DateTime.now();
-          }
-        }
+        // Decide which month/day the calendar should focus on
+        _focusedDay = HerPhasesViewModel.computeFocusedDay(result, _dateController.text);
 
         // Reset legend highlights (optional UX choice) — keep commented if you prefer previous selection to persist
         // _highlightedCategory = null;
@@ -129,11 +148,10 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
 
       // Debug print
       for (var prediction in result) {
-        print("Cycle ${prediction.cycle} (${prediction.month}) Prediction for ${prediction.name}");
+        print("Cycle ${prediction.cycle} (${prediction.month}) Prediction for ${prediction.userName}");
         print("Cycle Start: ${prediction.cycleStartDate}");
-        print("Expected Next Period: ${prediction.nextPeriod}");
+        print("Expected Next Period: ${prediction.nextPeriodDate}");
         print("Ovulation Date: ${prediction.ovulationDate}");
-        print("Fertile Window: ${prediction.fertileWindow}");
         print("");
       }
     } else {
@@ -145,8 +163,6 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
       );
     }
   }
-
-  DateTime _normalize(DateTime d) => DateTime(d.year, d.month, d.day);
 
   void _scrollToCalendar() {
     final context = _calendarKey.currentContext;
@@ -176,6 +192,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
         iconTheme: IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           children: [
             // Form Section
@@ -217,59 +234,50 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                     ),
                     SizedBox(height: 20),
 
-                    // ---------- Highlighted Q&A Card ----------
-                    // I've put the questions into small highlighted boxes to differentiate them.
-                    _buildQuestionBox("What is a Period Tracker?"),
-                    Text(
-                      "- This helps you to keep a track of your upcoming periods, to pre-plan, organise with all the essentials for your period. (the monthly shedding (bleeding) of the uterine lining that happens when pregnancy doesn't occur)\n"
-                          "- It gives the list of upcoming cycles to you.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.4,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _showDetails = !_showDetails),
+                        icon: Icon(_showDetails ? Icons.expand_less : Icons.expand_more, color: headerColor),
+                        label: Text(_showDetails ? "Show less" : "More details", style: TextStyle(color: headerColor)),
                       ),
                     ),
-                    SizedBox(height: 12),
 
-                    _buildQuestionBox("What is an Ovulation Tracker?"),
-                    Text(
-                      " This helps you to know the ovulation time. Ovulation, which usually occurs around the middle of a cycle, is the stage of the menstrual cycle during which an egg is released from an ovary. It is the only time for conception (Conception is the biological process where a sperm cell fertilizes an egg cell, is the initial step of pregnancy)\n"
-                          " This is considered to be the best time for the couple, who are trying to conceive.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.4,
+                    // Show details immediately below toggle (simple text, no card look)
+                    AnimatedCrossFade(
+                      crossFadeState: _showDetails ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                      duration: Duration(milliseconds: 200),
+                      firstChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildQuestionBox("What is a Period Tracker?"),
+                          Text(
+                            "- This helps you to keep a track of your upcoming periods, to pre-plan, organise with all the essentials for your period. (the monthly shedding (bleeding) of the uterine lining that happens when pregnancy doesn't occur)\n- It gives the list of upcoming cycles to you.",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                          ),
+                          SizedBox(height: 12),
+                          _buildQuestionBox("What is an Ovulation Tracker?"),
+                          Text(
+                            " This helps you to know the ovulation time. Ovulation, which usually occurs around the middle of a cycle, is the stage of the menstrual cycle during which an egg is released from an ovary. It is the only time for conception (Conception is the biological process where a sperm cell fertilizes an egg cell, is the initial step of pregnancy)\n This is considered to be the best time for the couple, who are trying to conceive.",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                          ),
+                          SizedBox(height: 12),
+                          _buildQuestionBox("Details required to track your periods and know your ovulation days"),
+                          Text(
+                            "Last Period Start Date - This date is supposed to be the first day of your last period, for example your last month period came on 5th of January that is the 1st day of your last period.\n\nCycle Length - This is the number of days your cycles last, for example 5th January was the last period’s 1st day and 5th February is the 1st day of period, the cycle is of 31 days.\n\nFor better results keep a count of these dates and days.",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                          ),
+                          SizedBox(height: 12),
+                        ],
                       ),
+                      secondChild: SizedBox.shrink(),
                     ),
-                    SizedBox(height: 12),
-
-                    _buildQuestionBox("Details required to track your periods and know your ovulation days"),
-                    Text(
-                      "Last Period Start Date - This date is supposed to be the first day of your last period, for example your last month period came on 5th of January that is the 1st day of your last period.\n\n"
-                          "Cycle Length - This is the number of days your cycles last, for example 5th January was the last period’s 1st day and 5th February is the 1st day of period, the cycle is of 31 days.\n\n"
-                          "For better results keep a count of these dates and days.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.4,
-                      ),
-                    ),
-                    SizedBox(height: 24),
-                    // ---------- End Q&A ----------
 
                     _buildInputField(
                       controller: _nameController,
                       label: "Enter your name",
                       icon: Icons.person_outline,
                       validator: (value) => value?.isEmpty == true ? "Name is required" : null,
-                    ),
-                    SizedBox(height: 16),
-
-                    _buildInputField(
-                      controller: _mobileController,
-                      label: "Mobile Number (Optional)",
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
                     ),
                     SizedBox(height: 16),
 
@@ -300,31 +308,96 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                       },
                     ),
 
-                    SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _calculate,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: headerColor,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _consent,
+                          activeColor: headerColor,
+                          onChanged: (v) => setState(() => _consent = v ?? false),
+                        ),
+                        Expanded(
+                          child: Text(
+                            "I consent to receive helpful cycle reminders and updates.",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[800]),
                           ),
                         ),
-                        child: Text(
-                          "Predict",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ],
+                    ),
+                    if (_consent) ...[
+                      SizedBox(height: 8),
+                      _buildInputField(
+                        controller: _consentPhoneController,
+                        label: "Phone number",
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (!_consent) return null;
+                          if (value == null || value.trim().isEmpty) return "Phone is required";
+                          final v = value.replaceAll(RegExp(r'[^0-9]'), '');
+                          if (v.length < 10) return "Enter a valid 10-digit phone";
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      _buildInputField(
+                        controller: _consentEmailController,
+                        label: "Email (optional)",
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (!_consent) return null;
+                          if (value == null || value.trim().isEmpty) return null;
+                          final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                          if (!emailRegex.hasMatch(value.trim())) return "Enter a valid email";
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: _calculate,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: headerColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: Icon(Icons.analytics_outlined),
+                          label: Text("Predict"),
                         ),
                       ),
-                    ),
+                    ] else ...[
+                      SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _calculate,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: headerColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            "Predict",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
+
 
             // Calendar Section (only shown after predict)
             if (_events.isNotEmpty)
@@ -360,7 +433,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
 
                     // eventLoader returns list for given day
                     eventLoader: (day) {
-                      final normalized = _normalize(day);
+                      final normalized = HerPhasesViewModel.normalizeDate(day);
                       return _events.containsKey(normalized) ? [_events[normalized]!] : [];
                     },
 
@@ -405,7 +478,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
 
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, date, _) {
-                        final normalized = _normalize(date);
+                        final normalized = HerPhasesViewModel.normalizeDate(date);
                         final event = _events[normalized];
 
                         // is today?
@@ -501,6 +574,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
             // Legend Section (interactive)
             if (_events.isNotEmpty)
               Container(
+                key: _legendKey,
                 margin: EdgeInsets.all(16),
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -529,14 +603,14 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                     Row(
                       children: [
                         Expanded(child: _buildLegend(prePeriodColor, "Pre-Period", eventKey: "Pre-Period")),
-                        Expanded(child: _buildLegend(periodColor, "Period Days", eventKey: "Period")),
+                        Expanded(child: _buildLegend(periodColor, "Period", eventKey: "Period")),
                       ],
                     ),
                     SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _buildLegend(ovulationColor, "Peak Ovulation", eventKey: "Peak Ovulation")),
-                        Expanded(child: _buildLegend(fertileColor, "Fertile Days", eventKey: "Fertile")),
+                        Expanded(child: _buildLegend(ovulationColor, "Ovulation", eventKey: "Peak Ovulation")),
+                        Expanded(child: _buildLegend(fertileColor, "Fertile", eventKey: "Fertile")),
                       ],
                     ),
                     SizedBox(height: 12),
@@ -549,6 +623,8 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                   ],
                 ),
               ),
+
+            // Consent Section removed (moved inline under form fields)
 
             // Educational Information Section (only shown after predict)
             if (_events.isNotEmpty)
@@ -651,6 +727,14 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: null,
+      floatingActionButton: _events.isNotEmpty
+          ? FloatingActionButton(
+              backgroundColor: headerColor,
+              onPressed: _isAtBottom ? _scrollToTop : _scrollToLegend,
+              child: Icon(_isAtBottom ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -671,6 +755,32 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
           color: headerColor,
         ),
       ),
+    );
+  }
+
+  void _scrollToLegend() {
+    final context = _legendKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        alignment: 0.0,
+      );
+    } else {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
     );
   }
 
@@ -815,6 +925,59 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Collapsible details section content
+  Widget _buildDetailsSection() {
+    return Container(
+      margin: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildQuestionBox("What is a Period Tracker?"),
+          Text(
+            "- This helps you to keep a track of your upcoming periods, to pre-plan, organise with all the essentials for your period. (the monthly shedding (bleeding) of the uterine lining that happens when pregnancy doesn't occur)\n- It gives the list of upcoming cycles to you.",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 12),
+          _buildQuestionBox("What is an Ovulation Tracker?"),
+          Text(
+            " This helps you to know the ovulation time. Ovulation, which usually occurs around the middle of a cycle, is the stage of the menstrual cycle during which an egg is released from an ovary. It is the only time for conception (Conception is the biological process where a sperm cell fertilizes an egg cell, is the initial step of pregnancy)\n This is considered to be the best time for the couple, who are trying to conceive.",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 12),
+          _buildQuestionBox("Details required to track your periods and know your ovulation days"),
+          Text(
+            "Last Period Start Date - This date is supposed to be the first day of your last period, for example your last month period came on 5th of January that is the 1st day of your last period.\n\nCycle Length - This is the number of days your cycles last, for example 5th January was the last period’s 1st day and 5th February is the 1st day of period, the cycle is of 31 days.\n\nFor better results keep a count of these dates and days.",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

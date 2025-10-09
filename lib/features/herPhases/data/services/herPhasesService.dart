@@ -13,10 +13,11 @@ class HerPhasesService {
     ),
   );
 
-  Future<Response<dynamic>> addHerPhases(HerPhasesRequest request) async {
+  Future<Response<dynamic>> addHerPhases(MensuralPredictor payload) async {
     final String url = ApiEndpoints.herPhases;
-    return await _dio.post(url, data: request.toJson());
+    return await _dio.post(url, data: payload.toJson());
   }
 }
+
 
 
