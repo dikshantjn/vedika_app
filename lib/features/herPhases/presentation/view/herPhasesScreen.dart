@@ -47,6 +47,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
   final Color ovulationColor = Color(0xFFFFA726);
   final Color fertileColor = Color(0xFF66BB6A);
   final Color headerColor = ColorPalette.primaryColor;
+  final Color todayIndicatorColor = ColorPalette.todaysDate; // keep in sync with calendar today's color
 
   @override
   void dispose() {
@@ -195,6 +196,71 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
         controller: _scrollController,
         child: Column(
           children: [
+            // Intro + Details Section (separate from form)
+            Container(
+              margin: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Period Tracker",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    introText,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _showDetails = !_showDetails),
+                      icon: Icon(_showDetails ? Icons.expand_less : Icons.expand_more, color: headerColor),
+                      label: Text(_showDetails ? "Show less" : "More details", style: TextStyle(color: headerColor)),
+                    ),
+                  ),
+                  // Show details immediately below toggle (simple text, no card look)
+                  AnimatedCrossFade(
+                    crossFadeState: _showDetails ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                    duration: Duration(milliseconds: 200),
+                    firstChild: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildQuestionBox("What is a Period Tracker?"),
+                        Text(
+                          "- This helps you to keep a track of your upcoming periods, to pre-plan, organise with all the essentials for your period. (the monthly shedding (bleeding) of the uterine lining that happens when pregnancy doesn't occur)\n- It gives the list of upcoming cycles to you.",
+                          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                        ),
+                        SizedBox(height: 12),
+                        _buildQuestionBox("What is an Ovulation Tracker?"),
+                        Text(
+                          " This helps you to know the ovulation time. Ovulation, which usually occurs around the middle of a cycle, is the stage of the menstrual cycle during which an egg is released from an ovary. It is the only time for conception (Conception is the biological process where a sperm cell fertilizes an egg cell, is the initial step of pregnancy)\n This is considered to be the best time for the couple, who are trying to conceive.",
+                          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                        ),
+                        SizedBox(height: 12),
+                        _buildQuestionBox("Details required to track your periods and know your ovulation days"),
+                        Text(
+                          "Last Period Start Date - This date is supposed to be the first day of your last period, for example your last month period came on 5th of January that is the 1st day of your last period.\n\nCycle Length - This is the number of days your cycles last, for example 5th January was the last period’s 1st day and 5th February is the 1st day of period, the cycle is of 31 days.\n\nFor better results keep a count of these dates and days.",
+                          style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
+                        ),
+                        SizedBox(height: 12),
+                      ],
+                    ),
+                    secondChild: SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+
             // Form Section
             Container(
               padding: EdgeInsets.all(20),
@@ -215,64 +281,6 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Period Tracker",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      introText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () => setState(() => _showDetails = !_showDetails),
-                        icon: Icon(_showDetails ? Icons.expand_less : Icons.expand_more, color: headerColor),
-                        label: Text(_showDetails ? "Show less" : "More details", style: TextStyle(color: headerColor)),
-                      ),
-                    ),
-
-                    // Show details immediately below toggle (simple text, no card look)
-                    AnimatedCrossFade(
-                      crossFadeState: _showDetails ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-                      duration: Duration(milliseconds: 200),
-                      firstChild: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildQuestionBox("What is a Period Tracker?"),
-                          Text(
-                            "- This helps you to keep a track of your upcoming periods, to pre-plan, organise with all the essentials for your period. (the monthly shedding (bleeding) of the uterine lining that happens when pregnancy doesn't occur)\n- It gives the list of upcoming cycles to you.",
-                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
-                          ),
-                          SizedBox(height: 12),
-                          _buildQuestionBox("What is an Ovulation Tracker?"),
-                          Text(
-                            " This helps you to know the ovulation time. Ovulation, which usually occurs around the middle of a cycle, is the stage of the menstrual cycle during which an egg is released from an ovary. It is the only time for conception (Conception is the biological process where a sperm cell fertilizes an egg cell, is the initial step of pregnancy)\n This is considered to be the best time for the couple, who are trying to conceive.",
-                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
-                          ),
-                          SizedBox(height: 12),
-                          _buildQuestionBox("Details required to track your periods and know your ovulation days"),
-                          Text(
-                            "Last Period Start Date - This date is supposed to be the first day of your last period, for example your last month period came on 5th of January that is the 1st day of your last period.\n\nCycle Length - This is the number of days your cycles last, for example 5th January was the last period’s 1st day and 5th February is the 1st day of period, the cycle is of 31 days.\n\nFor better results keep a count of these dates and days.",
-                            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.4),
-                          ),
-                          SizedBox(height: 12),
-                        ],
-                      ),
-                      secondChild: SizedBox.shrink(),
-                    ),
-
                     _buildInputField(
                       controller: _nameController,
                       label: "Enter your name",
@@ -523,7 +531,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                               shape: BoxShape.circle,
                               border: isHighlighted
                                   ? Border.all(color: headerColor, width: 3)
-                                  : (todayEmphasis ? Border.all(color: headerColor, width: 2) : null),
+                                  : (todayEmphasis ? Border.all(color: todayIndicatorColor, width: 2) : null),
                               boxShadow: [
                                 BoxShadow(
                                   color: color.withOpacity(0.28),
@@ -551,7 +559,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: (isToday && _highlightToday)
-                                ? Border.all(color: headerColor, width: 3)
+                                ? Border.all(color: todayIndicatorColor, width: 3)
                                 : null,
                           ),
                           child: Center(
@@ -616,7 +624,7 @@ class _HerPhasesScreenState extends State<HerPhasesScreen> {
                     SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _buildLegend(headerColor, "Today's Date", isToday: true)),
+                        Expanded(child: _buildLegend(todayIndicatorColor, "Today's Date", isToday: true)),
                         const Expanded(child: SizedBox()),
                       ],
                     ),

@@ -306,7 +306,7 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
         ],
         if (widget.prescription.skipNotes != null) ...[
           _buildDetailRow(
-            'Skip Notes',
+            'Notes',
             widget.prescription.skipNotes!,
             Icons.block,
           ),

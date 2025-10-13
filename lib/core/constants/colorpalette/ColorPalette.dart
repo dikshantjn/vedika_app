@@ -28,5 +28,6 @@ class ColorPalette {
   static const Color testBoxBackground = Color(0xFFE0F6F6); // Lighter version of primary
   static const Color testBoxBorder = Color(0xFF74CACA); // Slightly darker for contrast
   static const Color testBoxText = Color(0xFF146C6D); // Darker shade for readability
-
+  static const Color todaysDate = Color(0xFF9FA8DA); // Darker shade for readability
+//#9fa8da
 }

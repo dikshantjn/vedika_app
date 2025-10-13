@@ -318,9 +318,10 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   }
 
   Widget _buildPaymentStatusChip(ProcessAppointmentViewModel viewModel) {
+    final bookingId = widget.booking.bedBookingId!;
     final isCompleted = widget.booking.status.toLowerCase() == 'completed' || 
                        widget.booking.paymentStatus.toLowerCase() == 'paid' ||
-                       viewModel.isPaymentCompleted;
+                       viewModel.isPaymentCompletedForBooking(bookingId);
     final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
     final isPending = widget.booking.status.toLowerCase() == 'pending';
 
@@ -383,14 +384,16 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   }
 
   bool _shouldShowActionButton(ProcessAppointmentViewModel viewModel) {
+    final bookingId = widget.booking.bedBookingId!;
     final isCompleted = widget.booking.status.toLowerCase() == 'completed' || 
                        widget.booking.paymentStatus.toLowerCase() == 'paid' ||
-                       viewModel.isPaymentCompleted;
+                       viewModel.isPaymentCompletedForBooking(bookingId);
     return !isCompleted;
   }
 
   VoidCallback? _getButtonAction(ProcessAppointmentViewModel viewModel) {
-    if (viewModel.isLoading || viewModel.isNotifyingPayment) return null;
+    final bookingId = widget.booking.bedBookingId!;
+    if (viewModel.isLoadingForBooking(bookingId) || viewModel.isNotifyingPaymentForBooking(bookingId)) return null;
     
     final isWaitingForPayment = widget.booking.status == 'WaitingForPayment';
     final isPending = widget.booking.status.toLowerCase() == 'pending';
@@ -405,7 +408,8 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   }
 
   Widget _getButtonIcon(ProcessAppointmentViewModel viewModel) {
-    if (viewModel.isLoading || viewModel.isNotifyingPayment) {
+    final bookingId = widget.booking.bedBookingId!;
+    if (viewModel.isLoadingForBooking(bookingId) || viewModel.isNotifyingPaymentForBooking(bookingId)) {
       return const SizedBox(
         width: 20,
         height: 20,
@@ -429,10 +433,11 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   }
 
   String _getButtonText(ProcessAppointmentViewModel viewModel) {
-    if (viewModel.isNotifyingPayment) {
+    final bookingId = widget.booking.bedBookingId!;
+    if (viewModel.isNotifyingPaymentForBooking(bookingId)) {
       return 'Waiting for Payment...';
     }
-    if (viewModel.isLoading) {
+    if (viewModel.isLoadingForBooking(bookingId)) {
       return 'Sending...';
     }
     
@@ -449,7 +454,8 @@ class _ProcessAppointmentScreenState extends State<ProcessAppointmentScreen> {
   }
 
   Color _getButtonColor(ProcessAppointmentViewModel viewModel) {
-    if (viewModel.isNotifyingPayment) {
+    final bookingId = widget.booking.bedBookingId!;
+    if (viewModel.isNotifyingPaymentForBooking(bookingId)) {
       return HospitalVendorColorPalette.warningYellow;
     }
     

@@ -14,11 +14,24 @@ class AppointmentViewModel extends ChangeNotifier {
   String? _error;
   IO.Socket? _socket;
   bool mounted = true;
+  
+  // Per-booking loading states
+  Map<String, bool> _acceptingStates = {};
+  Map<String, bool> _notifyingStates = {};
 
   List<BedBooking> get appointments => _appointments;
   List<BedBooking> get completedAppointments => _completedAppointments;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  // Helper methods to get loading states for specific booking IDs
+  bool isAcceptingBooking(String bookingId) {
+    return _acceptingStates[bookingId] ?? false;
+  }
+
+  bool isNotifyingBooking(String bookingId) {
+    return _notifyingStates[bookingId] ?? false;
+  }
 
   final Dio _dio = Dio();
   final HospitalVendorService _hospitalService = HospitalVendorService();
@@ -167,20 +180,32 @@ class AppointmentViewModel extends ChangeNotifier {
 
   Future<void> acceptAppointment(String bookingId) async {
     try {
+      _acceptingStates[bookingId] = true;
+      notifyListeners();
+      
       await _hospitalService.acceptAppointment(bookingId);
       await fetchAppointments();
     } catch (e) {
       _error = 'Failed to accept booking: $e';
+      notifyListeners();
+    } finally {
+      _acceptingStates[bookingId] = false;
       notifyListeners();
     }
   }
 
   Future<void> notifyUserPayment(String bookingId) async {
     try {
+      _notifyingStates[bookingId] = true;
+      notifyListeners();
+      
       await _hospitalService.notifyUserPayment(bookingId);
       await fetchAppointments();
     } catch (e) {
       _error = 'Failed to notify user: $e';
+      notifyListeners();
+    } finally {
+      _notifyingStates[bookingId] = false;
       notifyListeners();
     }
   }

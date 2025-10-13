@@ -379,20 +379,23 @@ class BedBookingCard extends StatelessWidget {
                     ),
                     if (!isCompleted)
                       ElevatedButton(
-                        onPressed: isPending
-                            ? () => viewModel.acceptAppointment(booking.bedBookingId!)
-                            : isWaitingForPayment
-                                ? () => viewModel.notifyUserPayment(booking.bedBookingId!)
-                                : () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ProcessAppointmentScreen(
-                                          booking: booking,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                        onPressed: (isPending && viewModel.isAcceptingBooking(booking.bedBookingId!)) ||
+                                  (isWaitingForPayment && viewModel.isNotifyingBooking(booking.bedBookingId!))
+                            ? null
+                            : isPending
+                                ? () => viewModel.acceptAppointment(booking.bedBookingId!)
+                                : isWaitingForPayment
+                                    ? () => viewModel.notifyUserPayment(booking.bedBookingId!)
+                                    : () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProcessAppointmentScreen(
+                                              booking: booking,
+                                            ),
+                                          ),
+                                        );
+                                      },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isPending
                               ? HospitalVendorColorPalette.successGreen
@@ -411,21 +414,36 @@ class BedBookingCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              isPending
-                                  ? Icons.check
-                                  : isWaitingForPayment
-                                      ? Icons.notifications
-                                      : Icons.arrow_forward,
-                              size: 20,
-                            ),
+                            if ((isPending && viewModel.isAcceptingBooking(booking.bedBookingId!)) ||
+                                (isWaitingForPayment && viewModel.isNotifyingBooking(booking.bedBookingId!)))
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            else
+                              Icon(
+                                isPending
+                                    ? Icons.check
+                                    : isWaitingForPayment
+                                        ? Icons.notifications
+                                        : Icons.arrow_forward,
+                                size: 20,
+                              ),
                             const SizedBox(width: 8),
                             Text(
-                              isPending
-                                  ? 'Accept'
-                                  : isWaitingForPayment
-                                      ? 'Notify Payment'
-                                      : 'Process',
+                              (isPending && viewModel.isAcceptingBooking(booking.bedBookingId!))
+                                  ? 'Accepting...'
+                                  : (isWaitingForPayment && viewModel.isNotifyingBooking(booking.bedBookingId!))
+                                      ? 'Notifying...'
+                                      : isPending
+                                          ? 'Accept'
+                                          : isWaitingForPayment
+                                              ? 'Notify Payment'
+                                              : 'Process',
                               style: const TextStyle(fontSize: 14),
                             ),
                           ],

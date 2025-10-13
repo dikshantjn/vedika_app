@@ -6,19 +6,21 @@ import 'package:vedika_healthcare/features/Vendor/HospitalVendor/Services/Hospit
 import 'dart:convert';
 
 class ProcessAppointmentViewModel extends ChangeNotifier {
-  bool _isLoading = false;
-  bool _isPaymentCompleted = false;
-  bool _isProcessing = false;
-  bool _isNotifyingPayment = false;
+  // Per-booking loading states
+  Map<String, bool> _loadingStates = {};
+  Map<String, bool> _paymentCompletedStates = {};
+  Map<String, bool> _processingStates = {};
+  Map<String, bool> _notifyingPaymentStates = {};
   String? _error;
   IO.Socket? _socket;
   String? _currentBookingId;
   final HospitalVendorService _hospitalService = HospitalVendorService();
 
-  bool get isLoading => _isLoading;
-  bool get isPaymentCompleted => _isPaymentCompleted;
-  bool get isProcessing => _isProcessing;
-  bool get isNotifyingPayment => _isNotifyingPayment;
+  // Getter methods for current booking
+  bool get isLoading => _currentBookingId != null ? _loadingStates[_currentBookingId!] ?? false : false;
+  bool get isPaymentCompleted => _currentBookingId != null ? _paymentCompletedStates[_currentBookingId!] ?? false : false;
+  bool get isProcessing => _currentBookingId != null ? _processingStates[_currentBookingId!] ?? false : false;
+  bool get isNotifyingPayment => _currentBookingId != null ? _notifyingPaymentStates[_currentBookingId!] ?? false : false;
   String? get error => _error;
 
   ProcessAppointmentViewModel() {
@@ -109,10 +111,11 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
       final status = bookingData['status'];
       final paymentStatus = bookingData['paymentStatus'];
       
-      if (bookingId != null && status != null && bookingId == _currentBookingId) {
+      if (bookingId != null && status != null) {
         if (status == 'completed' && paymentStatus == 'paid') {
-          _isPaymentCompleted = true;
-          _isNotifyingPayment = false;
+          _paymentCompletedStates[bookingId] = true;
+          _notifyingPaymentStates[bookingId] = false;
+          _loadingStates[bookingId] = false;
           notifyListeners();
         }
       }
@@ -125,9 +128,26 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
     _currentBookingId = bookingId;
   }
 
+  // Helper methods to get loading states for specific booking IDs
+  bool isLoadingForBooking(String bookingId) {
+    return _loadingStates[bookingId] ?? false;
+  }
+
+  bool isPaymentCompletedForBooking(String bookingId) {
+    return _paymentCompletedStates[bookingId] ?? false;
+  }
+
+  bool isProcessingForBooking(String bookingId) {
+    return _processingStates[bookingId] ?? false;
+  }
+
+  bool isNotifyingPaymentForBooking(String bookingId) {
+    return _notifyingPaymentStates[bookingId] ?? false;
+  }
+
   Future<void> acceptAppointment(String bookingId) async {
     try {
-      _isLoading = true;
+      _loadingStates[bookingId] = true;
       _error = null;
       notifyListeners();
 
@@ -137,15 +157,15 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to accept appointment. Please try again.';
     } finally {
-      _isLoading = false;
+      _loadingStates[bookingId] = false;
       notifyListeners();
     }
   }
 
   Future<void> notifyPayment(String appointmentId) async {
     try {
-      _isLoading = true;
-      _isNotifyingPayment = true;
+      _loadingStates[appointmentId] = true;
+      _notifyingPaymentStates[appointmentId] = true;
       _error = null;
       notifyListeners();
 
@@ -157,16 +177,16 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
       
     } catch (e) {
       _error = 'Failed to notify payment. Please try again.';
-      _isNotifyingPayment = false;
+      _notifyingPaymentStates[appointmentId] = false;
     } finally {
-      _isLoading = false;
+      _loadingStates[appointmentId] = false;
       notifyListeners();
     }
   }
 
   Future<void> completeAppointment(String appointmentId) async {
     try {
-      _isProcessing = true;
+      _processingStates[appointmentId] = true;
       _error = null;
       notifyListeners();
 
@@ -177,16 +197,16 @@ class ProcessAppointmentViewModel extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to complete appointment. Please try again.';
     } finally {
-      _isProcessing = false;
+      _processingStates[appointmentId] = false;
       notifyListeners();
     }
   }
 
   void resetState() {
-    _isLoading = false;
-    _isPaymentCompleted = false;
-    _isProcessing = false;
-    _isNotifyingPayment = false;
+    _loadingStates.clear();
+    _paymentCompletedStates.clear();
+    _processingStates.clear();
+    _notifyingPaymentStates.clear();
     _error = null;
     notifyListeners();
   }

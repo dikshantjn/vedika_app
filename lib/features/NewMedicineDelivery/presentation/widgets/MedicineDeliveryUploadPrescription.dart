@@ -750,7 +750,7 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Skip Notes (Optional)',
+          'Add Notes (Optional)',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
