@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/main.dart' show navigatorKey;
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
@@ -34,12 +35,21 @@ class AuthViewModel extends ChangeNotifier {
     _isLoggedIn = false;
     notifyListeners();
 
-    // ✅ Use context directly instead of navigatorKey.currentContext
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.login, // ✅ Using AppRoutes.login
-          (route) => false, // ✅ Removes all previous routes
-    );
+    // Prefer global navigator to avoid using a possibly unmounted context (e.g., drawer just popped)
+    final navState = navigatorKey.currentState;
+    if (navState != null) {
+      navState.pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+      return;
+    }
+
+    // Fallback: if context is still mounted, schedule navigation next frame
+    if (context.mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+        }
+      });
+    }
   }
 
 }

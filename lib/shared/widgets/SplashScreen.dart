@@ -96,16 +96,16 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
       if (!mounted) return;
 
       if (authViewModel.isLoggedIn) {
-        // Preload membership plans and current user membership for global availability
+        // Require userId presence; otherwise route to login
         final userId = await StorageService.getUserId();
         if (userId != null && userId.isNotEmpty) {
           await membershipViewModel.loadPlans();
           await membershipViewModel.loadCurrentMembership(userId);
-          // Preload profile completion for all services once at startup
           await profileCompletionVM.preloadAll(userId);
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        } else {
+          _navigateToLogin();
         }
-        
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
 
       } else if (vendorAuthViewModel.isVendorLoggedIn) {
         int? role = await _loginService.getVendorRole();

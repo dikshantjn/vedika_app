@@ -9,6 +9,9 @@ import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
+import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
+import 'package:vedika_healthcare/features/cart/index.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
 
 class UserLoginViewModel extends ChangeNotifier {
   final GlobalKey<NavigatorState> navigatorKey; // Add navigatorKey
@@ -18,16 +21,20 @@ class UserLoginViewModel extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+  String? _infoMessage;
   bool _isOtpSent = false;
   String? _verificationId;
   bool _isVerified = false;
   String _phoneNumber = '';
+  bool _isVerifying = false;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get infoMessage => _infoMessage;
   bool get isOtpSent => _isOtpSent;
   bool get isVerified => _isVerified;
   String get phoneNumber => _phoneNumber;
+  bool get isVerifying => _isVerifying;
   UserModel? _user;
 
   UserModel? get user => _user;
@@ -43,14 +50,19 @@ class UserLoginViewModel extends ChangeNotifier {
     _phoneNumber = phone;
     _setLoadingState(true);
     _resetError();
+    _setInfo(null);
 
     try {
+      // Immediately show OTP UI
+      _isOtpSent = true;
+      notifyListeners();
+
       await _signupRepository.sendOtp(
         phone: phone,
         codeSentCallback: (verificationId) {
           _verificationId = verificationId;
-          _isOtpSent = true;
           _setLoadingState(false);
+          _setInfo("OTP sent to ${_maskedPhone()}\u00A0\u2713");
         },
         verificationCompletedCallback: (autoVerifyMessage) {
           print(autoVerifyMessage);
@@ -59,6 +71,7 @@ class UserLoginViewModel extends ChangeNotifier {
         },
         errorCallback: (error) {
           _setError(error);
+          _setInfo(null);
         },
       );
     } catch (e) {
@@ -74,11 +87,21 @@ class UserLoginViewModel extends ChangeNotifier {
     }
 
     _setLoadingState(true);
+    _isVerifying = true;
+    notifyListeners();
     _resetError();
+    _setInfo(null);
 
     try {
       // Get LocationProvider early while context is still valid
-      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      final BuildContext? rootContext = navigatorKey.currentContext;
+      final BuildContext providerContext = rootContext ?? context;
+
+      final locationProvider = Provider.of<LocationProvider>(providerContext, listen: false);
+      // Capture other providers up front to avoid looking them up after widget disposal
+      final membershipViewModel = Provider.of<MembershipViewModel>(providerContext, listen: false);
+      final profileCompletionVM = Provider.of<ProfileCompletionViewModel>(providerContext, listen: false);
+      final cartViewModel = Provider.of<CartViewModel>(providerContext, listen: false);
 
       await _signupRepository.verifyOtp(
         verificationId: _verificationId!,
@@ -131,6 +154,17 @@ class UserLoginViewModel extends ChangeNotifier {
             await FCMService().getTokenAndSend(userId);
           }
 
+          // Prefetch user-dependent data post-login using captured providers
+          if (userId != null && userId.isNotEmpty) {
+            await Future.wait([
+              membershipViewModel.loadPlans(),
+              membershipViewModel.loadCurrentMembership(userId),
+              profileCompletionVM.preloadAll(userId),
+              cartViewModel.fetchMedicineCartCount(userId: userId),
+              cartViewModel.fetchProductCartCount(),
+            ]);
+          }
+
           // Navigate to home only if navigator is still valid
           if (navigatorKey.currentState != null) {
             print("🚀 Navigating to Home Page...");
@@ -144,6 +178,8 @@ class UserLoginViewModel extends ChangeNotifier {
       _setError("OTP verification failed: ${e.toString()}");
     } finally {
       _setLoadingState(false);
+      _isVerifying = false;
+      notifyListeners();
     }
   }
 
@@ -175,5 +211,18 @@ class UserLoginViewModel extends ChangeNotifier {
     _errorMessage = message;
     _isLoading = false;
     notifyListeners();
+  }
+
+  void _setInfo(String? message) {
+    _infoMessage = message;
+    notifyListeners();
+  }
+
+  String _maskedPhone() {
+    if (_phoneNumber.isEmpty) return '';
+    final digits = _phoneNumber.replaceAll(RegExp(r'\D'), '');
+    if (digits.length <= 4) return digits;
+    final last4 = digits.substring(digits.length - 4);
+    return '+91 ••••••$last4';
   }
 }

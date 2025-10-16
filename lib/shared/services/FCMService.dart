@@ -105,6 +105,7 @@ class FCMService {
   /// Fetch and send the FCM token to the backend (for normal users)
   Future<void> getTokenAndSend(String userId) async {
     String? token = await FirebaseMessaging.instance.getToken();
+    print("FCM TOKEN : $token");
     if (token != null) {
       await sendTokenToServer(userId, token);
     }

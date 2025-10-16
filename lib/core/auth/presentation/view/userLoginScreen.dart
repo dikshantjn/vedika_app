@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' show ImageFilter; 
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/auth/presentation/view/VerifyOtpWidget.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
@@ -26,58 +27,184 @@ class _userLoginScreenState extends State<UserLoginScreen> {
     final size = MediaQuery.of(context).size;
     
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity, // 👈 This makes it stretch to full height
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              ColorPalette.primaryColor.withOpacity(0.1),
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: size.width * 0.05,
-                vertical: size.height * 0.03,
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity, // 👈 This makes it stretch to full height
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  ColorPalette.primaryColor.withOpacity(0.1),
+                  Colors.white,
+                ],
               ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: size.height * 0.05),
-                    _buildLogo(),
-                    SizedBox(height: size.height * 0.04),
-                    _buildWelcomeText(),
-                    SizedBox(height: size.height * 0.05),
-                    
-                    Consumer<UserLoginViewModel>(
-                      builder: (context, signupViewModel, child) {
-                        return AnimatedSwitcher(
-                          duration: Duration(milliseconds: 300),
-                          child: !signupViewModel.isOtpSent
-                              ? _buildLoginForm(signupViewModel)
-                              : VerifyOtpWidget(),
-                        );
-                      },
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.05,
+                    vertical: size.height * 0.03,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: size.height * 0.05),
+                        _buildLogo(),
+                        SizedBox(height: size.height * 0.04),
+                        _buildWelcomeText(),
+                        SizedBox(height: size.height * 0.05),
+                        
+                        Consumer<UserLoginViewModel>(
+                          builder: (context, signupViewModel, child) {
+                            return AnimatedSwitcher(
+                              duration: Duration(milliseconds: 300),
+                              child: !signupViewModel.isOtpSent
+                                  ? _buildLoginForm(signupViewModel)
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        if (signupViewModel.infoMessage != null) ...[
+                                          Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(0.08),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Colors.green.withOpacity(0.25)),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    signupViewModel.infoMessage!,
+                                                    style: TextStyle(color: Colors.green.shade700, fontSize: 13),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          SizedBox(height: 12),
+                                        ],
+                                        VerifyOtpWidget(),
+                                      ],
+                                    ),
+                            );
+                          },
+                        ),
+                        
+                        SizedBox(height: size.height * 0.03),
+                        _buildDivider(),
+                        SizedBox(height: size.height * 0.02),
+                        _buildBottomActions(),
+                      ],
                     ),
-                    
-                    SizedBox(height: size.height * 0.03),
-                    _buildDivider(),
-                    SizedBox(height: size.height * 0.02),
-                    _buildBottomActions(),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          // Full-screen loading overlay while logging in and preparing home
+          Consumer<UserLoginViewModel>(
+            builder: (context, vm, _) {
+              if (!vm.isVerifying) return SizedBox.shrink();
+              return Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.35),
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withOpacity(0.88),
+                                Colors.white.withOpacity(0.78),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ColorPalette.primaryColor.withOpacity(0.20),
+                                blurRadius: 30,
+                                spreadRadius: -8,
+                                offset: Offset(0, 18),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                height: 62,
+                                width: 62,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      ColorPalette.primaryColor,
+                                      ColorPalette.primaryColor.withOpacity(0.8),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: ColorPalette.primaryColor.withOpacity(0.35),
+                                      blurRadius: 20,
+                                      offset: Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                "Signing you in...",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: ColorPalette.primaryColor,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                "Preparing your home experience",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

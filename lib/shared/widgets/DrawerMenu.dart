@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 
 class DrawerMenu extends StatefulWidget {
   final void Function(int index)? onSelectIndex;
@@ -58,8 +59,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                 "Health Records", "/healthRecords"),
             _buildDrawerItem(context, Icons.local_shipping_rounded,
                 "Track Order", AppRoutes.trackOrderScreen),
-            _buildDrawerItem(
-                context, Icons.logout_rounded, "Logout", "/logout"),
+            _buildLogoutItem(context),
           ]),
           _buildDivider(),
           _buildSectionTitle("More"),
@@ -439,6 +439,38 @@ class _DrawerMenuState extends State<DrawerMenu> {
         } else {
           Navigator.pushNamed(context, route);
         }
+      },
+    );
+  }
+
+  Widget _buildLogoutItem(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: ColorPalette.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(Icons.logout_rounded, color: ColorPalette.primaryColor, size: 20),
+      ),
+      title: Text(
+        "Logout",
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: Colors.grey[800],
+        ),
+      ),
+      trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey[400]),
+      onTap: () async {
+        // Close drawer first for a smooth UX
+        Navigator.of(context).maybePop();
+
+        // Use centralized logout to clear token + user id + firebase signOut,
+        // then navigate to login without intermediate loading screens
+        final authVM = context.read<AuthViewModel>();
+        await authVM.logout(context);
       },
     );
   }
