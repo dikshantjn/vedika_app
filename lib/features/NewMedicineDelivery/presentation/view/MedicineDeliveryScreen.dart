@@ -26,6 +26,7 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
   late Animation<Offset> _slideAnimation;
   final ScrollController _scrollController = ScrollController();
   bool _showAppBarTitle = false;
+  Set<String> _expandedStoreIds = {}; // Track expanded stores
 
   @override
   void initState() {
@@ -239,41 +240,6 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(
-          icon,
-          size: 18,
-          color: Colors.white,
-        ),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          elevation: 2,
-        ),
-      ),
-    );
-  }
 
 
 
@@ -328,68 +294,118 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
   }
 
   Widget _buildStoreCard(VendorMedicalStoreProfile store) {
+    final storeId = store.vendorId ?? store.generatedId ?? '';
+    final isExpanded = _expandedStoreIds.contains(storeId);
+    
     return Container(
-      margin: EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: Colors.grey[100]!,
+          color: Colors.grey[200]!,
           width: 1,
         ),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Store Header Section
+          Padding(
+            padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Store Header with Call Button
             Row(
               children: [
+                    // Store Icon
                 Container(
-                  width: 50,
-                  height: 50,
+                      width: 56,
+                      height: 56,
                   decoration: BoxDecoration(
-                    color: ColorPalette.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [
+                            ColorPalette.primaryColor.withOpacity(0.15),
+                            ColorPalette.primaryColor.withOpacity(0.08),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    Icons.local_pharmacy,
+                        Icons.local_pharmacy_rounded,
                     color: ColorPalette.primaryColor,
-                    size: 24,
+                        size: 28,
                   ),
                 ),
                 SizedBox(width: 16),
+                    // Store Name and Type
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        store.name ?? 'Unknown Store',
+                            store.name,
                         style: TextStyle(
-                          fontSize: 20,
+                              fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                          letterSpacing: -0.5,
+                              color: Colors.grey[900],
+                              letterSpacing: -0.3,
                         ),
                       ),
                       SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.storefront_rounded,
+                                size: 14,
+                                color: Colors.grey[500],
+                              ),
+                              SizedBox(width: 4),
                       Text(
                         'Medical Store',
                         style: TextStyle(
-                          fontSize: 14,
+                                  fontSize: 13,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Expand/Collapse Icon
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (isExpanded) {
+                            _expandedStoreIds.remove(storeId);
+                          } else {
+                            _expandedStoreIds.add(storeId);
+                          }
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          isExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: Colors.grey[700],
+                          size: 24,
+                        ),
                   ),
                 ),
               ],
@@ -397,12 +413,12 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
             
             SizedBox(height: 20),
             
-            // Action Buttons Row (Call + Upload Prescription)
+                // Action Buttons Row
             Row(
               children: [
                 Expanded(
-                  child: _buildOutlinedActionButton(
-                    icon: Icons.phone,
+                      child: _buildActionButton(
+                        icon: Icons.phone_rounded,
                     label: 'Call',
                     color: Colors.green[600]!,
                     onPressed: () => _handleCall(store),
@@ -410,9 +426,9 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
                 ),
                 SizedBox(width: 12),
                 Expanded(
-                  child: _buildOutlinedActionButton(
+                      child: _buildActionButton(
                     icon: Icons.upload_file_rounded,
-                    label: 'Upload Prescription',
+                        label: 'Upload',
                     color: Colors.orange[600]!,
                     onPressed: () => _showUploadPrescription(context, store),
                   ),
@@ -422,75 +438,208 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
           ],
         ),
       ),
+          
+          // Expanded Details Section
+          if (isExpanded) ...[
+            Divider(height: 1, color: Colors.grey[200]),
+            Padding(
+              padding: EdgeInsets.all(20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideScreen = constraints.maxWidth > 600;
+                  return Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: isWideScreen
+                        ? _buildHorizontalLayout(store)
+                        : _buildVerticalLayout(store),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildHorizontalLayout(VendorMedicalStoreProfile store) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (store.address.isNotEmpty)
+                _buildDetailItem(Icons.location_on_rounded, 'Address', store.address),
+              if (store.landmark.isNotEmpty) ...[
+                SizedBox(height: 16),
+                _buildDetailItem(Icons.place_rounded, 'Landmark', store.landmark),
+              ],
+              if (store.city.isNotEmpty || store.state.isNotEmpty || store.pincode.isNotEmpty) ...[
+                SizedBox(height: 16),
+                _buildDetailItem(
+                  Icons.location_city_rounded,
+                  'Location',
+                  '${store.city.isNotEmpty ? store.city : ''}${store.city.isNotEmpty && store.state.isNotEmpty ? ', ' : ''}${store.state.isNotEmpty ? store.state : ''}${store.pincode.isNotEmpty ? ' ${store.pincode}' : ''}'.trim(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(width: 24),
+        // Right Column
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (store.emailId.isNotEmpty)
+                _buildDetailItem(Icons.email_rounded, 'Email', store.emailId),
+              if (store.storeTiming.isNotEmpty) ...[
+                SizedBox(height: 16),
+                _buildDetailItem(Icons.access_time_rounded, 'Store Timing', store.storeTiming),
+              ],
+              if (store.storeDays.isNotEmpty) ...[
+                SizedBox(height: 16),
+                _buildDetailItem(Icons.calendar_today_rounded, 'Store Days', store.storeDays),
+              ],
+              if (store.medicineType.isNotEmpty) ...[
+                SizedBox(height: 16),
+                _buildDetailItem(Icons.medication_liquid_rounded, 'Medicine Type', store.medicineType),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildOutlinedActionButton({
+  Widget _buildVerticalLayout(VendorMedicalStoreProfile store) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (store.address.isNotEmpty)
+          _buildDetailItem(Icons.location_on_rounded, 'Address', store.address),
+        if (store.landmark.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(Icons.place_rounded, 'Landmark', store.landmark),
+        ],
+        if (store.city.isNotEmpty || store.state.isNotEmpty || store.pincode.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(
+            Icons.location_city_rounded,
+            'Location',
+            '${store.city.isNotEmpty ? store.city : ''}${store.city.isNotEmpty && store.state.isNotEmpty ? ', ' : ''}${store.state.isNotEmpty ? store.state : ''}${store.pincode.isNotEmpty ? ' ${store.pincode}' : ''}'.trim(),
+          ),
+        ],
+        if (store.emailId.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(Icons.email_rounded, 'Email', store.emailId),
+        ],
+        if (store.storeTiming.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(Icons.access_time_rounded, 'Store Timing', store.storeTiming),
+        ],
+        if (store.storeDays.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(Icons.calendar_today_rounded, 'Store Days', store.storeDays),
+        ],
+        if (store.medicineType.isNotEmpty) ...[
+          SizedBox(height: 16),
+          _buildDetailItem(Icons.medication_liquid_rounded, 'Medicine Type', store.medicineType),
+        ],
+      ],
+    );
+  }
+  
+  Widget _buildDetailItem(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: ColorPalette.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: ColorPalette.primaryColor,
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[900],
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildActionButton({
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onPressed,
   }) {
     return Container(
-      height: 40,
-      child: OutlinedButton.icon(
+      height: 44,
+      child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(
           icon,
-          size: 16,
-          color: color,
+          size: 18,
+          color: Colors.white,
         ),
         label: Text(
           label,
           style: TextStyle(
-            color: color,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
-            fontSize: 11,
+            fontSize: 13,
           ),
-          textAlign: TextAlign.center,
         ),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: color,
-            width: 1.5,
-          ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          elevation: 0,
         ),
       ),
     );
   }
 
-  Widget _buildSmallOutlinedButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 40,
-      height: 40,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: color,
-            width: 1.5,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: color,
-        ),
-      ),
-    );
-  }
 
   Widget _buildStoresList() {
     return Consumer<MedicineDeliveryViewModel>(

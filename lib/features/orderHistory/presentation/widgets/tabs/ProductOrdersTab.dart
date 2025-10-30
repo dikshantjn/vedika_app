@@ -59,7 +59,7 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<OrderHistoryViewModel>(context, listen: false)
-          .fetchDeliveredProductOrders();
+          .fetchProductOrders();
     });
   }
 
@@ -80,17 +80,17 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
           );
         }
 
-        if (viewModel.deliveredProductOrders.isEmpty) {
+        if (viewModel.productOrders.isEmpty) {
           return const Center(
-            child: Text('No delivered orders found'),
+            child: Text('No orders found'),
           );
         }
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: viewModel.deliveredProductOrders.length,
+          itemCount: viewModel.productOrders.length,
           itemBuilder: (context, index) {
-            final order = viewModel.deliveredProductOrders[index];
+            final order = viewModel.productOrders[index];
             return _buildOrderCard(order);
           },
         );
@@ -155,7 +155,7 @@ class _ProductOrdersTabState extends State<ProductOrdersTab> {
                         ),
                       ],
                     ),
-                    _buildStatusChip('delivered'),
+                    _buildStatusChip(order.status),
                   ],
                 ),
               ),

@@ -133,14 +133,27 @@ class AppointmentService {
         // Extract appointments from 'appointments' field
         final List<dynamic> appointmentsData = response.data['appointments'] ?? [];
         final appointments = appointmentsData.map((json) => ClinicAppointment.fromJson(json)).toList();
-        
         print('[AppointmentService] Fetched ${appointments.length} online appointments');
         return appointments;
-      } else {
-        print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
-        throw Exception('Failed to fetch online appointments: ${response.statusCode}');
       }
+
+      if (response.statusCode == 404) {
+        // Treat 404 as no online appointments endpoint/records
+        print('[AppointmentService] Online appointments endpoint returned 404. Treating as empty list.');
+        return <ClinicAppointment>[];
+      }
+
+      print('[AppointmentService] Error response: ${response.statusCode} - ${response.data}');
+      throw Exception('Failed to fetch online appointments: ${response.statusCode}');
     } catch (e) {
+      // Gracefully handle Dio 404 inside catch as well
+      try {
+        if (e is DioException && e.response?.statusCode == 404) {
+          print('[AppointmentService] Online appointments 404 caught. Returning empty list.');
+          return <ClinicAppointment>[];
+        }
+      } catch (_) {}
+
       print('[AppointmentService] Error fetching online appointments: $e');
       throw Exception('Failed to fetch online appointments: $e');
     }

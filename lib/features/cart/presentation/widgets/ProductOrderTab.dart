@@ -280,75 +280,95 @@ class _ProductOrderTabState extends State<ProductOrderTab> {
   }
 
   Widget _buildBottomCheckoutBar(ProductCartViewModel vm) {
+    final int itemCount = vm.items.length;
+    final double totalAmount = vm.total;
+
     return Container(
-      padding: EdgeInsets.all(20),
+      margin: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: Offset(0, -4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.shopping_bag_outlined,
+                  size: 14,
+                  color: Colors.grey[600],
                 ),
-              ),
-              Text(
-                '₹${vm.total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ColorPalette.primaryColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Checkout button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: vm.items.isNotEmpty ? () => _proceedToCheckout(vm) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.primaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 18),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                disabledBackgroundColor: Colors.grey[300],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_cart_checkout, size: 20),
-                  SizedBox(width: 12),
-                  Text(
-                    'Proceed to Checkout',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                SizedBox(width: 6),
+                Text(
+                  '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
+                Spacer(),
+                Text(
+                  'Total: ',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '₹${totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: vm.items.isNotEmpty ? () => _proceedToCheckout(vm) : null,
+                icon: Icon(
+                  Icons.shopping_cart_checkout,
+                  size: 18,
+                ),
+                label: Text(
+                  'Proceed to Checkout',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorPalette.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  disabledBackgroundColor: Colors.grey[300],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

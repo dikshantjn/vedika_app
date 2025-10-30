@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/PrescriptionPreviewScreen.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/NewOrders/NewOrdersService.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
 
 class PrescriptionCard extends StatefulWidget {
   final Prescription prescription;
@@ -23,11 +25,44 @@ class PrescriptionCard extends StatefulWidget {
 class _PrescriptionCardState extends State<PrescriptionCard> {
   bool _isExpanded = false;
   final TextEditingController _noteController = TextEditingController();
+  final NewOrdersService _service = NewOrdersService();
+  DeliveryAddressModel? _address;
+  bool _isAddressLoading = false;
 
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeFetchAddress();
+  }
+
+  void _maybeFetchAddress() async {
+    final addressId = widget.prescription.addressId;
+    if (addressId == null || addressId.isEmpty) return;
+    setState(() {
+      _isAddressLoading = true;
+    });
+    try {
+      final addr = await _service.getDeliveryAddressById(addressId);
+      if (mounted) {
+        setState(() {
+          _address = addr;
+        });
+      }
+    } catch (e) {
+      // Silently ignore; address section will not show
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddressLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -386,6 +421,78 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
             SizedBox(height: 8),
             ...widget.prescription.prescriptionFiles.map((file) => _buildFileItem(file)),
           ],
+          SizedBox(height: 12),
+          if (_isAddressLoading)
+            Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('Loading address...'),
+              ],
+            )
+          else if (_address != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(color: Colors.grey[200]),
+                SizedBox(height: 12),
+                Text(
+                  'Delivery Address',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _address!.houseStreet,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              [
+                                _address!.addressLine1,
+                                if ((_address!.addressLine2 ?? '').trim().isNotEmpty) _address!.addressLine2,
+                                '${_address!.city}, ${_address!.state} - ${_address!.zipCode}',
+                                _address!.country,
+                              ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', '),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -554,31 +661,183 @@ class _PrescriptionCardState extends State<PrescriptionCard> {
     }
   }
 
-  void _rejectPrescription() async {
-    // Note is optional, can be empty string
-    final note = _noteController.text.trim();
-    final result = await widget.onReject(note);
-    
-    // Check if widget is still mounted before showing snackbar
-    if (!mounted) return;
-    
-    if (result != null && result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Prescription rejected successfully!'),
-          backgroundColor: Colors.orange[600],
-          duration: Duration(seconds: 3),
+  void _rejectPrescription() {
+    _showRejectDialog();
+  }
+
+  void _showRejectDialog() {
+    final TextEditingController reasonController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.cancel_outlined,
+                color: Colors.red[600],
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Reject Prescription',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please provide a reason for rejecting this prescription:',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Enter rejection reason (e.g., Out of stock for requested medicine)',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.red[300]!),
+                  ),
+                  contentPadding: EdgeInsets.all(12),
+                ),
+                enabled: !isLoading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final reason = reasonController.text.trim();
+                      if (reason.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Please enter a rejection reason'),
+                            backgroundColor: Colors.red[600],
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isLoading = true;
+                      });
+
+                      try {
+                        final result = await widget.onReject(reason);
+
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+
+                        if (!mounted) return;
+
+                        if (result != null && result['success'] == true) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['message'] ?? 'Prescription rejected successfully!'),
+                              backgroundColor: Colors.orange[600],
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to reject prescription. Please try again.'),
+                              backgroundColor: Colors.red[600],
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: ${e.toString()}'),
+                              backgroundColor: Colors.red[600],
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Reject',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ],
         ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to reject prescription. Please try again.'),
-          backgroundColor: Colors.red[600],
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   String _formatDateTime(DateTime dateTime) {

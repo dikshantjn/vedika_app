@@ -228,26 +228,48 @@ class DraggableClinicList extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      clinic.doctorName,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: DoctorConsultationColorPalette
-                                            .textPrimary,
-                                      ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor: Colors.white,
+                                          child: CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                                            backgroundImage: (clinic.profilePicture.isNotEmpty)
+                                                ? NetworkImage(clinic.profilePicture)
+                                                : null,
+                                            child: clinic.profilePicture.isEmpty
+                                                ? Icon(
+                                                    Icons.person,
+                                                    color: DoctorConsultationColorPalette.primaryBlue,
+                                                    size: 18,
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                        SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            clinic.doctorName,
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: DoctorConsultationColorPalette.textPrimary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   Icon(
-                                    isExpanded
-                                        ? Icons.keyboard_arrow_up
-                                        : Icons.keyboard_arrow_down,
-                                    color: DoctorConsultationColorPalette
-                                        .primaryBlue,
+                                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                    color: DoctorConsultationColorPalette.primaryBlue,
                                   ),
                                 ],
                               ),
@@ -292,6 +314,7 @@ class DraggableClinicList extends StatelessWidget {
                                     color: DoctorConsultationColorPalette
                                         .borderLight),
                                 SizedBox(height: 10),
+                                // 1. Specializations
                                 Text(
                                   "Specializations",
                                   style: TextStyle(
@@ -303,10 +326,82 @@ class DraggableClinicList extends StatelessWidget {
                                 ),
                                 SizedBox(height: 8),
                                 Wrap(
-                                  children: clinic.specializations
-                                      .map<Widget>((spec) =>
-                                          buildSpecializationChip(spec))
-                                      .toList(),
+                                  children: clinic.specializations.isNotEmpty
+                                      ? clinic.specializations
+                                          .map<Widget>((spec) =>
+                                              buildSpecializationChip(spec))
+                                          .toList()
+                                      : [
+                                          Text(
+                                            "Not specified",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: DoctorConsultationColorPalette
+                                                  .textSecondary,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                ),
+                                SizedBox(height: 16),
+                                // 2. Educational Qualifications
+                                Text(
+                                  "Education",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: DoctorConsultationColorPalette
+                                        .textPrimary,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Wrap(
+                                  children: clinic.educationalQualifications.isNotEmpty
+                                      ? clinic.educationalQualifications
+                                          .map<Widget>((edu) =>
+                                              buildSpecializationChip(edu))
+                                          .toList()
+                                      : [
+                                          Text(
+                                            "Not specified",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: DoctorConsultationColorPalette
+                                                  .textSecondary,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                ),
+                                SizedBox(height: 16),
+                                // 3. Language Proficiency
+                                Text(
+                                  "Languages",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: DoctorConsultationColorPalette
+                                        .textPrimary,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Wrap(
+                                  children: clinic.languageProficiency.isNotEmpty
+                                      ? clinic.languageProficiency
+                                          .map<Widget>((lang) =>
+                                              buildSpecializationChip(lang))
+                                          .toList()
+                                      : [
+                                          Text(
+                                            "Not specified",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: DoctorConsultationColorPalette
+                                                  .textSecondary,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
                                 ),
                                 SizedBox(height: 12),
                                 Row(

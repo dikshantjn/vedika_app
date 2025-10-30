@@ -463,16 +463,14 @@ class DoctorDrawerMenu extends StatelessWidget {
   }
 
   void _navigateToPage(BuildContext context, int index) {
+    // Close the drawer once
     Navigator.pop(context);
-    // Get the TabController from the parent and animate to the selected page
-    // This is a simplified approach - in a real app, you might want to use a state management solution
-    // or navigation service to handle this more elegantly
-    final scaffold = Scaffold.of(context);
-    if (scaffold.hasDrawer) {
-      // Close the drawer
-      Navigator.pop(context);
-      // TODO: Navigate to the correct page
-      // Simplified approach just for demo purposes
-    }
+    
+    // Replace current dashboard with the same route and pass desired tab index
+    Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.VendorClinicDashBoard,
+      arguments: {'initialIndex': index},
+    );
   }
 } 

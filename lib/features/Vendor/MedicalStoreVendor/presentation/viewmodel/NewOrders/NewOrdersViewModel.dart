@@ -266,7 +266,7 @@ class NewOrdersViewModel extends ChangeNotifier {
   }
 
   // Accept prescription
-  Future<Map<String, dynamic>?> acceptPrescription(String prescriptionId, String vendorNote,String userId) async {
+  Future<Map<String, dynamic>?> acceptPrescription(String prescriptionId, String vendorNote,String userId, {String? addressId}) async {
     try {
       _setLoading(true);
       _clearError();
@@ -279,7 +279,7 @@ class NewOrdersViewModel extends ChangeNotifier {
       }
 
 
-      final response = await _service.acceptPrescription(prescriptionId, vendorId, vendorNote,userId);
+      final response = await _service.acceptPrescription(prescriptionId, vendorId, vendorNote, userId, addressId: addressId);
       
       if (response['success'] == true) {
         // Remove prescription from list after successful acceptance

@@ -578,36 +578,16 @@ class _ClinicAppointmentPageState extends State<ClinicAppointmentPage> {
           child: CircleAvatar(
             radius: 37,
             backgroundColor: DoctorConsultationColorPalette.primaryBlue.withOpacity(0.1),
-            child: widget.doctor.profilePicture.isNotEmpty
-                ? Image.network(
-                    widget.doctor.profilePicture,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          color: DoctorConsultationColorPalette.primaryBlue,
-                          strokeWidth: 2,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.person,
-                        color: DoctorConsultationColorPalette.primaryBlue,
-                        size: 30,
-                      );
-                    },
-                  )
-                : Icon(
+            backgroundImage: widget.doctor.profilePicture.isNotEmpty
+                ? NetworkImage(widget.doctor.profilePicture)
+                : null,
+            child: widget.doctor.profilePicture.isEmpty
+                ? Icon(
                     Icons.person,
                     color: DoctorConsultationColorPalette.primaryBlue,
                     size: 30,
-                  ),
+                  )
+                : null,
           ),
         ),
         SizedBox(width: 16),

@@ -89,8 +89,8 @@ class BloodBankViewModel extends ChangeNotifier {
   Future<void> _initialize() async {
     _logger.i("Starting initialization of BloodBankViewModel");
     try {
-      // First check for existing bookings
-      _logger.d("Checking for existing bookings");
+      // First check for latest booking
+      _logger.d("Checking for latest blood bank booking");
       await fetchBookingsForVendor();
       
       // Then enable location
@@ -105,7 +105,7 @@ class BloodBankViewModel extends ChangeNotifier {
         }
         
         if (_bookings.isNotEmpty) {
-          _logger.i("Found ${_bookings.length} active bookings, showing details bottom sheet");
+          _logger.i("Found latest booking, showing details bottom sheet");
           _showBookingDetailsBottomSheet(_bookings.first);
         } else {
           _logger.i("No active bookings found, showing blood type selection dialog");
@@ -1026,23 +1026,11 @@ class BloodBankViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _bookings = await _agencyService.getBookings(userId!, token!);
-      _logger.i("Successfully fetched ${_bookings.length} bookings");
-      
-      // Filter out completed bookings
-      final activeBookings = _bookings.where((booking) => 
-        booking.status.toLowerCase() != 'completed'
-      ).toList();
-      
-      _logger.d("Found ${activeBookings.length} active bookings");
-      
-      // Notify listeners after updating the bookings
-      notifyListeners();
+      final latest = await _agencyService.getLatestBooking(userId!, token!);
+      _bookings = latest != null ? [latest] : [];
+      _logger.i("Successfully fetched latest booking: ${_bookings.isNotEmpty}");
 
-      // Only show bottom sheet if there are no active bookings being displayed
-      if (activeBookings.isNotEmpty && !_isBottomSheetShowing) {
-        _showBookingDetailsBottomSheet(activeBookings.first);
-      }
+      notifyListeners();
     } catch (e) {
       _logger.e("Error fetching bookings", error: e);
       _bookingError = e.toString();

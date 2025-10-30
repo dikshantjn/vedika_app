@@ -282,7 +282,7 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'No doctors found',
+                  'No online doctors available',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -291,25 +291,10 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Try changing your search criteria',
+                  'Please try again later',
                   style: TextStyle(
                     color: DoctorConsultationColorPalette.textSecondary,
                   ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedSpecialization = 'All';
-                      _searchController.clear();
-                    });
-                    viewModel.clearFilters();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DoctorConsultationColorPalette.primaryBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Clear Filters'),
                 ),
               ],
             ),

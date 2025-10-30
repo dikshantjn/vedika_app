@@ -278,7 +278,8 @@ class _NewOrdersScreenState extends State<NewOrdersScreen>
               onAccept: (note) => viewModel.acceptPrescription(
                 prescription.prescriptionId,
                 note,
-                prescription.userId
+                prescription.userId,
+                addressId: prescription.addressId,
               ),
               onReject: (note) => viewModel.rejectPrescription(
                 prescription.prescriptionId,

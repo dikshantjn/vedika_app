@@ -5,6 +5,7 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/L
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
+// import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 
@@ -735,21 +736,53 @@ class _LabTestInvoiceBottomSheetState extends State<LabTestInvoiceBottomSheet> {
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        ...(widget.order.selectedTests ?? []).map((test) => Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.fiber_manual_record, size: 8, color: Colors.grey.shade600),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  test,
-                                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                        ...(widget.order.selectedTests ?? []).map((test) {
+                          final reportUrl = widget.order.reportUrls != null
+                              ? widget.order.reportUrls![test]
+                              : null;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8, bottom: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.fiber_manual_record, size: 8, color: Colors.grey.shade600),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    test,
+                                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        )).toList(),
+                                if (reportUrl != null && reportUrl.isNotEmpty)
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ReportViewScreen(
+                                            reportUrl: reportUrl,
+                                            testName: test,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(Icons.visibility, size: 16, color: DoctorConsultationColorPalette.primaryBlue),
+                                    label: Text(
+                                      'View Report',
+                                      style: TextStyle(
+                                        color: DoctorConsultationColorPalette.primaryBlue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size(0, 0),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ],
                     ),
                   ),

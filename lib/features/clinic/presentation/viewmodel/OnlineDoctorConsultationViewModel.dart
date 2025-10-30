@@ -47,8 +47,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
       print('📋 Received ${_allDoctors.length} doctors from API');
       
       if (_allDoctors.isEmpty) {
-        print('⚠️ No doctors returned from API, falling back to sample data');
-        return;
+        print('⚠️ No doctors returned from API');
       }
       
       // Log consultation types for debugging
@@ -67,8 +66,7 @@ class OnlineDoctorConsultationViewModel extends ChangeNotifier {
       print('🎯 Filtered to ${_allDoctors.length} doctors with online consultation');
       
       if (_allDoctors.isEmpty) {
-        print('⚠️ No doctors with online consultation found, falling back to sample data');
-        return;
+        print('⚠️ No doctors with online consultation found');
       }
       
       if (_isDisposed) return;

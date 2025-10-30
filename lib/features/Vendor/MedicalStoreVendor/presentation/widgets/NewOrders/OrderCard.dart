@@ -265,6 +265,12 @@ class _OrderCardState extends State<OrderCard> {
         statusText = 'Delivered';
         statusIcon = Icons.done_all;
         break;
+      case 'cancelled':
+        chipColor = Colors.red[100]!;
+        textColor = Colors.red[700]!;
+        statusText = 'Cancelled';
+        statusIcon = Icons.cancel;
+        break;
       default:
         chipColor = Colors.grey[100]!;
         textColor = Colors.grey[700]!;
@@ -302,8 +308,15 @@ class _OrderCardState extends State<OrderCard> {
   }
 
   Widget _buildProcessButton() {
+    final status = widget.order.status.toLowerCase();
+    
+    // Don't show any button for cancelled orders
+    if (status == 'cancelled') {
+      return SizedBox.shrink();
+    }
+    
     // Show see more button for delivered orders
-    if (widget.order.status.toLowerCase() == 'delivered') {
+    if (status == 'delivered') {
       return SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
@@ -841,6 +854,8 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> {
         return Colors.blue;
       case 'out_for_delivery':
         return Colors.teal;
+      case 'cancelled':
+        return Colors.red;
       default:
         return Colors.grey;
     }

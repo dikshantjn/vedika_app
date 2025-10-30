@@ -5,6 +5,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankBookingViewModel.dart';
 import 'package:flutter/services.dart';
+import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 
 class ProcessBloodBankBookingScreen extends StatefulWidget {
   final BloodBankBooking booking;
@@ -24,6 +25,19 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
   final TextEditingController _unitsController = TextEditingController();
   final TextEditingController _pricePerUnitController = TextEditingController();
   final TextEditingController _deliveryTypeController = TextEditingController();
+
+  String _formatDeliveryType(String? raw) {
+    if (raw == null) return '';
+    final key = raw.trim().toUpperCase();
+    switch (key) {
+      case 'HOME_DELIVERY':
+        return 'Home Delivery';
+      case 'SELF_PICKUP':
+        return 'Self Pickup';
+      default:
+        return raw.trim();
+    }
+  }
 
   @override
   void initState() {
@@ -158,101 +172,148 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                           ),
                           const SizedBox(height: 16),
                           Expanded(
-                            child: Column(
-                              children: [
-                                _buildInfoRow(
-                                  icon: Icons.person,
-                                  label: 'Patient Name',
-                                  value: widget.booking.user?.name ?? 'Anonymous',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoRow(
-                                  icon: Icons.bloodtype,
-                                  label: 'Blood Type',
-                                  value: widget.booking.bloodType.join(", "),
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoRow(
-                                  icon: Icons.bloodtype,
-                                  label: 'Units Required',
-                                  value: '${widget.booking.bloodRequest?.units ?? 1}',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoRow(
-                                  icon: Icons.calendar_today,
-                                  label: 'Request Date',
-                                  value: dateFormat.format(widget.booking.createdAt),
-                                ),
-                                const SizedBox(height: 16),
-                                
-                                // Prescription Section
-                                if (widget.booking.bloodRequest?.prescriptionUrls.isNotEmpty ?? false) ...[
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: Colors.purple.withOpacity(0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.description,
-                                          color: Colors.purple,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        'Prescription',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  _buildInfoRow(
+                                    icon: Icons.person,
+                                    label: 'Patient Name',
+                                    value: widget.booking.user?.name ?? 'Anonymous',
                                   ),
                                   const SizedBox(height: 12),
-                                  Expanded(
-                                    child: GridView.builder(
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 12,
-                                        childAspectRatio: 0.75,
-                                      ),
-                                      itemCount: widget.booking.bloodRequest!.prescriptionUrls.length,
-                                      itemBuilder: (context, index) {
-                                        return GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedPrescriptionIndex = index;
-                                            });
-                                          },
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(12),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(0.1),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
+                                  _buildInfoRow(
+                                    icon: Icons.bloodtype,
+                                    label: 'Blood Type',
+                                    value: widget.booking.bloodType.join(", "),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoRow(
+                                    icon: Icons.bloodtype,
+                                    label: 'Units Required',
+                                    value: '${widget.booking.bloodRequest?.units ?? 1}',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoRow(
+                                    icon: Icons.calendar_today,
+                                    label: 'Request Date',
+                                    value: dateFormat.format(widget.booking.createdAt),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Payment Details Section
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 32,
+                                              height: 32,
+                                              decoration: BoxDecoration(
+                                                color: Colors.red.withOpacity(0.08),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(Icons.receipt_long, size: 18, color: Colors.red),
                                             ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: Image.network(
-                                                widget.booking.bloodRequest!.prescriptionUrls[index],
-                                                fit: BoxFit.cover,
+                                            const SizedBox(width: 8),
+                                            const Text(
+                                              'Payment Details',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                            ),
+                                            const Spacer(),
+                                            OutlinedButton.icon(
+                                              onPressed: _isProcessing ? null : _showNotifyPaymentDialog,
+                                              icon: const Icon(Icons.edit, size: 16),
+                                              label: const Text('Edit'),
+                                              style: OutlinedButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        _buildKeyValue('Notes', widget.booking.notes?.toString().trim().isNotEmpty == true ? widget.booking.notes! : '-'),
+                                        const SizedBox(height: 8),
+                                        _buildKeyValue('Total Amount', widget.booking.totalAmount != null ? '₹${widget.booking.totalAmount!.toStringAsFixed(2)}' : '-'),
+                                        const SizedBox(height: 8),
+                                        _buildKeyValue('Discount', (widget.booking.discount is num) ? '₹${(widget.booking.discount as num).toStringAsFixed(2)}' : (widget.booking.discount?.toString() ?? '-')),
+                                        const SizedBox(height: 8),
+                                        _buildKeyValue('Units', (widget.booking.units != null) ? widget.booking.units.toString() : (widget.booking.bloodRequest?.units?.toString() ?? '-')),
+                                        const SizedBox(height: 8),
+                                        _buildKeyValue('Price Per Unit', (widget.booking.pricePerUnit is num) ? '₹${(widget.booking.pricePerUnit as num).toStringAsFixed(2)}' : (widget.booking.pricePerUnit?.toString() ?? '-')),
+                                        const SizedBox(height: 8),
+                                        _buildKeyValue('Delivery Type', _formatDeliveryType(widget.booking.deliveryType).isNotEmpty ? _formatDeliveryType(widget.booking.deliveryType) : '-'),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Prescription Section
+                                  if (widget.booking.bloodRequest?.prescriptionUrls.isNotEmpty ?? false) ...[
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.description,
+                                            color: Colors.purple,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Text(
+                                          'Prescription',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        for (int i = 0; i < widget.booking.bloodRequest!.prescriptionUrls.length; i++) ...[
+                                          Padding(
+                                            padding: const EdgeInsets.only(bottom: 8.0),
+                                            child: OutlinedButton.icon(
+                                              onPressed: () {
+                                                final url = widget.booking.bloodRequest!.prescriptionUrls[i];
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => DocumentPreviewScreen(
+                                                      url: url,
+                                                      title: 'Prescription ${i + 1}',
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              icon: const Icon(Icons.visibility_outlined, size: 18),
+                                              label: Text('View Prescription ${i + 1}'),
+                                              style: OutlinedButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                               ),
                                             ),
                                           ),
-                                        );
-                                      },
+                                        ],
+                                      ],
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                         ],
@@ -450,6 +511,34 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
     );
   }
 
+  Widget _buildKeyValue(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 130,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _markAsWaitingForPickup() async {
     if (widget.booking.bookingId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -589,6 +678,20 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
   }
 
   Future<void> _showNotifyPaymentDialog() async {
+    // Prefill with existing values
+    _notesController.text = widget.booking.notes ?? '';
+    _totalAmountController.text = widget.booking.totalAmount != null
+        ? widget.booking.totalAmount!.toStringAsFixed(2)
+        : '';
+    _discountController.text = (widget.booking.discount is num)
+        ? (widget.booking.discount as num).toStringAsFixed(2)
+        : (widget.booking.discount?.toString() ?? '');
+    _unitsController.text = (widget.booking.units ?? widget.booking.bloodRequest?.units)?.toString() ?? '';
+    _pricePerUnitController.text = (widget.booking.pricePerUnit is num)
+        ? (widget.booking.pricePerUnit as num).toStringAsFixed(2)
+        : (widget.booking.pricePerUnit?.toString() ?? '');
+    _deliveryTypeController.text = widget.booking.deliveryType ?? '';
+
     return showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -622,7 +725,7 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                       ),
                       const SizedBox(width: 12),
                       const Text(
-                        'Notify Payment Details',
+                        'Update Payment Details',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -738,12 +841,13 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
+                      TextButton.icon(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        icon: const Icon(Icons.close),
+                        label: const Text('Cancel'),
                       ),
                       const SizedBox(width: 12),
-                      ElevatedButton(
+                      ElevatedButton.icon(
                         onPressed: _isProcessing
                             ? null
                             : () async {
@@ -839,7 +943,7 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isProcessing
+                        icon: _isProcessing
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -848,7 +952,10 @@ class _ProcessBloodBankBookingScreenState extends State<ProcessBloodBankBookingS
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Notify'),
+                            : const Icon(Icons.save_outlined),
+                        label: _isProcessing
+                            ? const Text('Processing...')
+                            : const Text('Update and Notify'),
                       ),
                     ],
                   ),

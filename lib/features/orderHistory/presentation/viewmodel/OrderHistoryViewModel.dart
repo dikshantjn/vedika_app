@@ -9,15 +9,15 @@ class OrderHistoryViewModel extends ChangeNotifier {
   final OrderHistoryService _service = OrderHistoryService();
   final ProductOrderService _productOrderService = ProductOrderService();
   
-  List<ProductOrder> _deliveredProductOrders = [];
+  List<ProductOrder> _productOrders = [];
   bool _isLoading = false;
   String? _error;
 
-  List<ProductOrder> get deliveredProductOrders => _deliveredProductOrders;
+  List<ProductOrder> get productOrders => _productOrders;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchDeliveredProductOrders() async {
+  Future<void> fetchProductOrders() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -28,10 +28,10 @@ class OrderHistoryViewModel extends ChangeNotifier {
         throw Exception('User ID not found');
       }
 
-      _deliveredProductOrders = await _service.fetchDeliveredProductOrders(userId);
+      _productOrders = await _service.fetchProductOrders(userId);
     } catch (e) {
       _error = e.toString();
-      _deliveredProductOrders = [];
+      _productOrders = [];
     } finally {
       _isLoading = false;
       notifyListeners();

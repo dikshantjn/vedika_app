@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
 
 class NewOrdersService {
   final Dio _dio = Dio();
@@ -111,14 +112,15 @@ class NewOrdersService {
   }
 
   // Accept prescription
-  Future<Map<String, dynamic>> acceptPrescription(String prescriptionId, String vendorId, String vendorNote, String userId) async {
+  Future<Map<String, dynamic>> acceptPrescription(String prescriptionId, String vendorId, String vendorNote, String userId, {String? addressId}) async {
     try {
       final response = await _dio.post(
         '${ApiEndpoints.acceptPrescription}/$prescriptionId/accept',
         data: {
           'vendorId': vendorId,
           'note': vendorNote,
-          'userId':userId
+          'userId':userId,
+          if (addressId != null) 'addressId': addressId,
         },
         options: Options(
           headers: {
@@ -139,14 +141,39 @@ class NewOrdersService {
     }
   }
 
+  Future<DeliveryAddressModel> getDeliveryAddressById(String addressId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getDeliveryAddressById}/$addressId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = response.data;
+        final Map<String, dynamic> data = responseData['data'];
+        return DeliveryAddressModel.fromJson(data);
+      } else {
+        throw Exception('Failed to fetch address: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Error fetching address: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching address: $e');
+    }
+  }
+
   // Reject prescription
-  Future<Map<String, dynamic>> rejectPrescription(String prescriptionId, String vendorId, String vendorNote) async {
+  Future<Map<String, dynamic>> rejectPrescription(String prescriptionId, String vendorId, String reason) async {
     try {
       final response = await _dio.post(
         '${ApiEndpoints.rejectPrescription}/$prescriptionId/reject',
         data: {
           'vendorId': vendorId,
-          'note': vendorNote,
+          'reason': reason,
         },
         options: Options(
           headers: {

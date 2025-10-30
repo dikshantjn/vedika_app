@@ -6,6 +6,9 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Models/VendorMedi
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/service/DeliveryAddressService.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/presentation/view/AddNewAddressScreen.dart';
 
 class MedicineDeliveryUploadPrescription extends StatefulWidget {
   final VendorMedicalStoreProfile store;
@@ -29,6 +32,11 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
   final TextEditingController _skipNotesController = TextEditingController();
   final TextEditingController _generalProductsController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final DeliveryAddressService _addressService = DeliveryAddressService();
+  List<DeliveryAddressModel> _addresses = [];
+  String? _selectedAddressId;
+  bool _isLoadingAddresses = false;
+  bool _showAddressList = false;
 
   @override
   void dispose() {
@@ -37,6 +45,40 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
     _generalProductsController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    setState(() {
+      _isLoadingAddresses = true;
+    });
+    try {
+      final String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        _setError('User not logged in');
+        return;
+      }
+      final List<DeliveryAddressModel> addrs =
+          await _addressService.getAllAddressesByUserId(userId);
+      setState(() {
+        _addresses = addrs;
+        // Preselect first address if available
+        if (_addresses.isNotEmpty) {
+          _selectedAddressId = _addresses.first.addressId;
+        }
+      });
+    } catch (e) {
+      _setError('Failed to load addresses: $e');
+    } finally {
+      setState(() {
+        _isLoadingAddresses = false;
+      });
+    }
   }
 
   @override
@@ -173,6 +215,8 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
         if (_selectedFiles.isEmpty) _buildUploadOptions(),
         SizedBox(height: 20),
         _buildGeneralProductsSection(),
+        SizedBox(height: 20),
+        _buildAddressSection(),
         if (_selectedFiles.isNotEmpty) ...[
           _buildSelectedFiles(),
           SizedBox(height: 28),
@@ -186,6 +230,342 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
         ],
       ],
     );
+  }
+
+  Widget _buildAddressSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Select Delivery Address',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  letterSpacing: -0.2,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: 12),
+            TextButton.icon(
+              onPressed: _navigateToAddNewAddress,
+              icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor, size: 18),
+              label: Text(
+                'Add New',
+                style: TextStyle(
+                  color: ColorPalette.primaryColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: Size(0, 0),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        if (_isLoadingAddresses)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Loading addresses...'),
+              ],
+            ),
+          )
+        else if (_addresses.isEmpty)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.orange[200]!, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.location_off, color: Colors.orange[600]),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No saved addresses found. Please add a delivery address in your profile.',
+                    style: TextStyle(color: Colors.orange[800]),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          if (!_showAddressList)
+            _buildSelectedAddressCard()
+          else
+            _buildAddressListView(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSelectedAddressCard() {
+    final selected = _addresses.firstWhere(
+      (a) => a.addressId == _selectedAddressId,
+      orElse: () => _addresses.first,
+    );
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.primaryColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  selected.addressType,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+              ),
+              Spacer(),
+              TextButton(
+                onPressed: () => setState(() => _showAddressList = true),
+                child: Text(
+                  'Change',
+                  style: TextStyle(
+                    color: ColorPalette.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selected.houseStreet,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${selected.city}, ${selected.state} - ${selected.zipCode}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressListView() {
+    return Column(
+      children: _addresses.map((a) {
+        final isSelected = _selectedAddressId == a.addressId;
+        final subtitle = [
+          a.houseStreet,
+          a.addressLine1,
+          if ((a.addressLine2 ?? '').trim().isNotEmpty) a.addressLine2,
+          '${a.city}, ${a.state} - ${a.zipCode}',
+          a.country,
+        ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
+
+        return Container(
+          margin: EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? ColorPalette.primaryColor.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? ColorPalette.primaryColor : Colors.grey.shade200,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              setState(() {
+                _selectedAddressId = a.addressId;
+                _showAddressList = false;
+              });
+            },
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          a.addressType,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: ColorPalette.primaryColor,
+                          ),
+                        ),
+                      ),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, color: Colors.red[400], size: 20),
+                        onPressed: () => _deleteAddress(a.addressId!),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              a.houseStreet,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Future<void> _navigateToAddNewAddress() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddNewAddressScreen()),
+    );
+    if (result != null && result is Map<String, dynamic>) {
+      final success = result['success'] == true;
+      if (success) {
+        await _fetchAddresses();
+        if (_addresses.isNotEmpty) {
+          setState(() {
+            _selectedAddressId = _addresses.last.addressId;
+            _showAddressList = false;
+          });
+        }
+      }
+    } else {
+      // Even if result is null, refresh in case of changes
+      await _fetchAddresses();
+    }
+  }
+
+  Future<void> _deleteAddress(String addressId) async {
+    try {
+      await _addressService.deleteAddress(addressId);
+      await _fetchAddresses();
+      if (_addresses.isNotEmpty) {
+        setState(() {
+          _selectedAddressId = _addresses.first.addressId;
+        });
+      } else {
+        setState(() {
+          _selectedAddressId = null;
+          _showAddressList = false;
+        });
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Address deleted successfully'),
+          backgroundColor: ColorPalette.primaryColor,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete address: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildGeneralProductsSection() {
@@ -861,7 +1241,8 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: (_selectedFiles.isNotEmpty || _generalProductsController.text.trim().isNotEmpty)
+              onPressed: (_selectedAddressId != null && _selectedAddressId!.isNotEmpty &&
+                      (_selectedFiles.isNotEmpty || _generalProductsController.text.trim().isNotEmpty))
                   ? _uploadPrescription
                   : null,
               style: ElevatedButton.styleFrom(
@@ -992,6 +1373,10 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
 
   Future<void> _uploadPrescription() async {
     if (_selectedFiles.isEmpty && _generalProductsController.text.trim().isEmpty) return;
+    if (_selectedAddressId == null || _selectedAddressId!.isEmpty) {
+      _setError('Please select a delivery address.');
+      return;
+    }
 
     setState(() {
       _isUploading = true;
@@ -1007,6 +1392,7 @@ class _MedicineDeliveryUploadPrescriptionState extends State<MedicineDeliveryUpl
       final prescription = await service.uploadPrescription(
         userId: userId!,
         vendorId: vendorId,
+        addressId: _selectedAddressId!,
         files: _selectedFiles,
         quantityPreference: _quantityController.text.isNotEmpty ? _quantityController.text : "Not specified",
         skipNotes: _skipNotesController.text.isNotEmpty ? _skipNotesController.text : "None",

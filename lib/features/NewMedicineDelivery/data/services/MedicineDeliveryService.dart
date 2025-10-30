@@ -93,6 +93,7 @@ class MedicineDeliveryService {
   Future<Prescription> uploadPrescription({
     required String vendorId,
     required String userId,
+    required String addressId,
     required List<File> files,
     required String quantityPreference,
     required String skipNotes,
@@ -104,6 +105,7 @@ class MedicineDeliveryService {
       FormData formData = FormData.fromMap({
         'vendorId': vendorId,
         'userId': userId,
+        'addressId': addressId,
         'quantityPreference': quantityPreference,
         'skipNotes': skipNotes,
         if (generalProduct != null && generalProduct.isNotEmpty)

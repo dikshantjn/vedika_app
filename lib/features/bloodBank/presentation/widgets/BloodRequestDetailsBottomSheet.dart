@@ -6,6 +6,7 @@ import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankPaym
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/bloodBank/presentation/viewmodel/BloodBankViewModel.dart';
 import '../../../../../core/constants/colorpalette/ColorPalette.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BloodRequestDetailsBottomSheet extends StatefulWidget {
   final BloodBankBooking booking;
@@ -97,6 +98,19 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
           _scrollToCurrentStatus();
         }
       });
+    }
+  }
+
+  String _formatDeliveryType(String? raw) {
+    if (raw == null) return '';
+    final key = raw.trim().toUpperCase();
+    switch (key) {
+      case 'HOME_DELIVERY':
+        return 'Home Delivery';
+      case 'SELF_PICKUP':
+        return 'Self Pickup';
+      default:
+        return raw.trim();
     }
   }
 
@@ -242,6 +256,12 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
 
                   _buildStatusTimeline(),
                   const SizedBox(height: 20),
+
+                  // Accepted Agency Details (if available)
+                  if (_currentBooking.agency != null) ...[
+                    _buildAgencyDetailsCard(),
+                    const SizedBox(height: 20),
+                  ],
 
                   if (isCompleted)
                     Container(
@@ -471,6 +491,124 @@ class _BloodRequestDetailsBottomSheetState extends State<BloodRequestDetailsBott
         ],
       ),
     );
+  }
+
+  Widget _buildAgencyDetailsCard() {
+    final agency = _currentBooking.agency!;
+    final fullAddress = [
+      agency.completeAddress,
+      if ((agency.nearbyLandmark ?? '').trim().isNotEmpty) 'Near ${agency.nearbyLandmark}',
+      agency.city,
+      agency.state,
+      agency.pincode,
+    ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.local_hospital_outlined, color: ColorPalette.primaryColor, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Accepted Agency',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                if ((agency.googleMapsLocation ?? '').trim().isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => _openMaps(agency.googleMapsLocation),
+                    icon: const Icon(Icons.directions_outlined, size: 16),
+                    label: const Text('Get Directions'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      side: BorderSide(color: ColorPalette.primaryColor),
+                      foregroundColor: ColorPalette.primaryColor,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              agency.agencyName ?? 'Blood Bank Agency',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    fullAddress.isNotEmpty ? fullAddress : 'Address not provided',
+                    style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            if (((_currentBooking.deliveryType ?? '').trim().isNotEmpty)) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.local_shipping_outlined, color: Colors.grey, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Delivery Type: ${_formatDeliveryType(_currentBooking.deliveryType)}',
+                    style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _callNumber(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _openMaps(String coordinateString) async {
+    try {
+      // coordinateString expected format: "lat, lng"
+      final parts = coordinateString.split(',');
+      if (parts.length >= 2) {
+        final lat = parts[0].trim();
+        final lng = parts[1].trim();
+        final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+          return;
+        }
+      }
+      // Fallback try opening as a search query
+      final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(coordinateString)}');
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
   }
 
   Widget _buildReceiptRow(String label, String value, {bool bold = false}) {

@@ -43,6 +43,21 @@ class DashboardViewModel extends ChangeNotifier {
   // Comprehensive analytics data
   Map<String, dynamic> _comprehensiveAnalytics = {};
   
+  // Lifecycle guard to avoid notifying after dispose
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  void _notifySafely() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+  
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -81,13 +96,13 @@ class DashboardViewModel extends ChangeNotifier {
         final status = await _vendorService.getVendorStatus(vendorId);
         _isOnline = status;
         _isActive = status; // Keep these in sync
-        notifyListeners();
+        _notifySafely();
       }
     } catch (e) {
       print('Error fetching vendor online status: $e');
       _isOnline = false; // Default to offline on error
       _isActive = false;
-      notifyListeners();
+      _notifySafely();
     }
   }
   
@@ -107,7 +122,7 @@ class DashboardViewModel extends ChangeNotifier {
       // Update local state with the returned status
       _isOnline = newStatus;
       _isActive = newStatus;
-      notifyListeners();
+      _notifySafely();
     } catch (e) {
       print('Error toggling online status: $e');
       // Don't change the status if there was an error
@@ -118,7 +133,7 @@ class DashboardViewModel extends ChangeNotifier {
   void setOnlineStatus(bool status) {
     _isOnline = status;
     _isActive = status;
-    notifyListeners();
+    _notifySafely();
   }
   
   void setTimeFilter(String filter) {
@@ -180,7 +195,7 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> fetchUpcomingAppointments() async {
     try {
       _upcomingAppointments = await _appointmentService.getUpcomingAppointments();
-      notifyListeners();
+      _notifySafely();
     } catch (e) {
       print('Error fetching upcoming appointments: $e');
       _errorMessage = 'Failed to load upcoming appointments';
@@ -199,7 +214,7 @@ class DashboardViewModel extends ChangeNotifier {
       _rating = await _doctorClinicService.getDoctorRating(_vendorId!);
       _reviewCount = await _doctorClinicService.getReviewCount(_vendorId!);
       
-      notifyListeners();
+      _notifySafely();
     } catch (e) {
       print('Error fetching stats data: $e');
       _errorMessage = 'Failed to load stats data';
@@ -214,7 +229,7 @@ class DashboardViewModel extends ChangeNotifier {
       // Get basic analytics from the analysis service
       _analyticsData = await _analysisService.getBasicAnalytics();
       
-      notifyListeners();
+      _notifySafely();
     } catch (e) {
       print('Error fetching analytics data: $e');
       _errorMessage = 'Failed to load analytics data';
@@ -229,7 +244,7 @@ class DashboardViewModel extends ChangeNotifier {
       // Get comprehensive analytics for the selected time filter
       _comprehensiveAnalytics = await _analysisService.getAnalyticsData(_selectedTimeFilter);
       
-      notifyListeners();
+      _notifySafely();
     } catch (e) {
       print('Error fetching comprehensive analytics: $e');
       _errorMessage = 'Failed to load comprehensive analytics';
@@ -239,6 +254,6 @@ class DashboardViewModel extends ChangeNotifier {
   // Helper to set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    _notifySafely();
   }
 } 

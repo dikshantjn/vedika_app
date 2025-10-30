@@ -12,6 +12,9 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dia
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/CabBookingBottomSheet.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dialogs/RescheduleAppointmentBottomSheet.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
+import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 
 class ClinicAppointmentTab extends StatefulWidget {
   const ClinicAppointmentTab({Key? key}) : super(key: key);
@@ -520,17 +523,84 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                                       ),
                                     ),
                                   ),
-                                if (appointment.doctor?.address != null)
+                                if (appointment.doctor?.address != null) ...[
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      '${appointment.doctor!.address}, ${appointment.doctor!.city}, ${appointment.doctor!.state} ${appointment.doctor!.pincode}',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: DoctorConsultationColorPalette.textSecondary,
-                                      ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 14,
+                                          color: DoctorConsultationColorPalette.textSecondary,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                appointment.doctor!.address,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: DoctorConsultationColorPalette.textSecondary,
+                                                ),
+                                              ),
+                                              if (appointment.doctor!.floor.isNotEmpty) ...[
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  'Floor: ${appointment.doctor!.floor}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: DoctorConsultationColorPalette.textSecondary,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ],
+                                              if (appointment.doctor!.nearbyLandmark.isNotEmpty) ...[
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  'Near: ${appointment.doctor!.nearbyLandmark}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: DoctorConsultationColorPalette.textSecondary,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ],
+                                              SizedBox(height: 2),
+                                              Text(
+                                                '${appointment.doctor!.city}, ${appointment.doctor!.state} ${appointment.doctor!.pincode}',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: DoctorConsultationColorPalette.textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        OutlinedButton.icon(
+                                          onPressed: () => _openMapsForDoctor(appointment.doctor!),
+                                          icon: Icon(Icons.directions_outlined, size: 16, color: DoctorConsultationColorPalette.primaryBlue),
+                                          label: Text(
+                                            'Get Directions',
+                                            style: TextStyle(
+                                              color: DoctorConsultationColorPalette.primaryBlue,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
+                                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            minimumSize: Size(0, 0),
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                ],
                               ],
                             ),
                           ),
@@ -565,16 +635,16 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                           ],
                           if (appointment.attachments.isNotEmpty) ...[
                             Divider(height: 20),
-                            _buildInfoRowWidget(
-                              'Attachments',
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: appointment.attachments
-                                    .map((u) => _attachmentChip(_filenameFromUrl(u)))
-                                    .toList(),
-                              ),
+                          _buildInfoRowWidget(
+                            'Attachments',
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: appointment.attachments
+                                  .map((u) => _attachmentChip(_filenameFromUrl(u), u))
+                                  .toList(),
                             ),
+                          ),
                           ],
                         ],
                       ),
@@ -859,28 +929,44 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
     );
   }
 
-  Widget _attachmentChip(String filename) {
-    return Container(
+  Widget _attachmentChip(String filename, String url) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => DocumentPreviewScreen(
+              url: url,
+              title: filename,
+            ),
+          ),
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: DoctorConsultationColorPalette.backgroundCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: DoctorConsultationColorPalette.borderLight),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.insert_drive_file, size: 14, color: DoctorConsultationColorPalette.textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            filename,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: DoctorConsultationColorPalette.textPrimary,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.insert_drive_file, size: 14, color: DoctorConsultationColorPalette.textSecondary),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                filename,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: DoctorConsultationColorPalette.textPrimary,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -893,6 +979,52 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
       return url.split('?').first.split('#').first;
     } catch (_) {
       return url;
+    }
+  }
+
+  Future<void> _openMapsForDoctor(DoctorClinicProfile doctor) async {
+    try {
+      // Prefer coordinates if available in `location` as "lat,lng"
+      String? mapsUrl;
+      if (doctor.location.isNotEmpty && doctor.location.contains(',')) {
+        final parts = doctor.location.split(',');
+        final lat = parts[0].trim();
+        final lng = parts[1].trim();
+        mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving';
+      } else {
+        // Fallback to full address query
+        final List<String> addressParts = [
+          if (doctor.address.isNotEmpty) doctor.address,
+          if (doctor.city.isNotEmpty) doctor.city,
+          if (doctor.state.isNotEmpty) doctor.state,
+          if (doctor.pincode.isNotEmpty) doctor.pincode,
+        ];
+        final q = Uri.encodeComponent(addressParts.join(', '));
+        mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=$q&travelmode=driving';
+      }
+
+      final uri = Uri.parse(mapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open Google Maps'),
+              backgroundColor: DoctorConsultationColorPalette.errorRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening directions: $e'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
     }
   }
 

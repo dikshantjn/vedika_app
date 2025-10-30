@@ -110,48 +110,26 @@ class _DashboardPageState extends State<DashboardPage> {
                 radius: 24,
                 backgroundColor: Colors.white,
                 child: profile != null && profile.profilePicture.isNotEmpty
-                  ? CircleAvatar(
-                      radius: 22,
-                      backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-                      child: Image.network(
-                        profile.profilePicture,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: DoctorConsultationColorPalette.primaryBlue,
-                              strokeWidth: 2,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.person,
+                    ? CircleAvatar(
+                        radius: 22,
+                        backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                        backgroundImage: NetworkImage(profile.profilePicture),
+                        onBackgroundImageError: (_, __) {},
+                      )
+                    : CircleAvatar(
+                        radius: 22,
+                        backgroundColor: DoctorConsultationColorPalette.backgroundCard,
+                        child: Text(
+                          profile != null && profile.doctorName.isNotEmpty
+                              ? profile.doctorName[0].toUpperCase()
+                              : 'D',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                             color: DoctorConsultationColorPalette.primaryBlue,
-                            size: 20,
-                          );
-                        },
-                      ),
-                    )
-                  : CircleAvatar(
-                      radius: 22,
-                      backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-                      child: Text(
-                        profile != null && profile.doctorName.isNotEmpty
-                            ? profile.doctorName[0].toUpperCase()
-                            : 'D',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: DoctorConsultationColorPalette.primaryBlue,
+                          ),
                         ),
                       ),
-                    ),
               ),
               const SizedBox(width: 12),
               Column(

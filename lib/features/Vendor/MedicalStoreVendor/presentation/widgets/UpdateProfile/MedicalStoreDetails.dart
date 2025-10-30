@@ -59,6 +59,11 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
       if (timeParts.length == 2) {
         _startTime = _parseTime(timeParts[0]);
         _endTime = _parseTime(timeParts[1]);
+        
+        // If parsing failed for either time, keep them as null
+        if (_startTime == null || _endTime == null) {
+          print("Failed to parse store timing: ${widget.viewModel.storeTiming}");
+        }
       }
     }
 
@@ -68,10 +73,28 @@ class _MedicalStoreDetailsState extends State<MedicalStoreDetails> {
   }
 
   // Helper method to parse time string and convert to TimeOfDay
-  TimeOfDay _parseTime(String timeString) {
-    final timeFormat = DateFormat.jm();
-    final time = timeFormat.parse(timeString);
-    return TimeOfDay(hour: time.hour, minute: time.minute);
+  TimeOfDay? _parseTime(String timeString) {
+    try {
+      // Trim whitespace from the time string
+      String trimmedTime = timeString.trim();
+      
+      // Try parsing with explicit format "h:mm a" (e.g., "9:00 AM")
+      final timeFormat = DateFormat("h:mm a");
+      final time = timeFormat.parse(trimmedTime);
+      return TimeOfDay(hour: time.hour, minute: time.minute);
+    } catch (e) {
+      // If parsing fails, try alternative formats
+      try {
+        // Try parsing with jm format
+        final timeFormat = DateFormat.jm();
+        final time = timeFormat.parse(timeString.trim());
+        return TimeOfDay(hour: time.hour, minute: time.minute);
+      } catch (e2) {
+        // If all parsing fails, return null
+        print("Error parsing time: $timeString - $e2");
+        return null;
+      }
+    }
   }
 
   @override

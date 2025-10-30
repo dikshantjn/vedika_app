@@ -8,6 +8,8 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/viewmodel
 import 'package:vedika_healthcare/features/Vendor/LabTest/presentation/views/LabTestProcessScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/lab_test_invoice_pdf.dart';
+import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
+import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 
 class LabTestBookingContentPage extends StatefulWidget {
   final int? initialTab;
@@ -433,7 +435,7 @@ class BookingCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: GestureDetector(
-                          onTap: () => _openPrescription(booking.prescriptionUrl!),
+                          onTap: () => _openPrescription(context, booking.prescriptionUrl!),
                           child: const Text(
                             "View Prescription",
                             style: TextStyle(
@@ -458,18 +460,21 @@ class BookingCard extends StatelessWidget {
     );
   }
 
-  void _openPrescription(String url) async {
-    // If the URL is a Firebase Storage URL, open it directly
-    if (url.startsWith('https://')) {
+  void _openPrescription(BuildContext context, String url) async {
+    try {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => DocumentPreviewScreen(
+            url: url,
+            title: 'Prescription',
+          ),
+        ),
+      );
+    } catch (e) {
+      // Fallback to system launcher
       if (await canLaunch(url)) {
         await launch(url);
-      } else {
-        print('Could not launch $url');
       }
-    } else {
-      // If it's a local path, show a message that the image is stored locally
-      print('Local file path: $url');
-      // In a real app, you might want to handle this differently
     }
   }
 
@@ -731,13 +736,13 @@ class BookingCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildDetailSection(
+                            _buildDetailSection(
                           title: "Tests",
                           icon: Icons.science_outlined,
                           children: [
                             if (booking.selectedTests?.isNotEmpty ?? false)
                               ...(booking.selectedTests ?? []).map((test) => 
-                                _buildTestRow(test, booking.reportUrls)
+                                _buildTestRow(bottomSheetContext, test, booking.reportUrls)
                               ).toList()
                             else
                               const Text(
@@ -758,7 +763,7 @@ class BookingCard extends StatelessWidget {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: GestureDetector(
-                                  onTap: () => _openPrescription(booking.prescriptionUrl!),
+                                  onTap: () => _openPrescription(bottomSheetContext, booking.prescriptionUrl!),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -1070,7 +1075,7 @@ class BookingCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTestRow(String testName, Map<String, String>? reportUrls) {
+  Widget _buildTestRow(BuildContext context, String testName, Map<String, String>? reportUrls) {
     // Debug prints
     print('Test Name: $testName');
     print('Report URLs: $reportUrls');
@@ -1094,7 +1099,16 @@ class BookingCard extends StatelessWidget {
           ),
           if (reportUrl != null && reportUrl.isNotEmpty)
             OutlinedButton.icon(
-              onPressed: () => _openPrescription(reportUrl),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ReportViewScreen(
+                      reportUrl: reportUrl,
+                      testName: testName,
+                    ),
+                  ),
+                );
+              },
               icon: const Icon(Icons.visibility_outlined, size: 16),
               label: const Text("View Report"),
               style: OutlinedButton.styleFrom(
@@ -1120,6 +1134,8 @@ class BookingCard extends StatelessWidget {
       ),
     );
   }
+
+  
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {

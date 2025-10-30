@@ -181,4 +181,56 @@ class CartService {
       throw Exception('Error getting medicine cart count: $e');
     }
   }
+
+  // Cancel medicine order
+  Future<Map<String, dynamic>> cancelMedicineOrder({
+    required String orderId,
+    String? authToken,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '${ApiEndpoints.cancelMedicineOrder}/$orderId/cancel',
+        options: Options(
+          headers: {
+            if (authToken != null) 'Authorization': 'Bearer $authToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        final result = {
+          'success': true,
+          'message': responseData['message'] ?? 'Order cancelled successfully',
+          'order': responseData['order'] ?? {},
+        };
+
+        return result;
+      } else {
+        print('❌ [CartService] API returned non-200 status code');
+        print('📊 [CartService] Status: ${response.statusCode}');
+        print('📝 [CartService] Response: ${response.data}');
+        throw Exception('Failed to cancel order: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('🚨 [CartService] DioException occurred');
+      print('📊 [CartService] Error type: ${e.type}');
+      print('📊 [CartService] Error message: ${e.message}');
+      print('📊 [CartService] Error response: ${e.response}');
+      
+      if (e.response != null) {
+        print('📊 [CartService] Error response status: ${e.response!.statusCode}');
+        print('📊 [CartService] Error response data: ${e.response!.data}');
+      }
+
+      throw Exception('Error cancelling order: ${e.message}');
+    } catch (e, stackTrace) {
+      print('🚨 [CartService] Unexpected error occurred');
+      print('📊 [CartService] Error: $e');
+      print('📊 [CartService] Stack trace: $stackTrace');
+      throw Exception('Error cancelling order: $e');
+    }
+  }
 }

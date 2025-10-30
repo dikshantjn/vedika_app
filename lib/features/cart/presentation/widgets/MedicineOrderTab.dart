@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
-import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseAddressSheet.dart';
+// import 'package:vedika_healthcare/features/medicineDelivery/presentation/widgets/ChooseAddressSheet.dart';
 import 'package:vedika_healthcare/features/cart/presentation/widgets/MedicineOrderSummarySheet.dart';
 import 'package:vedika_healthcare/features/cart/data/services/CartService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/service/DeliveryAddressService.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
 class MedicineOrderTab extends StatefulWidget {
   const MedicineOrderTab({Key? key}) : super(key: key);
@@ -15,8 +17,9 @@ class MedicineOrderTab extends StatefulWidget {
 
 class _MedicineOrderTabState extends State<MedicineOrderTab> {
   final CartService _cartService = CartService();
+  final DeliveryAddressService _addressService = DeliveryAddressService();
   List<Order> _medicineOrders = [];
-  Set<String> _removedOrderIds = {}; // Track removed orders
+  Set<String> _cancellingOrderIds = {}; // Track orders being cancelled
   bool _isLoading = true;
   String? _error;
 
@@ -103,7 +106,7 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
           Expanded(
             child: _buildContent(),
           ),
-          if (_getActiveOrdersCount() > 0) _buildCheckoutSection(),
+          if (_medicineOrders.isNotEmpty) _buildCheckoutSection(),
         ],
       ),
     );
@@ -201,353 +204,350 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
   }
 
   Widget _buildCheckoutSection() {
-    final activeOrders = _medicineOrders.where((order) => !_removedOrderIds.contains(order.orderId)).toList();
-    final totalAmount = activeOrders.fold(0.0, (sum, order) => sum + order.totalAmount);
+    final totalAmount = _medicineOrders.fold(0.0, (sum, order) => sum + order.totalAmount);
+    final orderCount = _medicineOrders.length;
     
     return Container(
-      padding: EdgeInsets.all(20),
+      margin: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: Offset(0, -4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Total amount display
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total Amount:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Order count and Total amount in compact row
+            Row(
+              children: [
+                Icon(
+                  Icons.shopping_bag_outlined,
+                  size: 14,
+                  color: Colors.grey[600],
                 ),
-              ),
-              Text(
-                '₹${totalAmount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ColorPalette.primaryColor,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: activeOrders.isNotEmpty ? _proceedToCheckout : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.primaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 18),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                disabledBackgroundColor: Colors.grey[300],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_cart_checkout, size: 20),
-                  SizedBox(width: 12),
-                  Text(
-                    'Proceed to Checkout',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                SizedBox(width: 6),
+                Text(
+                  '$orderCount ${orderCount == 1 ? 'order' : 'orders'}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
+                ),
+                Spacer(),
+                Text(
+                  'Total: ',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '₹${totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            
+            SizedBox(height: 12),
+            
+            // Checkout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _medicineOrders.isNotEmpty ? _proceedToCheckout : null,
+                icon: Icon(
+                  Icons.shopping_cart_checkout,
+                  size: 18,
+                ),
+                label: Text(
+                  'Proceed to Checkout',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorPalette.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  disabledBackgroundColor: Colors.grey[300],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
     Widget _buildMedicineOrderCard(Order order, int index) {
-    final bool isRemoved = _removedOrderIds.contains(order.orderId);
+    final bool isCancelling = _cancellingOrderIds.contains(order.orderId);
     
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isRemoved ? Colors.grey[100] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with Order ID and Status
+            // Order ID
+            Text(
+              order.orderId,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[900],
+                letterSpacing: -0.2,
+              ),
+            ),
+            
+            SizedBox(height: 8),
+            
+            // Date and Status in same row
             Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isRemoved 
-                        ? Colors.grey[300] 
-                        : ColorPalette.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.receipt_long_outlined,
-                    color: isRemoved ? Colors.grey[600] : ColorPalette.primaryColor,
-                    size: 20,
+                Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: Colors.grey[500],
+                ),
+                SizedBox(width: 6),
+                Text(
+                  _formatDate(order.createdAt),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Order ID with strike-through when removed
-                      Stack(
-                        children: [
-                          Text(
-                            'Order ID: ${order.orderId}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isRemoved ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                          if (isRemoved)
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: Colors.grey[600]!,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        _formatDate(order.createdAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isRemoved ? Colors.grey[400] : Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Spacer(),
                 _buildStatusChip(order.status),
               ],
             ),
             
-            SizedBox(height: 16),
+            SizedBox(height: 12),
             
-            // Medical Store Details
+            // Medical Store Name
             Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isRemoved ? Colors.grey[200] : Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isRemoved ? Colors.grey[400]! : Colors.blue[200]!),
-                  ),
-                  child: Icon(
-                    Icons.storefront_outlined,
-                    color: isRemoved ? Colors.grey[600] : Colors.blue[600],
-                    size: 20,
-                  ),
+                Icon(
+                  Icons.storefront_outlined,
+                  size: 16,
+                  color: Colors.grey[600],
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getMedicalStoreName(order),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: isRemoved ? Colors.grey[500] : Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Prescription ID: ${order.prescriptionId.substring(0, 8)}...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isRemoved ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _getMedicalStoreName(order),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],
             ),
             
-            SizedBox(height: 16),
+            SizedBox(height: 12),
             
-            // Amount and Note
-            Column(
+            // Amount
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Text(
+                  'Amount',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '₹${order.totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[900],
+                  ),
+                ),
+              ],
+            ),
+            
+            // Note (if exists)
+            if (order.note != null && order.note!.isNotEmpty) ...[
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber[200]!, width: 1),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Amount: ',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isRemoved ? Colors.grey[400] : Colors.grey[600],
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Icon(
+                      Icons.note_outlined,
+                      size: 14,
+                      color: Colors.amber[700],
                     ),
-                    Text(
-                      '₹${order.totalAmount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: isRemoved ? Colors.grey[500] : Colors.black87,
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        order.note!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                if (order.platformFee > 0) ...[
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        'Platform Fee: ',
+              ),
+            ],
+            
+            SizedBox(height: 12),
+            
+            // Action Buttons - Call Store and Menu
+            if (!isCancelling)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _callStore(order),
+                      icon: Icon(
+                        Icons.phone_outlined,
+                        size: 16,
+                        color: Colors.blue[600],
+                      ),
+                      label: Text(
+                        'Call Store',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: isRemoved ? Colors.grey[400] : Colors.grey[500],
+                          color: Colors.blue[600],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ),
-                      Text(
-                        '₹${order.platformFee.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isRemoved ? Colors.grey[400] : Colors.grey[600],
-                          fontWeight: FontWeight.w500,
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        side: BorderSide(color: Colors.blue[300]!, width: 1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  PopupMenuButton<String>(
+                    icon: Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!, width: 1),
+                      ),
+                      child: Icon(
+                        Icons.more_vert,
+                        color: Colors.grey[700],
+                        size: 18,
+                      ),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'cancel') {
+                        _showCancelOrderDialog(order);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem<String>(
+                        value: 'cancel',
+                        child: Row(
+                          children: [
+                            Icon(Icons.cancel_outlined, color: Colors.red[600], size: 18),
+                            SizedBox(width: 12),
+                            Text(
+                              'Cancel Order',
+                              style: TextStyle(color: Colors.red[600], fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ],
-                SizedBox(height: 8),
-                Divider(height: 1, color: isRemoved ? Colors.grey[300] : Colors.grey[300]),
-                SizedBox(height: 8),
-                if (order.note != null && order.note!.isNotEmpty)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              )
+            else
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!, width: 1),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Note: ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isRemoved ? Colors.grey[400] : Colors.grey[600],
-                          fontWeight: FontWeight.w600,
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          order.note!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isRemoved ? Colors.grey[500] : Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      SizedBox(width: 10),
+                      Text(
+                        'Cancelling order...',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-              ],
-            ),
-            
-            SizedBox(height: 16),
-            
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _callStore(order),
-                    icon: Icon(
-                      Icons.phone_outlined,
-                      size: 18,
-                      color: isRemoved ? Colors.grey[500] : Colors.blue[600],
-                    ),
-                    label: Text(
-                      'Call Store',
-                      style: TextStyle(
-                        color: isRemoved ? Colors.grey[500] : Colors.blue[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: isRemoved ? Colors.grey[400]! : Colors.blue[300]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _toggleOrderRemoval(order.orderId),
-                    icon: Icon(
-                      _removedOrderIds.contains(order.orderId) 
-                          ? Icons.restore_from_trash_outlined 
-                          : Icons.delete_outline,
-                      size: 18,
-                    ),
-                    label: Text(
-                      _removedOrderIds.contains(order.orderId) 
-                          ? 'Restore' 
-                          : 'Remove',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _removedOrderIds.contains(order.orderId) 
-                          ? Colors.green[600] 
-                          : Colors.red[600],
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
@@ -589,6 +589,11 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
         chipColor = Colors.green[100]!;
         textColor = Colors.green[700]!;
         statusText = 'Delivered';
+        break;
+      case 'cancelled':
+        chipColor = Colors.red[100]!;
+        textColor = Colors.red[700]!;
+        statusText = 'Cancelled';
         break;
       default:
         chipColor = Colors.grey[100]!;
@@ -680,20 +685,275 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
     // 2. Make another API call to get full vendor details
   }
 
-  void _toggleOrderRemoval(String orderId) {
+  void _showCancelOrderDialog(Order order) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Icon Section
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.red[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: Colors.red[600],
+                      size: 32,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 24),
+                
+                // Title
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Cancel Order?',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[900],
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Description
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'This action cannot be undone',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                
+                SizedBox(height: 24),
+                
+                // Order Info Card
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow(Icons.receipt, 'Order ID', order.orderId),
+                        SizedBox(height: 12),
+                        Divider(height: 1, color: Colors.grey[200]),
+                        SizedBox(height: 12),
+                        _buildInfoRow(Icons.currency_rupee, 'Amount', '₹${order.totalAmount.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 32),
+                
+                // Action Buttons
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      // Keep Order Button
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Keep Order',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(width: 12),
+                      
+                      // Cancel Order Button
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _cancelOrder(order.orderId);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[600],
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel Order',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: Colors.grey[600],
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[900],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _cancelOrder(String orderId) async {
     setState(() {
-      if (_removedOrderIds.contains(orderId)) {
-        _removedOrderIds.remove(orderId);
-      } else {
-        _removedOrderIds.add(orderId);
-      }
+      _cancellingOrderIds.add(orderId);
     });
+
+    try {
+      final result = await _cartService.cancelMedicineOrder(
+        orderId: orderId,
+        // authToken: 'your-auth-token', // Add this when you have auth
+      );
+
+      if (result['success'] == true) {
+        // Remove the order from the list
+        setState(() {
+          _medicineOrders.removeWhere((order) => order.orderId == orderId);
+          _cancellingOrderIds.remove(orderId);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Order cancelled successfully'),
+            backgroundColor: Colors.green[600],
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        setState(() {
+          _cancellingOrderIds.remove(orderId);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to cancel order'),
+            backgroundColor: Colors.red[600],
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _cancellingOrderIds.remove(orderId);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error cancelling order: $e'),
+          backgroundColor: Colors.red[600],
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _clearCart() {
     setState(() {
       _medicineOrders.clear();
-      _removedOrderIds.clear();
+      _cancellingOrderIds.clear();
       print('🧹 [MedicineOrderTab] Cart cleared successfully');
     });
 
@@ -705,10 +965,6 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
         duration: Duration(seconds: 3),
       ),
     );
-  }
-
-  int _getActiveOrdersCount() {
-    return _medicineOrders.where((order) => !_removedOrderIds.contains(order.orderId)).length;
   }
 
   String _formatDate(DateTime date) {
@@ -723,34 +979,54 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
     return 'Medical Store'; // Fallback
   }
 
-    Future<void> _proceedToCheckout() async {
-    final String? selectedAddressId = await showModalBottomSheet<String>(
-      backgroundColor: Colors.white,
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Material(
-          color: Colors.transparent,
-          child: ChooseAddressSheet(),
+  Future<void> _proceedToCheckout() async {
+    try {
+      if (_medicineOrders.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No active orders to checkout'),
+            backgroundColor: Colors.orange[600]!,
+          ),
         );
-      },
-    );
+        return;
+      }
 
-    if (selectedAddressId != null) {
-      _showMedicineOrderSummarySheet(context, selectedAddressId);
+      final String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please login to continue'),
+            backgroundColor: Colors.red[600],
+          ),
+        );
+        return;
+      }
+
+      final addresses = await _addressService.getAllAddressesByUserId(userId);
+      if (addresses.isEmpty || (addresses.first.addressId == null)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No delivery address found. Please add an address.'),
+            backgroundColor: Colors.orange[700],
+          ),
+        );
+        return;
+      }
+
+      final String addressId = addresses.first.addressId!;
+      _showMedicineOrderSummarySheet(context, addressId);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to proceed to checkout: $e'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
     }
   }
 
   void _showMedicineOrderSummarySheet(BuildContext context, String addressId) {
-    // Filter out removed orders for checkout
-    final activeOrders = _medicineOrders.where((order) => !_removedOrderIds.contains(order.orderId)).toList();
-
-    if (activeOrders.isEmpty) {
+    if (_medicineOrders.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No active orders to checkout'),
@@ -769,39 +1045,11 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
       ),
       builder: (context) {
         return MedicineOrderSummarySheet(
-          medicineOrders: activeOrders,
+          medicineOrders: _medicineOrders,
           addressId: addressId,
           onOrderPlaced: _clearCart, // Pass the callback to clear cart
         );
       },
     );
   }
-}
-
-// Custom painter for drawing strike-through lines
-class StrikeThroughPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.red[400]!
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    // Draw diagonal strike-through line
-    canvas.drawLine(
-      Offset(0, 0),
-      Offset(size.width, size.height),
-      paint,
-    );
-
-    // Draw another diagonal line in opposite direction for better coverage
-    canvas.drawLine(
-      Offset(size.width, 0),
-      Offset(0, size.height),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

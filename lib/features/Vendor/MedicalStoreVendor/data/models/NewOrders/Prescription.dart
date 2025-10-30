@@ -2,6 +2,7 @@ class Prescription {
   final String prescriptionId;
   final String vendorId;
   final String userId;
+  final String? addressId;
   final String? userName;
   final String? userPhone;
   final List<String> prescriptionFiles;
@@ -17,6 +18,7 @@ class Prescription {
     required this.prescriptionId,
     required this.vendorId,
     required this.userId,
+    this.addressId,
     this.userName,
     this.userPhone,
     required this.prescriptionFiles,
@@ -37,6 +39,7 @@ class Prescription {
       prescriptionId: json['prescriptionId'] ?? '',
       vendorId: json['vendorId'] ?? '',
       userId: json['userId'] ?? '',
+      addressId: json['addressId'],
       userName: userData?['name'],
       userPhone: userData?['phone_number'],
       prescriptionFiles: List<String>.from(json['prescriptionFiles'] ?? []),
@@ -55,6 +58,7 @@ class Prescription {
       'prescriptionId': prescriptionId,
       'vendorId': vendorId,
       'userId': userId,
+      'addressId': addressId,
       'userName': userName,
       'userPhone': userPhone,
       'prescriptionFiles': prescriptionFiles,
@@ -72,6 +76,7 @@ class Prescription {
     String? prescriptionId,
     String? vendorId,
     String? userId,
+    String? addressId,
     String? userName,
     String? userPhone,
     List<String>? prescriptionFiles,
@@ -87,6 +92,7 @@ class Prescription {
       prescriptionId: prescriptionId ?? this.prescriptionId,
       vendorId: vendorId ?? this.vendorId,
       userId: userId ?? this.userId,
+      addressId: addressId ?? this.addressId,
       userName: userName ?? this.userName,
       userPhone: userPhone ?? this.userPhone,
       prescriptionFiles: prescriptionFiles ?? this.prescriptionFiles,

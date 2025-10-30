@@ -6,9 +6,9 @@ import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/Pro
 class OrderHistoryService {
   final Dio _dio = Dio();
 
-  Future<List<ProductOrder>> fetchDeliveredProductOrders(String userId) async {
+  Future<List<ProductOrder>> fetchProductOrders(String userId) async {
     try {
-      final String url = '${ApiEndpoints.getDeliveredProductOrdersByUserId}/$userId/delivered';
+      final String url = '${ApiEndpoints.getProductOrdersByUserId}/$userId/getAllOrders';
 
       final response = await _dio.get(url);
 

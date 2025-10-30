@@ -1,14 +1,12 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.34:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.34:5000/api";  // Current IP address
-  // static const String baseUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app/api";
-  // static const String socketUrl = "https://vedika-healthcare-backend-257351484310.us-central1.run.app";  // Current IP address
+  // static const String socketUrl = "http://192.168.1.33:5000";  // Current IP address
+  // static const String baseUrl = "http://192.168.1.33:5000/api";  // Current IP address
+  static const String baseUrl = "https://vedika-healthcare-backend-1.onrender.com/api";
+  static const String socketUrl = "https://vedika-healthcare-backend-1.onrender.com";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
-  // static const String socketUrl = "https://947a075b3d46.ngrok-free.app";
-  // static const String baseUrl = "https://947a075b3d46.ngrok-free.app/api";
 
 
   // 📌 Auth APIs
@@ -97,6 +95,7 @@ class ApiEndpoints {
   static const String deliveryAddress = '$baseUrl/deliveryAddress/delivery-address';
   static const String getDeliveryAddresses = '$baseUrl/deliveryAddress/getDeliveryAddress';
   static const String deleteDeliveryAddress = '$baseUrl/deliveryAddress/deleteDeliveryAddress';
+  static const String getDeliveryAddressById = '$baseUrl/deliveryAddress/address';
   static const String placedOrderWithPayment = '$baseUrl/orders/update-order';
   static const String trackOrder = '$baseUrl/orders';
   static const String updatePrescriptionStatus = '$baseUrl/orders';
@@ -167,6 +166,7 @@ class ApiEndpoints {
   static const String getBloodBankRequestById = "$baseUrl/blood-bank/requests"; // e.g. /blood-bank/profile/:vendorId
   static const String BloodBlankBookingwaitingforPaytmentStatus = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String getBloodBankBookingsByUserId = "$baseUrl/blood-bank-bookings/user"; // e.g. /blood-bank/profile/:vendorId
+  static const String getLatestBloodBankBookingByUserId = "$baseUrl/blood-bank-bookings/bookings/latest"; // e.g. /blood-bank-bookings/bookings/latest/:userId
   static const String updatePaymentDetails = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String updateBookingStatusAsWaitingForPickup = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
   static const String BloodBankBookings = "$baseUrl/blood-bank-bookings"; // e.g. /blood-bank/profile/:vendorId
@@ -274,6 +274,7 @@ class ApiEndpoints {
   static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
   static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
   static const String getMedicineCartCount = '$baseUrl/medicine-delivery/medicine-cart-count'; // Get medicine cart count by user ID
+  static const String cancelMedicineOrder = '$baseUrl/medicine-delivery/orders'; // Cancel medicine order - POST /orders/:orderId/cancel
 
   // 📌 Notification APIs
   static const String getNotifications = '$baseUrl/notifications'; // GET /notifications?userId=:userId or ?vendorId=:vendorId

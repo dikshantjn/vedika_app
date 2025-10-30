@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
@@ -140,54 +141,177 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.blue[200]!),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.blue[600],
-                    size: 14,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.blue[600],
+                        size: 14,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Customer Details',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            widget.order.user?.name ?? 'Unknown Customer',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            widget.order.user?.phoneNumber ?? 'No Contact number',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _shareCustomerDetails(),
+                      icon: Icon(
+                        Icons.share,
+                        color: Colors.blue[600],
+                        size: 18,
+                      ),
+                      padding: EdgeInsets.all(4),
+                      constraints: BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: 'Share Customer Details',
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Column(
+                // Delivery Address section
+                if (widget.order.deliveryAddress != null) ...[
+                  SizedBox(height: 10),
+                  Divider(color: Colors.blue[200], height: 1),
+                  SizedBox(height: 10),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Customer Details',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.blue[700],
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        padding: EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.green[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.location_on,
+                          color: Colors.green[600],
+                          size: 14,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        widget.order.user?.name ?? 'Unknown Customer',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        widget.order.user?.phoneNumber ?? 'No Contact number',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Delivery Address',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              widget.order.deliveryAddress!.houseStreet,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              widget.order.deliveryAddress!.addressLine1,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (widget.order.deliveryAddress!.addressLine2 != null &&
+                                widget.order.deliveryAddress!.addressLine2!.isNotEmpty) ...[
+                              SizedBox(height: 2),
+                              Text(
+                                widget.order.deliveryAddress!.addressLine2!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            SizedBox(height: 2),
+                            Text(
+                              '${widget.order.deliveryAddress!.city}, ${widget.order.deliveryAddress!.state} ${widget.order.deliveryAddress!.zipCode}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              widget.order.deliveryAddress!.country,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (widget.order.deliveryAddress!.addressType.isNotEmpty) ...[
+                              SizedBox(height: 4),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  widget.order.deliveryAddress!.addressType,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.green[700],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1113,14 +1237,30 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
 
   String _getStatusDisplayText(String status) {
     switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
+      case 'verified':
+        return 'Verified';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'waiting_for_payment':
+      case 'waiting for payment':
+        return 'Waiting for Payment';
+      case 'payment_completed':
+      case 'payment completed':
+        return 'Payment Completed';
       case 'ready_to_pickup':
+      case 'ready for pickup':
         return 'Ready for Pickup';
       case 'out_for_delivery':
+      case 'out for delivery':
         return 'Out for Delivery';
       case 'delivered':
         return 'Delivered';
       default:
-        return status;
+        return status.replaceAll('_', ' ').split(' ').map((word) => 
+          word.isNotEmpty ? (word[0].toUpperCase() + (word.length > 1 ? word.substring(1).toLowerCase() : '')) : word
+        ).join(' ');
     }
   }
 
@@ -1220,5 +1360,49 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
         ),
       );
     }
+  }
+
+  // Share customer details and address
+  void _shareCustomerDetails() {
+    final StringBuffer shareText = StringBuffer();
+    
+    // Order header
+    shareText.writeln('📦 Order Details');
+    shareText.writeln('Order ID: ${widget.order.orderId}');
+    shareText.writeln('');
+    
+    // Customer details
+    shareText.writeln('👤 Customer Information:');
+    shareText.writeln('Name: ${widget.order.user?.name ?? 'Unknown Customer'}');
+    shareText.writeln('Phone: ${widget.order.user?.phoneNumber ?? 'No Contact number'}');
+    shareText.writeln('');
+    
+    // Delivery address
+    if (widget.order.deliveryAddress != null) {
+      shareText.writeln('📍 Delivery Address:');
+      final address = widget.order.deliveryAddress!;
+      shareText.writeln('${address.houseStreet}');
+      shareText.writeln('${address.addressLine1}');
+      if (address.addressLine2 != null && address.addressLine2!.isNotEmpty) {
+        shareText.writeln('${address.addressLine2}');
+      }
+      shareText.writeln('${address.city}, ${address.state} ${address.zipCode}');
+      shareText.writeln('${address.country}');
+      if (address.addressType.isNotEmpty) {
+        shareText.writeln('Type: ${address.addressType}');
+      }
+      shareText.writeln('');
+    }
+    
+    // Order amount
+    if (widget.order.totalAmount > 0) {
+      shareText.writeln('💰 Order Amount: ₹${widget.order.totalAmount.toStringAsFixed(2)}');
+      shareText.writeln('');
+    }
+    
+    // Order status
+    shareText.writeln('📊 Status: ${_getStatusDisplayText(widget.order.status)}');
+    
+    Share.share(shareText.toString(), subject: 'Order ${widget.order.orderId} - Customer Details');
   }
 }

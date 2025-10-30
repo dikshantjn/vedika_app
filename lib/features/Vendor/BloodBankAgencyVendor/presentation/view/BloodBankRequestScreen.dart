@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankRequest.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/presentation/viewModel/BloodBankRequestViewModel.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 
 class BloodBankRequestScreen extends StatefulWidget {
   const BloodBankRequestScreen({super.key});
@@ -245,11 +246,21 @@ class RequestCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (request.prescriptionUrls.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () => _showPrescriptionDialog(context, request),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      final url = request.prescriptionUrls.first;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => DocumentPreviewScreen(
+                            url: url,
+                            title: 'Prescription',
+                          ),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.medical_services, size: 14),
                     label: const Text('View Prescription'),
-                    style: TextButton.styleFrom(
+                    style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

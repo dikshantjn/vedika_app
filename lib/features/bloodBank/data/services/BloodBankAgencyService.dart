@@ -254,6 +254,40 @@ class BloodBankAgencyService {
     }
   }
 
+  // Get latest booking for a specific user
+  Future<BloodBankBooking?> getLatestBooking(String userId, String token) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getLatestBloodBankBookingByUserId}/$userId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          final Map<String, dynamic> responseMap = response.data;
+          if (responseMap.containsKey('data') && responseMap['data'] != null) {
+            final data = responseMap['data'];
+            return BloodBankBooking.fromJson(data);
+          } else {
+            throw Exception('Invalid response: missing data field');
+          }
+        } else {
+          throw Exception('Invalid response format: expected Map');
+        }
+      } else {
+        throw Exception('Failed to load latest blood bank booking: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.e('Error fetching latest blood bank booking: $e');
+      throw Exception('Failed to fetch latest blood bank booking: $e');
+    }
+  }
+
   Future<void> updatePaymentDetails(String bookingId) async {
     try {
       _logger.i('Updating payment details for booking ID: $bookingId');

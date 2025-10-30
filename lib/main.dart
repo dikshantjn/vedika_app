@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -75,6 +76,10 @@ import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
 import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_performance/firebase_performance.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -91,12 +96,13 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileComple
 import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicTimeslotViewModel.dart';
 import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
+import 'package:vedika_healthcare/firebase_options.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 // Device Preview Configuration
-const bool enableDevicePreview = true; // Set to false to disable device preview
+const bool enableDevicePreview = false; // Set to false to disable device preview
 
 void onBackgroundNotificationTap(NotificationResponse response) {
   print("[Background Notification Tap] Payload: ${response.payload}");
@@ -108,8 +114,26 @@ void main() async {
   // Initialize Hive
   await Hive.initFlutter();
   
-  
-  await Firebase.initializeApp();
+  // Initialize Firebase with platform options
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Configure Crashlytics/Performance/Analytics collection
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode);
+  await FirebasePerformance.instance.setPerformanceCollectionEnabled(!kDebugMode);
+  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
+
+  // Forward Flutter framework errors to Crashlytics as fatal
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+  };
+
+  // Capture uncaught async errors
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
   WidgetsBinding.instance.addObserver(AppLifecycleObserver());
 
   // Initialize FCM Service
@@ -277,6 +301,9 @@ class MyApp extends StatelessWidget {
             ),
             navigatorKey: navigatorKey,
             scaffoldMessengerKey:scaffoldMessengerKey,
+            navigatorObservers: [
+              FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+            ],
             initialRoute: "/",
             onGenerateRoute: AppRoutes.generateRoute,
             routes: {
