@@ -1,9 +1,9 @@
 class ApiEndpoints {
   // ✅ Base URL
-  // static const String socketUrl = "http://192.168.1.33:5000";  // Current IP address
-  // static const String baseUrl = "http://192.168.1.33:5000/api";  // Current IP address
-  static const String baseUrl = "https://vedika-healthcare-backend-1.onrender.com/api";
-  static const String socketUrl = "https://vedika-healthcare-backend-1.onrender.com";  // Current IP address
+  static const String socketUrl = "http://192.168.1.40:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
+  // static const String baseUrl = "https://vedika-healthcare-backend-1.onrender.com/api";
+  // static const String socketUrl = "https://vedika-healthcare-backend-1.onrender.com";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
   // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
 
@@ -270,6 +270,9 @@ class ApiEndpoints {
   static const String updateOrderStatus = '$baseUrl/medicine-delivery/update-status'; // Update order status
   static const String getPendingPaymentOrders = '$baseUrl/medicine-delivery/orders/user'; // Get orders waiting for payment
   static const String placeMedicineOrder = '$baseUrl/medicine-delivery/place-medicine-order'; // Place medicine order after payment
+  static const String addOrderMedicines = '$baseUrl/medicine-delivery/order'; // PUT /order/:orderId/add-medicines
+  static const String getOrderDetails = '$baseUrl/medicine-delivery/order'; // GET /order/:orderId/details
+  static const String deleteOrderMedicine = '$baseUrl/medicine-delivery/delete-medicine'; // DELETE /delete-medicine/:orderId/:orderMedicineId
   static const String getActiveMedicineDeliveryOrders = '$baseUrl/medicine-delivery/orders/active'; // Get active medicine delivery orders by user ID
   static const String getDeliveredMedicineOrders = '$baseUrl/medicine-delivery/orders/delivered'; // Get delivered medicine orders by user ID
   static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice

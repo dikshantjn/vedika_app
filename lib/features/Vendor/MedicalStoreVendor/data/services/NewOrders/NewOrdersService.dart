@@ -282,4 +282,154 @@ class NewOrdersService {
       throw Exception('Error updating order status: $e');
     }
   }
+
+  // Update order billing (medicines, discount, delivery charge, total)
+  Future<Map<String, dynamic>> updateOrderBilling(
+    String orderId,
+    List<Map<String, dynamic>> medicines,
+    double discountPercent,
+    double deliveryCharge,
+    double totalAmount,
+  ) async {
+    try {
+      print('🔍 [NewOrdersService] Updating order billing: $orderId');
+      
+      final response = await _dio.patch(
+        '${ApiEndpoints.updateOrderPayment}/$orderId/payment',
+        data: {
+          'medicines': medicines,
+          'discountPercent': discountPercent,
+          'deliveryCharge': deliveryCharge,
+          'totalAmount': totalAmount,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ [NewOrdersService] Order billing updated successfully');
+        return response.data;
+      } else {
+        print('❌ [NewOrdersService] Failed to update order billing: ${response.statusCode}');
+        throw Exception('Failed to update order billing: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('❌ [NewOrdersService] DioException: ${e.message}');
+      throw Exception('Error updating order billing: ${e.message}');
+    } catch (e) {
+      print('❌ [NewOrdersService] General error: $e');
+      throw Exception('Error updating order billing: $e');
+    }
+  }
+
+  // Add medicines and billing details to order
+  Future<Map<String, dynamic>> addOrderMedicines(
+    String orderId,
+    List<Map<String, dynamic>> medicines,
+    double subtotal,
+    double discountPercent, // Discount as percentage
+    double gstPercent, // GST as percentage
+    double deliveryCharges,
+    double platformFee,
+    double totalAmount,
+  ) async {
+    try {
+      print('🔍 [NewOrdersService] Adding medicines to order: $orderId');
+      
+      final response = await _dio.put(
+        '${ApiEndpoints.addOrderMedicines}/$orderId/add-medicines',
+        data: {
+          'medicines': medicines,
+          'subtotal': subtotal,
+          'discount': discountPercent, // Send discount as percentage
+          'gst': gstPercent, // Send GST as percentage
+          'deliveryCharges': deliveryCharges,
+          'platformFee': platformFee,
+          'totalAmount': totalAmount,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [NewOrdersService] Medicines added successfully');
+        return response.data;
+      } else {
+        print('❌ [NewOrdersService] Failed to add medicines: ${response.statusCode}');
+        throw Exception('Failed to add medicines: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('❌ [NewOrdersService] DioException: ${e.message}');
+      throw Exception('Error adding medicines: ${e.message}');
+    } catch (e) {
+      print('❌ [NewOrdersService] General error: $e');
+      throw Exception('Error adding medicines: $e');
+    }
+  }
+
+  // Get order details with medicines and billing
+  Future<Map<String, dynamic>> getOrderDetails(String orderId) async {
+    try {
+      print('🔍 [NewOrdersService] Fetching order details: $orderId');
+      
+      final response = await _dio.get(
+        '${ApiEndpoints.getOrderDetails}/$orderId/details',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ [NewOrdersService] Order details fetched successfully');
+        return response.data;
+      } else {
+        print('❌ [NewOrdersService] Failed to fetch order details: ${response.statusCode}');
+        throw Exception('Failed to fetch order details: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('❌ [NewOrdersService] DioException: ${e.message}');
+      throw Exception('Error fetching order details: ${e.message}');
+    } catch (e) {
+      print('❌ [NewOrdersService] General error: $e');
+      throw Exception('Error fetching order details: $e');
+    }
+  }
+
+  // Delete medicine from order
+  Future<Map<String, dynamic>> deleteOrderMedicine(String orderId, String orderMedicineId) async {
+    try {
+      print('🔍 [NewOrdersService] Deleting medicine: $orderMedicineId from order: $orderId');
+      
+      final response = await _dio.delete(
+        '${ApiEndpoints.deleteOrderMedicine}/$orderId/$orderMedicineId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ [NewOrdersService] Medicine deleted successfully');
+        return response.data;
+      } else {
+        print('❌ [NewOrdersService] Failed to delete medicine: ${response.statusCode}');
+        throw Exception('Failed to delete medicine: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('❌ [NewOrdersService] DioException: ${e.message}');
+      throw Exception('Error deleting medicine: ${e.message}');
+    } catch (e) {
+      print('❌ [NewOrdersService] General error: $e');
+      throw Exception('Error deleting medicine: $e');
+    }
+  }
 }

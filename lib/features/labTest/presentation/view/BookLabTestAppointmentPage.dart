@@ -20,6 +20,10 @@ import 'package:vedika_healthcare/features/Vendor/LabTest/data/services/LabTestS
 import 'package:vedika_healthcare/core/navigation/MainScreen.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/service/DeliveryAddressService.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/presentation/view/AddNewAddressScreen.dart';
 
 class BookLabTestAppointmentPage extends StatefulWidget {
   final DiagnosticCenter center;
@@ -46,6 +50,13 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
   late LabAppointmentPaymentService _paymentService;
   final LabTestService _labTestService = LabTestService();
   final LabTestStorageService _storageService = LabTestStorageService();
+  final DeliveryAddressService _addressService = DeliveryAddressService();
+  
+  // Address management
+  List<DeliveryAddressModel> _addresses = [];
+  String? _selectedAddressId;
+  bool _isLoadingAddresses = false;
+  bool _showAddressList = false;
 
   Future<void> _makeCall(String phoneNumber) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
@@ -79,6 +90,91 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
     super.initState();
     _scrollController.addListener(_onScroll);
     _initializePaymentService();
+    _fetchAddresses();
+  }
+  
+  Future<void> _fetchAddresses() async {
+    setState(() {
+      _isLoadingAddresses = true;
+    });
+    try {
+      final String? userId = await StorageService.getUserId();
+      if (userId == null) {
+        return;
+      }
+      final List<DeliveryAddressModel> addrs =
+          await _addressService.getAllAddressesByUserId(userId);
+      setState(() {
+        _addresses = addrs;
+        // Preselect first address if available
+        if (_addresses.isNotEmpty && _selectedAddressId == null) {
+          _selectedAddressId = _addresses.first.addressId;
+        }
+      });
+    } catch (e) {
+      print('Failed to load addresses: $e');
+      // Continue without addresses - user can add one
+    } finally {
+      setState(() {
+        _isLoadingAddresses = false;
+      });
+    }
+  }
+  
+  Future<void> _navigateToAddNewAddress() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddNewAddressScreen()),
+    );
+    if (result != null && result is Map<String, dynamic>) {
+      final success = result['success'] == true;
+      if (success) {
+        await _fetchAddresses();
+        if (_addresses.isNotEmpty) {
+          setState(() {
+            _selectedAddressId = _addresses.last.addressId;
+            _showAddressList = false;
+          });
+        }
+      }
+    } else {
+      // Even if result is null, refresh in case of changes
+      await _fetchAddresses();
+    }
+  }
+  
+  Future<void> _deleteAddress(String addressId) async {
+    try {
+      await _addressService.deleteAddress(addressId);
+      await _fetchAddresses();
+      if (_addresses.isNotEmpty) {
+        setState(() {
+          _selectedAddressId = _addresses.first.addressId;
+        });
+      } else {
+        setState(() {
+          _selectedAddressId = null;
+          _showAddressList = false;
+        });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Address deleted successfully'),
+            backgroundColor: ColorPalette.primaryColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete address: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _initializePaymentService() {
@@ -203,7 +299,11 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(sheetContext).pop(); // Close sheet
-                          Navigator.pop(parentContext); // Go back to previous screen
+                          if (MainScreenNavigator.instance.canGoBack) {
+                            MainScreenNavigator.instance.goBack();
+                          } else if (Navigator.of(parentContext).canPop()) {
+                            Navigator.of(parentContext).pop();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey.shade200,
@@ -684,6 +784,15 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
                 ],
               ),
             ),
+            
+            // Show address selection when home collection is enabled
+            if (viewModel.homeCollectionRequired) ...[
+              const SizedBox(height: 20),
+              _buildSectionHeader('Select Delivery Address', Icons.location_on),
+              _buildCard(
+                child: _buildAddressSection(viewModel),
+              ),
+            ],
             
             const SizedBox(height: 20),
             _buildSectionHeader('Upload Prescription', Icons.file_upload),
@@ -1217,6 +1326,16 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
       return;
     }
     
+    // Validate address if home collection is enabled
+    if (viewModel.homeCollectionRequired) {
+      if (_selectedAddressId == null || _selectedAddressId!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a delivery address for home collection')),
+        );
+        return;
+      }
+    }
+    
     // Show submitting state
     setState(() {
       _isSubmitting = true;
@@ -1267,6 +1386,23 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
       // Calculate total amount
       double totalAmount = basePrice - discount + reportDeliveryFees + gst;
       
+      // Get selected address details if home collection is enabled
+      DeliveryAddressModel? selectedAddress;
+      String? userAddressText;
+      if (viewModel.homeCollectionRequired && _selectedAddressId != null) {
+        selectedAddress = _addresses.firstWhere(
+          (a) => a.addressId == _selectedAddressId,
+          orElse: () => _addresses.first,
+        );
+        userAddressText = [
+          selectedAddress.houseStreet,
+          selectedAddress.addressLine1,
+          if ((selectedAddress.addressLine2 ?? '').trim().isNotEmpty) selectedAddress.addressLine2,
+          '${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.zipCode}',
+          selectedAddress.country,
+        ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
+      }
+      
       // Create LabTestBooking object with all required fields
       final booking = LabTestBooking(
         vendorId: widget.center.vendorId,
@@ -1282,7 +1418,8 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
         discount: discount,
         gst: gst,
         totalAmount: totalAmount,
-        userAddress: "123 Main Street, City", // Replace with actual user address
+        addressId: _selectedAddressId, // Include addressId for home collection
+        userAddress: userAddressText ?? "123 Main Street, City", // Use actual user address if available
         userLocation: "28.6139,77.2090", // Replace with actual user location
         centerLocationUrl: widget.center.location,
         diagnosticCenter: widget.center,
@@ -1316,6 +1453,315 @@ class _BookLabTestAppointmentPageState extends State<BookLabTestAppointmentPage>
         );
       }
     }
+  }
+
+  Widget _buildAddressSection(LabTestAppointmentViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Select Delivery Address',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            TextButton.icon(
+              onPressed: _navigateToAddNewAddress,
+              icon: Icon(Icons.add_location_alt, color: ColorPalette.primaryColor, size: 18),
+              label: Text(
+                'Add New',
+                style: TextStyle(
+                  color: ColorPalette.primaryColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: Size(0, 0),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        if (_isLoadingAddresses)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Loading addresses...'),
+              ],
+            ),
+          )
+        else if (_addresses.isEmpty)
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.orange.shade200, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.location_off, color: Colors.orange.shade600),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No saved addresses found. Please add a delivery address.',
+                    style: TextStyle(color: Colors.orange.shade800),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          if (!_showAddressList)
+            _buildSelectedAddressCard()
+          else
+            _buildAddressListView(),
+        ],
+        if (_selectedAddressId == null && viewModel.homeCollectionRequired && _isSubmitting)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.red.shade400, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Please select a delivery address for home collection',
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedAddressCard() {
+    if (_addresses.isEmpty || _selectedAddressId == null) {
+      return SizedBox.shrink();
+    }
+    
+    final selected = _addresses.firstWhere(
+      (a) => a.addressId == _selectedAddressId,
+      orElse: () => _addresses.first,
+    );
+    
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.primaryColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.primaryColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  selected.addressType,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ),
+              ),
+              Spacer(),
+              TextButton(
+                onPressed: () => setState(() => _showAddressList = true),
+                child: Text(
+                  'Change',
+                  style: TextStyle(
+                    color: ColorPalette.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selected.houseStreet,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${selected.city}, ${selected.state} - ${selected.zipCode}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressListView() {
+    return Column(
+      children: _addresses.map((a) {
+        final isSelected = _selectedAddressId == a.addressId;
+        final subtitle = [
+          a.houseStreet,
+          a.addressLine1,
+          if ((a.addressLine2 ?? '').trim().isNotEmpty) a.addressLine2,
+          '${a.city}, ${a.state} - ${a.zipCode}',
+          a.country,
+        ].whereType<String>().where((s) => s.trim().isNotEmpty).join(', ');
+
+        return Container(
+          margin: EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? ColorPalette.primaryColor.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? ColorPalette.primaryColor : Colors.grey.shade200,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              setState(() {
+                _selectedAddressId = a.addressId;
+                _showAddressList = false;
+              });
+            },
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: ColorPalette.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          a.addressType,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: ColorPalette.primaryColor,
+                          ),
+                        ),
+                      ),
+                      Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
+                        onPressed: () => _deleteAddress(a.addressId!),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on, color: ColorPalette.primaryColor, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              a.houseStreet,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildPrescriptionUpload(LabTestAppointmentViewModel viewModel) {

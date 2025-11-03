@@ -5,9 +5,9 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/L
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/viewers/InvoiceViewerScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
-// import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
 import 'package:intl/intl.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
+import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 
 class LabTestTab extends StatefulWidget {
   @override
@@ -15,13 +15,21 @@ class LabTestTab extends StatefulWidget {
 }
 
 class _LabTestTabState extends State<LabTestTab> {
+  final UserService _userService = UserService();
+
   @override
   void initState() {
     super.initState();
-    final userId = "GOrt7AWP82dMYs8tVejjLyvdPyy2";
-    Future.microtask(() =>
-        Provider.of<LabTestOrderViewModel>(context, listen: false)
-            .fetchCompletedLabTestOrders(userId));
+    _loadLabTestOrders();
+  }
+
+  Future<void> _loadLabTestOrders() async {
+    final userId = await _userService.getCurrentUserId();
+    if (userId != null && mounted) {
+      Future.microtask(() =>
+          Provider.of<LabTestOrderViewModel>(context, listen: false)
+              .fetchCompletedLabTestOrders(userId));
+    }
   }
 
   @override

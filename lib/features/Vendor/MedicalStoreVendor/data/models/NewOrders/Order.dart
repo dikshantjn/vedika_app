@@ -1,6 +1,16 @@
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/OrderMedicine.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
+
+// Helper function to parse double from string or number
+double _parseDoubleFromJson(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
 
 // Simplified vendor model for orders (since API only provides basic info)
 class OrderVendor {
@@ -32,8 +42,13 @@ class Order {
   final String vendorId;
   final String prescriptionId;
   final String userId;
-  final double totalAmount;
+  // 💰 Billing Details
+  final double subtotal;
+  final double discount;
+  final double deliveryCharges;
+  final double gst;
   final double platformFee;
+  final double totalAmount;
   final String? addressId;
   final String? paymentId;
   final String status;
@@ -44,14 +59,19 @@ class Order {
   final UserModel? user;
   final OrderVendor? vendor;
   final DeliveryAddressModel? deliveryAddress;
+  final List<OrderMedicine>? medicines; // List of medicines in the order
 
   Order({
     required this.orderId,
     required this.vendorId,
     required this.prescriptionId,
     required this.userId,
-    required this.totalAmount,
+    this.subtotal = 0.0,
+    this.discount = 0.0,
+    this.deliveryCharges = 0.0,
+    this.gst = 0.0,
     required this.platformFee,
+    required this.totalAmount,
     this.addressId,
     this.paymentId,
     required this.status,
@@ -62,6 +82,7 @@ class Order {
     this.user,
     this.vendor,
     this.deliveryAddress,
+    this.medicines,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -89,13 +110,25 @@ class Order {
       deliveryAddress = DeliveryAddressModel.fromJson(json['deliveryAddress']);
     }
 
+    // Parse medicines list
+    List<OrderMedicine>? medicines;
+    if (json['medicines'] != null && json['medicines'] is List) {
+      medicines = (json['medicines'] as List)
+          .map((item) => OrderMedicine.fromJson(item))
+          .toList();
+    }
+
     return Order(
       orderId: json['orderId'] ?? '',
       vendorId: json['vendorId'] ?? '',
       prescriptionId: json['prescriptionId'] ?? '',
       userId: json['userId'] ?? '',
-      totalAmount: (json['totalAmount'] ?? 0.0).toDouble(),
-      platformFee: (json['platformFee'] ?? 0.0).toDouble(),
+      subtotal: _parseDoubleFromJson(json['subtotal']),
+      discount: _parseDoubleFromJson(json['discount']),
+      deliveryCharges: _parseDoubleFromJson(json['deliveryCharges']),
+      gst: _parseDoubleFromJson(json['gst']),
+      platformFee: _parseDoubleFromJson(json['platformFee']),
+      totalAmount: _parseDoubleFromJson(json['totalAmount']),
       addressId: json['addressId'],
       paymentId: json['paymentId'],
       status: json['status'] ?? 'pending',
@@ -106,6 +139,7 @@ class Order {
       user: user, // Parse user data if available
       vendor: vendor,
       deliveryAddress: deliveryAddress,
+      medicines: medicines,
     );
   }
 
@@ -115,8 +149,12 @@ class Order {
       'vendorId': vendorId,
       'prescriptionId': prescriptionId,
       'userId': userId,
-      'totalAmount': totalAmount,
+      'subtotal': subtotal,
+      'discount': discount,
+      'deliveryCharges': deliveryCharges,
+      'gst': gst,
       'platformFee': platformFee,
+      'totalAmount': totalAmount,
       'addressId': addressId,
       'paymentId': paymentId,
       'status': status,
@@ -127,6 +165,7 @@ class Order {
       'user': user?.toJson(),
       'vendor': vendor?.toJson(),
       'deliveryAddress': deliveryAddress?.toJson(),
+      'medicines': medicines?.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -135,8 +174,12 @@ class Order {
     String? vendorId,
     String? prescriptionId,
     String? userId,
-    double? totalAmount,
+    double? subtotal,
+    double? discount,
+    double? deliveryCharges,
+    double? gst,
     double? platformFee,
+    double? totalAmount,
     String? addressId,
     String? paymentId,
     String? status,
@@ -147,14 +190,19 @@ class Order {
     UserModel? user,
     OrderVendor? vendor,
     DeliveryAddressModel? deliveryAddress,
+    List<OrderMedicine>? medicines,
   }) {
     return Order(
       orderId: orderId ?? this.orderId,
       vendorId: vendorId ?? this.vendorId,
       prescriptionId: prescriptionId ?? this.prescriptionId,
       userId: userId ?? this.userId,
-      totalAmount: totalAmount ?? this.totalAmount,
+      subtotal: subtotal ?? this.subtotal,
+      discount: discount ?? this.discount,
+      deliveryCharges: deliveryCharges ?? this.deliveryCharges,
+      gst: gst ?? this.gst,
       platformFee: platformFee ?? this.platformFee,
+      totalAmount: totalAmount ?? this.totalAmount,
       addressId: addressId ?? this.addressId,
       paymentId: paymentId ?? this.paymentId,
       status: status ?? this.status,
@@ -165,6 +213,7 @@ class Order {
       user: user ?? this.user,
       vendor: vendor ?? this.vendor,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      medicines: medicines ?? this.medicines,
     );
   }
 }

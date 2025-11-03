@@ -4,10 +4,20 @@ import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Prescription.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/OrderMedicine.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/services/NewOrders/NewOrdersService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'dart:convert';
+
+// Helper function to parse double from response (handles string/number)
+double _parseDoubleFromResponse(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
 
 class NewOrdersViewModel extends ChangeNotifier {
   final NewOrdersService _service = NewOrdersService();
@@ -453,6 +463,232 @@ class NewOrdersViewModel extends ChangeNotifier {
     }
   }
 
+  // Update order billing (medicines, discount, delivery charge, total)
+  Future<Map<String, dynamic>?> updateOrderBilling(
+    String orderId,
+    List<dynamic> medicines,
+    double discountPercent,
+    double deliveryCharge,
+    double totalAmount,
+  ) async {
+    try {
+      _clearError();
+      
+      // Convert medicine items to map format
+      final medicinesList = medicines.map((item) => {
+        'name': item.name,
+        'quantity': item.quantity,
+        'price': item.price,
+      }).toList();
+      
+      final response = await _service.updateOrderBilling(
+        orderId,
+        medicinesList,
+        discountPercent,
+        deliveryCharge,
+        totalAmount,
+      );
+      
+      if (response['success'] == true) {
+        // Update local order data
+        final index = _orders.indexWhere((o) => o.orderId == orderId);
+        if (index != -1) {
+          _orders[index] = _orders[index].copyWith(
+            totalAmount: totalAmount,
+            updatedAt: DateTime.now(),
+          );
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
+        }
+        return response;
+      } else {
+        _setError('Failed to update order billing');
+        return null;
+      }
+    } catch (e) {
+      _setError('Error updating order billing: $e');
+      return null;
+    }
+  }
+
+  // Add medicines and billing details to order
+  Future<Map<String, dynamic>?> addOrderMedicines(
+    String orderId,
+    List<dynamic> medicines,
+    double subtotal,
+    double discountPercent, // Discount as percentage
+    double gstPercent, // GST as percentage
+    double deliveryCharges,
+    double platformFee,
+    double totalAmount,
+  ) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      // Convert medicine items to map format (using medicineName instead of name)
+      final medicinesList = medicines.map((item) => {
+        'medicineName': item.name,
+        'quantity': item.quantity,
+        'price': item.price,
+      }).toList();
+      
+      final response = await _service.addOrderMedicines(
+        orderId,
+        medicinesList,
+        subtotal,
+        discountPercent, // Send discount as percentage
+        gstPercent, // Send GST as percentage
+        deliveryCharges,
+        platformFee,
+        totalAmount,
+      );
+      
+      if (response['success'] == true) {
+        // Update local order data with billing details
+        final index = _orders.indexWhere((o) => o.orderId == orderId);
+        if (index != -1) {
+          final responseData = response['data'];
+          if (responseData != null) {
+            // Parse medicines from response
+            List<OrderMedicine>? parsedMedicines;
+            if (responseData['medicines'] != null && responseData['medicines'] is List) {
+              parsedMedicines = (responseData['medicines'] as List)
+                  .map((item) => OrderMedicine.fromJson(item))
+                  .toList();
+            }
+            
+            // Calculate discount amount from percentage for storage
+            double discountAmount = 0.0;
+            if (responseData['discount'] != null) {
+              // If API returns discount amount, use it; otherwise calculate from percentage
+              discountAmount = _parseDoubleFromResponse(responseData['discount']);
+            } else if (discountPercent > 0 && subtotal > 0) {
+              discountAmount = subtotal * (discountPercent / 100);
+            }
+            
+            _orders[index] = _orders[index].copyWith(
+              subtotal: _parseDoubleFromResponse(responseData['subtotal'] ?? subtotal),
+              discount: discountAmount,
+              deliveryCharges: _parseDoubleFromResponse(responseData['deliveryCharges'] ?? deliveryCharges),
+              gst: _parseDoubleFromResponse(responseData['gst'] ?? 0.0),
+              platformFee: _parseDoubleFromResponse(responseData['platformFee'] ?? platformFee),
+              totalAmount: _parseDoubleFromResponse(responseData['totalAmount'] ?? totalAmount),
+              medicines: parsedMedicines,
+              updatedAt: DateTime.now(),
+            );
+          } else {
+            // Fallback if data is not in response
+            // Calculate discount amount from percentage
+            double discountAmount = subtotal * (discountPercent / 100);
+            _orders[index] = _orders[index].copyWith(
+              subtotal: subtotal,
+              discount: discountAmount,
+              deliveryCharges: deliveryCharges,
+              totalAmount: totalAmount,
+              updatedAt: DateTime.now(),
+            );
+          }
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
+        }
+        return response;
+      } else {
+        _setError('Failed to add medicines and billing details');
+        return null;
+      }
+    } catch (e) {
+      _setError('Error adding medicines and billing details: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Get order details with medicines and billing
+  Future<Order?> getOrderDetails(String orderId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      final response = await _service.getOrderDetails(orderId);
+      
+      if (response['success'] == true && response['data'] != null) {
+        final orderData = response['data'];
+        final order = Order.fromJson(orderData);
+        
+        // Update local order if it exists
+        final index = _orders.indexWhere((o) => o.orderId == orderId);
+        if (index != -1) {
+          _orders[index] = order;
+          _applyFilters();
+        }
+        
+        if (!_disposed) notifyListeners();
+        return order;
+      } else {
+        _setError('Failed to fetch order details');
+        return null;
+      }
+    } catch (e) {
+      _setError('Error fetching order details: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Delete medicine from order
+  Future<Map<String, dynamic>?> deleteOrderMedicine(String orderId, String orderMedicineId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+      
+      final response = await _service.deleteOrderMedicine(orderId, orderMedicineId);
+      
+      if (response['success'] == true) {
+        // Update local order data with updated totals
+        final index = _orders.indexWhere((o) => o.orderId == orderId);
+        if (index != -1) {
+          final updatedTotals = response['updatedTotals'];
+          if (updatedTotals != null) {
+            // Update medicines list - remove deleted medicine
+            List<OrderMedicine>? medicines = _orders[index].medicines;
+            if (medicines != null) {
+              medicines = medicines.where((med) => med.orderMedicineId != orderMedicineId).toList();
+            }
+            
+            _orders[index] = _orders[index].copyWith(
+              subtotal: _parseDoubleFromResponse(updatedTotals['subtotal']),
+              discount: _parseDoubleFromResponse(updatedTotals['discount']),
+              deliveryCharges: _parseDoubleFromResponse(updatedTotals['deliveryCharges']),
+              gst: _parseDoubleFromResponse(updatedTotals['gst']),
+              platformFee: _parseDoubleFromResponse(updatedTotals['platformFee']),
+              totalAmount: _parseDoubleFromResponse(updatedTotals['totalAmount']),
+              medicines: medicines,
+              updatedAt: DateTime.now(),
+            );
+          }
+          
+          // Also update filtered orders if filters are active
+          _applyFilters();
+          if (!_disposed) notifyListeners();
+        }
+        return response;
+      } else {
+        _setError('Failed to delete medicine');
+        return null;
+      }
+    } catch (e) {
+      _setError('Error deleting medicine: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Change selected tab
   void changeTab(String tab) {
     if (_disposed) return;
@@ -615,6 +851,9 @@ class NewOrdersViewModel extends ChangeNotifier {
   void _clearError() {
     if (_disposed) return;
     _errorMessage = null;
-    notifyListeners();
+    // Defer notifyListeners to avoid calling during build phase
+    Future.microtask(() {
+      if (!_disposed) notifyListeners();
+    });
   }
 }

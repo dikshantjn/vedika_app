@@ -199,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                     child: Column(
                   children: [
                         const Text(
-                          'Vedika Healthtech',
+                          'Vedika.Health',
                       style: TextStyle(
                             fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -209,7 +209,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                     ),
                         const SizedBox(height: 12),
                         const Text(
-                          'Connecting You to Better Health',
+                          'Transforming Health, Transforming Lives',
                       style: TextStyle(
                         fontSize: 16,
                             color: Colors.white,

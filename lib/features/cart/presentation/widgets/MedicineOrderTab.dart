@@ -7,6 +7,7 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/data/service/DeliveryAddressService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/core/auth/data/services/UserService.dart';
 
 class MedicineOrderTab extends StatefulWidget {
   const MedicineOrderTab({Key? key}) : super(key: key);
@@ -18,6 +19,7 @@ class MedicineOrderTab extends StatefulWidget {
 class _MedicineOrderTabState extends State<MedicineOrderTab> {
   final CartService _cartService = CartService();
   final DeliveryAddressService _addressService = DeliveryAddressService();
+  final UserService _userService = UserService();
   List<Order> _medicineOrders = [];
   Set<String> _cancellingOrderIds = {}; // Track orders being cancelled
   bool _isLoading = true;
@@ -38,8 +40,18 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
         _error = null;
       });
 
-      // TODO: Replace with actual user ID from auth service
-      const String userId = 'GOrt7AWP82dMYs8tVejjLyvdPyy2'; // This should come from your auth service
+      final String? userId = await _userService.getCurrentUserId();
+      if (userId == null) {
+        print('❌ [MedicineOrderTab] User ID is null');
+        if (mounted) {
+          setState(() {
+            _error = 'Please login to continue';
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+      
       print('👤 [MedicineOrderTab] Using user ID: $userId');
       
       print('📞 [MedicineOrderTab] Calling CartService.getPendingPaymentOrders...');

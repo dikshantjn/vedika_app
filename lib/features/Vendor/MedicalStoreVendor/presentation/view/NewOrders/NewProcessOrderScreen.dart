@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/OrderMedicine.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/PrescriptionPreviewScreen.dart';
@@ -18,12 +21,36 @@ class NewProcessOrderScreen extends StatefulWidget {
   State<NewProcessOrderScreen> createState() => _NewProcessOrderScreenState();
 }
 
+class MedicineItem {
+  final String id;
+  String name;
+  int quantity;
+  double price;
+
+  MedicineItem({
+    required this.id,
+    required this.name,
+    required this.quantity,
+    required this.price,
+  });
+}
+
 class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
-  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
+  final TextEditingController _deliveryChargeController = TextEditingController();
+  final TextEditingController _medicineNameController = TextEditingController();
+  final TextEditingController _medicineQtyController = TextEditingController();
+  final TextEditingController _medicinePriceController = TextEditingController();
+  
   String _selectedStatus = 'waiting for payment';
   bool _isLoading = false;
+  bool _isFetchingDetails = false;
+  bool _isDeleting = false; // Track delete operation state
   String _currentStatus = ''; // Track current status for immediate UI updates
+  List<MedicineItem> _medicineItems = [];
+  Order? _orderDetails; // Full order details with medicines
+  String? _deletingMedicineId; // Track which medicine is being deleted
 
   @override
   void initState() {
@@ -32,16 +59,83 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
     _currentStatus = widget.order.status;
     // Map any existing status to a valid dropdown value
     _selectedStatus = _mapStatusToValidValue(_currentStatus);
-    _amountController.text = widget.order.totalAmount.toStringAsFixed(2);
     if (widget.order.note != null) {
       _noteController.text = widget.order.note!;
+    }
+    // Initialize discount and delivery charge if needed
+    _deliveryChargeController.text = '0.0';
+    _discountController.text = '0.0';
+    
+    // Fetch order details on init
+    _fetchOrderDetails();
+  }
+
+  Future<void> _fetchOrderDetails() async {
+    setState(() {
+      _isFetchingDetails = true;
+    });
+
+    try {
+      final viewModel = context.read<NewOrdersViewModel>();
+      final orderDetails = await viewModel.getOrderDetails(widget.order.orderId);
+      
+      if (mounted && orderDetails != null) {
+        setState(() {
+          _orderDetails = orderDetails;
+          _currentStatus = orderDetails.status;
+          _selectedStatus = _mapStatusToValidValue(_currentStatus);
+          
+          // Update note if available
+          if (orderDetails.note != null && orderDetails.note!.isNotEmpty) {
+            _noteController.text = orderDetails.note!;
+          }
+          
+          // Don't populate _medicineItems with existing medicines
+          // _medicineItems should only contain newly added medicines (not yet saved)
+          _medicineItems = [];
+          
+          // Populate billing details
+          if (orderDetails.subtotal > 0) {
+            // Discount from backend is already a percentage (e.g., "10.00" = 10%)
+            if (orderDetails.discount > 0) {
+              _discountController.text = orderDetails.discount.toStringAsFixed(1);
+            }
+            
+            // Set delivery charge if it exists
+            if (orderDetails.deliveryCharges > 0) {
+              _deliveryChargeController.text = orderDetails.deliveryCharges.toStringAsFixed(2);
+            }
+            // Note: GST is fixed at 18% by backend, no need to set controller
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching order details: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load order details'),
+            backgroundColor: Colors.red[600],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _amountController.dispose();
     _noteController.dispose();
+    _discountController.dispose();
+    _deliveryChargeController.dispose();
+    _medicineNameController.dispose();
+    _medicineQtyController.dispose();
+    _medicinePriceController.dispose();
     super.dispose();
   }
 
@@ -60,26 +154,37 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Center(
+              child: _buildStatusChip(_orderDetails?.status ?? _currentStatus),
+            ),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOrderHeader(),
-            SizedBox(height: 20),
-            _buildPaymentSection(),
-            SizedBox(height: 20),
-            _buildNoteSection(),
-            SizedBox(height: 20),
-            _buildStatusUpdateSection(),
-          ],
-        ),
+      body: RefreshIndicator(
+        onRefresh: _fetchOrderDetails,
+        color: ColorPalette.primaryColor,
+        child: _isFetchingDetails
+            ? _buildShimmerLoading()
+            : SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildOrderHeader(),
+                    SizedBox(height: 20),
+                    _buildBillingAndStatusSection(),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -102,7 +207,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with icon, order ID, and status in same row
+          // Header with icon and order ID
           Row(
             children: [
               Container(
@@ -128,7 +233,6 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                   ),
                 ),
               ),
-              _buildStatusChip(_currentStatus),
             ],
           ),
           SizedBox(height: 10),
@@ -443,7 +547,9 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               Expanded(
                 child: _buildDetailCard(
                   'Total Amount',
-                  '₹${_amountController.text}',
+                  _orderDetails?.totalAmount != null && _orderDetails!.totalAmount > 0
+                      ? '₹${_orderDetails!.totalAmount.toStringAsFixed(2)}'
+                      : (_calculateSubtotal() > 0 ? '₹${_calculateTotalAmount().toStringAsFixed(2)}' : 'Not Set'),
                   Icons.payments_rounded,
                   Colors.green,
                 ),
@@ -503,169 +609,572 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
     );
   }
 
-  Widget _buildPaymentSection() {
+  Widget _buildBillingAndStatusSection() {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Medicines and Billing Section
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.purple[100],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.payment_rounded,
-                  color: Colors.purple[600],
-                  size: 18,
-                ),
-              ),
+              Icon(Icons.medication, color: ColorPalette.primaryColor, size: 20),
               SizedBox(width: 10),
               Text(
-                'Payment Details',
+                'Medicines and Billing Details',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
                 ),
               ),
-              Spacer(),
-              IconButton(
-                onPressed: () => _showPaymentDialog(),
-                icon: Icon(
-                  widget.order.totalAmount > 0 ? Icons.edit : Icons.add,
-                  color: Colors.purple[600],
-                  size: 18,
+            ],
+          ),
+          SizedBox(height: 16),
+          
+          // Medicine Entry Fields
+          // Medicine Name - Full Row
+          TextField(
+            controller: _medicineNameController,
+            decoration: InputDecoration(
+              labelText: 'Medicine Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: ColorPalette.primaryColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: ColorPalette.primaryColor),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            onChanged: (_) => setState(() {}), // Auto-update breakdown
+          ),
+          SizedBox(height: 12),
+          
+          // Quantity, Price and Add Button Row
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _medicineQtyController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}), // Auto-update breakdown
                 ),
-                padding: EdgeInsets.all(4),
-                constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _medicinePriceController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Price',
+                    prefixText: '₹',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}), // Auto-update breakdown
+                ),
+              ),
+              SizedBox(width: 8),
+              Container(
+                height: 48,
+                width: 48,
+                child: ElevatedButton(
+                  onPressed: _addMedicine,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorPalette.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.all(0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Icon(Icons.add, size: 24),
+                ),
               ),
             ],
           ),
           SizedBox(height: 12),
-          if ((double.tryParse(_amountController.text) ?? 0) > 0) ...[
+          
+          // Medicine Items List (only show newly added temporary medicines here)
+          if (_medicineItems.isNotEmpty) ...[
+            Text(
+              'Newly Added Medicines',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            ..._medicineItems.map((item) => _buildMedicineItemRow(item)),
+            SizedBox(height: 12),
+          ],
+          
+          // Divider to separate medicine entry from billing details
+          Divider(thickness: 1, color: Colors.grey[300]),
+          SizedBox(height: 16),
+          
+          // Discount and Delivery Charge Row
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _discountController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Discount %',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}), // Auto-update breakdown
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _deliveryChargeController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Delivery Charge',
+                    prefixText: '₹',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: ColorPalette.primaryColor),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}), // Auto-update breakdown
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          
+          // Show existing medicines from DB above cost breakdown
+          if (_orderDetails?.medicines != null && _orderDetails!.medicines!.isNotEmpty) ...[
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.purple[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.purple[200]!),
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.currency_rupee,
-                    color: Colors.purple[600],
-                    size: 18,
+                  Row(
+                    children: [
+                      Icon(Icons.medication, size: 16, color: Colors.blue[700]),
+                      SizedBox(width: 6),
+                      Text(
+                        'Existing Medicines',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  SizedBox(height: 8),
+                  ..._orderDetails!.medicines!.map((med) {
+                    final itemTotal = med.quantity * med.price;
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  med.medicineName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[900],
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Qty: ${med.quantity} × ₹${med.price.toStringAsFixed(2)} = ₹${itemTotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _isDeleting && _deletingMedicineId == med.orderMedicineId
+                              ? Container(
+                                  width: 32,
+                                  height: 32,
+                                  padding: EdgeInsets.all(6),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red[600]!),
+                                  ),
+                                )
+                              : IconButton(
+                                  onPressed: _isDeleting ? null : () => _deleteExistingMedicine(med.orderMedicineId),
+                                  icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 20),
+                                  padding: EdgeInsets.all(4),
+                                  constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                                  tooltip: 'Delete Medicine',
+                                ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+          ],
+          
+          // Total Amount with Breakdown (always show if there are medicines)
+          if (_calculateSubtotal() > 0 || (_orderDetails != null && _orderDetails!.totalAmount > 0)) ...[
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cost Breakdown
+                  Text(
+                    'Cost Breakdown',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.green[900],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  // Show newly added medicines in breakdown
+                  if (_medicineItems.isNotEmpty) ...[
+                    Text(
+                      'New Medicines',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[800],
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    ..._medicineItems.map((item) {
+                      final itemTotal = item.quantity * item.price;
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.name} (Qty: ${item.quantity})',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green[800],
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '₹${itemTotal.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    SizedBox(height: 8),
+                    Divider(color: Colors.green[300], height: 1),
+                    SizedBox(height: 8),
+                  ],
+                  
+                  // Subtotal
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Subtotal',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                      Text(
+                        _orderDetails?.subtotal != null && _orderDetails!.subtotal > 0
+                            ? '₹${_orderDetails!.subtotal.toStringAsFixed(2)}'
+                            : '₹${_calculateSubtotal().toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  
+                  // Discount (always show in rupees)
+                  if (_calculateDiscountAmount() > 0 || (double.tryParse(_discountController.text.trim()) ?? 0.0) > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Amount',
+                          double.tryParse(_discountController.text.trim()) != null && 
+                          double.tryParse(_discountController.text.trim())! > 0
+                              ? 'Discount (${_discountController.text.trim()}%)'
+                              : 'Discount',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.purple[700],
-                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: Colors.green[700],
                           ),
                         ),
-                        SizedBox(height: 2),
                         Text(
-                          '₹${_amountController.text}',
+                          '-₹${_calculateDiscountAmount().toStringAsFixed(2)}',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.purple[800],
-                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: Colors.green[700],
                           ),
                         ),
                       ],
                     ),
+                    SizedBox(height: 6),
+                  ],
+                  
+                  // GST (always show in rupees - 18% default or from backend)
+                  if (_calculateGSTAmount() > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'GST (18%)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        Text(
+                          '₹${_calculateGSTAmount().toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                  ],
+                  
+                  // Platform Fee (if available from order details)
+                  if (_orderDetails?.platformFee != null && _orderDetails!.platformFee > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Platform Fee',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        Text(
+                          '₹${_orderDetails!.platformFee.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                  ],
+                  
+                  // Delivery Charge
+                  if ((_orderDetails?.deliveryCharges != null && _orderDetails!.deliveryCharges > 0) || 
+                      (double.tryParse(_deliveryChargeController.text.trim()) ?? 0.0) > 0) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Delivery Charge',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        Text(
+                          '₹${(double.tryParse(_deliveryChargeController.text.trim()) ?? _orderDetails?.deliveryCharges ?? 0.0).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Divider(color: Colors.green[300], height: 1),
+                    SizedBox(height: 8),
+                  ],
+                  
+                  // Total Amount
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Amount',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.green[900],
+                        ),
+                      ),
+                      Text(
+                        '₹${_calculateTotalAmount().toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.green[900],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ] else ...[
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.grey[600],
-                    size: 18,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'No payment amount set. Tap + to add.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+            SizedBox(height: 12),
+            
+            // Save Button for Billing Details (only show if new medicines are added)
+            if (_medicineItems.isNotEmpty) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveBillingDetails,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ],
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.save, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Save Billing Details',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                ),
               ),
-            ),
+              SizedBox(height: 16),
+            ],
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoteSection() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          
+          Divider(),
+          SizedBox(height: 16),
+          
+          // Order Notes Section
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.note_rounded,
-                  color: Colors.orange[600],
-                  size: 18,
-                ),
-              ),
+              Icon(Icons.note, color: Colors.orange[600], size: 20),
               SizedBox(width: 10),
               Text(
                 'Order Notes',
@@ -679,7 +1188,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               IconButton(
                 onPressed: () => _showNoteDialog(),
                 icon: Icon(
-                  widget.order.note != null ? Icons.edit : Icons.add,
+                  _noteController.text.isNotEmpty ? Icons.edit : Icons.add,
                   color: Colors.orange[600],
                   size: 18,
                 ),
@@ -688,103 +1197,34 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               ),
             ],
           ),
-          SizedBox(height: 12),
+          SizedBox(height: 8),
           if (_noteController.text.isNotEmpty) ...[
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orange[200]!),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.note_alt_outlined,
-                    color: Colors.orange[600],
-                    size: 18,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _noteController.text,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.orange[800],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                _noteController.text,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.orange[800],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ] else ...[
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.grey[600],
-                    size: 18,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'No notes added. Tap + to add.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            SizedBox(height: 16),
           ],
-        ],
-      ),
-    );
-  }
-
-    Widget _buildStatusUpdateSection() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          
+          Divider(),
+          SizedBox(height: 16),
+          
+          // Status Update Section
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: ColorPalette.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.update_rounded,
-                  color: ColorPalette.primaryColor,
-                  size: 18,
-                ),
-              ),
+              Icon(Icons.update_rounded, color: ColorPalette.primaryColor, size: 20),
               SizedBox(width: 10),
               Text(
                 'Update Order Status',
@@ -796,25 +1236,14 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
               ),
             ],
           ),
-          SizedBox(height: 16),
-          
-          // Status Dropdown
-          Text(
-            'Select New Status',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 10),
+          SizedBox(height: 12),
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: Colors.grey[50],
               border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -858,7 +1287,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                     side: BorderSide(color: Colors.grey[400]!),
                     foregroundColor: Colors.grey[600],
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: Text(
@@ -878,7 +1307,7 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
                     padding: EdgeInsets.symmetric(vertical: 12),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: _isLoading
@@ -910,139 +1339,645 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
     );
   }
 
-  void _showPaymentDialog() {
-    final TextEditingController amountController = TextEditingController(
-      text: (double.tryParse(_amountController.text) ?? 0) > 0 ? _amountController.text : '',
-    );
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            widget.order.totalAmount > 0 ? 'Edit Payment Amount' : 'Add Payment Amount',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+  Widget _buildMedicineItemRow(MedicineItem item) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Qty: ${item.quantity} × ₹${item.price.toStringAsFixed(2)} = ₹${(item.quantity * item.price).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
             ),
           ),
-          content: Column(
+          IconButton(
+            onPressed: () => _removeMedicine(item.id),
+            icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 18),
+            padding: EdgeInsets.all(4),
+            constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addMedicine() {
+    final name = _medicineNameController.text.trim();
+    final qty = int.tryParse(_medicineQtyController.text.trim()) ?? 0;
+    final price = double.tryParse(_medicinePriceController.text.trim()) ?? 0.0;
+
+    if (name.isEmpty || qty <= 0 || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter valid medicine details'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _medicineItems.add(
+        MedicineItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: name,
+          quantity: qty,
+          price: price,
+        ),
+      );
+      _medicineNameController.clear();
+      _medicineQtyController.clear();
+      _medicinePriceController.clear();
+    });
+  }
+
+  void _removeMedicine(String id) {
+    setState(() {
+      _medicineItems.removeWhere((item) => item.id == id);
+    });
+  }
+
+  Future<void> _deleteExistingMedicine(String orderMedicineId) async {
+    // Find the medicine name for better dialog display
+    String medicineName = 'this medicine';
+    if (_orderDetails?.medicines != null && _orderDetails!.medicines!.isNotEmpty) {
+      try {
+        final medicine = _orderDetails!.medicines!.firstWhere(
+          (med) => med.orderMedicineId == orderMedicineId,
+        );
+        medicineName = medicine.medicineName;
+      } catch (e) {
+        // If medicine not found, use default name
+        medicineName = 'this medicine';
+      }
+    }
+    
+    // Show improved confirmation dialog
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          constraints: BoxConstraints(maxWidth: 400),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Enter the payment amount for this order:',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
+              // Icon container
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 40,
+                  color: Colors.red[600],
                 ),
               ),
-              SizedBox(height: 20),
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter amount',
-                  prefixText: '₹',
-                  prefixStyle: TextStyle(
-                    color: Colors.purple[600],
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+              SizedBox(height: 24),
+              // Title
+              Text(
+                'Delete Medicine?',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 12),
+              // Content
+              Text(
+                'Are you sure you want to delete "$medicineName" from this order?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'This action cannot be undone.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              SizedBox(height: 28),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.purple[300]!),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Delete',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.purple[500]!),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() {
+      _isDeleting = true;
+      _deletingMedicineId = orderMedicineId;
+    });
+
+    try {
+      final viewModel = context.read<NewOrdersViewModel>();
+      final response = await viewModel.deleteOrderMedicine(widget.order.orderId, orderMedicineId);
+      
+      if (mounted) {
+        if (response != null && response['success'] == true) {
+          // Refresh order details to get updated data
+          await _fetchOrderDetails();
+          
+          // Show success snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      response['message'] ?? 'Medicine deleted successfully',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
                   ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  contentPadding: EdgeInsets.all(16),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          // Show error snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      response?['message'] ?? 'Failed to delete medicine. Please try again.',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Error deleting medicine: ${e.toString()}',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: EdgeInsets.all(16),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+          _deletingMedicineId = null;
+        });
+      }
+    }
+  }
+
+  double _calculateSubtotal() {
+    double existingTotal = 0.0;
+    if (_orderDetails?.medicines != null && _orderDetails!.medicines!.isNotEmpty) {
+      existingTotal = _orderDetails!.medicines!.fold(0.0, (sum, med) => sum + (med.quantity * med.price));
+    }
+    double newTotal = _medicineItems.fold(0.0, (sum, item) => sum + (item.quantity * item.price));
+    return existingTotal + newTotal;
+  }
+
+  // Get discount percentage from input or calculate from backend discount amount
+  double _getDiscountPercentage() {
+    // If discount percentage is entered in input field, use it
+    double discountPercent = double.tryParse(_discountController.text.trim()) ?? 0.0;
+    if (discountPercent > 0) {
+      return discountPercent;
+    }
+    
+    // If discount exists from backend, it's already a percentage (not amount)
+    if (_orderDetails?.discount != null && _orderDetails!.discount > 0) {
+      return _orderDetails!.discount;
+    }
+    
+    return 0.0;
+  }
+
+  // Calculate discount amount in rupees (for UI display)
+  double _calculateDiscountAmount() {
+    double subtotal = _calculateSubtotal();
+    if (subtotal <= 0) return 0.0;
+    
+    // Get discount percentage (from input or backend)
+    double discountPercent = _getDiscountPercentage();
+    if (discountPercent > 0) {
+      // Calculate discount amount from percentage
+      return subtotal * (discountPercent / 100);
+    }
+    
+    return 0.0;
+  }
+
+  // Get GST percentage (default 18% from backend)
+  double _getGSTPercentage() {
+    // If GST exists from backend, it's already a percentage (not amount)
+    if (_orderDetails?.gst != null && _orderDetails!.gst > 0) {
+      return _orderDetails!.gst;
+    }
+    
+    // Default to 18% GST (as set in backend)
+    return 18.0;
+  }
+
+  // Calculate GST amount in rupees (for UI display)
+  // Uses 18% by default or backend GST percentage
+  double _calculateGSTAmount() {
+    double subtotal = _calculateSubtotal();
+    if (subtotal <= 0) return 0.0;
+    
+    // Calculate discount amount first
+    double discountAmount = _calculateDiscountAmount();
+    double amountAfterDiscount = subtotal - discountAmount;
+    
+    // Get GST percentage (from backend or default 18%)
+    double gstPercent = _getGSTPercentage();
+    
+    // Calculate GST on amount after discount
+    return amountAfterDiscount * (gstPercent / 100);
+  }
+
+  double _calculateTotalAmount() {
+    double subtotal = _calculateSubtotal();
+    if (subtotal <= 0) return 0.0;
+    
+    // Always calculate from current state
+    double discountAmount = _calculateDiscountAmount();
+    double deliveryCharge = double.tryParse(_deliveryChargeController.text.trim()) ?? 0.0;
+    double gst = _calculateGSTAmount(); // Calculate GST from percentage
+    double platformFee = _orderDetails?.platformFee ?? widget.order.platformFee;
+    double total = subtotal - discountAmount + deliveryCharge + gst + platformFee;
+    
+    // Return total (can be positive even if subtotal is greater than discount)
+    return total > 0 ? total : 0.0;
+  }
+
+  Future<void> _saveBillingDetails() async {
+    // Check if there are any medicines (existing or newly added)
+    bool hasExistingMedicines = _orderDetails?.medicines != null && _orderDetails!.medicines!.isNotEmpty;
+    bool hasNewMedicines = _medicineItems.isNotEmpty;
+    
+    if (!hasExistingMedicines && !hasNewMedicines) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Please add at least one medicine before saving billing details',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final amount = double.tryParse(amountController.text);
-                if (amount != null && amount > 0) {
-                  Navigator.of(context).pop();
-                  
-                  // Show loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Updating payment amount...'),
-                        ],
-                      ),
-                      backgroundColor: Colors.blue[600],
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  
-                  try {
-                    final viewModel = context.read<NewOrdersViewModel>();
-                    final response = await viewModel.updateOrderPayment(widget.order.orderId, amount);
-                    
-                    // Check if widget is still mounted before updating UI
-                    if (!mounted) return;
-                    
-                    if (response != null && response['success'] == true) {
-                      setState(() {
-                        // Update local state immediately
-                        _amountController.text = amount.toStringAsFixed(2);
-                      });
-                      
-                      _showSnackBar('Payment amount updated successfully!', backgroundColor: Colors.green[600]);
-                    } else {
-                      _showSnackBar('Failed to update payment amount', backgroundColor: Colors.red[600]);
-                    }
-                  } catch (e) {
-                    _showSnackBar('Error: $e', backgroundColor: Colors.red[600]);
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Please enter a valid amount'),
-                      backgroundColor: Colors.red[600],
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          backgroundColor: Colors.orange[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: EdgeInsets.all(16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final totalAmount = _calculateTotalAmount();
+    if (totalAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Please check medicine details and billing information',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
               ),
-              child: Text('Save'),
+            ],
+          ),
+          backgroundColor: Colors.orange[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: EdgeInsets.all(16),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final viewModel = context.read<NewOrdersViewModel>();
+      
+      // Calculate values based on BOTH existing + newly added medicines
+      final subtotal = _calculateSubtotal(); // Already includes existing + new medicines
+      
+      // Get discount percentage (from input or calculate from backend)
+      final discountPercent = _getDiscountPercentage();
+      
+      // Get GST percentage (from input or calculate from backend)
+      final gstPercent = _getGSTPercentage();
+      
+      final deliveryCharges = double.tryParse(_deliveryChargeController.text.trim()) ?? 0.0;
+      final platformFee = _orderDetails?.platformFee ?? widget.order.platformFee;
+      
+      // Calculate GST amount from percentage
+      final gstAmount = subtotal > 0 ? (subtotal * (gstPercent / 100)) : 0.0;
+      
+      // Calculate discount amount from percentage
+      final discountAmount = subtotal > 0 ? (subtotal * (discountPercent / 100)) : 0.0;
+      
+      // Calculate total amount including all components
+      final calculatedTotal = subtotal - discountAmount + deliveryCharges + gstAmount + platformFee;
+      
+      // Only send newly added medicines (not existing ones)
+      // Existing medicines are already in DB, we just add new ones
+      final response = await viewModel.addOrderMedicines(
+        widget.order.orderId,
+        _medicineItems, // Only send newly added medicines
+        subtotal, // Total subtotal (existing + new medicines)
+        discountPercent, // Send discount as percentage
+        gstPercent, // Send GST as percentage
+        deliveryCharges,
+        platformFee,
+        calculatedTotal, // Total amount calculated from all medicines
+      );
+
+      if (mounted) {
+        if (response != null && response['success'] == true) {
+          // Clear newly added medicines list as they're now saved to DB
+          setState(() {
+            _medicineItems = [];
+            _medicineNameController.clear();
+            _medicineQtyController.clear();
+            _medicinePriceController.clear();
+          });
+          
+          // Refresh order details to get updated data
+          await _fetchOrderDetails();
+          
+          // Show success snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Success!',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          response['message'] ?? 'Medicine and billing details added successfully!',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 2),
             ),
-          ],
+          );
+          
+          // Don't pop - stay on screen and refresh data
+        } else {
+          // Show error snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Error',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          response?['message'] ?? 'Failed to save billing details. Please try again.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: EdgeInsets.all(16),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Show error snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Error',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Error saving billing details: ${e.toString()}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: EdgeInsets.all(16),
+            duration: Duration(seconds: 4),
+          ),
         );
-      },
-    );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
+
 
   void _showNoteDialog() {
     final TextEditingController noteController = TextEditingController(
@@ -1360,6 +2295,151 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      period: Duration(milliseconds: 1500),
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Order Header Shimmer
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 16,
+                              width: 150,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 80,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            
+            // Billing Section Shimmer
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 20,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Share customer details and address

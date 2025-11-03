@@ -64,6 +64,35 @@ class DeliveryAddressService {
   }
 
 
+  // Get delivery address by ID
+  Future<DeliveryAddressModel> getDeliveryAddressById(String addressId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiEndpoints.getDeliveryAddressById}/$addressId',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = response.data;
+        if (responseData.containsKey('data') && responseData['data'] is Map) {
+          return DeliveryAddressModel.fromJson(responseData['data']);
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to fetch address: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Error fetching address: ${e.message}');
+    } catch (e) {
+      throw Exception('Error fetching address: $e');
+    }
+  }
+
   // Delete a delivery address by its ID
   Future<void> deleteAddress(String addressId) async {
     try {

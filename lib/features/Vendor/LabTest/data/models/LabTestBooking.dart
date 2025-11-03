@@ -19,6 +19,7 @@ class LabTestBooking {
   String? bookingStatus; // Pending, Accepted, Rejected, Completed, Cancelled
   String? paymentStatus; // Pending, Paid
   String? paymentId; // Payment ID from Razorpay
+  String? addressId; // Delivery address ID for home collection
   String? userAddress;
   String? userLocation; // Latitude,Longitude as String
   String? centerLocationUrl;
@@ -46,6 +47,7 @@ class LabTestBooking {
     this.bookingStatus,
     this.paymentStatus,
     this.paymentId,
+    this.addressId,
     this.userAddress,
     this.userLocation,
     this.centerLocationUrl,
@@ -77,6 +79,7 @@ class LabTestBooking {
       bookingStatus: json['bookingStatus'],
       paymentStatus: json['paymentStatus'],
       paymentId: json['paymentId'],
+      addressId: json['addressId'],
       userAddress: json['userAddress'],
       userLocation: json['userLocation'],
       centerLocationUrl: json['centerLocationUrl'],
@@ -111,6 +114,7 @@ class LabTestBooking {
       'bookingStatus': bookingStatus,
       'paymentStatus': paymentStatus,
       'paymentId': paymentId,
+      'addressId': addressId,
       'userAddress': userAddress,
       'userLocation': userLocation,
       'centerLocationUrl': centerLocationUrl,

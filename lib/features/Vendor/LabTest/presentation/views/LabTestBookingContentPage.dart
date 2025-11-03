@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/reports/lab_test_invoice_pdf.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/ReportViewScreen.dart';
 import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/service/DeliveryAddressService.dart';
+import 'package:vedika_healthcare/features/DeliveryAddress/data/modal/DeliveryAddressModel.dart';
 
 class LabTestBookingContentPage extends StatefulWidget {
   final int? initialTab;
@@ -512,6 +514,24 @@ class BookingCard extends StatelessWidget {
     );
   }
 
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return LabTestColorPalette.successGreen;
+      case 'confirmed':
+      case 'accepted':
+      case 'processing':
+        return LabTestColorPalette.primaryBlue;
+      case 'pending':
+        return LabTestColorPalette.warningYellow;
+      case 'cancelled':
+      case 'rejected':
+        return LabTestColorPalette.errorRed;
+      default:
+        return LabTestColorPalette.textSecondary;
+    }
+  }
+
   String _getInitials(String name) {
     if (name.isEmpty) return "?";
     
@@ -648,7 +668,11 @@ class BookingCard extends StatelessWidget {
     
     // Capture the current context that has access to the BookingsViewModel provider
     final viewModel = Provider.of<BookingsViewModel>(context, listen: false);
-    bool isGeneratingInvoice = false;
+
+    // Check if we need to fetch address
+    final shouldFetchAddress = booking.addressId != null && 
+                               booking.addressId!.isNotEmpty &&
+                               (booking.homeCollectionRequired == true || booking.reportDeliveryAtHome == true);
 
     showModalBottomSheet(
       context: context,
@@ -658,326 +682,453 @@ class BookingCard extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (bottomSheetContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              maxChildSize: 0.9,
-              minChildSize: 0.5,
-              expand: false,
-              builder: (scrollContext, scrollController) {
-                return SingleChildScrollView(
-                  controller: scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: LabTestColorPalette.borderMedium,
-                              borderRadius: BorderRadius.circular(2.5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            const Text(
-                              "Booking Details",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: LabTestColorPalette.textPrimary,
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(booking.bookingStatus ?? "").withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: Text(
-                                booking.bookingStatus ?? "Unknown",
-                                style: TextStyle(
-                                  color: _getStatusColor(booking.bookingStatus ?? ""),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        _buildDetailSection(
-                          title: "Patient Information",
-                          icon: Icons.person_outline,
-                          children: [
-                            _buildDetailRow("Name", booking.user?.name ?? "Unknown"),
-                            _buildDetailRow("Phone", booking.user?.phoneNumber ?? "N/A"),
-                            _buildDetailRow("Email", booking.user?.emailId ?? "N/A"),
-                            if (booking.user?.gender != null) _buildDetailRow("Gender", booking.user?.gender ?? "N/A"),
-                            if (booking.user?.bloodGroup != null) _buildDetailRow("Blood Group", booking.user?.bloodGroup ?? "N/A"),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildDetailSection(
-                          title: "Test Information",
-                          icon: Icons.local_hospital_outlined,
-                          children: [
-                            _buildDetailRow("Test Center", booking.diagnosticCenter?.name ?? "N/A"),
-                            _buildDetailRow("Home Collection", booking.homeCollectionRequired == true ? "Yes" : "No"),
-                            _buildDetailRow("Report Delivery", booking.reportDeliveryAtHome == true ? "At Home" : "At Center"),
-                            _buildDetailRow("Date & Time", "${booking.bookingDate ?? 'N/A'} at ${booking.bookingTime ?? 'N/A'}"),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                            _buildDetailSection(
-                          title: "Tests",
-                          icon: Icons.science_outlined,
-                          children: [
-                            if (booking.selectedTests?.isNotEmpty ?? false)
-                              ...(booking.selectedTests ?? []).map((test) => 
-                                _buildTestRow(bottomSheetContext, test, booking.reportUrls)
-                              ).toList()
-                            else
-                              const Text(
-                                "No tests selected",
-                                style: TextStyle(
-                                  color: LabTestColorPalette.textSecondary,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildDetailSection(
-                          title: "Prescription",
-                          icon: Icons.description_outlined,
-                          children: [
-                            if (booking.prescriptionUrl != null && booking.prescriptionUrl!.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: GestureDetector(
-                                  onTap: () => _openPrescription(bottomSheetContext, booking.prescriptionUrl!),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.remove_red_eye_outlined,
-                                        color: LabTestColorPalette.primaryBlue,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        "View Prescription",
-                                        style: TextStyle(
-                                          color: LabTestColorPalette.primaryBlue,
-                                          fontWeight: FontWeight.w500,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            else
-                              const Text(
-                                "No prescription uploaded",
-                                style: TextStyle(
-                                  color: LabTestColorPalette.textSecondary,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildDetailSection(
-                          title: "Payment Details",
-                          icon: Icons.payment_outlined,
-                          children: [
-                            _buildDetailRow("Test Fees", "₹${booking.testFees?.toStringAsFixed(2) ?? '0.00'}"),
-                            if (booking.reportDeliveryFees != null && booking.reportDeliveryFees! > 0)
-                              _buildDetailRow("Delivery Fees", "₹${booking.reportDeliveryFees?.toStringAsFixed(2) ?? '0.00'}"),
-                            if (booking.discount != null && booking.discount! > 0)
-                              _buildDetailRow("Discount", "- ₹${booking.discount?.toStringAsFixed(2) ?? '0.00'}"),
-                            if (booking.gst != null && booking.gst! > 0)
-                              _buildDetailRow("GST", "₹${booking.gst?.toStringAsFixed(2) ?? '0.00'}"),
-                            const Divider(color: LabTestColorPalette.borderLight),
-                            _buildDetailRow("Total Amount", "₹${booking.totalAmount?.toStringAsFixed(2) ?? '0.00'}", isBold: true),
-                            _buildDetailRow(
-                              "Payment Status", 
-                              booking.paymentStatus ?? "Pending",
-                              valueColor: booking.paymentStatus?.toLowerCase() == "paid" 
-                                  ? LabTestColorPalette.successGreen 
-                                  : LabTestColorPalette.warningYellow,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildDetailSection(
-                          title: "Address Information",
-                          icon: Icons.home_outlined,
-                          children: [
-                            _buildDetailRow("Address", booking.userAddress ?? "N/A"),
-                            if (booking.userLocation != null && booking.userLocation!.isNotEmpty)
-                              _buildDetailRow("Location", booking.userLocation!),
-                          ],
-                        ),
-                        const SizedBox(height: 30),
-                        if (type == 'upcoming')
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: viewModel.isLoading ? null : () {
-                                Navigator.pop(context);
-                                onAccept();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: viewModel.isLoading
-                                    ? LabTestColorPalette.borderMedium
-                                    : LabTestColorPalette.primaryBlue,
-                                foregroundColor: LabTestColorPalette.textWhite,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: viewModel.isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('ACCEPT BOOKING'),
-                            ),
-                          ),
-                        if (type == 'today')
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: viewModel.isLoading ? null : () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LabTestProcessScreen(booking: booking),
-                                  ),
-                                ).then((value) {
-                                  // Refresh data when coming back from process screen if needed
-                                  if (value == true) {
-                                    onProcess();
-                                  }
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: viewModel.isLoading
-                                    ? LabTestColorPalette.borderMedium
-                                    : LabTestColorPalette.primaryBlue,
-                                foregroundColor: LabTestColorPalette.textWhite,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: viewModel.isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('PROCESS BOOKING'),
-                            ),
-                          ),
-                        if (type == 'past')
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: isGeneratingInvoice
-                                  ? null
-                                  : () async {
-                                      setState(() {
-                                        isGeneratingInvoice = true;
-                                      });
-                                      try {
-                                        await generateAndDownloadLabTestInvoicePDF(booking);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Invoice downloaded successfully'),
-                                              backgroundColor: LabTestColorPalette.successGreen,
-                                            ),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Failed to generate invoice'),
-                                              backgroundColor: LabTestColorPalette.errorRed,
-                                            ),
-                                          );
-                                        }
-                                      } finally {
-                                        setState(() {
-                                          isGeneratingInvoice = false;
-                                        });
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isGeneratingInvoice
-                                    ? LabTestColorPalette.borderMedium
-                                    : LabTestColorPalette.primaryBlue,
-                                foregroundColor: LabTestColorPalette.textWhite,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (isGeneratingInvoice)
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      margin: const EdgeInsets.only(right: 12),
-                                      child: const CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                  Text(
-                                    isGeneratingInvoice ? 'GENERATING INVOICE...' : 'DOWNLOAD INVOICE',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
+        return _BookingDetailBottomSheet(
+          booking: booking,
+          type: type,
+          onAccept: onAccept,
+          onProcess: onProcess,
+          viewModel: viewModel,
+          shouldFetchAddress: shouldFetchAddress,
+        );
+      },
+    );
+  }
+}
+
+class _BookingDetailBottomSheet extends StatefulWidget {
+  final LabTestBooking booking;
+  final String type;
+  final VoidCallback onAccept;
+  final VoidCallback onProcess;
+  final BookingsViewModel viewModel;
+  final bool shouldFetchAddress;
+
+  const _BookingDetailBottomSheet({
+    Key? key,
+    required this.booking,
+    required this.type,
+    required this.onAccept,
+    required this.onProcess,
+    required this.viewModel,
+    required this.shouldFetchAddress,
+  }) : super(key: key);
+
+  @override
+  State<_BookingDetailBottomSheet> createState() => _BookingDetailBottomSheetState();
+}
+
+class _BookingDetailBottomSheetState extends State<_BookingDetailBottomSheet> {
+  DeliveryAddressModel? _fetchedAddress;
+  bool _isLoadingAddress = false;
+  final DeliveryAddressService _addressService = DeliveryAddressService();
+  bool _isGeneratingInvoice = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddressIfNeeded();
+  }
+
+  void _fetchAddressIfNeeded() {
+    if (widget.shouldFetchAddress && 
+        widget.booking.addressId != null && 
+        widget.booking.addressId!.isNotEmpty &&
+        _fetchedAddress == null &&
+        !_isLoadingAddress) {
+      setState(() {
+        _isLoadingAddress = true;
+      });
+
+      _addressService.getDeliveryAddressById(widget.booking.addressId!)
+        .then((address) {
+          if (mounted) {
+            setState(() {
+              _fetchedAddress = address;
+              _isLoadingAddress = false;
+            });
+          }
+        })
+        .catchError((error) {
+          print('Error fetching address: $error');
+          if (mounted) {
+            setState(() {
+              _isLoadingAddress = false;
+            });
+          }
+        });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (scrollContext, scrollController) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: LabTestColorPalette.borderMedium,
+                      borderRadius: BorderRadius.circular(2.5),
                     ),
                   ),
-                );
-              },
-            );
-          },
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Text(
+                      "Booking Details",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: LabTestColorPalette.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(widget.booking.bookingStatus ?? "").withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        widget.booking.bookingStatus ?? "Unknown",
+                        style: TextStyle(
+                          color: _getStatusColor(widget.booking.bookingStatus ?? ""),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildDetailSection(
+                  title: "Patient Information",
+                  icon: Icons.person_outline,
+                  children: [
+                    _buildDetailRow("Name", widget.booking.user?.name ?? "Unknown"),
+                    _buildDetailRow("Phone", widget.booking.user?.phoneNumber ?? "N/A"),
+                    _buildDetailRow("Email", widget.booking.user?.emailId ?? "N/A"),
+                    if (widget.booking.user?.gender != null) _buildDetailRow("Gender", widget.booking.user?.gender ?? "N/A"),
+                    if (widget.booking.user?.bloodGroup != null) _buildDetailRow("Blood Group", widget.booking.user?.bloodGroup ?? "N/A"),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildDetailSection(
+                  title: "Test Information",
+                  icon: Icons.local_hospital_outlined,
+                  children: [
+                    _buildDetailRow("Test Center", widget.booking.diagnosticCenter?.name ?? "N/A"),
+                    _buildDetailRow("Home Collection", widget.booking.homeCollectionRequired == true ? "Yes" : "No"),
+                    _buildDetailRow("Report Delivery", widget.booking.reportDeliveryAtHome == true ? "At Home" : "At Center"),
+                    _buildDetailRow("Date & Time", "${widget.booking.bookingDate ?? 'N/A'} at ${widget.booking.bookingTime ?? 'N/A'}"),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildDetailSection(
+                  title: "Tests",
+                  icon: Icons.science_outlined,
+                  children: [
+                    if (widget.booking.selectedTests?.isNotEmpty ?? false)
+                      ...(widget.booking.selectedTests ?? []).map((test) => 
+                        _buildTestRow(context, test, widget.booking.reportUrls)
+                      ).toList()
+                    else
+                      const Text(
+                        "No tests selected",
+                        style: TextStyle(
+                          color: LabTestColorPalette.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildDetailSection(
+                  title: "Prescription",
+                  icon: Icons.description_outlined,
+                  children: [
+                    if (widget.booking.prescriptionUrl != null && widget.booking.prescriptionUrl!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: GestureDetector(
+                          onTap: () => _openPrescription(context, widget.booking.prescriptionUrl!),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.remove_red_eye_outlined,
+                                color: LabTestColorPalette.primaryBlue,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "View Prescription",
+                                style: TextStyle(
+                                  color: LabTestColorPalette.primaryBlue,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      const Text(
+                        "No prescription uploaded",
+                        style: TextStyle(
+                          color: LabTestColorPalette.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildDetailSection(
+                  title: "Payment Details",
+                  icon: Icons.payment_outlined,
+                  children: [
+                    _buildDetailRow("Test Fees", "₹${widget.booking.testFees?.toStringAsFixed(2) ?? '0.00'}"),
+                    if (widget.booking.reportDeliveryFees != null && widget.booking.reportDeliveryFees! > 0)
+                      _buildDetailRow("Delivery Fees", "₹${widget.booking.reportDeliveryFees?.toStringAsFixed(2) ?? '0.00'}"),
+                    if (widget.booking.discount != null && widget.booking.discount! > 0)
+                      _buildDetailRow("Discount", "- ₹${widget.booking.discount?.toStringAsFixed(2) ?? '0.00'}"),
+                    if (widget.booking.gst != null && widget.booking.gst! > 0)
+                      _buildDetailRow("GST", "₹${widget.booking.gst?.toStringAsFixed(2) ?? '0.00'}"),
+                    const Divider(color: LabTestColorPalette.borderLight),
+                    _buildDetailRow("Total Amount", "₹${widget.booking.totalAmount?.toStringAsFixed(2) ?? '0.00'}", isBold: true),
+                    _buildDetailRow(
+                      "Payment Status", 
+                      widget.booking.paymentStatus ?? "Pending",
+                      valueColor: widget.booking.paymentStatus?.toLowerCase() == "paid" 
+                          ? LabTestColorPalette.successGreen 
+                          : LabTestColorPalette.warningYellow,
+                    ),
+                  ],
+                ),
+                // Show Address Information only if home collection or report delivery at home is enabled
+                if (widget.booking.homeCollectionRequired == true || widget.booking.reportDeliveryAtHome == true) ...[
+                  const SizedBox(height: 16),
+                  _buildDetailSection(
+                    title: "Address Information",
+                    icon: Icons.home_outlined,
+                    children: [
+                      if (widget.booking.addressId != null && widget.booking.addressId!.isNotEmpty) ...[
+                        if (_isLoadingAddress)
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: LabTestColorPalette.primaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Loading address...',
+                                  style: TextStyle(
+                                    color: LabTestColorPalette.textSecondary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (_fetchedAddress != null)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailRow("Address Type", _fetchedAddress!.addressType),
+                              _buildDetailRow("House/Street", _fetchedAddress!.houseStreet),
+                              _buildDetailRow("Address Line 1", _fetchedAddress!.addressLine1),
+                              if (_fetchedAddress!.addressLine2 != null && _fetchedAddress!.addressLine2!.isNotEmpty)
+                                _buildDetailRow("Address Line 2", _fetchedAddress!.addressLine2!),
+                              _buildDetailRow("City", _fetchedAddress!.city),
+                              _buildDetailRow("State", _fetchedAddress!.state),
+                              _buildDetailRow("Zip Code", _fetchedAddress!.zipCode),
+                              _buildDetailRow("Country", _fetchedAddress!.country),
+                            ],
+                          )
+                        else ...[
+                          _buildDetailRow("Address", widget.booking.userAddress ?? "N/A"),
+                          if (widget.booking.userLocation != null && widget.booking.userLocation!.isNotEmpty)
+                            _buildDetailRow("Location", widget.booking.userLocation!),
+                        ],
+                      ]
+                      else ...[
+                        _buildDetailRow("Address", widget.booking.userAddress ?? "N/A"),
+                        if (widget.booking.userLocation != null && widget.booking.userLocation!.isNotEmpty)
+                          _buildDetailRow("Location", widget.booking.userLocation!),
+                      ],
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 30),
+                if (widget.type == 'upcoming')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: widget.viewModel.isLoading ? null : () {
+                        Navigator.pop(context);
+                        widget.onAccept();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.viewModel.isLoading
+                            ? LabTestColorPalette.borderMedium
+                            : LabTestColorPalette.primaryBlue,
+                        foregroundColor: LabTestColorPalette.textWhite,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: widget.viewModel.isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('ACCEPT BOOKING'),
+                    ),
+                  ),
+                if (widget.type == 'today')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: widget.viewModel.isLoading ? null : () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LabTestProcessScreen(booking: widget.booking),
+                          ),
+                        ).then((value) {
+                          // Refresh data when coming back from process screen if needed
+                          if (value == true) {
+                            widget.onProcess();
+                          }
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.viewModel.isLoading
+                            ? LabTestColorPalette.borderMedium
+                            : LabTestColorPalette.primaryBlue,
+                        foregroundColor: LabTestColorPalette.textWhite,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: widget.viewModel.isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('PROCESS BOOKING'),
+                    ),
+                  ),
+                if (widget.type == 'past')
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isGeneratingInvoice
+                          ? null
+                          : () async {
+                              setState(() {
+                                _isGeneratingInvoice = true;
+                              });
+                              try {
+                                await generateAndDownloadLabTestInvoicePDF(widget.booking);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Invoice downloaded successfully'),
+                                      backgroundColor: LabTestColorPalette.successGreen,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to generate invoice'),
+                                      backgroundColor: LabTestColorPalette.errorRed,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() {
+                                    _isGeneratingInvoice = false;
+                                  });
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isGeneratingInvoice
+                            ? LabTestColorPalette.borderMedium
+                            : LabTestColorPalette.primaryBlue,
+                        foregroundColor: LabTestColorPalette.textWhite,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isGeneratingInvoice)
+                            Container(
+                              width: 24,
+                              height: 24,
+                              margin: const EdgeInsets.only(right: 12),
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          Text(
+                            _isGeneratingInvoice ? 'GENERATING INVOICE...' : 'DOWNLOAD INVOICE',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -1073,6 +1224,24 @@ class BookingCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _openPrescription(BuildContext context, String url) async {
+    try {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => DocumentPreviewScreen(
+            url: url,
+            title: 'Prescription',
+          ),
+        ),
+      );
+    } catch (e) {
+      // Fallback to system launcher
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      }
+    }
   }
 
   Widget _buildTestRow(BuildContext context, String testName, Map<String, String>? reportUrls) {
