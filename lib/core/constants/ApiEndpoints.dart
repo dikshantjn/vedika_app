@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.40:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.40:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.44:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.44:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-1.onrender.com/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-1.onrender.com";  // Current IP address
   // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
@@ -278,6 +278,7 @@ class ApiEndpoints {
   static const String downloadMedicineDeliveryInvoice = '$baseUrl/medicine-delivery/invoice'; // Download medicine delivery invoice
   static const String getMedicineCartCount = '$baseUrl/medicine-delivery/medicine-cart-count'; // Get medicine cart count by user ID
   static const String cancelMedicineOrder = '$baseUrl/medicine-delivery/orders'; // Cancel medicine order - POST /orders/:orderId/cancel
+  static const String searchMedicineDatabase = '$baseUrl/medicinedb/search'; // GET /medicinedb/search?q=query
 
   // 📌 Notification APIs
   static const String getNotifications = '$baseUrl/notifications'; // GET /notifications?userId=:userId or ?vendorId=:vendorId

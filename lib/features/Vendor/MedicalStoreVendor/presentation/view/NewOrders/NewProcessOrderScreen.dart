@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shimmer/shimmer.dart';
+import 'dart:async';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/Order.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/NewOrders/OrderMedicine.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/view/NewOrders/PrescriptionPreviewScreen.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:screen_protector/screen_protector.dart';
 
 class NewProcessOrderScreen extends StatefulWidget {
   final Order order;
@@ -42,6 +45,8 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
   final TextEditingController _medicineNameController = TextEditingController();
   final TextEditingController _medicineQtyController = TextEditingController();
   final TextEditingController _medicinePriceController = TextEditingController();
+  final FocusNode _medicineNameFocusNode = FocusNode();
+  final GlobalKey _medicineNameFieldKey = GlobalKey();
   
   String _selectedStatus = 'waiting for payment';
   bool _isLoading = false;
@@ -51,10 +56,23 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
   List<MedicineItem> _medicineItems = [];
   Order? _orderDetails; // Full order details with medicines
   String? _deletingMedicineId; // Track which medicine is being deleted
+  
+  // Medicine suggestions state
+  Timer? _debounceTimer;
+  bool _showSuggestions = false;
+  OverlayEntry? _overlayEntry;
+  final ScrollController _scrollController = ScrollController();
+  final LayerLink _medicineFieldLink = LayerLink();
+  
+  // Prescription viewer state
+  bool _isPrescriptionExpanded = false;
+  int _selectedPrescriptionIndex = 0;
+  TransformationController? _transformationController;
 
   @override
   void initState() {
     super.initState();
+    _enableScreenProtection();
     // Initialize current status
     _currentStatus = widget.order.status;
     // Map any existing status to a valid dropdown value
@@ -66,8 +84,19 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
     _deliveryChargeController.text = '0.0';
     _discountController.text = '0.0';
     
-    // Fetch order details on init
-    _fetchOrderDetails();
+    // Initialize transformation controller for zoom
+    _transformationController = TransformationController();
+    
+    // Add listener to medicine name controller for debounced search
+    _medicineNameController.addListener(_onMedicineNameChanged);
+    _medicineNameFocusNode.addListener(_onMedicineNameFocusChanged);
+    
+    // Fetch order details on init - defer until after build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchOrderDetails();
+      }
+    });
   }
 
   Future<void> _fetchOrderDetails() async {
@@ -93,6 +122,12 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
           // Don't populate _medicineItems with existing medicines
           // _medicineItems should only contain newly added medicines (not yet saved)
           _medicineItems = [];
+          
+          // Reset prescription index if prescription files changed
+          final prescriptionFiles = orderDetails.prescription?.prescriptionFiles ?? [];
+          if (prescriptionFiles.isNotEmpty && _selectedPrescriptionIndex >= prescriptionFiles.length) {
+            _selectedPrescriptionIndex = 0;
+          }
           
           // Populate billing details
           if (orderDetails.subtotal > 0) {
@@ -130,13 +165,250 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    // Remove overlay safely without setState during dispose
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    _disableScreenProtection();
+    _transformationController?.dispose();
+    _scrollController.dispose();
+    _noteController.removeListener(_onMedicineNameChanged);
+    _medicineNameFocusNode.removeListener(_onMedicineNameFocusChanged);
     _noteController.dispose();
     _discountController.dispose();
     _deliveryChargeController.dispose();
     _medicineNameController.dispose();
     _medicineQtyController.dispose();
     _medicinePriceController.dispose();
+    _medicineNameFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _enableScreenProtection() async {
+    try {
+      await ScreenProtector.preventScreenshotOn();
+    } catch (_) {}
+  }
+
+  Future<void> _disableScreenProtection() async {
+    try {
+      await ScreenProtector.preventScreenshotOff();
+    } catch (_) {}
+  }
+
+  void _onMedicineNameChanged() {
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+    
+    final query = _medicineNameController.text.trim();
+    
+    if (query.isEmpty) {
+      _removeOverlay();
+      final viewModel = context.read<NewOrdersViewModel>();
+      viewModel.clearMedicineSuggestions();
+      return;
+    }
+    
+    // Debounce the search with 225ms delay (between 200-250ms)
+    _debounceTimer = Timer(const Duration(milliseconds: 225), () {
+      if (mounted) {
+        final viewModel = context.read<NewOrdersViewModel>();
+        viewModel.searchMedicines(query).then((_) {
+          if (mounted && _medicineNameFocusNode.hasFocus) {
+            _showSuggestionsOverlay();
+            // Scroll to ensure field and suggestions are visible
+            _scrollToMedicineField();
+          }
+        });
+      }
+    });
+    
+    setState(() {}); // Auto-update breakdown
+  }
+
+  void _onMedicineNameFocusChanged() {
+    if (_medicineNameFocusNode.hasFocus && _medicineNameController.text.trim().isNotEmpty) {
+      final viewModel = context.read<NewOrdersViewModel>();
+      if (viewModel.medicineSuggestions.isNotEmpty) {
+        _showSuggestionsOverlay();
+      }
+      // Scroll to medicine name field when focused
+      _scrollToMedicineField();
+    } else {
+      _removeOverlay();
+    }
+  }
+
+  void _scrollToMedicineField() {
+    // Wait for the next frame to ensure the widget is laid out
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_medicineNameFocusNode.hasFocus) return;
+      if (!_scrollController.hasClients) return;
+      
+      final RenderBox? renderBox = _medicineNameFieldKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox == null) return;
+      
+      // Use Scrollable.ensureVisible for a simpler approach
+      final BuildContext? fieldContext = _medicineNameFieldKey.currentContext;
+      if (fieldContext == null) return;
+      
+      try {
+        Scrollable.ensureVisible(
+          fieldContext,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.1, // Position field near top (10% from top)
+        );
+      } catch (e) {
+        // Fallback: manual scroll calculation
+        final viewportHeight = MediaQuery.of(context).size.height;
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+        final appBarHeight = AppBar().preferredSize.height;
+        final availableHeight = viewportHeight - keyboardHeight - appBarHeight;
+        
+        final suggestionsHeight = 200.0;
+        final fieldHeight = renderBox.size.height;
+        final totalNeeded = fieldHeight + suggestionsHeight + 40;
+        
+        // Get field position in global coordinates
+        final fieldGlobalPosition = renderBox.localToGlobal(Offset.zero);
+        
+        // Estimate scroll position needed (simplified calculation)
+        final estimatedOffset = fieldGlobalPosition.dy - appBarHeight - 100;
+        
+        if (estimatedOffset > 0 && estimatedOffset < _scrollController.position.maxScrollExtent) {
+          _scrollController.animateTo(
+            estimatedOffset,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+  }
+
+  void _showSuggestionsOverlay() {
+    _removeOverlay();
+    
+    final viewModel = context.read<NewOrdersViewModel>();
+    final suggestions = viewModel.medicineSuggestions;
+    
+    if (suggestions.isEmpty) {
+      return;
+    }
+    
+    final RenderBox? renderBox = _medicineNameFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    
+    final size = renderBox.size;
+    
+    _overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        onTap: () => _removeOverlay(),
+        behavior: HitTestBehavior.translucent,
+        child: Stack(
+          children: [
+            Positioned.fill(child: Container(color: Colors.transparent)),
+            CompositedTransformFollower(
+              link: _medicineFieldLink,
+              showWhenUnlinked: false,
+              offset: Offset(0, size.height + 4),
+              child: GestureDetector(
+                onTap: () {},
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: size.width,
+                    constraints: BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: viewModel.isSearchingMedicines
+                        ? Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                                ),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: suggestions.length,
+                            itemBuilder: (context, index) {
+                              final medicine = suggestions[index];
+                              final medicineName = medicine['medicineName'] as String? ?? '';
+                              return InkWell(
+                                onTap: () {
+                                  _medicineNameController.text = medicineName;
+                                  _medicineNameController.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: medicineName.length),
+                                  );
+                                  _removeOverlay();
+                                  _medicineNameFocusNode.unfocus();
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: Colors.grey[200]!,
+                                        width: index < suggestions.length - 1 ? 1 : 0,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.medication, size: 18, color: ColorPalette.primaryColor),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          medicineName,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() {
+      _showSuggestions = true;
+    });
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (mounted) {
+      setState(() {
+        _showSuggestions = false;
+      });
+    }
   }
 
   @override
@@ -173,17 +445,29 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
         color: ColorPalette.primaryColor,
         child: _isFetchingDetails
             ? _buildShimmerLoading()
-            : SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildOrderHeader(),
-                    SizedBox(height: 20),
-                    _buildBillingAndStatusSection(),
-                  ],
-                ),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildOrderHeader(),
+                        SizedBox(height: 20),
+                        _buildPrescriptionViewer(),
+                        SizedBox(height: 20),
+                        _buildBillingAndStatusSection(),
+                      ],
+                    ),
+                  );
+                },
               ),
       ),
     );
@@ -466,80 +750,6 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
             SizedBox(height: 10),
           ],
           
-          // Prescription files (if exist)
-          if (widget.order.prescription?.prescriptionFiles != null && widget.order.prescription!.prescriptionFiles.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.attach_file, color: Colors.grey[700], size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'Prescription Files',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  ...widget.order.prescription!.prescriptionFiles.map((url) {
-                    final String name = Uri.tryParse(url)?.pathSegments.isNotEmpty == true
-                        ? Uri.parse(url).pathSegments.last
-                        : url.split('/').last;
-                    final bool isPdf = name.toLowerCase().endsWith('.pdf');
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PrescriptionPreviewScreen(fileUrl: url, fileName: name),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 6),
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
-                                color: isPdf ? Colors.red[600] : Colors.blue[600], size: 18),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                name,
-                                style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Icon(Icons.chevron_right, size: 18, color: Colors.grey[600]),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-            SizedBox(height: 10),
-          ],
 
           // Order details in a compact grid layout
           Row(
@@ -609,6 +819,193 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
     );
   }
 
+  Widget _buildPrescriptionViewer() {
+    // Check both initial order and fetched order details for prescription files
+    final prescriptionFiles = _orderDetails?.prescription?.prescriptionFiles ?? 
+                              widget.order.prescription?.prescriptionFiles ?? [];
+    
+    if (prescriptionFiles.isEmpty) {
+      return SizedBox.shrink();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with View Prescription button
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isPrescriptionExpanded = !_isPrescriptionExpanded;
+                if (!_isPrescriptionExpanded) {
+                  _transformationController?.value = Matrix4.identity();
+                }
+              });
+            },
+            child: Container(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.description,
+                    color: ColorPalette.primaryColor,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'View Prescription',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _isPrescriptionExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: ColorPalette.primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Expanded prescription viewer
+          if (_isPrescriptionExpanded) ...[
+            Divider(height: 1, color: Colors.grey[300]),
+            Container(
+              height: MediaQuery.of(context).size.height * 0.8,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  // Image/PDF viewer
+                  Positioned.fill(
+                    child: Builder(
+                      builder: (_) {
+                        final url = prescriptionFiles[_selectedPrescriptionIndex];
+                        final isPdf = url.toLowerCase().endsWith('.pdf');
+                        if (isPdf) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.picture_as_pdf, size: 64, color: Colors.red[400]),
+                                SizedBox(height: 12),
+                                Text(
+                                  'PDF files open in full screen',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                ),
+                                SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    _disableScreenProtection().whenComplete(() {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PrescriptionPreviewScreen(
+                                            fileUrl: url,
+                                            fileName: Uri.tryParse(url)?.pathSegments.isNotEmpty == true
+                                                ? Uri.parse(url).pathSegments.last
+                                                : url.split('/').last,
+                                          ),
+                                        ),
+                                      ).then((_) {
+                                        if (mounted) {
+                                          _enableScreenProtection();
+                                        }
+                                      });
+                                    });
+                                  },
+                                  icon: Icon(Icons.open_in_new, size: 18),
+                                  label: Text('Open PDF'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ColorPalette.primaryColor,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return PhotoView(
+                          imageProvider: NetworkImage(url),
+                          minScale: PhotoViewComputedScale.contained,
+                          maxScale: PhotoViewComputedScale.covered * 4.0,
+                          backgroundDecoration: BoxDecoration(color: Colors.white),
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+                                SizedBox(height: 8),
+                                Text('Failed to load image', style: TextStyle(color: Colors.grey[600])),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Top-right controls: previous/next (if multiple) and collapse
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (prescriptionFiles.length > 1) ...[
+                          IconButton(
+                            onPressed: _selectedPrescriptionIndex > 0
+                                ? () {
+                                    setState(() {
+                                      _selectedPrescriptionIndex--;
+                                    });
+                                  }
+                                : null,
+                            icon: Icon(Icons.chevron_left, color: Colors.black87),
+                            tooltip: 'Previous',
+                          ),
+                          Text(
+                            '${_selectedPrescriptionIndex + 1}/${prescriptionFiles.length}',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                          ),
+                          IconButton(
+                            onPressed: _selectedPrescriptionIndex < prescriptionFiles.length - 1
+                                ? () {
+                                    setState(() {
+                                      _selectedPrescriptionIndex++;
+                                    });
+                                  }
+                                : null,
+                            icon: Icon(Icons.chevron_right, color: Colors.black87),
+                            tooltip: 'Next',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBillingAndStatusSection() {
     return Container(
       padding: EdgeInsets.all(16),
@@ -638,28 +1035,64 @@ class _NewProcessOrderScreenState extends State<NewProcessOrderScreen> {
           SizedBox(height: 16),
           
           // Medicine Entry Fields
-          // Medicine Name - Full Row
-          TextField(
-            controller: _medicineNameController,
-            decoration: InputDecoration(
-              labelText: 'Medicine Name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: ColorPalette.primaryColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: ColorPalette.primaryColor),
-              ),
-              filled: true,
-              fillColor: Colors.grey[50],
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            ),
-            onChanged: (_) => setState(() {}), // Auto-update breakdown
+          // Medicine Name - Full Row with Autocomplete
+          Consumer<NewOrdersViewModel>(
+            builder: (context, viewModel, child) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CompositedTransformTarget(
+                    link: _medicineFieldLink,
+                    child: TextField(
+                      key: _medicineNameFieldKey,
+                      controller: _medicineNameController,
+                      focusNode: _medicineNameFocusNode,
+                      decoration: InputDecoration(
+                      labelText: 'Medicine Name',
+                      hintText: 'Type to search medicines...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: ColorPalette.primaryColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: ColorPalette.primaryColor, width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: ColorPalette.primaryColor),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      suffixIcon: viewModel.isSearchingMedicines
+                          ? Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                                ),
+                              ),
+                            )
+                          : _medicineNameController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, size: 20),
+                                  onPressed: () {
+                                    _medicineNameController.clear();
+                                    viewModel.clearMedicineSuggestions();
+                                    _removeOverlay();
+                                  },
+                                )
+                              : Icon(Icons.search, color: Colors.grey[400]),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           SizedBox(height: 12),
           

@@ -18,6 +18,7 @@ class NewMedicineOrderTrackingCard extends StatefulWidget {
 
 class _NewMedicineOrderTrackingCardState extends State<NewMedicineOrderTrackingCard> {
   final Map<String, int> _previousStepIndices = {};
+  final Map<String, bool> _expandedOrders = {};
 
   @override
   Widget build(BuildContext context) {
@@ -268,46 +269,221 @@ class _NewMedicineOrderTrackingCardState extends State<NewMedicineOrderTrackingC
   }
 
   Widget _buildOrderDetails(Order order) {
+    final bool isExpanded = _expandedOrders[order.orderId] ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Order Details',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+        // Collapsible Header
+        InkWell(
+          onTap: () {
+            setState(() {
+              _expandedOrders[order.orderId] = !isExpanded;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Order Details',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text(
+                            'Status: ',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          Text(
+                            _getStatusDisplayText(order.status),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _getStatusColor(order.status),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Total',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    Text(
+                      '₹${order.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.grey[700],
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total Amount:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(
-              '₹${order.totalAmount.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Status:',
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-            ),
-            Text(
-              _getStatusDisplayText(order.status),
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-                color: _getStatusColor(order.status),
+
+        // Expanded Content
+        if (isExpanded) ...[
+          const SizedBox(height: 12),
+
+          // Medicines List
+          if (order.medicines != null && order.medicines!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.medication, size: 16, color: Colors.blue[700]),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Medicines',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue[900],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...order.medicines!.map((med) {
+                    final double itemTotal = med.quantity * med.price;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              med.medicineName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue[900],
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'Qty: ${med.quantity} × ₹${med.price.toStringAsFixed(2)} = ₹${itemTotal.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
             ),
+            const SizedBox(height: 12),
           ],
-        ),
-        // Show Go to Cart button only when status is waiting_for_payment
+
+          // Payment Breakdown
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Billing Breakdown',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildBillingRow('Subtotal', order.subtotal),
+                if (order.discount > 0) ...[
+                  const SizedBox(height: 6),
+                  _buildBillingRow(
+                    'Discount (${order.discount.toStringAsFixed(1)}%)',
+                    -_calculateDiscountAmount(order),
+                    isDiscount: true,
+                  ),
+                ],
+                if (order.gst > 0) ...[
+                  const SizedBox(height: 6),
+                  _buildBillingRow(
+                    'GST (${order.gst.toStringAsFixed(0)}%)',
+                    _calculateGSTAmount(order),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                _buildBillingRow('Platform Fee', order.platformFee),
+                const SizedBox(height: 6),
+                _buildBillingRow('Delivery Charge', order.deliveryCharges),
+                const SizedBox(height: 8),
+                Divider(color: Colors.grey[300], height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Amount',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[900],
+                      ),
+                    ),
+                    Text(
+                      '₹${order.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Go to Cart for pending payment (always visible as primary action)
         if (order.status == "waiting_for_payment") ...[
           const SizedBox(height: 16),
           SizedBox(
@@ -421,5 +597,51 @@ class _NewMedicineOrderTrackingCardState extends State<NewMedicineOrderTrackingC
     };
 
     return statusColors[status] ?? Colors.grey;
+  }
+
+  Widget _buildBillingRow(String label, double amount, {bool isDiscount = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${isDiscount ? '-' : ''}₹${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateDiscountAmount(Order order) {
+    final double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+
+    final double discountPercent = order.discount;
+    if (discountPercent > 0) {
+      return subtotal * (discountPercent / 100);
+    }
+    return 0.0;
+  }
+
+  double _calculateGSTAmount(Order order) {
+    final double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+
+    final double discountAmount = _calculateDiscountAmount(order);
+    final double amountAfterDiscount = subtotal - discountAmount;
+
+    final double gstPercent = order.gst > 0 ? order.gst : 18.0;
+    return amountAfterDiscount * (gstPercent / 100);
   }
 }

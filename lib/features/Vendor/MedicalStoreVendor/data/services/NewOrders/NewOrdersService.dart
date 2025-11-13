@@ -432,4 +432,45 @@ class NewOrdersService {
       throw Exception('Error deleting medicine: $e');
     }
   }
+
+  // Search medicines from database
+  Future<List<Map<String, dynamic>>> searchMedicines(String query) async {
+    try {
+      if (query.trim().isEmpty) {
+        return [];
+      }
+
+      print('🔍 [NewOrdersService] Searching medicines with query: $query');
+      
+      final response = await _dio.get(
+        ApiEndpoints.searchMedicineDatabase,
+        queryParameters: {
+          'q': query,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ [NewOrdersService] Medicine search successful');
+        if (response.data is List) {
+          return List<Map<String, dynamic>>.from(response.data);
+        } else {
+          return [];
+        }
+      } else {
+        print('❌ [NewOrdersService] Failed to search medicines: ${response.statusCode}');
+        return [];
+      }
+    } on DioException catch (e) {
+      print('❌ [NewOrdersService] DioException: ${e.message}');
+      return [];
+    } catch (e) {
+      print('❌ [NewOrdersService] General error: $e');
+      return [];
+    }
+  }
 }

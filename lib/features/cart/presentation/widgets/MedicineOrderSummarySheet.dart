@@ -157,14 +157,14 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
                         Icon(Icons.medication_outlined, color: ColorPalette.primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
-                          child:                         Text(
-                          'Order #${order.orderId}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                          child: Text(
+                            'Order #${order.orderId}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
                           ),
-                        ),
                         ),
                       ],
                     ),
@@ -176,28 +176,138 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
                         color: Colors.grey[600],
                       ),
                     ),
+                    
+                    // Medicines List
+                    if (order.medicines != null && order.medicines!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue[200]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.medication, size: 14, color: Colors.blue[700]),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Medicines',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[900],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...order.medicines!.map((med) {
+                              final itemTotal = med.quantity * med.price;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        med.medicineName,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.blue[900],
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Qty: ${med.quantity} × ₹${med.price.toStringAsFixed(2)} = ₹${itemTotal.toStringAsFixed(2)}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        color: Colors.blue[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child:                         Text(
-                          'Prescription ID: ${order.prescriptionId.substring(0, 8)}...',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.black87,
+                    
+                    // Billing Breakdown
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green[200]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Billing Breakdown',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green[900],
+                            ),
                           ),
-                        ),
-                        ),
-                        Text(
-                          '₹${order.totalAmount.toStringAsFixed(2)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: ColorPalette.primaryColor,
+                          const SizedBox(height: 8),
+                          _buildBreakdownRow('Subtotal', order.subtotal),
+                          if (order.discount > 0) ...[
+                            const SizedBox(height: 6),
+                            _buildBreakdownRow(
+                              'Discount (${order.discount.toStringAsFixed(1)}%)',
+                              -_calculateDiscountAmount(order),
+                              isDiscount: true,
+                            ),
+                          ],
+                          if (order.gst > 0) ...[
+                            const SizedBox(height: 6),
+                            _buildBreakdownRow(
+                              'GST (${order.gst.toStringAsFixed(0)}%)',
+                              _calculateGSTAmount(order),
+                            ),
+                          ],
+                          const SizedBox(height: 6),
+                          _buildBreakdownRow('Platform Fee', order.platformFee),
+                          const SizedBox(height: 6),
+                          _buildBreakdownRow('Delivery Charge', order.deliveryCharges),
+                          const SizedBox(height: 8),
+                          Divider(color: Colors.green[300], height: 1),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Amount',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.green[900],
+                                ),
+                              ),
+                              Text(
+                                '₹${order.totalAmount.toStringAsFixed(2)}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.green[900],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    
                     if (order.note != null && order.note!.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Container(
@@ -237,12 +347,84 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
     );
   }
 
+  Widget _buildBreakdownRow(String label, double amount, {bool isDiscount = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.green[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${isDiscount ? '-' : ''}₹${amount.toStringAsFixed(2)}',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.green[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateDiscountAmount(Order order) {
+    double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+    
+    // Discount is stored as percentage (e.g., 10.0 = 10%)
+    double discountPercent = order.discount;
+    if (discountPercent > 0) {
+      return subtotal * (discountPercent / 100);
+    }
+    
+    return 0.0;
+  }
+
+  double _calculateGSTAmount(Order order) {
+    double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+
+    // Calculate discount amount from percentage
+    double discountAmount = _calculateDiscountAmount(order);
+    double amountAfterDiscount = subtotal - discountAmount;
+
+    // Get GST percentage (from order or default 18%)
+    double gstPercent = order.gst > 0 ? order.gst : 18.0;
+
+    // Calculate GST on amount after discount
+    return amountAfterDiscount * (gstPercent / 100);
+  }
+
   Widget _buildPriceBreakdown() {
+    // Calculate totals from all orders
     final subtotal = widget.medicineOrders.fold<double>(
       0.0, 
+      (sum, order) => sum + order.subtotal,
+    );
+    final totalDiscount = widget.medicineOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + _calculateDiscountAmount(order),
+    );
+    final totalGST = widget.medicineOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + _calculateGSTAmount(order),
+    );
+    final totalDeliveryCharges = widget.medicineOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + order.deliveryCharges,
+    );
+    final totalPlatformFee = widget.medicineOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + order.platformFee,
+    );
+    final totalAmount = widget.medicineOrders.fold<double>(
+      0.0,
       (sum, order) => sum + order.totalAmount,
     );
-    final totalAmount = subtotal + _deliveryCharge + _platformFee;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -254,10 +436,18 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
       child: Column(
         children: [
           _priceRow('Subtotal', subtotal),
+          if (totalDiscount > 0) ...[
+            const SizedBox(height: 8),
+            _priceRow('Discount', -totalDiscount, isDiscount: true),
+          ],
+          if (totalGST > 0) ...[
+            const SizedBox(height: 8),
+            _priceRow('GST', totalGST),
+          ],
           const SizedBox(height: 8),
-          _priceRow('Delivery Charge', _deliveryCharge),
+          _priceRow('Delivery Charges', totalDeliveryCharges),
           const SizedBox(height: 8),
-          _priceRow('Platform Fee', _platformFee),
+          _priceRow('Platform Fee', totalPlatformFee),
           const Divider(height: 24),
           _priceRow('Total Amount', totalAmount, isBold: true),
         ],
@@ -265,7 +455,7 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
     );
   }
 
-  Widget _priceRow(String label, double amount, {bool isBold = false}) {
+  Widget _priceRow(String label, double amount, {bool isBold = false, bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -278,7 +468,7 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
           ),
         ),
         Text(
-          '₹${amount.toStringAsFixed(2)}',
+          '${isDiscount ? '-' : ''}₹${amount.toStringAsFixed(2)}',
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
@@ -290,11 +480,11 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
   }
 
   Widget _buildPayNowButton() {
-    final subtotal = widget.medicineOrders.fold<double>(
-      0.0, 
+    // Calculate total amount from all orders
+    final totalAmount = widget.medicineOrders.fold<double>(
+      0.0,
       (sum, order) => sum + order.totalAmount,
     );
-    final totalAmount = subtotal + _deliveryCharge + _platformFee;
 
     return Container(
       width: double.infinity,
@@ -360,9 +550,15 @@ class _MedicineOrderSummarySheetState extends State<MedicineOrderSummarySheet> {
       _isProcessingPayment = true;
     });
 
+    // Calculate total amount from all orders
+    final calculatedTotal = widget.medicineOrders.fold<double>(
+      0.0,
+      (sum, order) => sum + order.totalAmount,
+    );
+
     // Open Razorpay payment gateway
     _paymentService.openMedicinePaymentGateway(
-      amount: totalAmount,
+      amount: calculatedTotal,
       key: ApiConstants.razorpayApiKey,
       name: _appName,
       description: 'Medicine Order - ${widget.medicineOrders.length} orders',

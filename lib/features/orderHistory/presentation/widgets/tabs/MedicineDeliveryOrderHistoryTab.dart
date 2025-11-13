@@ -701,6 +701,77 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with
                   ),
                 ],
 
+                // Medicines Section
+                if (order.medicines != null && order.medicines!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.medication, color: Colors.blue.shade700, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Medicines',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.blue.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...order.medicines!.map((med) {
+                          final double itemTotal = med.quantity * med.price;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    med.medicineName,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade900,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Qty: ${med.quantity} × ₹${med.price.toStringAsFixed(2)} = ₹${itemTotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // Payment Summary Divider
                 const SizedBox(height: 20),
                 Container(
@@ -744,32 +815,28 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Platform Fee',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          Text(
-                            '₹${order.platformFee.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade900,
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildBillingRow('Subtotal', order.subtotal),
+                      const SizedBox(height: 8),
+                      if (order.discount > 0) ...[
+                        _buildBillingRow(
+                          'Discount (${order.discount.toStringAsFixed(1)}%)',
+                          -_calculateDiscountAmount(order),
+                          isDiscount: true,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (order.gst > 0) ...[
+                        _buildBillingRow(
+                          'GST (${order.gst.toStringAsFixed(0)}%)',
+                          _calculateGSTAmount(order),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      _buildBillingRow('Platform Fee', order.platformFee),
+                      const SizedBox(height: 8),
+                      _buildBillingRow('Delivery Charges', order.deliveryCharges),
                       const SizedBox(height: 12),
-                      Container(
-                        height: 1,
-                        color: Colors.green.shade200,
-                      ),
+                      Container(height: 1, color: Colors.green.shade200),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -967,5 +1034,48 @@ class _OrderDetailsBottomSheetState extends State<_OrderDetailsBottomSheet> with
     }
 
     return addressParts.join(', ');
+  }
+
+  Widget _buildBillingRow(String label, double amount, {bool isDiscount = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${isDiscount ? '-' : ''}₹${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade900,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateDiscountAmount(Order order) {
+    final double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+    final double discountPercent = order.discount;
+    if (discountPercent > 0) {
+      return subtotal * (discountPercent / 100);
+    }
+    return 0.0;
+  }
+
+  double _calculateGSTAmount(Order order) {
+    final double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+    final double discountAmount = _calculateDiscountAmount(order);
+    final double amountAfterDiscount = subtotal - discountAmount;
+    final double gstPercent = order.gst > 0 ? order.gst : 18.0;
+    return amountAfterDiscount * (gstPercent / 100);
   }
 }

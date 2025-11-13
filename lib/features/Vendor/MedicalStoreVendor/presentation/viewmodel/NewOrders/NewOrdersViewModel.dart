@@ -41,6 +41,10 @@ class NewOrdersViewModel extends ChangeNotifier {
   String? _selectedDateFilter;
   String? _selectedAmountFilter;
 
+  // Medicine search properties
+  List<Map<String, dynamic>> _medicineSuggestions = [];
+  bool _isSearchingMedicines = false;
+
   // Constructor
   NewOrdersViewModel() {
     initSocketConnection();
@@ -229,6 +233,10 @@ class NewOrdersViewModel extends ChangeNotifier {
   String? get selectedStatusFilter => _selectedStatusFilter;
   String? get selectedDateFilter => _selectedDateFilter;
   String? get selectedAmountFilter => _selectedAmountFilter;
+
+  // Medicine search getters
+  List<Map<String, dynamic>> get medicineSuggestions => _medicineSuggestions;
+  bool get isSearchingMedicines => _isSearchingMedicines;
 
   // Initialize data
   Future<void> initialize() async {
@@ -855,5 +863,43 @@ class NewOrdersViewModel extends ChangeNotifier {
     Future.microtask(() {
       if (!_disposed) notifyListeners();
     });
+  }
+
+  // Search medicines from database
+  Future<void> searchMedicines(String query) async {
+    if (_disposed) return;
+    
+    try {
+      if (query.trim().isEmpty) {
+        _medicineSuggestions = [];
+        if (!_disposed) notifyListeners();
+        return;
+      }
+
+      _isSearchingMedicines = true;
+      if (!_disposed) notifyListeners();
+
+      final results = await _service.searchMedicines(query);
+      
+      if (!_disposed) {
+        _medicineSuggestions = results;
+        _isSearchingMedicines = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      if (!_disposed) {
+        _medicineSuggestions = [];
+        _isSearchingMedicines = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  // Clear medicine suggestions
+  void clearMedicineSuggestions() {
+    if (_disposed) return;
+    _medicineSuggestions = [];
+    _isSearchingMedicines = false;
+    notifyListeners();
   }
 }

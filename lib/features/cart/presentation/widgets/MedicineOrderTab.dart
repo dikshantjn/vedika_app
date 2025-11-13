@@ -316,253 +316,11 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
     Widget _buildMedicineOrderCard(Order order, int index) {
     final bool isCancelling = _cancellingOrderIds.contains(order.orderId);
     
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Order ID
-            Text(
-              order.orderId,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.grey[900],
-                letterSpacing: -0.2,
-              ),
-            ),
-            
-            SizedBox(height: 8),
-            
-            // Date and Status in same row
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 14,
-                  color: Colors.grey[500],
-                ),
-                SizedBox(width: 6),
-                Text(
-                  _formatDate(order.createdAt),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Spacer(),
-                _buildStatusChip(order.status),
-              ],
-            ),
-            
-            SizedBox(height: 12),
-            
-            // Medical Store Name
-            Row(
-              children: [
-                Icon(
-                  Icons.storefront_outlined,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _getMedicalStoreName(order),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 12),
-            
-            // Amount
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Amount',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '₹${order.totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey[900],
-                  ),
-                ),
-              ],
-            ),
-            
-            // Note (if exists)
-            if (order.note != null && order.note!.isNotEmpty) ...[
-              SizedBox(height: 8),
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber[200]!, width: 1),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.note_outlined,
-                      size: 14,
-                      color: Colors.amber[700],
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        order.note!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            
-            SizedBox(height: 12),
-            
-            // Action Buttons - Call Store and Menu
-            if (!isCancelling)
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _callStore(order),
-                      icon: Icon(
-                        Icons.phone_outlined,
-                        size: 16,
-                        color: Colors.blue[600],
-                      ),
-                      label: Text(
-                        'Call Store',
-                        style: TextStyle(
-                          color: Colors.blue[600],
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        side: BorderSide(color: Colors.blue[300]!, width: 1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  PopupMenuButton<String>(
-                    icon: Container(
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!, width: 1),
-                      ),
-                      child: Icon(
-                        Icons.more_vert,
-                        color: Colors.grey[700],
-                        size: 18,
-                      ),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    onSelected: (value) {
-                      if (value == 'cancel') {
-                        _showCancelOrderDialog(order);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      PopupMenuItem<String>(
-                        value: 'cancel',
-                        child: Row(
-                          children: [
-                            Icon(Icons.cancel_outlined, color: Colors.red[600], size: 18),
-                            SizedBox(width: 12),
-                            Text(
-                              'Cancel Order',
-                              style: TextStyle(color: Colors.red[600], fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              )
-            else
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!, width: 1),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        'Cancelling order...',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return _ExpandableOrderCard(
+      order: order,
+      isCancelling: isCancelling,
+      onCancel: () => _showCancelOrderDialog(order),
+      onCallStore: () => _callStore(order),
     );
   }
 
@@ -991,6 +749,10 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
     return 'Medical Store'; // Fallback
   }
 
+  Widget _buildStatusChipForCard(String status) {
+    return _buildStatusChip(status);
+  }
+
   Future<void> _proceedToCheckout() async {
     try {
       if (_medicineOrders.isEmpty) {
@@ -1062,6 +824,563 @@ class _MedicineOrderTabState extends State<MedicineOrderTab> {
           onOrderPlaced: _clearCart, // Pass the callback to clear cart
         );
       },
+    );
+  }
+}
+
+// Expandable Order Card Widget
+class _ExpandableOrderCard extends StatefulWidget {
+  final Order order;
+  final bool isCancelling;
+  final VoidCallback onCancel;
+  final VoidCallback onCallStore;
+
+  const _ExpandableOrderCard({
+    required this.order,
+    required this.isCancelling,
+    required this.onCancel,
+    required this.onCallStore,
+  });
+
+  @override
+  State<_ExpandableOrderCard> createState() => _ExpandableOrderCardState();
+}
+
+class _ExpandableOrderCardState extends State<_ExpandableOrderCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Order ID
+                Text(
+                  widget.order.orderId,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[900],
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                
+                SizedBox(height: 8),
+                
+                // Date and Status in same row
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: Colors.grey[500],
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      _formatDate(widget.order.createdAt),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Spacer(),
+                    _buildStatusChip(widget.order.status),
+                  ],
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Medical Store Name
+                Row(
+                  children: [
+                    Icon(
+                      Icons.storefront_outlined,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.order.vendor?.name ?? 'Medical Store',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: 12),
+                
+                // Medicines List
+                if (widget.order.medicines != null && widget.order.medicines!.isNotEmpty) ...[
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.medication, size: 14, color: Colors.blue[700]),
+                            SizedBox(width: 6),
+                            Text(
+                              'Medicines',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue[900],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        ...widget.order.medicines!.map((med) {
+                          final itemTotal = med.quantity * med.price;
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${med.medicineName}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.blue[900],
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'Qty: ${med.quantity} × ₹${med.price.toStringAsFixed(2)} = ₹${itemTotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                ],
+                
+                // Total Amount with Expand Button
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Amount',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green[900],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              '₹${widget.order.totalAmount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green[900],
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(
+                              _isExpanded ? Icons.expand_less : Icons.expand_more,
+                              color: Colors.green[700],
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Billing Breakdown (Expandable)
+                if (_isExpanded) ...[
+                  SizedBox(height: 12),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Billing Breakdown',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        _buildBillingRow('Subtotal', widget.order.subtotal),
+                        if (widget.order.discount > 0) ...[
+                          SizedBox(height: 6),
+                          _buildBillingRow(
+                            'Discount (${widget.order.discount.toStringAsFixed(1)}%)',
+                            -_calculateDiscountAmount(widget.order),
+                            isDiscount: true,
+                          ),
+                        ],
+                        if (widget.order.gst > 0) ...[
+                          SizedBox(height: 6),
+                          _buildBillingRow(
+                            'GST (${widget.order.gst.toStringAsFixed(0)}%)',
+                            _calculateGSTAmount(widget.order),
+                          ),
+                        ],
+                        SizedBox(height: 6),
+                        _buildBillingRow('Platform Fee', widget.order.platformFee),
+                        SizedBox(height: 6),
+                        _buildBillingRow('Delivery Charge', widget.order.deliveryCharges),
+                        SizedBox(height: 8),
+                        Divider(color: Colors.grey[300], height: 1),
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Amount',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey[900],
+                              ),
+                            ),
+                            Text(
+                              '₹${widget.order.totalAmount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                
+                // Note (if exists)
+                if (widget.order.note != null && widget.order.note!.isNotEmpty) ...[
+                  SizedBox(height: 12),
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber[200]!, width: 1),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.note_outlined,
+                          size: 14,
+                          color: Colors.amber[700],
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.order.note!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                
+                SizedBox(height: 12),
+                
+                // Action Buttons
+                if (!widget.isCancelling)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: widget.onCallStore,
+                          icon: Icon(
+                            Icons.phone_outlined,
+                            size: 16,
+                            color: Colors.blue[600],
+                          ),
+                          label: Text(
+                            'Call Store',
+                            style: TextStyle(
+                              color: Colors.blue[600],
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            side: BorderSide(color: Colors.blue[300]!, width: 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      PopupMenuButton<String>(
+                        icon: Container(
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[300]!, width: 1),
+                          ),
+                          child: Icon(
+                            Icons.more_vert,
+                            color: Colors.grey[700],
+                            size: 18,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'cancel') {
+                            widget.onCancel();
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          PopupMenuItem<String>(
+                            value: 'cancel',
+                            child: Row(
+                              children: [
+                                Icon(Icons.cancel_outlined, color: Colors.red[600], size: 18),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Cancel Order',
+                                  style: TextStyle(color: Colors.red[600], fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!, width: 1),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Cancelling order...',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBillingRow(String label, double amount, {bool isDiscount = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          '${isDiscount ? '-' : ''}₹${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateDiscountAmount(Order order) {
+    double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+    
+    // Discount is stored as percentage (e.g., 10.0 = 10%)
+    double discountPercent = order.discount;
+    if (discountPercent > 0) {
+      return subtotal * (discountPercent / 100);
+    }
+    
+    return 0.0;
+  }
+
+  double _calculateGSTAmount(Order order) {
+    double subtotal = order.subtotal;
+    if (subtotal <= 0) return 0.0;
+
+    // Calculate discount amount from percentage
+    double discountAmount = _calculateDiscountAmount(order);
+    double amountAfterDiscount = subtotal - discountAmount;
+
+    // Get GST percentage (from order or default 18%)
+    double gstPercent = order.gst > 0 ? order.gst : 18.0;
+
+    // Calculate GST on amount after discount
+    return amountAfterDiscount * (gstPercent / 100);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color chipColor;
+    Color textColor;
+    String statusText;
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+        chipColor = Colors.orange[100]!;
+        textColor = Colors.orange[700]!;
+        statusText = 'Pending';
+        break;
+      case 'waiting_for_payment':
+        chipColor = Colors.red[100]!;
+        textColor = Colors.red[700]!;
+        statusText = 'Payment Pending';
+        break;
+      case 'payment_completed':
+        chipColor = Colors.blue[100]!;
+        textColor = Colors.blue[700]!;
+        statusText = 'Payment Completed';
+        break;
+      case 'ready_to_pickup':
+        chipColor = Colors.purple[100]!;
+        textColor = Colors.purple[700]!;
+        statusText = 'Ready to Pickup';
+        break;
+      case 'out_for_delivery':
+        chipColor = Colors.indigo[100]!;
+        textColor = Colors.indigo[700]!;
+        statusText = 'Out for Delivery';
+        break;
+      case 'delivered':
+        chipColor = Colors.green[100]!;
+        textColor = Colors.green[700]!;
+        statusText = 'Delivered';
+        break;
+      case 'cancelled':
+        chipColor = Colors.red[100]!;
+        textColor = Colors.red[700]!;
+        statusText = 'Cancelled';
+        break;
+      default:
+        chipColor = Colors.grey[100]!;
+        textColor = Colors.grey[700]!;
+        statusText = 'Unknown';
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: chipColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: textColor.withOpacity(0.3)),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
