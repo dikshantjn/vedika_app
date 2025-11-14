@@ -126,7 +126,7 @@ class _VendorProductPartnerDashBoardScreenState
       print('✅ VendorLoginViewModel found');
 
       print('🚪 Calling logout on VendorLoginViewModel...');
-      await vendorLoginViewModel.logout();
+      await vendorLoginViewModel.logout(navigate: true);
       print('✅ Logout successful');
       
       if (!mounted) {
@@ -138,14 +138,6 @@ class _VendorProductPartnerDashBoardScreenState
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
-      
-      print('🔄 Navigating to vendor login screen...');
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.vendorLogin,
-        (route) => false,
-      );
-      print('✅ Navigation complete');
       
     } catch (e, stackTrace) {
       print('❌ Error during logout:');

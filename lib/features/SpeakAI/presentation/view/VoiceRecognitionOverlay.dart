@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/viewmodel/VoiceRecognitionViewModel.dart';
-import 'package:vedika_healthcare/main.dart' show navigatorKey;
+import 'package:vedika_healthcare/shared/services/GlobalKeys.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/IntentResultsView.dart';
 import 'package:vedika_healthcare/features/SpeakAI/presentation/widgets/voice_intents/intent_navigation.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/view/EmergencyBottomSheet.dart';

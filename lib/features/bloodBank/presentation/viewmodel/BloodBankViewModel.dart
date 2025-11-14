@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/AuthService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/bloodBank/data/services/BloodBankAgencyService.dart';
@@ -73,7 +73,7 @@ class BloodBankViewModel extends ChangeNotifier {
 
   // Service for fetching blood bank agencies
   final BloodBankAgencyService _agencyService = BloodBankAgencyService();
-  final AuthRepository _authRepository = AuthRepository();
+  final AuthService _authRepository = AuthService();
 
   IO.Socket? _socket;
 

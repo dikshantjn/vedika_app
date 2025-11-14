@@ -3,7 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankAgency.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/AuthService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
@@ -13,7 +13,7 @@ class BloodBankAgencyService {
   final Dio _dio = Dio();
   final _logger = Logger();
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final AuthRepository _authRepository = AuthRepository();
+  final AuthService _authRepository = AuthService();
   
   // Default search radius in kilometers
   static const double DEFAULT_SEARCH_RADIUS = 5.0;

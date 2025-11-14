@@ -5,8 +5,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
-import 'package:vedika_healthcare/main.dart';
-import 'package:vedika_healthcare/shared/utils/NotificationTapHandler.dart';
+import 'package:vedika_healthcare/shared/services/GlobalKeys.dart';
+import 'package:vedika_healthcare/core/notification/NotificationTapHandler.dart';
 
 @pragma('vm:entry-point')
 class FCMService {

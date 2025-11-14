@@ -2,12 +2,12 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:vedika_healthcare/core/auth/data/models/UserModel.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
-import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/AuthService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 
 class UserService {
   final Dio _dio = Dio();
-  final AuthRepository _authRepository = AuthRepository();
+  final AuthService _authRepository = AuthService();
 
   // Function to get user by ID
   Future<UserModel?> getUserById(String userId) async {

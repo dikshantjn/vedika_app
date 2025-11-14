@@ -184,7 +184,7 @@ class MembershipPaymentService {
     final options = {
       'key': key,
       'amount': (amount * 100).toInt(),
-      'name': 'Vedika Healthtech',
+      'name': 'Vedika.Health',
       'description': 'Purchase: $planName',
       'prefill': {
         'contact': userPhone ?? '',

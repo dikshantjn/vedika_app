@@ -44,6 +44,8 @@ import 'package:vedika_healthcare/features/Vendor/ProductPartner/data/models/Ven
 import 'package:vedika_healthcare/core/services/ProfileNavigationService.dart';
 import 'package:vedika_healthcare/features/VedikaAI/presentation/view/AIChatScreen.dart';
 import 'package:vedika_healthcare/features/cart/presentation/view/NewCartScreen.dart';
+import 'package:vedika_healthcare/features/home/presentation/view/UserMenuScreen.dart';
+import 'package:vedika_healthcare/core/auth/presentation/widgets/AuthGuard.dart';
 
 // Singleton navigation controller for better performance
 class NavigationController {
@@ -115,6 +117,7 @@ class AppRoutes {
   static const String helpCenter = '/helpCenter';
   static const String productList = '/productList';
   static const String productDetail = '/productDetail';
+  static const String userMenu = '/userMenu';
   static const String ambulanceSearch = '/ambulance-search';
   static const String bloodBank = '/blood-bank';
   static const String medicineOrder = '/medicine-order';
@@ -171,7 +174,10 @@ class AppRoutes {
         final initialTab = args?['initialTab'] as int?;
         return NewOrdersScreen(initialTab: initialTab);
       },
-      newCartScreen: (context) => const NewCartScreen(),
+      newCartScreen: (context) => AuthGuard(
+        child: const NewCartScreen(),
+        intendedRoute: AppRoutes.newCartScreen,
+      ),
 
       // Primary routes
       home: (context) => const MainScreen(),
@@ -219,62 +225,69 @@ class AppRoutes {
       donorRegistration: (context) => DonorRegistrationPage(),
       enableBloodBankLocation: (context) => EnableBloodBankLocationServiceScreen(),
       doctorAppointments: (context) => ClinicAppointmentsScreen(),
-      membership: (context) => const MembershipPage(),
+      membership: (context) => AuthGuard(
+        child: const MembershipPage(),
+        intendedRoute: AppRoutes.membership,
+      ),
 
       // MainScreen-integrated routes (optimized)
       aiChat: (context) {
         final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-        return _MainScreenRoute(
-          child: AIChatScreen(
-            initialQuery: args?['initialQuery'] ?? '',
+        return AuthGuard(
+          child: _MainScreenRoute(
+            child: AIChatScreen(
+              initialQuery: args?['initialQuery'] ?? '',
+            ),
+            index: 9,
+            hideBottomNav: true,
           ),
-          index: 9,
-          hideBottomNav: true,
+          intendedRoute: AppRoutes.aiChat,
+          intendedArguments: args,
         );
       },
       bloodBank: (context) => _MainScreenRoute(
         child: BloodBankMapScreen(),
         index: 9,
       ),
-      ambulanceSearch: (context) => _MainScreenRoute(
-        child: AmbulanceSearchPage(),
-        index: 9,
+      ambulanceSearch: (context) => AuthGuard(
+        child: _MainScreenRoute(child: AmbulanceSearchPage(), index: 9),
+        intendedRoute: AppRoutes.ambulanceSearch,
       ),
-      medicineOrder: (context) => _MainScreenRoute(
-        child: MedicineOrderScreen(),
-        index: 9,
+      medicineOrder: (context) => AuthGuard(
+        child: _MainScreenRoute(child: MedicineOrderScreen(), index: 9),
+        intendedRoute: AppRoutes.medicineOrder,
       ),
-      newMedicineOrderScreen: (context) => _MainScreenRoute(
-        child: MedicineDeliveryScreen(),
-        index: 9,
+      newMedicineOrderScreen: (context) => AuthGuard(
+        child: _MainScreenRoute(child: MedicineDeliveryScreen(), index: 9),
+        intendedRoute: AppRoutes.newMedicineOrderScreen,
       ),
-      hospital: (context) => _MainScreenRoute(
-        child: HospitalSearchPage(),
-        index: 9,
+      hospital: (context) => AuthGuard(
+        child: _MainScreenRoute(child: HospitalSearchPage(), index: 9),
+        intendedRoute: AppRoutes.hospital,
       ),
-      clinicConsultationType: (context) => _MainScreenRoute(
-        child: ClinicConsultationTypePage(),
-        index: 9,
+      clinicConsultationType: (context) => AuthGuard(
+        child: _MainScreenRoute(child: ClinicConsultationTypePage(), index: 9),
+        intendedRoute: AppRoutes.clinicConsultationType,
       ),
-      labTest: (context) => _MainScreenRoute(
-        child: LabSearchPage(),
-        index: 9,
+      labTest: (context) => AuthGuard(
+        child: _MainScreenRoute(child: LabSearchPage(), index: 9),
+        intendedRoute: AppRoutes.labTest,
       ),
-      clinic: (context) => _MainScreenRoute(
-        child: ClinicSearchPage(),
-        index: 9,
+      clinic: (context) => AuthGuard(
+        child: _MainScreenRoute(child: ClinicSearchPage(), index: 9),
+        intendedRoute: AppRoutes.clinic,
       ),
-      clinicSearch: (context) => _MainScreenRoute(
-        child: ClinicSearchPage(),
-        index: 9,
+      clinicSearch: (context) => AuthGuard(
+        child: _MainScreenRoute(child: ClinicSearchPage(), index: 9),
+        intendedRoute: AppRoutes.clinicSearch,
       ),
       onlineDoctorConsultation: (context) => _MainScreenRoute(
         child: OnlineDoctorConsultationPage(),
         index: 9,
       ),
-      goToCart: (context) => _MainScreenRoute(
-        child: CartScreen(),
-        index: 9,
+      goToCart: (context) => AuthGuard(
+        child: _MainScreenRoute(child: CartScreen(), index: 9),
+        intendedRoute: AppRoutes.goToCart,
       ),
       blogs: (context) => _MainScreenRoute(
         child: BlogListPage(),
@@ -293,23 +306,46 @@ class AppRoutes {
         child: HelpCenterPage(),
         index: 9,
       ),
+      userMenu: (context) => _MainScreenRoute(
+        child: const UserMenuScreen(),
+        index: 9,
+      ),
 
       // MainScreen index routes
-      orderHistory: (context) => _MainScreenRoute(index: 1),
-      notification: (context) => _MainScreenRoute(index: 2),
-      healthRecords: (context) => _MainScreenRoute(index: 3),
-      trackOrderScreen: (context) => _MainScreenRoute(index: 4),
-      userProfile: (context) => _MainScreenRoute(index: 6),
+      orderHistory: (context) => AuthGuard(
+        child: _MainScreenRoute(index: 1),
+        intendedRoute: AppRoutes.orderHistory,
+      ),
+      notification: (context) => AuthGuard(
+        child: _MainScreenRoute(index: 2),
+        intendedRoute: AppRoutes.notification,
+      ),
+      healthRecords: (context) => AuthGuard(
+        child: _MainScreenRoute(index: 3),
+        intendedRoute: AppRoutes.healthRecords,
+      ),
+      trackOrderScreen: (context) => AuthGuard(
+        child: _MainScreenRoute(index: 4),
+        intendedRoute: AppRoutes.trackOrderScreen,
+      ),
+      userProfile: (context) => AuthGuard(
+        child: _MainScreenRoute(index: 6),
+        intendedRoute: AppRoutes.userProfile,
+      ),
 
       // Parametrized routes
       productList: (context) {
         final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-        return _MainScreenRoute(
-          child: ProductListScreen(
-            category: args?['category'] ?? 'medicine',
-            subCategory: args?['subCategory'],
+        return AuthGuard(
+          child: _MainScreenRoute(
+            child: ProductListScreen(
+              category: args?['category'] ?? 'medicine',
+              subCategory: args?['subCategory'],
+            ),
+            index: 9,
           ),
-          index: 9,
+          intendedRoute: AppRoutes.productList,
+          intendedArguments: args,
         );
       },
       productDetail: (context) {

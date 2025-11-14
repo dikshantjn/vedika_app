@@ -8,8 +8,6 @@ import 'dart:io';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/view/OrderHistoryPage.dart' show OrderHistoryNavigation;
 
-import 'package:vedika_healthcare/features/bloodBank/presentation/widgets/BloodRequestDetailsBottomSheet.dart';
-
 class BloodTypeSelectionDialog extends StatefulWidget {
   final List<String>? selectedBloodTypes;
   final Function(List<String>) onBloodTypesSelected;

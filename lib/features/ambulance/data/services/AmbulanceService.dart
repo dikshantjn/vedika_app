@@ -1,12 +1,10 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:telephony/telephony.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:mobile_number/mobile_number.dart';
 
 class AmbulanceService {
   final Telephony telephony = Telephony.instance;
   String emergencyNumber = ""; // Dynamic ambulance contact
-  String senderNumber = "Unknown"; // Device's mobile number
   Position? lastKnownPosition; // Store location in advance
 
   // ✅ Initialize Service on App Startup
@@ -24,41 +22,15 @@ class AmbulanceService {
   // ✅ Request All Necessary Permissions
   Future<bool> _requestPermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
-      Permission.phone,
-      Permission.sms,
       Permission.location,
-      Permission.contacts,
     ].request();
 
-    if (statuses[Permission.phone] != PermissionStatus.granted ||
-        statuses[Permission.sms] != PermissionStatus.granted ||
-        statuses[Permission.location] != PermissionStatus.granted ||
-        statuses[Permission.contacts] != PermissionStatus.granted) {
+    if (statuses[Permission.location] != PermissionStatus.granted) {
       print("❌ Some permissions are not granted.");
       return false;
     }
     return true;
   }
-
-  // // ✅ Fetch Device Mobile Number
-  // Future<void> _getMobileNumber() async {
-  //   try {
-  //     bool hasPermission = await MobileNumber.hasPhonePermission;
-  //     if (!hasPermission) {
-  //       await MobileNumber.requestPhonePermission;
-  //     }
-  //
-  //     List<SimCard>? simCards = await MobileNumber.getSimCards;
-  //
-  //     if (simCards != null && simCards.isNotEmpty) {
-  //       senderNumber = simCards.first.number ?? "Unknown";
-  //     }
-  //
-  //     print("📞 Device Mobile Number: $senderNumber");
-  //   } catch (e) {
-  //     print("❌ Error fetching mobile number: $e");
-  //   }
-  // }
 
   // ✅ Fetch Location in Advance
   Future<void> _fetchLocation() async {
@@ -85,46 +57,11 @@ class AmbulanceService {
     }
   }
 
-  // ✅ Send Emergency SMS to Ambulance
-  Future<void> sendEmergencySMS(String providerNumber) async {
-    emergencyNumber = providerNumber; // Set dynamic number
-
-    if (lastKnownPosition == null) {
-      print("❌ Location not available. Trying to fetch again...");
-      await _fetchLocation();
-    }
-
-    String message = "Emergency! Need an ambulance urgently.\n"
-        "Location: https://maps.google.com/?q=${lastKnownPosition?.latitude},${lastKnownPosition?.longitude}\n"
-        "Caller: $senderNumber";
-
-    print("📨 Checking SMS permission...");
-    bool canSendSms = (await telephony.requestSmsPermissions) ?? false;
-    if (!canSendSms) {
-      print("❌ SMS permission denied!");
-      return;
-    }
-
-    print("📨 Sending Emergency SMS...");
-    await telephony.sendSms(
-      to: emergencyNumber,
-      message: message,
-      statusListener: (SendStatus status) {
-        if (status == SendStatus.SENT) {
-        } else {
-          print("❌ Failed to send SMS.");
-        }
-      },
-    );
-  }
-
   Future<bool> triggerAmbulanceEmergency(String providerNumber) async {
     print("🚨 Ambulance Emergency button clicked!");
 
     try {
-      // await _getMobileNumber();
-      sendEmergencySMS(providerNumber); // ✅ Send SMS
-      callAmbulance(providerNumber);    // ✅ Call immediately
+      callAmbulance(providerNumber);    // Call only; SMS removed
 
       // ✅ Simulating request acceptance (Replace with real API response)
       await Future.delayed(Duration(seconds: 2)); // Simulate processing time

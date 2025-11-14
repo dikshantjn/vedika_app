@@ -1,17 +1,13 @@
-import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/auth/presentation/viewmodel/UserViewModel.dart';
-import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
 import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
+import 'package:vedika_healthcare/core/init/AppInitializer.dart';
+import 'package:vedika_healthcare/core/viewmodel/SplashViewModel.dart';
 import 'package:vedika_healthcare/features/DeliveryAddress/presentation/viewModal/AddNewAddressViewModel.dart';
 import 'package:vedika_healthcare/features/EmergencyService/presentation/viewmodel/EmergencyViewModel.dart';
 import 'package:vedika_healthcare/features/HealthRecords/presentation/viewmodel/HealthRecordViewModel.dart';
@@ -46,7 +42,6 @@ import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentatio
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/NewOrders/NewOrdersViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/ProductPartner/presentation/viewmodels/product_partner_viewmodel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/MedicalRegistration/ViewModal/medical_store_registration_viewmodel.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorRegistrationViewModel.dart';
 import 'package:vedika_healthcare/features/ambulance/presentation/viewmodel/AmbulanceSearchViewModel.dart';
@@ -71,18 +66,14 @@ import 'package:vedika_healthcare/features/labTest/presentation/viewmodel/LabTes
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/CartAndPlaceOrderViewModel.dart';
 import 'package:vedika_healthcare/features/medicineDelivery/presentation/viewmodel/DeliveryPartner/DeliveryPartnerViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/BloodBankOrderViewModel.dart';
-import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/shared/utils/AppLifecycleObserver.dart';
 import 'package:vedika_healthcare/shared/widgets/SplashScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_performance/firebase_performance.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_analytics/observer.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:vedika_healthcare/shared/services/GlobalKeys.dart';
+import 'package:vedika_healthcare/shared/widgets/GlobalConnectivityBanner.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AmbulanceMainViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/AmbulanceAgencyVendor/presentation/viewModal/AgencyDashboardViewModel.dart';
 import 'package:vedika_healthcare/features/home/presentation/viewmodel/SearchViewModel.dart';
@@ -96,85 +87,14 @@ import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileComple
 import 'package:vedika_healthcare/features/cart/presentation/viewmodel/CartViewModel.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/DoctorClinicTimeslotViewModel.dart';
 import 'package:vedika_healthcare/core/viewmodel/CoreNotificationViewModel.dart';
-import 'package:vedika_healthcare/firebase_options.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 // Device Preview Configuration
 const bool enableDevicePreview = false; // Set to false to disable device preview
 
-void onBackgroundNotificationTap(NotificationResponse response) {
-  print("[Background Notification Tap] Payload: ${response.payload}");
-}
+void onBackgroundNotificationTap(dynamic response) {}
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Hive
-  await Hive.initFlutter();
-  
-  // Initialize Firebase with platform options
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // Configure Crashlytics/Performance/Analytics collection
-  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode);
-  await FirebasePerformance.instance.setPerformanceCollectionEnabled(!kDebugMode);
-  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(!kDebugMode);
-
-  // Forward Flutter framework errors to Crashlytics as fatal
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-  };
-
-  // Capture uncaught async errors
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
-  WidgetsBinding.instance.addObserver(AppLifecycleObserver());
-
-  // Initialize FCM Service
-  final fcmService = FCMService();
-
-  // Handle initial notification (app opened from terminated state)
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMessage != null) {
-    // Use a more reliable approach for initial notification handling
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (navigatorKey.currentContext != null && navigatorKey.currentContext!.mounted) {
-        fcmService.handleNotificationTapWithAppLaunch(
-          jsonEncode(initialMessage.data),
-          navigatorKey.currentContext!,
-          isAppLaunch: true, // Explicitly mark as app launch
-        );
-      } else {
-        debugPrint("⚠️ Context not ready for initial notification, will handle when ready");
-      }
-    });
-  }
-
-  // Set up FCM message handlers
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    debugPrint('Got a message whilst in the foreground!');
-    debugPrint('Message data: ${message.data}');
-
-    if (message.notification != null) {
-      debugPrint('Message also contained a notification: ${message.notification}');
-
-      // FCM service will handle showing the notification
-      // CoreNotificationViewModel will be updated when the notification page is opened
-    }
-  });
-
-  // Request permissions and setup token
-  await fcmService.requestNotificationPermission();
-  String? userId = await StorageService.getUserId();
-  String? vendorId = await VendorLoginService().getVendorId();
-  if (userId != null) await fcmService.getTokenAndSend(userId);
-  else if (vendorId != null) await fcmService.getVendorTokenAndSend(vendorId);
+  await AppInitializer.initCore();
 
   runApp(
     enableDevicePreview && !kReleaseMode
@@ -193,6 +113,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => SplashViewModel()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => ScannerViewModel()),
@@ -220,7 +141,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserPersonalProfileViewModel()),
         ChangeNotifierProvider(create: (_) => UserMedicalProfileViewModel()),
         ChangeNotifierProvider(create: (_) => HealthRecordViewModel()),
-        ChangeNotifierProvider(create: (_) => UserLoginViewModel(navigatorKey: navigatorKey)),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => UserViewModel()),
         ChangeNotifierProvider(create: (_) => VendorRegistrationViewModel()),
@@ -294,7 +214,13 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             useInheritedMediaQuery: enableDevicePreview && !kReleaseMode, // Conditional for device preview
             locale: enableDevicePreview && !kReleaseMode ? DevicePreview.locale(context) : null, // Conditional for device preview
-            builder: enableDevicePreview && !kReleaseMode ? DevicePreview.appBuilder : null, // Conditional for device preview
+            builder: (context, child) {
+              final Widget appChild = enableDevicePreview && !kReleaseMode
+                  ? DevicePreview.appBuilder(context, child)
+                  : (child ?? const SizedBox.shrink());
+              // Inject a global connectivity banner that can show on top of any screen.
+              return GlobalConnectivityBanner(child: appChild);
+            },
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/AuthService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/features/Vendor/BloodBankAgencyVendor/data/model/BloodBankBooking.dart';
 import 'package:vedika_healthcare/features/orderHistory/data/repositories/BloodBankOrderRepository.dart';
@@ -8,7 +8,7 @@ import 'package:vedika_healthcare/features/orderHistory/data/services/BloodBankO
 
 class BloodBankOrderViewModel extends ChangeNotifier {
   final BloodBankOrderRepository _repository = BloodBankOrderRepository();
-  final AuthRepository _authRepository = AuthRepository();
+  final AuthService _authRepository = AuthService();
   final BloodBankOrderService _service = BloodBankOrderService();
 
   List<BloodBankBooking> _bookings = [];

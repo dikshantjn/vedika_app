@@ -1,18 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart';
-import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
-import 'package:vedika_healthcare/core/navigation/AppRoutes.dart';
-import 'package:vedika_healthcare/features/EmergencyService/data/services/EmergencyService.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
-import 'package:vedika_healthcare/features/Vendor/Registration/ViewModels/VendorLoginViewModel.dart';
-import 'package:vedika_healthcare/features/cart/index.dart';
-import 'package:vedika_healthcare/shared/services/LocationProvider.dart';
-import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
-import 'package:vedika_healthcare/features/membership/presentation/viewmodel/MembershipViewModel.dart';
-import 'package:vedika_healthcare/core/auth/presentation/viewmodel/ProfileCompletionViewModel.dart';
+import 'package:vedika_healthcare/core/viewmodel/SplashViewModel.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -20,114 +8,31 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver {
-  late LocationProvider locationProvider;
-  late EmergencyService emergencyService;
-  bool _initializing = false;
-  final VendorLoginService _loginService = VendorLoginService();
-  Timer? _timeoutTimer;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeApp();
+    // Kick off initialization via ViewModel; enforces 1s splash internally
+    Future.microtask(() {
+      if (mounted) {
+        context.read<SplashViewModel>().initialize(context);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _timeoutTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && !_initializing) {
-      _initializeApp();
-    }
-  }
-
-  Future<void> _initializeApp() async {
-    if (_initializing) return;
-    _initializing = true;
-
-    try {
-      _timeoutTimer = Timer(const Duration(seconds: 10), () {
-        if (_initializing) {
-          _initializing = false;
-          _navigateToLogin();
-        }
-      });
-
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ));
-
-      // Use globally provided LocationProvider for faster, shared availability
-      locationProvider = Provider.of<LocationProvider>(context, listen: false);
-      await locationProvider.initializeLocation();
-      // await getWifiIpAddress();
-
-      // Initialize EmergencyService using the singleton pattern
-      await EmergencyService.initialize(locationProvider);
-      emergencyService = EmergencyService.instance;
-
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      final vendorAuthViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-      final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
-      final membershipViewModel = Provider.of<MembershipViewModel>(context, listen: false);
-      final profileCompletionVM = Provider.of<ProfileCompletionViewModel>(context, listen: false);
-
-      await Future.wait([
-        authViewModel.checkLoginStatus(),
-        vendorAuthViewModel.checkLoginStatus(),
-      ]);
-
-      // Fetch cart counts if user is logged in
-      if (authViewModel.isLoggedIn) {
-        final userId = await StorageService.getUserId();
-        if (userId != null && userId.isNotEmpty) {
-          await cartViewModel.fetchMedicineCartCount(userId: userId);
-          await cartViewModel.fetchProductCartCount();
-        }
+    if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        context.read<SplashViewModel>().initialize(context);
       }
-
-      if (!mounted) return;
-
-      if (authViewModel.isLoggedIn) {
-        // Require userId presence; otherwise route to login
-        final userId = await StorageService.getUserId();
-        if (userId != null && userId.isNotEmpty) {
-          await membershipViewModel.loadPlans();
-          await membershipViewModel.loadCurrentMembership(userId);
-          await profileCompletionVM.preloadAll(userId);
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        } else {
-          _navigateToLogin();
-        }
-
-      } else if (vendorAuthViewModel.isVendorLoggedIn) {
-        int? role = await _loginService.getVendorRole();
-        await vendorAuthViewModel.navigateToDashboard(context, role);
-      } else {
-        _navigateToLogin();
-      }
-    } catch (e) {
-      
-      _navigateToLogin();
-    } finally {
-      _timeoutTimer?.cancel();
-      _initializing = false;
     }
-  }
-
-  void _navigateToLogin() {
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => UserLoginScreen()),
-    );
   }
 
   @override

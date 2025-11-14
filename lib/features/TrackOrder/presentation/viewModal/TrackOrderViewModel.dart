@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:vedika_healthcare/core/auth/data/repositories/AuthRepository.dart';
+import 'package:vedika_healthcare/core/auth/data/services/AuthService.dart';
 import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
 import 'package:vedika_healthcare/core/constants/ApiEndpoints.dart';
 import 'package:vedika_healthcare/features/TrackOrder/data/Services/TrackOrderService.dart';
@@ -550,7 +550,7 @@ class TrackOrderViewModel extends ChangeNotifier {
 
     try {
       String? userId = await StorageService.getUserId();
-      String? token = await AuthRepository().getToken();
+      String? token = await AuthService().getToken();
 
       if (userId == null || token == null) {
         throw Exception("User ID or token not found");

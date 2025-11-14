@@ -4,6 +4,7 @@ import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLo
 import 'package:vedika_healthcare/shared/services/FCMService.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:vedika_healthcare/shared/services/GlobalKeys.dart';
 
 class VendorLoginViewModel extends ChangeNotifier {
   String? selectedRole;
@@ -96,12 +97,11 @@ class VendorLoginViewModel extends ChangeNotifier {
 
         if (response['success'] == true) {
         String? vendorId = await VendorLoginService().getVendorId();
-        await FCMService().getVendorTokenAndSend(vendorId ?? " ");
+        // Fire-and-forget: do not block navigation on FCM registration
+        try { FCMService().getVendorTokenAndSend(vendorId ?? ""); } catch (_) {}
 
           _isVendorLoggedIn = true;  // Update login state
           notifyListeners();
-
-          await Future.delayed(const Duration(seconds: 1));
 
           // Navigate to respective dashboard based on role
           switch (role) {
@@ -397,16 +397,29 @@ class VendorLoginViewModel extends ChangeNotifier {
   }
 
   /// **🔹 Logout Vendor**
-  Future<void> logout() async {
+  Future<void> logout({BuildContext? context, bool navigate = true}) async {
     try {
       String? vendorId = await VendorLoginService().getVendorId();
-      await FCMService().deleteVendorTokenFromServer(vendorId!);
+      // Fire-and-forget: do not block logout on token deletion
+      try { if (vendorId != null) FCMService().deleteVendorTokenFromServer(vendorId); } catch (_) {}
       
       var response = await _vendorLoginService.logoutVendor();
       
       if (response['success']) {
         _isVendorLoggedIn = false; // Update login state
         notifyListeners();
+
+        if (navigate) {
+          // Prefer global navigator to avoid using a possibly unmounted context
+          final navState = navigatorKey.currentState;
+          if (navState != null) {
+            navState.pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+          } else if (context != null) {
+            if (context.mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+            }
+          }
+        }
       } else {
         print("❌ Logout failed: ${response['message']}");
       }

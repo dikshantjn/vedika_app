@@ -253,12 +253,12 @@ class DashboardDrawer extends StatelessWidget {
             final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
             
             // Perform logout
-            loginViewModel.logout().then((_) {
-              // Navigate to login screen
-              Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                AppRoutes.login,
-                (route) => false,
-              );
+            loginViewModel.logout(navigate: true).then((_) {
+              // Close loading dialog if still open
+              final rootNav = Navigator.of(context, rootNavigator: true);
+              if (rootNav.canPop()) {
+                rootNav.pop();
+              }
             }).catchError((error) {
               // If there's an error, pop the loading dialog and show the drawer again
               Navigator.pop(context); // Pop loading dialog

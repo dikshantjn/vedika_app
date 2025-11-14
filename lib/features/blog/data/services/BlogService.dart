@@ -18,12 +18,32 @@ class BlogService {
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data is Map && data['success'] == true && data['posts'] is List) {
-          return (data['posts'] as List).map((e) => BlogModel.fromJson(e)).toList();
-        } else {
-          print('[BlogService] API response does not contain posts.');
-          return [];
+        List<dynamic>? posts;
+
+        // Handle multiple possible API shapes
+        if (data is List) {
+          posts = data;
+        } else if (data is Map) {
+          // Prefer explicit posts array
+          if (data['posts'] is List) {
+            posts = data['posts'] as List;
+          } else if (data['data'] is List) {
+            posts = data['data'] as List;
+          } else if (data['results'] is List) {
+            posts = data['results'] as List;
+          } else if (data['items'] is List) {
+            posts = data['items'] as List;
+          } else if (data['data'] is Map && (data['data']['posts'] is List)) {
+            posts = (data['data']['posts'] as List);
+          }
         }
+
+        if (posts != null) {
+          return posts.map((e) => BlogModel.fromJson(e as Map<String, dynamic>)).toList();
+        }
+
+        print('[BlogService] API response does not contain posts.');
+        return [];
       } else {
         print('[BlogService] Failed to load blogs, status: ' + response.statusCode.toString());
         throw Exception('Failed to load blogs');

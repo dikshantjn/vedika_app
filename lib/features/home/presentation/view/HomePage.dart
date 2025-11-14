@@ -211,7 +211,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       extendBody: true,
-      drawer: DrawerMenu(),
+      // drawer removed; we navigate to a full-screen user menu instead
       body: _buildHomeBody(),
     );
   }
@@ -284,8 +284,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Builder(
                   builder: (context) => GestureDetector(
                     onTap: () {
-                      Scaffold.of(context).openDrawer();
                       _refreshUserProfile();
+                      Navigator.pushNamed(context, AppRoutes.userMenu);
                     },
                     child: Consumer<UserViewModel>(
                       builder: (context, userViewModel, child) {
@@ -609,8 +609,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: Builder(
                   builder: (context) => GestureDetector(
                     onTap: () {
-                      Scaffold.of(context).openDrawer();
                       _refreshUserProfile();
+                      Navigator.pushNamed(context, AppRoutes.userMenu);
                     },
                     child: Consumer<UserViewModel>(
                       builder: (context, userViewModel, child) {

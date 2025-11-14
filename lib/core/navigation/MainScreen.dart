@@ -11,6 +11,9 @@ import 'package:vedika_healthcare/features/settings/presentation/view/SettingsPa
 import 'package:vedika_healthcare/features/help/presentation/view/HelpCenterPage.dart';
 import 'package:vedika_healthcare/shared/widgets/BottomNavBar.dart';
 import 'package:vedika_healthcare/shared/widgets/DrawerMenu.dart';
+import 'package:provider/provider.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
+import 'package:vedika_healthcare/core/auth/presentation/view/userLoginScreen.dart' show showLoginBottomSheet;
 
 // Global navigation service to manage MainScreen state
 class MainScreenNavigator {
@@ -132,6 +135,8 @@ class MainScreenState extends State<MainScreen> {
 
   // Bottom navigation visibility
   bool _bottomNavVisible = true;
+  // Ensure we only prompt login once per MainScreen lifecycle
+  bool _loginPromptShown = false;
 
   @override
   void initState() {
@@ -151,6 +156,7 @@ class MainScreenState extends State<MainScreen> {
     // Handle route arguments if passed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleRouteArguments();
+      _maybePromptLogin();
     });
   }
 
@@ -268,8 +274,7 @@ class MainScreenState extends State<MainScreen> {
     // Add to route stack before updating
     _addToRouteStack(newIndex, null);
     
-    // Clear the page cache for the new index to force initialization
-    _pageCache.remove(newIndex);
+    // Do NOT clear cache; preserve previously built pages for instant back/forward
     
     setState(() {
       _selectedIndex = newIndex;
@@ -283,6 +288,10 @@ class MainScreenState extends State<MainScreen> {
         _bottomNavVisible = true;
       }
     });
+    // If user navigates to Home tab, consider prompting login
+    if (newIndex == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptLogin());
+    }
   }
 
   // Method to handle transient child updates
@@ -307,8 +316,7 @@ class MainScreenState extends State<MainScreen> {
       _currentTransientChild = child;
       // Keep current bottom nav visibility as-is unless explicitly changed
     });
-    // Clear the page cache for the new index to force rebuild
-    _pageCache.remove(index);
+    // Preserve cache for faster back
   }
 
   // Method to add route to stack
@@ -342,9 +350,11 @@ class MainScreenState extends State<MainScreen> {
         // Restore the recorded bottom nav visibility for the previous route
         _bottomNavVisible = previousBottomNavVisible;
       });
-      
-      // Clear the page cache for the new index to force rebuild
-      _pageCache.remove(previousIndex);
+
+      // Ensure the previous page is cached for instant rendering
+      if (!_pageCache.containsKey(previousIndex)) {
+        _pageCache[previousIndex] = _createPage(previousIndex);
+      }
       
       return true;
     }
@@ -427,6 +437,25 @@ class MainScreenState extends State<MainScreen> {
             : null,
       ),
     );
+  }
+}
+
+extension _MainScreenLoginPrompt on MainScreenState {
+  void _maybePromptLogin() {
+    if (!mounted || _loginPromptShown) return;
+    try {
+      final auth = Provider.of<AuthViewModel>(context, listen: false);
+      if (!auth.isLoggedIn && _selectedIndex == 0) {
+        _loginPromptShown = true;
+        // Bottom sheet login - non-blocking
+        showLoginBottomSheet(
+          context,
+          dimBackground: true,
+        );
+      }
+    } catch (_) {
+      // If provider not available for any reason, skip prompt
+    }
   }
 }
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vedika_healthcare/features/notifications/data/models/AppNotification.dart';
 import 'package:vedika_healthcare/features/notifications/data/repositories/NotificationRepository.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:vedika_healthcare/core/auth/data/services/StorageService.dart';
+import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 
 class NotificationViewModel extends ChangeNotifier {
   final NotificationRepository _repository;
@@ -11,8 +12,6 @@ class NotificationViewModel extends ChangeNotifier {
 
   NotificationViewModel(this._repository) {
     _init();
-    // Listen to changes in the notifications box
-    Hive.box<AppNotification>('notifications').listenable().addListener(_onNotificationsChanged);
   }
 
   List<AppNotification> get notifications => _searchQuery.isEmpty
@@ -22,14 +21,8 @@ class NotificationViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   int get unreadCount => _repository.unreadCount;
 
-  void _onNotificationsChanged() {
-    fetchNotifications();
-  }
-
   @override
   void dispose() {
-    // Clean up the listener when the ViewModel is disposed
-    Hive.box<AppNotification>('notifications').listenable().removeListener(_onNotificationsChanged);
     super.dispose();
   }
 
@@ -43,6 +36,9 @@ class NotificationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final userId = await StorageService.getUserId();
+      final vendorId = await VendorLoginService().getVendorId();
+      await _repository.fetchNotifications(userId: userId, vendorId: vendorId);
       _notifications = _repository.getAllNotifications();
     } catch (e) {
       debugPrint('Error fetching notifications: $e');
@@ -54,22 +50,26 @@ class NotificationViewModel extends ChangeNotifier {
 
   Future<void> addNotification(AppNotification notification) async {
     await _repository.saveNotification(notification);
-    // No need to call fetchNotifications() here as the box listener will handle it
+    _notifications = _repository.getAllNotifications();
+    notifyListeners();
   }
 
   Future<void> markAsRead(String id) async {
     await _repository.markAsRead(id);
-    // No need to call fetchNotifications() here as the box listener will handle it
+    _notifications = _repository.getAllNotifications();
+    notifyListeners();
   }
 
   Future<void> deleteNotification(String id) async {
     await _repository.deleteNotification(id);
-    // No need to call fetchNotifications() here as the box listener will handle it
+    _notifications = _repository.getAllNotifications();
+    notifyListeners();
   }
 
   Future<void> clearAllNotifications() async {
     await _repository.clearAllNotifications();
-    // No need to call fetchNotifications() here as the box listener will handle it
+    _notifications = _repository.getAllNotifications();
+    notifyListeners();
   }
 
   void setSearchQuery(String query) {

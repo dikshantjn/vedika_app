@@ -51,9 +51,8 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
       ),
       child: WillPopScope(
         onWillPop: () async {
-          // Navigate back to user login screen when system back button is pressed
-          Navigator.pushReplacementNamed(context, AppRoutes.login);
-          return false; // Prevent default back behavior
+          // Allow system back to pop this route. Avoid calling maybePop here to prevent recursion.
+          return true;
         },
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -108,8 +107,8 @@ class _VendorRegistrationPageState extends State<VendorRegistrationPage> {
             setState(() {
               selectedVendorType = null;
             });
-            // Navigate back to user login screen
-            Navigator.pushReplacementNamed(context, AppRoutes.login);
+            // Pop back to the previous screen (do not push login again)
+            Navigator.maybePop(context);
           },
         ),
       ],

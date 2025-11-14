@@ -59,12 +59,16 @@ class _FeaturedArticlesSectionState extends State<FeaturedArticlesSection>
   Future<void> _loadFeaturedBlogs() async {
     try {
       final blogs = await _blogService.fetchAllBlogs();
+      if (!mounted) return;
       setState(() {
         _featuredBlogs = blogs;
         _isLoading = false;
       });
-      _animationController.forward();
+      if (mounted) {
+        _animationController.forward();
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });

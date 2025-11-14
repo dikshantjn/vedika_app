@@ -263,27 +263,18 @@ class _HospitalDashboardScreenState extends State<HospitalDashboardScreen> {
               // Close the drawer first
               Navigator.pop(context);
               
-              if (context.mounted) {
-                try {
-                  final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
-                  await loginViewModel.logout();
-                  
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.login,
-                      (route) => false,
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Error during logout. Please try again.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+              if (!context.mounted) return;
+              try {
+                final loginViewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
+                await loginViewModel.logout(navigate: true);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error during logout. Please try again.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               }
             },

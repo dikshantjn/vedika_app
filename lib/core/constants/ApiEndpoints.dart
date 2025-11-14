@@ -1,11 +1,11 @@
 class ApiEndpoints {
   // ✅ Base URL
-  static const String socketUrl = "http://192.168.1.44:5000";  // Current IP address
-  static const String baseUrl = "http://192.168.1.44:5000/api";  // Current IP address
+  static const String socketUrl = "http://192.168.1.36:5000";  // Current IP address
+  static const String baseUrl = "http://192.168.1.36:5000/api";  // Current IP address
   // static const String baseUrl = "https://vedika-healthcare-backend-1.onrender.com/api";
   // static const String socketUrl = "https://vedika-healthcare-backend-1.onrender.com";  // Current IP address
-  // static const String socketUrl = "http://172.20.10.5:5000";  // Current IP address
-  // static const String baseUrl = "http://172.20.10.5:5000/api";  // Current IP address
+  // static const String socketUrl = "http://10.242.226.210:5000";  // Current IP address
+  // static const String baseUrl = "http://10.242.226.210:5000/api";  // Current IP address
 
 
 

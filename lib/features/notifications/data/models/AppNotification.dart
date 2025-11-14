@@ -1,27 +1,18 @@
-import 'package:hive/hive.dart';
 import 'dart:convert';
 
-@HiveType(typeId: 0)
 class AppNotification {
-  @HiveField(0)
   final String id;
 
-  @HiveField(1)
   final String title;
 
-  @HiveField(2)
   final String body;
 
-  @HiveField(3)
   final String dataJson; // Store data as JSON string
 
-  @HiveField(4)
   final DateTime timestamp;
 
-  @HiveField(5)
   final String type;
 
-  @HiveField(6)
   bool isRead;
 
   AppNotification({
@@ -35,6 +26,20 @@ class AppNotification {
   }) : dataJson = json.encode(data);
 
   Map<String, dynamic> get data => json.decode(dataJson) as Map<String, dynamic>;
+
+  factory AppNotification.fromJson(Map<String, dynamic> jsonMap) {
+    final data = (jsonMap['data'] ?? {}) as Map<String, dynamic>;
+    final ts = jsonMap['timestamp'];
+    return AppNotification(
+      id: jsonMap['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: jsonMap['title']?.toString() ?? '',
+      body: jsonMap['body']?.toString() ?? '',
+      data: data,
+      timestamp: ts is String ? DateTime.tryParse(ts) ?? DateTime.now() : (ts is int ? DateTime.fromMillisecondsSinceEpoch(ts) : DateTime.now()),
+      type: jsonMap['type']?.toString() ?? 'General',
+      isRead: (jsonMap['isRead'] as bool?) ?? (jsonMap['read'] as bool?) ?? false,
+    );
+  }
 
   factory AppNotification.fromPayload(Map<String, dynamic> payload) {
     final notification = payload['notification'] as Map<String, dynamic>;

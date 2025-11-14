@@ -61,6 +61,3 @@ class ProfileNavigationService {
     }
   }
 }
-
-// Global navigator key for navigation from static context
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(); 

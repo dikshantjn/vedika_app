@@ -106,11 +106,8 @@ class MedicalStoreVendorDrawerMenu extends StatelessWidget {
           // Get the ViewModel instance
           final viewModel = Provider.of<VendorLoginViewModel>(context, listen: false);
 
-          // Call the logout method
-          await viewModel.logout();
-
-          // Navigate to Login Page after logout
-          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+          // Call the logout method and let ViewModel navigate to Home
+          await viewModel.logout(navigate: true);
         } else {
           onItemSelected(index);
           Navigator.pop(context);

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:vedika_healthcare/core/auth/presentation/viewmodel/userLoginViewModel.dart';
+import 'package:sms_autofill/sms_autofill.dart';
+import 'package:vedika_healthcare/core/auth/presentation/viewmodel/AuthViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 
 class VerifyOtpWidget extends StatefulWidget {
@@ -9,7 +10,7 @@ class VerifyOtpWidget extends StatefulWidget {
   _VerifyOtpWidgetState createState() => _VerifyOtpWidgetState();
 }
 
-class _VerifyOtpWidgetState extends State<VerifyOtpWidget> {
+class _VerifyOtpWidgetState extends State<VerifyOtpWidget> with CodeAutoFill {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
@@ -23,10 +24,12 @@ class _VerifyOtpWidgetState extends State<VerifyOtpWidget> {
         _focusNodes.first.requestFocus();
       }
     });
+    listenForCode();
   }
 
   @override
   void dispose() {
+    cancel(); // stop listening for code
     for (final c in _controllers) {
       c.dispose();
     }
@@ -34,6 +37,21 @@ class _VerifyOtpWidgetState extends State<VerifyOtpWidget> {
       f.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void codeUpdated() {
+    final receivedCode = code ?? '';
+    if (receivedCode.isEmpty) return;
+    final digits = receivedCode.replaceAll(RegExp(r'\D'), '');
+    for (int i = 0; i < 6; i++) {
+      _controllers[i].text = i < digits.length ? digits[i] : '';
+    }
+    setState(() {});
+    if (digits.length == 6 && mounted) {
+      final vm = Provider.of<AuthViewModel>(context, listen: false);
+      vm.verifyOtp(digits, context);
+    }
   }
 
   String _currentOtp() => _controllers.map((c) => c.text).join();
@@ -143,7 +161,7 @@ class _VerifyOtpWidgetState extends State<VerifyOtpWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final signupViewModel = Provider.of<UserLoginViewModel>(context);
+    final signupViewModel = Provider.of<AuthViewModel>(context);
 
     final String otp = _currentOtp();
     final bool isComplete = otp.length == 6 && !otp.contains('');
