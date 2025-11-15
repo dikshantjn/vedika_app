@@ -167,8 +167,11 @@ class _LoginBottomSheetContentState extends State<_LoginBottomSheetContent> {
                 if (nav.canPop()) nav.pop();
               }
               await Future.delayed(const Duration(milliseconds: 10));
-              // Use pushNamed so MainScreen remains mounted; _MainScreenRoute will pop itself
-              rootNav.pushNamed(routeName, arguments: args);
+              // Avoid stacking an extra MainScreen when bottom sheet was launched from Home
+              final shouldNavigate = widget.closeLoginRouteAfterSheet || routeName != AppRoutes.home;
+              if (shouldNavigate) {
+                rootNav.pushNamed(routeName, arguments: args);
+              }
             });
           }
 

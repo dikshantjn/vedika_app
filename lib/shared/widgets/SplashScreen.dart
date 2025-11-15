@@ -7,11 +7,17 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver {
+class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  late final AnimationController _loaderController;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loaderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
     // Kick off initialization via ViewModel; enforces 1s splash internally
     Future.microtask(() {
       if (mounted) {
@@ -23,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _loaderController.dispose();
     super.dispose();
   }
 
@@ -63,29 +70,43 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo animation
-                  Container(
-                    height: 120,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          spreadRadius: 5,
+                  AnimatedBuilder(
+                    animation: _loaderController,
+                    builder: (context, child) {
+                      final double scale = 0.98 + (_loaderController.value * 0.04);
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          height: 120,
+                          width: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 22,
+                                spreadRadius: 6,
+                              ),
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.10),
+                                blurRadius: 8,
+                                spreadRadius: -2,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              child: Image.asset(
+                                'assets/logo/Logo.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        child: Image.asset(
-                          'assets/logo/Logo.png',
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 30),
                   // App name with animation
@@ -125,24 +146,64 @@ class _SplashScreenState extends State<SplashScreen> with WidgetsBindingObserver
                 ),
               ),
                   const SizedBox(height: 40),
-                  // Loading indicator
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 3,
-                    ),
-                  ),
+                  // Elegant dot wave loader
+                  _DotWaveLoader(controller: _loaderController),
             ],
           ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DotWaveLoader extends StatelessWidget {
+  final AnimationController controller;
+  const _DotWaveLoader({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 24,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(5, (index) {
+          final curved = CurvedAnimation(
+            parent: controller,
+            curve: Interval(
+              (index * 0.12).clamp(0.0, 1.0),
+              (index * 0.12 + 0.6).clamp(0.0, 1.0),
+              curve: Curves.easeInOut,
+            ),
+          );
+          final scale = Tween<double>(begin: 0.7, end: 1.25).animate(curved);
+          final opacity = Tween<double>(begin: 0.5, end: 1.0).animate(curved);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: ScaleTransition(
+              scale: scale,
+              child: FadeTransition(
+                opacity: opacity,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.25),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
