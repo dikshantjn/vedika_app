@@ -9,15 +9,47 @@ class StorePhotosBuilder {
   /// Builds the profile photo using only the **first URL** from the list
   Future<Widget> buildProfilePhoto(String encodedUrls) async {
     try {
-      List<String> urls = List<String>.from(jsonDecode(encodedUrls));
+      // Check if the string is empty or null
+      if (encodedUrls.isEmpty || encodedUrls.trim().isEmpty) {
+        return _buildPlaceholderIcon();
+      }
+
+      List<String> urls = [];
+      
+      // Check if it's a JSON array
+      if (encodedUrls.trim().startsWith('[')) {
+        try {
+          urls = List<String>.from(jsonDecode(encodedUrls));
+        } catch (e) {
+          // Not valid JSON, treat as single URL string if it's a valid URL
+          if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+            urls = [encodedUrls];
+          } else {
+            return _buildPlaceholderIcon();
+          }
+        }
+      } else {
+        // Not a JSON array, check if it's a valid URL
+        if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+          urls = [encodedUrls];
+        } else {
+          // Not a valid URL, show placeholder
+          return _buildPlaceholderIcon();
+        }
+      }
+
       if (urls.isEmpty) return _buildPlaceholderIcon(); // No images available
 
       String firstImageUrl = urls.first;
 
-      FullMetadata metadata = await _metadataService.getFileMetadata(firstImageUrl);
-      String description = metadata.customMetadata?["description"] ?? "Store Image";
-
-      return _buildPhotoBox(firstImageUrl, description, size: 80);
+      try {
+        FullMetadata metadata = await _metadataService.getFileMetadata(firstImageUrl);
+        String description = metadata.customMetadata?["description"] ?? "Store Image";
+        return _buildPhotoBox(firstImageUrl, description, size: 80);
+      } catch (e) {
+        // If metadata fetch fails, still try to show the image
+        return _buildPhotoBox(firstImageUrl, "Store Image", size: 80);
+      }
     } catch (e) {
       debugPrint("❌ Error fetching profile photo: $e");
       return _buildPlaceholderIcon();
@@ -27,7 +59,78 @@ class StorePhotosBuilder {
   /// Builds the store photos grid from all URLs
   List<Widget> buildStorePhotos(String encodedUrls) {
     try {
-      List<String> urls = List<String>.from(jsonDecode(encodedUrls));
+      // Check if the string is empty or null
+      if (encodedUrls.isEmpty || encodedUrls.trim().isEmpty) {
+        return [
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "No photos found",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          ),
+        ];
+      }
+
+      List<String> urls = [];
+      
+      // Check if it's a JSON array
+      if (encodedUrls.trim().startsWith('[')) {
+        try {
+          urls = List<String>.from(jsonDecode(encodedUrls));
+        } catch (e) {
+          // Not valid JSON, treat as single URL string if it's a valid URL
+          if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+            urls = [encodedUrls];
+          } else {
+            return [
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "No photos found",
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                ),
+              ),
+            ];
+          }
+        }
+      } else {
+        // Not a JSON array, check if it's a valid URL
+        if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+          urls = [encodedUrls];
+        } else {
+          // Not a valid URL, show no photos message
+          return [
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "No photos found",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ),
+            ),
+          ];
+        }
+      }
+
+      if (urls.isEmpty) {
+        return [
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "No photos found",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          ),
+        ];
+      }
 
       // Return a list containing the GridView widget
       return [
@@ -67,7 +170,15 @@ class StorePhotosBuilder {
     } catch (e) {
       debugPrint("❌ Error decoding store photo URLs: $e");
       return [
-        const Center(child: Text("Error loading store photos", style: TextStyle(color: Colors.red))),
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "No photos found",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+        ),
       ];
     }
   }

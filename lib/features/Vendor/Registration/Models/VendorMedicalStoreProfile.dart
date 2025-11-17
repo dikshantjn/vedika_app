@@ -93,7 +93,7 @@ class VendorMedicalStoreProfile {
       availableMedicines: _convertToList(json['availableMedicines']),
       registrationCertificates: _convertToList(json['registrationCertificates']),
       complianceCertificates: _convertToList(json['complianceCertificates']),
-      photos: _convertToList(json['photos']),
+      photos: _convertPhotosToList(json['photos']),
     );
   }
 
@@ -122,6 +122,48 @@ class VendorMedicalStoreProfile {
         return _convertToList(parsed);
       } catch (e) {
         return [data];  // Convert single string to list
+      }
+    }
+    return [];
+  }
+
+  // ✅ **Helper function specifically for photos to extract URLs**
+  static List<String> _convertPhotosToList(dynamic data) {
+    if (data == null) return [];
+    if (data is List) {
+      // Handle list of strings or objects
+      List<String> result = [];
+      for (var item in data) {
+        if (item is String) {
+          // If it's a valid URL, add it
+          if (item.startsWith('http://') || item.startsWith('https://')) {
+            result.add(item);
+          }
+        } else if (item is Map<String, dynamic>) {
+          // Handle objects like {"url": "...", "name": "..."}
+          // Prioritize 'url' field for photos
+          if (item['url'] != null && item['url'].toString().isNotEmpty) {
+            String url = item['url'].toString();
+            // If it's a valid URL, add it
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+              result.add(url);
+            }
+          }
+        }
+      }
+      return result;
+    }
+    if (data is String) {
+      // Try to parse JSON string, if it fails check if it's a single URL
+      try {
+        List<dynamic> parsed = jsonDecode(data);
+        return _convertPhotosToList(parsed);
+      } catch (e) {
+        // If it's a single URL string, return it
+        if (data.startsWith('http://') || data.startsWith('https://')) {
+          return [data];
+        }
+        return [];
       }
     }
     return [];

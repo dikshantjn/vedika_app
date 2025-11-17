@@ -41,8 +41,10 @@ class _VendorMedicalStoreDashBoardScreenState extends State<VendorMedicalStoreDa
     });
   }
 
-  final List<Widget> _pages = [
-    const DashboardContent(),
+  List<Widget> get _pages => [
+    DashboardContent(
+      onNavigateToOrders: () => _onTabSelected(1),
+    ),
     // MedicineOrderPage(),
     NewOrdersScreen(),
     MedicalProductsProductScreen(),

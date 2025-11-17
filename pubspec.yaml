@@ -68,6 +68,7 @@ dependencies:
   http: ^1.1.0
   socket_io_client: ^3.1.2
   web_socket_channel: ^3.0.2
+  videosdk: ^3.0.0
 
   # Payments
   razorpay_flutter: ^1.4.0
@@ -79,7 +80,6 @@ dependencies:
   cached_network_image: ^3.3.1
   record: ^6.0.0
   open_file: ^3.5.10
-  jitsi_meet_flutter_sdk: ^11.1.1
   flutter_tts: ^4.2.3
 
   # PDF & Docs

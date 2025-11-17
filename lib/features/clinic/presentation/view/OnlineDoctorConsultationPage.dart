@@ -434,30 +434,56 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                             offset: const Offset(0, 3),
                           ),
                         ],
-                        image: doctor.profilePicture.isNotEmpty
-                            ? DecorationImage(
-                                image: NetworkImage(doctor.profilePicture),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
                       ),
-                      child: doctor.profilePicture.isEmpty
+                      child: (doctor.profilePicture.isNotEmpty && 
+                          (doctor.profilePicture.startsWith('http://') || 
+                           doctor.profilePicture.startsWith('https://')))
                           ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                doctor.profilePicture,
+                                width: 90,
+                                height: 90,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: DoctorConsultationColorPalette.secondaryTealLight,
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: DoctorConsultationColorPalette.primaryBlue,
+                                    ),
+                                  );
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: DoctorConsultationColorPalette.secondaryTealLight,
+                                    alignment: Alignment.center,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          : ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 color: DoctorConsultationColorPalette.secondaryTealLight,
                                 alignment: Alignment.center,
-                                child: Text(
-                                  doctor.doctorName.substring(0, 1).toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 38,
-                                    fontWeight: FontWeight.bold,
-                                    color: DoctorConsultationColorPalette.primaryBlue,
-                                  ),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: DoctorConsultationColorPalette.primaryBlue,
                                 ),
                               ),
-                            )
-                          : null,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -468,13 +494,29 @@ class _OnlineDoctorConsultationPageState extends State<OnlineDoctorConsultationP
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                doctor.doctorName,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: DoctorConsultationColorPalette.textPrimary,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    doctor.doctorName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: DoctorConsultationColorPalette.textPrimary,
+                                    ),
+                                  ),
+                                  if (doctor.clinicName != null && doctor.clinicName!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      doctor.clinicName!,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: DoctorConsultationColorPalette.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                             Container(

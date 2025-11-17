@@ -233,35 +233,105 @@ class DraggableClinicList extends StatelessWidget {
                                   Expanded(
                                     child: Row(
                                       children: [
-                                        CircleAvatar(
-                                          radius: 18,
-                                          backgroundColor: Colors.white,
-                                          child: CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: DoctorConsultationColorPalette.backgroundCard,
-                                            backgroundImage: (clinic.profilePicture.isNotEmpty)
-                                                ? NetworkImage(clinic.profilePicture)
-                                                : null,
-                                            child: clinic.profilePicture.isEmpty
-                                                ? Icon(
+                                        Container(
+                                          width: 56,
+                                          height: 56,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1),
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: (clinic.profilePicture.isNotEmpty && 
+                                              (clinic.profilePicture.startsWith('http://') || 
+                                               clinic.profilePicture.startsWith('https://')))
+                                              ? ClipOval(
+                                                  child: Image.network(
+                                                    clinic.profilePicture,
+                                                    width: 56,
+                                                    height: 56,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        width: 56,
+                                                        height: 56,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: DoctorConsultationColorPalette.backgroundCard,
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.person,
+                                                          color: DoctorConsultationColorPalette.primaryBlue,
+                                                          size: 28,
+                                                        ),
+                                                      );
+                                                    },
+                                                    loadingBuilder: (context, child, loadingProgress) {
+                                                      if (loadingProgress == null) return child;
+                                                      return Container(
+                                                        width: 56,
+                                                        height: 56,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: DoctorConsultationColorPalette.backgroundCard,
+                                                        ),
+                                                        child: Center(
+                                                          child: CircularProgressIndicator(
+                                                            strokeWidth: 2.5,
+                                                            value: loadingProgress.expectedTotalBytes != null
+                                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                                    loadingProgress.expectedTotalBytes!
+                                                                : null,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                )
+                                              : Container(
+                                                  width: 56,
+                                                  height: 56,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: DoctorConsultationColorPalette.backgroundCard,
+                                                  ),
+                                                  child: Icon(
                                                     Icons.person,
                                                     color: DoctorConsultationColorPalette.primaryBlue,
-                                                    size: 18,
-                                                  )
-                                                : null,
-                                          ),
+                                                    size: 28,
+                                                  ),
+                                                ),
                                         ),
                                         SizedBox(width: 10),
                                         Expanded(
-                                          child: Text(
-                                            clinic.doctorName,
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: DoctorConsultationColorPalette.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                clinic.doctorName,
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: DoctorConsultationColorPalette.textPrimary,
+                                                ),
+                                              ),
+                                              if (clinic.clinicName != null && clinic.clinicName!.isNotEmpty) ...[
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  clinic.clinicName!,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: DoctorConsultationColorPalette.textSecondary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                         ),
                                       ],

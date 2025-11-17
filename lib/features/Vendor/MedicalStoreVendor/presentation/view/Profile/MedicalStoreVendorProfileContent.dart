@@ -98,7 +98,10 @@ class _MedicalStoreVendorProfileContentState extends State<MedicalStoreVendorPro
   Widget _buildCertificatesSection(String title, List<String> certificates) {
     if (certificates.isEmpty) {
       return _buildSection(title, [
-        const Text("No certificates available", style: TextStyle(color: Colors.red)),
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text("No files found", style: TextStyle(color: Colors.grey, fontSize: 14)),
+        ),
       ]);
     }
 
@@ -253,9 +256,25 @@ class _MedicalStoreVendorProfileContentState extends State<MedicalStoreVendorPro
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
-          Text(value, style: const TextStyle(color: Colors.black54)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black54),
+              textAlign: TextAlign.right,
+              softWrap: true,
+            ),
+          ),
         ],
       ),
     );

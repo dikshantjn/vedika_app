@@ -4,12 +4,13 @@ import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultation
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewModels/ClinicAppointmentViewModel.dart';
 import 'package:intl/intl.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetService.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/HealthRecords/health_record_preview_screen.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/Appointments/RescheduleAppointmentForDoctorBottomSheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:vedika_healthcare/features/videoSDK/data/services/video_sdk_api_service.dart';
+import 'package:vedika_healthcare/features/videoSDK/presentation/view/meeting_page.dart';
 
 
 class ClinicAppointmentsScreen extends StatefulWidget {
@@ -437,24 +438,21 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
                           ],
                         ),
                       ),
-                      // Call button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(20),
+                      // Join / Re-Join Meeting (Outlined)
+                      OutlinedButton.icon(
+                        onPressed: () => _joinMeeting(context, appointment, viewModel),
+                        icon: const Icon(Icons.videocam_outlined),
+                        label: Text(
+                          (appointment.doctorAttendanceStatus != null &&
+                                  appointment.doctorAttendanceStatus!.toLowerCase() == 'present')
+                              ? 'Re-Join'
+                              : 'Join',
                         ),
-                        child: IconButton(
-                          onPressed: () => _callPatient(appointment.user?.phoneNumber, context),
-                          icon: const Icon(
-                            Icons.call,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(
-                            minWidth: 40,
-                            minHeight: 40,
-                          ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: DoctorConsultationColorPalette.primaryBlue,
+                          side: const BorderSide(color: DoctorConsultationColorPalette.primaryBlue, width: 1.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                       ),
                     ],
@@ -505,46 +503,13 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
     ClinicAppointmentViewModel viewModel,
   ) async {
     try {
-      // Get doctor name - fallback to a generic name if doctorProfile is null
-      final doctorName = viewModel.doctorProfile?.doctorName != null 
-          ? "${viewModel.doctorProfile!.doctorName}"
-          : "${appointment.doctor?.doctorName ?? "Doctor"}";
-      
-      // Get doctor email - fallback to null if not available
-      final doctorEmail = viewModel.doctorProfile?.email ?? appointment.doctor?.email;
-      
-      // Get doctor avatar - fallback to null if not available
-      final doctorAvatar = viewModel.doctorProfile?.profilePicture ?? appointment.doctor?.profilePicture;
-      
-      // Generate or get meeting URL
-      String? meetingUrl = appointment.meetingUrl;
-      if (meetingUrl == null || meetingUrl.isEmpty) {
-        meetingUrl = await viewModel.generateMeetingUrl(appointment.clinicAppointmentId);
-        if (meetingUrl == null) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Failed to generate meeting link'),
-                backgroundColor: DoctorConsultationColorPalette.errorRed,
-              ),
-            );
-          }
-          return;
-        }
-      }
-
-      // Extract room name and JWT token from meeting URL
-      final uri = Uri.parse(meetingUrl);
-      final roomName = uri.pathSegments.last;
-      final jwtToken = uri.fragment.contains("jwt=")
-          ? uri.fragment.split("jwt=").last
-          : null;
-
-      if (jwtToken == null || jwtToken.isEmpty) {
+      // RoomId from API
+      final roomId = appointment.roomId;
+      if (roomId == null || roomId.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Invalid meeting URL'),
+              content: const Text('Room ID not available for this appointment'),
               backgroundColor: DoctorConsultationColorPalette.errorRed,
             ),
           );
@@ -565,19 +530,28 @@ class _ClinicAppointmentsScreenState extends State<ClinicAppointmentsScreen>
         );
       }
 
-      // Join meeting using service
-      await JitsiMeetService().joinMeeting(
-        roomName: roomName,
-        displayName: doctorName,
-        email: doctorEmail,
-        avatarUrl: doctorAvatar,
-        jwtToken: jwtToken,
-        isDoctor: true,
-      );
+      // Fetch VideoSDK token and open meeting
+      final api = const VideoSdkApiService();
+      final token = await api.fetchAccessToken();
 
-      // Close loading dialog
+      final doctorName = viewModel.doctorProfile?.doctorName != null
+          ? "${viewModel.doctorProfile!.doctorName}"
+          : "${appointment.doctor?.doctorName ?? "Doctor"}";
+
       if (context.mounted) {
         Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MeetingPage(
+              meetingId: roomId,
+              token: token,
+              displayName: doctorName,
+              role: 'doctor',
+              enableWaitingRoom: true,
+            ),
+          ),
+        );
       }
     } catch (e) {
       // Close loading dialog if open

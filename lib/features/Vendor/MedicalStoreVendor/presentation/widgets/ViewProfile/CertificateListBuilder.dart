@@ -9,14 +9,80 @@ class CertificateListBuilder {
 
   List<Widget> buildCertificateList(String encodedUrls) {
     try {
-      List<String> urls = List<String>.from(jsonDecode(encodedUrls));
+      // Check if the string is empty or null
+      if (encodedUrls.isEmpty || encodedUrls.trim().isEmpty) {
+        return [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "No files found",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+        ];
+      }
+
+      List<String> urls = [];
+      
+      // Check if it's a JSON array
+      if (encodedUrls.trim().startsWith('[')) {
+        try {
+          urls = List<String>.from(jsonDecode(encodedUrls));
+        } catch (e) {
+          // Not valid JSON, treat as single URL string if it's a valid URL
+          if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+            urls = [encodedUrls];
+          } else {
+            return [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "No files found",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ),
+            ];
+          }
+        }
+      } else {
+        // Not a JSON array, check if it's a valid URL
+        if (encodedUrls.startsWith('http://') || encodedUrls.startsWith('https://')) {
+          urls = [encodedUrls];
+        } else {
+          // Not a valid URL, show no files message
+          return [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "No files found",
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          ];
+        }
+      }
+
+      if (urls.isEmpty) {
+        return [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "No files found",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+        ];
+      }
 
       return urls.map((url) {
         return FutureBuilder<FullMetadata>(
           future: _metadataService.getFileMetadata(url),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
+              return const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Center(child: CircularProgressIndicator()),
+              );
             } else if (snapshot.hasError || !snapshot.hasData) {
               return _buildCertificateBox("Unknown Certificate", url);
             }
@@ -31,7 +97,13 @@ class CertificateListBuilder {
     } catch (e) {
       debugPrint("❌ Error decoding URLs: $e");
       return [
-        const Text("Error loading certificates", style: TextStyle(color: Colors.red))
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            "No files found",
+            style: TextStyle(color: Colors.grey, fontSize: 14),
+          ),
+        ),
       ];
     }
   }

@@ -325,27 +325,8 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
           children: [
             Row(
               children: [
-                    // Store Icon
-                Container(
-                      width: 56,
-                      height: 56,
-                  decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            ColorPalette.primaryColor.withOpacity(0.15),
-                            ColorPalette.primaryColor.withOpacity(0.08),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                        Icons.local_pharmacy_rounded,
-                    color: ColorPalette.primaryColor,
-                        size: 28,
-                  ),
-                ),
+                    // Store Photo/Icon
+                _buildStorePhoto(store),
                 SizedBox(width: 16),
                     // Store Name and Type
                 Expanded(
@@ -637,6 +618,74 @@ class _MedicineDeliveryScreenState extends State<MedicineDeliveryScreen>
           elevation: 0,
         ),
       ),
+    );
+  }
+
+  Widget _buildStorePhoto(VendorMedicalStoreProfile store) {
+    // Get the first photo URL if available
+    String? photoUrl;
+    if (store.photos.isNotEmpty) {
+      photoUrl = store.photos.first;
+      // Ensure it's a valid URL
+      if (photoUrl != null && 
+          !photoUrl.startsWith('http://') && 
+          !photoUrl.startsWith('https://')) {
+        photoUrl = null;
+      }
+    }
+
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ColorPalette.primaryColor.withOpacity(0.15),
+            ColorPalette.primaryColor.withOpacity(0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: photoUrl != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.network(
+                photoUrl,
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  // Show icon if image fails to load
+                  return Icon(
+                    Icons.local_pharmacy_rounded,
+                    color: ColorPalette.primaryColor,
+                    size: 28,
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+                  // Show loading indicator while image loads
+                  return Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            )
+          : Icon(
+              Icons.local_pharmacy_rounded,
+              color: ColorPalette.primaryColor,
+              size: 28,
+            ),
     );
   }
 

@@ -5,10 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/viewmodel/MeidicalStoreVendorDashboardViewModel.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/MedicalStoreVendorColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/data/models/MedicalStoreAnalyticsModel.dart';
+import 'package:vedika_healthcare/features/Vendor/MedicalStoreVendor/presentation/widgets/ViewProfile/StorePhotosBuilder.dart';
+import 'dart:convert';
 import 'package:shimmer/shimmer.dart';
 
 class DashboardContent extends StatefulWidget {
-  const DashboardContent({Key? key}) : super(key: key);
+  final VoidCallback? onNavigateToOrders;
+  
+  const DashboardContent({Key? key, this.onNavigateToOrders}) : super(key: key);
 
   @override
   _DashboardContentState createState() => _DashboardContentState();
@@ -166,6 +170,102 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
+  Widget _buildProfilePicture(MedicalStoreVendorDashboardViewModel viewModel) {
+    final storeProfile = viewModel.storeProfile;
+    String? storeImageUrl;
+    
+    if (storeProfile != null && storeProfile.photos.isNotEmpty) {
+      String photoData = storeProfile.photos.first;
+      
+      // Handle JSON array format
+      if (photoData.trim().startsWith('[')) {
+        try {
+          List<dynamic> parsed = jsonDecode(photoData);
+          if (parsed.isNotEmpty && parsed.first is String) {
+            photoData = parsed.first;
+          }
+        } catch (e) {
+          // If JSON parsing fails, use the original string
+        }
+      }
+      
+      // Check if it's a valid URL
+      if (photoData.startsWith('http://') || photoData.startsWith('https://')) {
+        storeImageUrl = photoData;
+      }
+    }
+
+    if (storeImageUrl != null && storeImageUrl.isNotEmpty) {
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Image.network(
+            storeImageUrl,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholderIcon();
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      MedicalStoreVendorColorPalette.primaryColor,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      return _buildPlaceholderIcon();
+    }
+  }
+
+  Widget _buildPlaceholderIcon() {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.local_pharmacy,
+        color: MedicalStoreVendorColorPalette.primaryColor,
+        size: 24,
+      ),
+    );
+  }
+
   Widget _buildWelcomeCard(MedicalStoreVendorDashboardViewModel viewModel) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -192,15 +292,7 @@ class _DashboardContentState extends State<DashboardContent> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.local_pharmacy,
-                  color: MedicalStoreVendorColorPalette.primaryColor,
-                  size: 24,
-                ),
-              ),
+              _buildProfilePicture(viewModel),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -264,15 +356,50 @@ class _DashboardContentState extends State<DashboardContent> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
-                  size: 20,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(
+                      Icons.notifications,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    if (viewModel.prescriptionCount > 0)
+                      Positioned(
+                        right: -6,
+                        top: -10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Center(
+                            child: Text(
+                              viewModel.prescriptionCount > 99 ? '99+' : viewModel.prescriptionCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'You have ${viewModel.analytics.totalOrders} orders to process',
+                    viewModel.prescriptionCount == 1
+                        ? 'You have 1 prescription request'
+                        : 'You have ${viewModel.prescriptionCount} prescription requests',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -281,7 +408,10 @@ class _DashboardContentState extends State<DashboardContent> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to orders page
+                    // Navigate to orders page (index 1)
+                    if (widget.onNavigateToOrders != null) {
+                      widget.onNavigateToOrders!();
+                    }
                   },
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -1026,9 +1156,9 @@ class _DashboardContentState extends State<DashboardContent> {
 
   Widget _buildShimmerEffect() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[200]!,
-      highlightColor: Colors.grey[50]!,
-      period: const Duration(milliseconds: 1500),
+      baseColor: const Color(0xFFE3E7FF),
+      highlightColor: const Color(0xFFF9FBFF),
+      period: const Duration(milliseconds: 900),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1068,8 +1198,8 @@ class _DashboardContentState extends State<DashboardContent> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.grey[300]!,
-            Colors.grey[200]!,
+            MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.85),
+            MedicalStoreVendorColorPalette.secondaryColor.withOpacity(0.85),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -1084,15 +1214,26 @@ class _DashboardContentState extends State<DashboardContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
           Row(
             children: [
               // Avatar shimmer
               Container(
-                width: 48,
-                height: 48,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(26),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1228,7 +1369,7 @@ class _DashboardContentState extends State<DashboardContent> {
             height: 16,
             width: 100,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -1241,10 +1382,24 @@ class _DashboardContentState extends State<DashboardContent> {
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   decoration: BoxDecoration(
-                    color: index == 0 ? Colors.grey[400] : Colors.grey[200],
+                    gradient: index == 0
+                        ? LinearGradient(
+                            colors: [
+                              MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.8),
+                              MedicalStoreVendorColorPalette.secondaryColor.withOpacity(0.8),
+                            ],
+                          )
+                        : LinearGradient(
+                            colors: [
+                              Colors.grey.shade100,
+                              Colors.grey.shade200,
+                            ],
+                          ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.grey[300]!,
+                      color: index == 0
+                          ? Colors.transparent
+                          : Colors.grey[300]!,
                       width: 1,
                     ),
                   ),
@@ -1253,7 +1408,7 @@ class _DashboardContentState extends State<DashboardContent> {
                       height: 12,
                       width: index == 0 ? 50 : 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withOpacity(index == 0 ? 0.6 : 0.4),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -1275,12 +1430,12 @@ class _DashboardContentState extends State<DashboardContent> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.grey[200]!,
-            Colors.grey[100]!,
+            const Color(0xFF6C5CE7).withOpacity(0.3),
+            const Color(0xFF00D1FF).withOpacity(0.25),
           ],
         ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
+        border: Border.all(color: const Color(0xFF6C5CE7).withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -1297,7 +1452,7 @@ class _DashboardContentState extends State<DashboardContent> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
+                color: Colors.white.withOpacity(0.9),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Container(
@@ -1322,7 +1477,7 @@ class _DashboardContentState extends State<DashboardContent> {
                       height: 14,
                       width: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(7),
                       ),
                     ),
@@ -1352,7 +1507,7 @@ class _DashboardContentState extends State<DashboardContent> {
                     height: 12,
                     margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.85),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: FractionallySizedBox(
@@ -1397,7 +1552,7 @@ class _DashboardContentState extends State<DashboardContent> {
             height: 18,
             width: 140,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(9),
             ),
           ),
@@ -1418,7 +1573,19 @@ class _DashboardContentState extends State<DashboardContent> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: index.isEven
+                        ? [
+                            MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.12),
+                            MedicalStoreVendorColorPalette.secondaryColor.withOpacity(0.12),
+                          ]
+                        : [
+                            Colors.white,
+                            Colors.white,
+                          ],
+                  ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey[200]!),
                   boxShadow: [
@@ -1438,14 +1605,14 @@ class _DashboardContentState extends State<DashboardContent> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: Colors.white.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Container(
                             width: 22,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: Colors.grey[400],
+                              color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(11),
                             ),
                           ),
@@ -1524,7 +1691,7 @@ class _DashboardContentState extends State<DashboardContent> {
           height: 18,
           width: 160,
           decoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.15),
             borderRadius: BorderRadius.circular(9),
           ),
         ),
@@ -1560,7 +1727,14 @@ class _DashboardContentState extends State<DashboardContent> {
               Container(
                 height: 180,
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.08),
+                      Colors.white,
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Stack(
@@ -1572,7 +1746,9 @@ class _DashboardContentState extends State<DashboardContent> {
                         width: 40,
                         height: 80 + (index % 2) * 40.0,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: index.isEven
+                              ? MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.18)
+                              : MedicalStoreVendorColorPalette.secondaryColor.withOpacity(0.18),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -1618,7 +1794,7 @@ class _DashboardContentState extends State<DashboardContent> {
                 height: 18,
                 width: 120,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(9),
                 ),
               ),
@@ -1714,7 +1890,7 @@ class _DashboardContentState extends State<DashboardContent> {
             height: 18,
             width: 140,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(9),
             ),
           ),
@@ -1729,7 +1905,9 @@ class _DashboardContentState extends State<DashboardContent> {
                     width: 16,
                     height: 40 + (index % 3) * 20.0,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: index.isEven
+                          ? MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.2)
+                          : MedicalStoreVendorColorPalette.secondaryColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1775,7 +1953,7 @@ class _DashboardContentState extends State<DashboardContent> {
             height: 18,
             width: 140,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: MedicalStoreVendorColorPalette.primaryColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(9),
             ),
           ),
@@ -1796,7 +1974,7 @@ class _DashboardContentState extends State<DashboardContent> {
                     widthFactor: 0.75,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[400],
+                        color: MedicalStoreVendorColorPalette.successColor.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 class DoctorClinicProfile {
   final String? vendorId;
   final String? generatedId;
+  final String? clinicName;
   final String doctorName;
   final String gender;
   final String email;
@@ -38,6 +39,7 @@ class DoctorClinicProfile {
   DoctorClinicProfile({
     this.vendorId,
     this.generatedId,
+    this.clinicName,
     required this.doctorName,
     required this.gender,
     required this.email,
@@ -72,6 +74,7 @@ class DoctorClinicProfile {
   });
 
   DoctorClinicProfile copyWith({
+    String? clinicName,
     String? doctorName,
     String? gender,
     String? email,
@@ -104,9 +107,10 @@ class DoctorClinicProfile {
     List<Map<String, String>>? clinicPhotos,
     String? location,
   }) {
-    return DoctorClinicProfile(
+      return DoctorClinicProfile(
       vendorId: vendorId,
       generatedId: generatedId,
+      clinicName: clinicName ?? this.clinicName,
       doctorName: doctorName ?? this.doctorName,
       gender: gender ?? this.gender,
       email: email ?? this.email,
@@ -333,6 +337,7 @@ class DoctorClinicProfile {
       return DoctorClinicProfile(
         vendorId: json['vendorId']?.toString() ?? json['id']?.toString(),
         generatedId: json['generatedId']?.toString(),
+        clinicName: json['clinicName']?.toString(),
         doctorName: json['doctorName']?.toString() ?? json['name']?.toString() ?? 'Unknown Doctor',
         gender: json['gender']?.toString() ?? 'Not Specified',
         email: json['email']?.toString() ?? '',
@@ -391,6 +396,7 @@ class DoctorClinicProfile {
       print('❌ Error parsing DoctorClinicProfile: $e');
       // Return a minimal valid object instead of throwing
       return DoctorClinicProfile(
+        clinicName: null,
         doctorName: 'Error parsing profile',
         gender: '',
         email: '',
@@ -427,9 +433,10 @@ class DoctorClinicProfile {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+      return {
       'vendorId': vendorId,
       'generatedId': generatedId,
+      'clinicName': clinicName,
       'doctorName': doctorName,
       'gender': gender,
       'email': email,

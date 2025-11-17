@@ -13,6 +13,13 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- For Android 14+ media projection foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- For screen capture pipeline on some OEMs -->
+    <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" />
+    <!-- Overlay permission may be required by some screen-share flows -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.PICTURE_IN_PICTURE" />
 
     <!-- Permissions for Jitsi Meet -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -55,7 +62,8 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:supportsPictureInPicture="true">
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"

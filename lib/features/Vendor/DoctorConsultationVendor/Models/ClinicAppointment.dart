@@ -18,6 +18,7 @@ class ClinicAppointment {
   final DateTime? adminUpdatedAt;
   final String userResponseStatus; // accepted, declined, pending
   final String? meetingUrl;
+  final String? roomId;
 
   final DoctorClinicProfile? doctor;
   final String? notes;
@@ -43,6 +44,7 @@ class ClinicAppointment {
     this.adminUpdatedAt,
     required this.userResponseStatus,
     this.meetingUrl,
+    this.roomId,
     this.doctor,
     this.notes,
     required this.attachments,
@@ -85,6 +87,7 @@ class ClinicAppointment {
           : null,
       userResponseStatus: json['userResponseStatus'],
       meetingUrl: json['meetingUrl'],
+      roomId: json['roomId'],
       doctor: json['doctor'] != null
           ? DoctorClinicProfile.fromJson(json['doctor'])
           : null,
@@ -116,6 +119,7 @@ class ClinicAppointment {
       'adminUpdatedAt': adminUpdatedAt?.toIso8601String(),
       'userResponseStatus': userResponseStatus,
       'meetingUrl': meetingUrl,
+      'roomId': roomId,
       'doctor': doctor?.toJson(),
       'notes': notes,
       'attachments': attachments,
@@ -142,6 +146,7 @@ class ClinicAppointment {
     DateTime? adminUpdatedAt,
     String? userResponseStatus,
     String? meetingUrl,
+    String? roomId,
     DoctorClinicProfile? doctor,
     String? notes,
     List<String>? attachments,
@@ -166,6 +171,7 @@ class ClinicAppointment {
       adminUpdatedAt: adminUpdatedAt ?? this.adminUpdatedAt,
       userResponseStatus: userResponseStatus ?? this.userResponseStatus,
       meetingUrl: meetingUrl ?? this.meetingUrl,
+      roomId: roomId ?? this.roomId,
       doctor: doctor ?? this.doctor,
       notes: notes ?? this.notes,
       attachments: attachments ?? this.attachments,

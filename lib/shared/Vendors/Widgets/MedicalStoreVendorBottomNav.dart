@@ -72,30 +72,34 @@ class MedicalStoreVendorBottomNav extends StatelessWidget {
   BottomNavigationBarItem _buildNavItemWithBadge(IconData icon, String label, int count) {
     return BottomNavigationBarItem(
       icon: Stack(
+        clipBehavior: Clip.none,
         children: [
           Icon(icon, size: 26),
           if (count > 0)
             Positioned(
-              right: 0,
-              top: 0,
+              right: -6,
+              top: -4,
               child: Container(
-                padding: EdgeInsets.all(2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
-                constraints: BoxConstraints(
-                  minWidth: 16,
-                  minHeight: 16,
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
                 ),
-                child: Text(
-                  count > 99 ? '99+' : count.toString(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                child: Center(
+                  child: Text(
+                    count > 99 ? '99+' : count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),

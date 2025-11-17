@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/ColorPalette.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/ClinicAppointment.dart';
-import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Views/JitsiMeet/JitsiMeetService.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/viewmodel/ClinicAppointmentViewModel.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/ErrorState.dart';
 import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/EmptyState.dart';
@@ -15,6 +14,8 @@ import 'package:vedika_healthcare/features/orderHistory/presentation/widgets/dia
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/core/view/DocumentPreviewScreen.dart';
+import 'package:vedika_healthcare/features/videoSDK/data/services/video_sdk_api_service.dart';
+import 'package:vedika_healthcare/features/videoSDK/presentation/view/meeting_page.dart';
 
 class ClinicAppointmentTab extends StatefulWidget {
   const ClinicAppointmentTab({Key? key}) : super(key: key);
@@ -316,11 +317,16 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
                               ),
                             if (!isOnline)
                               SizedBox(width: 12),
-                            if (isOnline && appointment.meetingUrl != null && appointment.meetingUrl!.isNotEmpty)
+                            if (isOnline && ((appointment.roomId != null && appointment.roomId!.isNotEmpty) || (appointment.meetingUrl != null && appointment.meetingUrl!.isNotEmpty)))
                               OutlinedButton.icon(
                                 icon: Icon(Icons.video_call),
-                                label: Text('Join'),
-                                onPressed: () => _joinMeeting(appointment.meetingUrl!),
+                                label: Text(
+                                  (appointment.userAttendanceStatus != null &&
+                                          appointment.userAttendanceStatus!.toLowerCase() == 'present')
+                                      ? 'Re-Join Meeting'
+                                      : 'Join Meeting',
+                                ),
+                                onPressed: () => _joinMeetingPatient(appointment),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: DoctorConsultationColorPalette.primaryBlue,
                                   side: BorderSide(color: DoctorConsultationColorPalette.primaryBlue),
@@ -1069,23 +1075,78 @@ class _ClinicAppointmentTabState extends State<ClinicAppointmentTab> {
         }
         return;
       }
-
-      // Join meeting using service
-      await JitsiMeetService().joinMeeting(
-        roomName: roomName,
-        displayName: userName,
-        email: userEmail,
-        avatarUrl: userAvatarUrl,
-        jwtToken: jwtToken,
-        isDoctor: false, // Patients are not moderators
-      );
-
       // Close loading dialog
       if (context.mounted) {
         Navigator.pop(context);
       }
     } catch (e) {
       // Close loading dialog if open
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error joining meeting: $e'),
+            backgroundColor: DoctorConsultationColorPalette.errorRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _joinMeetingPatient(ClinicAppointment appointment) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: DoctorConsultationColorPalette.primaryBlue,
+          ),
+        ),
+      );
+      // Determine meetingId
+      String? meetingId = appointment.roomId;
+      if (meetingId == null || meetingId.isEmpty) {
+        final url = appointment.meetingUrl ?? '';
+        if (url.isNotEmpty) {
+          try {
+            final uri = Uri.parse(url);
+            meetingId = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+          } catch (_) {}
+        }
+      }
+      if (meetingId == null || meetingId.isEmpty) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Meeting ID not available'),
+              backgroundColor: DoctorConsultationColorPalette.errorRed,
+            ),
+          );
+        }
+        return;
+      }
+      // Fetch VideoSDK token
+      final token = await const VideoSdkApiService().fetchAccessToken();
+      // Get user display name
+      final userName = _viewModel.getCurrentUser()?.name ?? 'Patient';
+      if (context.mounted) {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MeetingPage(
+              meetingId: meetingId!,
+              token: token,
+              displayName: userName,
+              role: 'patient',
+              enableWaitingRoom: true,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(

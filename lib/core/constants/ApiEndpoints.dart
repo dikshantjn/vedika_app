@@ -14,6 +14,10 @@ class ApiEndpoints {
   static const String signUp = '$baseUrl/auth/signup';
   static const String updatePlatform = '$baseUrl/auth/platform-update';
 
+  // 📌 Video SDK APIs
+  // Equivalent of: http://localhost:5000/api/video-sdk/token when baseUrl points to localhost
+  static const String getVideoSdkToken = '$baseUrl/video-sdk/token';
+
   // 📌 User Profile APIs
   static const String getUserProfile = '$baseUrl/user';
   static const String saveUserProfile = '$baseUrl/user/save';
