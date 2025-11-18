@@ -39,17 +39,32 @@ class DoctorClinicStorageService {
   }
 
   /// Delete a file from Firebase Storage
-  Future<void> deleteFile(String fileUrl) async {
+  /// Returns true if deletion was attempted, false if URL is invalid (dummy URL)
+  Future<bool> deleteFile(String fileUrl) async {
     try {
+      // Check if the URL is a valid Firebase Storage URL
+      // Valid URLs must start with 'gs://' or 'https://'
+      if (!fileUrl.startsWith('gs://') && !fileUrl.startsWith('https://')) {
+        _logger.w('Invalid or dummy URL detected, skipping storage deletion: $fileUrl');
+        return false; // Return false to indicate this is a dummy URL
+      }
+      
       // Get the reference from the URL
       final Reference storageRef = _storage.refFromURL(fileUrl);
       
       // Delete the file
       await storageRef.delete();
       
-      _logger.i('File deleted successfully: $fileUrl');
+      _logger.i('File deleted successfully from Firebase Storage: $fileUrl');
+      return true; // Return true to indicate successful deletion
     } catch (e) {
-      _logger.e('Error deleting file: $e');
+      _logger.e('Error deleting file from Firebase Storage: $e');
+      // If it's an assertion error about invalid URL format, treat it as a dummy URL
+      if (e.toString().contains("url must start with 'gs://' or 'https://'")) {
+        _logger.w('Dummy URL detected, skipping storage deletion: $fileUrl');
+        return false;
+      }
+      // For other errors, still throw to let the caller know something went wrong
       throw Exception('Failed to delete file: $e');
     }
   }

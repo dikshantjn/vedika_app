@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:vedika_healthcare/shared/utils/state_city_data.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:vedika_healthcare/core/constants/colorpalette/DoctorConsultationColorPalette.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Models/DoctorClinicProfile.dart';
 import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/Services/DoctorClinicStorageService.dart';
@@ -11,6 +10,7 @@ import 'package:vedika_healthcare/features/Vendor/DoctorConsultationVendor/ViewM
 import 'package:vedika_healthcare/features/Vendor/Service/VendorService.dart';
 import 'package:vedika_healthcare/features/Vendor/Registration/Services/VendorLoginService.dart';
 import 'package:path/path.dart' as path;
+import 'package:logger/logger.dart';
 
 class DoctorClinicProfileScreen extends StatefulWidget {
   const DoctorClinicProfileScreen({Key? key}) : super(key: key);
@@ -24,6 +24,10 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
   bool _isServiceActive = false;
   bool _isLoadingStatus = false;
   String? _statusError;
+  bool _isUploadingProfilePicture = false;
+  bool _isUploadingMedicalLicense = false;
+  bool _isDeletingMedicalLicense = false;
+  Map<int, bool> _isDeletingPhoto = {}; // Track which photo index is being deleted
 
   // Scroll controller for the main scroll view
   final ScrollController _scrollController = ScrollController();
@@ -38,6 +42,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
   final VendorService _statusService = VendorService();
   final VendorLoginService _loginService = VendorLoginService();
   final DoctorClinicStorageService _storageService = DoctorClinicStorageService();
+  final Logger _logger = Logger();
 
   @override
   void initState() {
@@ -302,7 +307,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                             bottom: 0,
                             right: 0,
                             child: GestureDetector(
-                              onTap: () async {
+                              onTap: _isUploadingProfilePicture ? null : () async {
                                 // Pick image
                                 FilePickerResult? result = await FilePicker.platform.pickFiles(
                                   type: FileType.image,
@@ -311,30 +316,58 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
 
                                 if (result != null && result.files.isNotEmpty) {
                                   File file = File(result.files.single.path!);
+                                  if (!_mounted) return;
+                                  
+                                  setState(() {
+                                    _isUploadingProfilePicture = true;
+                                  });
+                                  
                                   try {
                                     final url = await _storageService.uploadFile(
                                       file,
                                       fileType: 'profile_pictures',
                                     );
-                                    viewModel.updateProfilePicture(url);
-                                    _showSuccessSnackBar(context, 'Profile picture uploaded successfully');
+                                    
+                                    if (_mounted) {
+                                      viewModel.updateProfilePicture(url);
+                                      _showSuccessSnackBar(context, 'Profile picture uploaded successfully');
+                                    }
                                   } catch (e) {
-                                    _showErrorSnackBar(context, 'Failed to upload profile picture: $e');
+                                    if (_mounted) {
+                                      _showErrorSnackBar(context, 'Failed to upload profile picture: $e');
+                                    }
+                                  } finally {
+                                    if (_mounted) {
+                                      setState(() {
+                                        _isUploadingProfilePicture = false;
+                                      });
+                                    }
                                   }
                                 }
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: DoctorConsultationColorPalette.primaryBlue,
+                                  color: _isUploadingProfilePicture 
+                                      ? Colors.grey 
+                                      : DoctorConsultationColorPalette.primaryBlue,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                child: _isUploadingProfilePicture
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                               ),
                             ),
                           )
@@ -589,6 +622,14 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
       icon: Icons.info_outline,
       child: Column(
         children: [
+          _buildInfoTile(
+            label: 'Clinic Name',
+            value: profile.clinicName ?? '',
+            icon: Icons.local_hospital,
+            isEditing: viewModel.isEditing,
+            onChanged: (value) => viewModel.updateBasicInfo(clinicName: value),
+            controller: viewModel.clinicNameController,
+          ),
           _buildInfoTile(
             label: 'Doctor Name',
             value: profile.doctorName,
@@ -972,73 +1013,233 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
     // Create a copy of time slots that we can modify
     List<Map<String, String>> timeSlots = List.from(profile.consultationTimeSlots);
     
+    // Weekdays list
+    final List<String> weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+      'All Days'
+    ];
+    
+    // Helper function to parse time string to TimeOfDay
+    TimeOfDay _parseTime(String timeStr) {
+      try {
+        final parts = timeStr.split(':');
+        if (parts.length == 2) {
+          return TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+      } catch (e) {
+        _logger.w('Error parsing time: $timeStr');
+      }
+      return const TimeOfDay(hour: 9, minute: 0);
+    }
+    
+    // Helper function to format TimeOfDay to string
+    String _formatTime(TimeOfDay time) {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    }
+    
     return Column(
       children: [
         for (int i = 0; i < timeSlots.length; i++)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: DoctorConsultationColorPalette.backgroundCard,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: DoctorConsultationColorPalette.borderLight),
-                    ),
-                    child: Text(
-                      timeSlots[i]['day'] ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: DoctorConsultationColorPalette.backgroundCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: DoctorConsultationColorPalette.borderLight),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            // Show day picker
+                            final selectedDay = await showDialog<String>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Select Day'),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: weekdays.map((day) {
+                                      return ListTile(
+                                        title: Text(day),
+                                        onTap: () => Navigator.pop(context, day),
+                                        selected: timeSlots[i]['day'] == day,
+                                        selectedTileColor: DoctorConsultationColorPalette.primaryBlueLight.withOpacity(0.2),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            );
+                            
+                            if (selectedDay != null) {
+                              timeSlots[i]['day'] = selectedDay;
+                              viewModel.updateConsultationDetails(consultationTimeSlots: timeSlots);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_today, size: 18, color: DoctorConsultationColorPalette.primaryBlue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    timeSlots[i]['day'] ?? 'Select Day',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      color: timeSlots[i]['day'] == null ? Colors.grey : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          color: DoctorConsultationColorPalette.errorRed,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          // Remove the time slot and update viewModel
+                          timeSlots.removeAt(i);
+                          viewModel.updateConsultationDetails(consultationTimeSlots: timeSlots);
+                        },
+                        tooltip: 'Delete time slot',
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: DoctorConsultationColorPalette.backgroundCard,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: DoctorConsultationColorPalette.borderLight),
-                    ),
-                    child: Text(
-                      timeSlots[i]['startTime'] ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            // Show time picker for opening time
+                            final selectedTime = await showTimePicker(
+                              context: context,
+                              initialTime: _parseTime(timeSlots[i]['startTime'] ?? '09:00'),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: DoctorConsultationColorPalette.primaryBlue,
+                                      onPrimary: Colors.white,
+                                      onSurface: Colors.black87,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (selectedTime != null) {
+                              timeSlots[i]['startTime'] = _formatTime(selectedTime);
+                              viewModel.updateConsultationDetails(consultationTimeSlots: timeSlots);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.access_time, size: 18, color: DoctorConsultationColorPalette.primaryBlue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Opening: ${timeSlots[i]['startTime'] ?? '09:00'}',
+                                    style: const TextStyle(fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            // Show time picker for closing time
+                            final selectedTime = await showTimePicker(
+                              context: context,
+                              initialTime: _parseTime(timeSlots[i]['endTime'] ?? '17:00'),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: DoctorConsultationColorPalette.primaryBlue,
+                                      onPrimary: Colors.white,
+                                      onSurface: Colors.black87,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            
+                            if (selectedTime != null) {
+                              timeSlots[i]['endTime'] = _formatTime(selectedTime);
+                              viewModel.updateConsultationDetails(consultationTimeSlots: timeSlots);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.access_time, size: 18, color: DoctorConsultationColorPalette.primaryBlue),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Closing: ${timeSlots[i]['endTime'] ?? '17:00'}',
+                                    style: const TextStyle(fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Text('to'),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: DoctorConsultationColorPalette.backgroundCard,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: DoctorConsultationColorPalette.borderLight),
-                    ),
-                    child: Text(
-                      timeSlots[i]['endTime'] ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.delete,
-                    color: DoctorConsultationColorPalette.errorRed,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    // Remove the time slot and update viewModel
-                    timeSlots.removeAt(i);
-                    viewModel.updateConsultationDetails(consultationTimeSlots: timeSlots);
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ElevatedButton.icon(
@@ -1432,6 +1633,10 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
             isEditing: viewModel.isEditing,
             onUpload: (url) => viewModel.updateMedicalLicenseFile(url),
             fileType: 'medical_license',
+            onDelete: () {
+              // Clear the medical license file
+              viewModel.updateMedicalLicenseFile([]);
+            },
           ),
           const SizedBox(height: 24),
           _buildDocumentSectionHeader(
@@ -1455,24 +1660,55 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
               photos: profile.clinicPhotos,
               isEditing: viewModel.isEditing,
               onDelete: (index) async {
+                if (!_mounted) return;
+                
+                setState(() {
+                  _isDeletingPhoto[index] = true;
+                });
+                
                 try {
                   // Get the document to delete
                   final document = profile.clinicPhotos[index];
                   final url = document['url'] ?? '';
                   
-                  // Delete from Firebase Storage
+                  // Try to delete from Firebase Storage (if it's a valid URL)
+                  // If it's a dummy URL, deleteFile will return false and we'll just update the database
                   if (url.isNotEmpty) {
-                    await _storageService.deleteFile(url);
+                    try {
+                      final deleted = await _storageService.deleteFile(url);
+                      if (deleted) {
+                        _logger.i('Photo deleted from Firebase Storage');
+                      } else {
+                        _logger.i('Dummy URL detected, skipping storage deletion');
+                      }
+                    } catch (e) {
+                      // If deletion fails, check if it's a dummy URL error
+                      if (e.toString().contains("url must start with 'gs://' or 'https://'")) {
+                        _logger.w('Dummy URL detected, skipping storage deletion');
+                      } else {
+                        // For other errors, log but continue with database update
+                        _logger.w('Error deleting from storage (may be dummy URL): $e');
+                      }
+                    }
                   }
                   
-                  // Update the profile by removing the document
-                  final updatedPhotos = List<Map<String, String>>.from(profile.clinicPhotos);
-                  updatedPhotos.removeAt(index);
-                  viewModel.updateClinicPhotos(updatedPhotos);
-                  
-                  _showSuccessSnackBar(context, 'Photo deleted successfully');
+                  // Update the profile by removing the document from database
+                  if (_mounted) {
+                    final updatedPhotos = List<Map<String, String>>.from(profile.clinicPhotos);
+                    updatedPhotos.removeAt(index);
+                    viewModel.updateClinicPhotos(updatedPhotos);
+                    _showSuccessSnackBar(context, 'Photo deleted successfully');
+                  }
                 } catch (e) {
-                  _showErrorSnackBar(context, 'Failed to delete photo: $e');
+                  if (_mounted) {
+                    _showErrorSnackBar(context, 'Failed to delete photo: $e');
+                  }
+                } finally {
+                  if (_mounted) {
+                    setState(() {
+                      _isDeletingPhoto.remove(index);
+                    });
+                  }
                 }
               },
             ),
@@ -1488,6 +1724,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
     required bool isEditing,
     required Function(List<Map<String, String>>) onUpload,
     required String fileType,
+    Function()? onDelete,
   }) {
     // Get first file URL if available
     final String url = fileUrl.isNotEmpty ? (fileUrl.first['url'] ?? '') : '';
@@ -1518,16 +1755,25 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
             const Spacer(),
             if (isEditing)
               TextButton.icon(
-                icon: Icon(
-                  Icons.upload_file,
-                  color: DoctorConsultationColorPalette.primaryBlue,
-                  size: 20,
-                ),
-                label: const Text('Upload'),
+                icon: _isUploadingMedicalLicense && fileType == 'medical_license'
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(DoctorConsultationColorPalette.primaryBlue),
+                        ),
+                      )
+                    : Icon(
+                        Icons.upload_file,
+                        color: DoctorConsultationColorPalette.primaryBlue,
+                        size: 20,
+                      ),
+                label: Text(_isUploadingMedicalLicense && fileType == 'medical_license' ? 'Uploading...' : 'Upload'),
                 style: TextButton.styleFrom(
                   foregroundColor: DoctorConsultationColorPalette.primaryBlue,
                 ),
-                onPressed: () async {
+                onPressed: (_isUploadingMedicalLicense && fileType == 'medical_license') ? null : () async {
                   // Pick a file
                   FilePickerResult? result = await FilePicker.platform.pickFiles(
                     type: FileType.custom,
@@ -1536,16 +1782,35 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
 
                   if (result != null && result.files.isNotEmpty) {
                     File file = File(result.files.single.path!);
+                    if (!_mounted) return;
+                    
+                    if (fileType == 'medical_license') {
+                      setState(() {
+                        _isUploadingMedicalLicense = true;
+                      });
+                    }
+                    
                     try {
                       final newUrl = await _storageService.uploadFile(
                         file,
                         fileType: fileType,
                       );
-                      // Create a new list with the file information
-                      onUpload([{'name': result.files.single.name, 'url': newUrl}]);
-                      _showSuccessSnackBar(context, 'File uploaded successfully');
+                      
+                      if (_mounted) {
+                        // Create a new list with the file information
+                        onUpload([{'name': result.files.single.name, 'url': newUrl}]);
+                        _showSuccessSnackBar(context, 'File uploaded successfully');
+                      }
                     } catch (e) {
-                      _showErrorSnackBar(context, 'Failed to upload file: $e');
+                      if (_mounted) {
+                        _showErrorSnackBar(context, 'Failed to upload file: $e');
+                      }
+                    } finally {
+                      if (_mounted && fileType == 'medical_license') {
+                        setState(() {
+                          _isUploadingMedicalLicense = false;
+                        });
+                      }
                     }
                   }
                 },
@@ -1602,6 +1867,100 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                     ],
                   ),
                 ),
+                if (isEditing && onDelete != null)
+                  _isDeletingMedicalLicense && label == 'Medical License'
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Padding(
+                            padding: EdgeInsets.all(4),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(DoctorConsultationColorPalette.errorRed),
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: Icon(
+                            Icons.delete,
+                            color: DoctorConsultationColorPalette.errorRed,
+                          ),
+                          onPressed: _isDeletingMedicalLicense && label == 'Medical License' ? null : () async {
+                      // Show confirmation dialog
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete File'),
+                          content: Text('Are you sure you want to delete this $label?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              style: TextButton.styleFrom(
+                                foregroundColor: DoctorConsultationColorPalette.errorRed,
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        if (!_mounted) return;
+                        
+                        if (label == 'Medical License') {
+                          setState(() {
+                            _isDeletingMedicalLicense = true;
+                          });
+                        }
+                        
+                        try {
+                          // Get the file URL to delete
+                          final fileUrlToDelete = fileUrl.isNotEmpty ? (fileUrl.first['url'] ?? '') : '';
+                          
+                          // Try to delete from Firebase Storage (if it's a valid URL)
+                          if (fileUrlToDelete.isNotEmpty) {
+                            try {
+                              final deleted = await _storageService.deleteFile(fileUrlToDelete);
+                              if (deleted) {
+                                _logger.i('File deleted from Firebase Storage');
+                              } else {
+                                _logger.i('Dummy URL detected, skipping storage deletion');
+                              }
+                            } catch (e) {
+                              // If deletion fails, check if it's a dummy URL error
+                              if (e.toString().contains("url must start with 'gs://' or 'https://'")) {
+                                _logger.w('Dummy URL detected, skipping storage deletion');
+                              } else {
+                                // For other errors, log but continue with database update
+                                _logger.w('Error deleting from storage (may be dummy URL): $e');
+                              }
+                            }
+                          }
+                          
+                          // Update the database by calling onDelete
+                          if (_mounted) {
+                            onDelete!();
+                            _showSuccessSnackBar(context, 'File deleted successfully');
+                          }
+                        } catch (e) {
+                          if (_mounted) {
+                            _showErrorSnackBar(context, 'Failed to delete file: $e');
+                          }
+                        } finally {
+                          if (_mounted && label == 'Medical License') {
+                            setState(() {
+                              _isDeletingMedicalLicense = false;
+                            });
+                          }
+                        }
+                      }
+                    },
+                    tooltip: 'Delete file',
+                  ),
                 IconButton(
                   icon: Icon(
                     Icons.visibility,
@@ -1611,6 +1970,7 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                     // Open the file in a browser or viewer
                     // You would typically launch a URL here
                   },
+                  tooltip: 'View file',
                 ),
               ],
             ),
@@ -1802,17 +2162,29 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                       ),
                     ],
                   ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.delete,
-                      color: DoctorConsultationColorPalette.errorRed,
-                      size: 18,
-                    ),
-                    onPressed: () => onDelete(index),
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(),
-                    tooltip: 'Delete photo',
-                  ),
+                  child: (_isDeletingPhoto[index] ?? false)
+                      ? const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(DoctorConsultationColorPalette.errorRed),
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: Icon(
+                            Icons.delete,
+                            color: DoctorConsultationColorPalette.errorRed,
+                            size: 18,
+                          ),
+                          onPressed: () => onDelete(index),
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                          tooltip: 'Delete photo',
+                        ),
                 ),
               ),
           ],
@@ -2050,16 +2422,10 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                               
                               // Show success message
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  elevation: 0,
-                                  behavior: SnackBarBehavior.floating,
-                                  backgroundColor: Colors.transparent,
-                                  content: AwesomeSnackbarContent(
-                                    title: 'Success!',
-                                    message: 'File uploaded successfully',
-                                    contentType: ContentType.success,
-                                  ),
-                                  duration: const Duration(seconds: 3),
+                                const SnackBar(
+                                  content: Text('File uploaded successfully'),
+                                  backgroundColor: Colors.green,
+                                  duration: Duration(seconds: 3),
                                 ),
                               );
                               
@@ -2073,14 +2439,8 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
                               // Show error message
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  elevation: 0,
-                                  behavior: SnackBarBehavior.floating,
-                                  backgroundColor: Colors.transparent,
-                                  content: AwesomeSnackbarContent(
-                                    title: 'Error!',
-                                    message: 'Failed to upload file: $e',
-                                    contentType: ContentType.failure,
-                                  ),
+                                  content: Text('Failed to upload file: $e'),
+                                  backgroundColor: Colors.red,
                                   duration: const Duration(seconds: 3),
                                 ),
                               );
@@ -2126,14 +2486,8 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
   void _showSuccessSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: 'Success!',
-          message: message,
-          contentType: ContentType.success,
-        ),
+        content: Text(message),
+        backgroundColor: Colors.green,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -2142,14 +2496,8 @@ class _DoctorClinicProfileScreenState extends State<DoctorClinicProfileScreen> {
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        content: AwesomeSnackbarContent(
-          title: 'Error!',
-          message: message,
-          contentType: ContentType.failure,
-        ),
+        content: Text(message),
+        backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
       ),
     );

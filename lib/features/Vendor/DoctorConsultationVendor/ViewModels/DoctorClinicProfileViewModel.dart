@@ -15,6 +15,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
   bool _isEditing = false;
 
   // Controllers for form fields
+  final TextEditingController clinicNameController = TextEditingController();
   final TextEditingController doctorNameController = TextEditingController();
   final TextEditingController genderController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -38,6 +39,10 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
 
   void toggleEditMode() {
     _isEditing = !_isEditing;
+    // Re-initialize controllers with current profile data when entering edit mode
+    if (_isEditing) {
+      _initializeControllers();
+    }
     notifyListeners();
   }
 
@@ -79,6 +84,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
   void _initializeControllers() {
     if (_profile == null) return;
 
+    clinicNameController.text = _profile!.clinicName ?? '';
     doctorNameController.text = _profile!.doctorName;
     genderController.text = _profile!.gender;
     emailController.text = _profile!.email;
@@ -97,6 +103,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
 
   // Update methods for different profile sections
   void updateBasicInfo({
+    String? clinicName,
     String? doctorName,
     String? gender,
     String? email,
@@ -106,6 +113,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
     if (_profile == null) return;
 
     _profile = _profile!.copyWith(
+      clinicName: clinicName,
       doctorName: doctorName,
       gender: gender,
       email: email,
@@ -269,6 +277,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
     if (_profile == null) return;
 
     _profile = _profile!.copyWith(
+      clinicName: clinicNameController.text.isNotEmpty ? clinicNameController.text : null,
       doctorName: doctorNameController.text,
       gender: genderController.text,
       email: emailController.text,
@@ -290,6 +299,7 @@ class DoctorClinicProfileViewModel extends ChangeNotifier {
   @override
   void dispose() {
     // Dispose controllers
+    clinicNameController.dispose();
     doctorNameController.dispose();
     genderController.dispose();
     emailController.dispose();

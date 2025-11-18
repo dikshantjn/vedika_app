@@ -76,6 +76,7 @@ class DoctorClinicProfileFixed {
     return DoctorClinicProfile(
       vendorId: json['vendorId'],
       generatedId: json['generatedId'],
+      clinicName: json['clinicName']?.toString(),
       doctorName: json['doctorName']?.toString() ?? '',
       gender: json['gender']?.toString() ?? '',
       email: json['email']?.toString() ?? '',

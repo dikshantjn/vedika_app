@@ -105,9 +105,13 @@
 -keep class com.google.mlkit.vision.text.korean.** { *; }
 -dontwarn com.google.mlkit.vision.text.**
 
-# Jitsi Meet SDK
--keep class org.jitsi.** { *; }
--dontwarn org.jitsi.**
+###############################################
+# VIDEO SDK
+###############################################
+
+# Replace 'your.video.sdk' with your SDK's base package (e.g., live.videosdk)
+-keep class your.video.sdk.** { *; }
+-dontwarn your.video.sdk.**
 
 # WebRTC (used internally by Jitsi)
 -keep class org.webrtc.** { *; }
